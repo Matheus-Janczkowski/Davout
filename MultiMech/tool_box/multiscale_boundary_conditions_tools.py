@@ -3,13 +3,13 @@
 
 from dolfin import *
 
-import source.multiscale.multiscale_boundary_conditions.multiscale_expressions as multiscale_expressions
+import MultiMech.multiscale.multiscale_boundary_conditions.multiscale_expressions as multiscale_expressions
 
-import source.multiscale.multiscale_boundary_conditions.multiscale_classes as multiscale_classes
+import MultiMech.multiscale.multiscale_boundary_conditions.multiscale_classes as multiscale_classes
 
-import source.tool_box.programming_tools as programming_tools
+import MultiMech.tool_box.programming_tools as programming_tools
 
-import source.tool_box.functional_tools as functional_tools
+import MultiMech.tool_box.functional_tools as functional_tools
 
 # Defines a function to select and apply the multiscale boundary condi-
 # tions. The boundary conditions are given by dictionaries of dictiona-

@@ -9,7 +9,7 @@ from collections import OrderedDict
 
 import numpy as np
 
-import source.tool_box.programming_tools as programming_tools
+import MultiMech.tool_box.programming_tools as programming_tools
 
 ########################################################################
 #                            Parsing tools                             #

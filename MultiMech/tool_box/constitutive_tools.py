@@ -10,17 +10,17 @@ from copy import deepcopy
 
 import numpy as np
 
-import source.tool_box.tensor_tools as tensor_tools
+import MultiMech.tool_box.tensor_tools as tensor_tools
 
-import source.tool_box.programming_tools as programming_tools
+import MultiMech.tool_box.programming_tools as programming_tools
 
-import source.tool_box.functional_tools as functional_tools
+import MultiMech.tool_box.functional_tools as functional_tools
 
-import source.tool_box.variational_tools as variational_tools
+import MultiMech.tool_box.variational_tools as variational_tools
 
-import source.tool_box.file_handling_tools as file_tools
+import MultiMech.tool_box.file_handling_tools as file_tools
 
-import source.tool_box.plotting_tools as plotting_tools
+import MultiMech.tool_box.plotting_tools as plotting_tools
 
 # Defines the indices for Einstein summation notation
 

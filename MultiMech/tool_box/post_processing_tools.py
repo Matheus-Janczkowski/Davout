@@ -3,9 +3,9 @@
 
 import copy
 
-import source.post_processes.post_processes_classes as post_classes
+import MultiMech.post_processes.post_processes_classes as post_classes
 
-import source.tool_box.programming_tools as programming_tools
+import MultiMech.tool_box.programming_tools as programming_tools
 
 ########################################################################
 #                   Post-processing tools selection                    #

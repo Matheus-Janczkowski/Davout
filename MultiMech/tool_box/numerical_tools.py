@@ -7,7 +7,7 @@ import ufl_legacy as ufl
 
 import numpy as np
 
-import source.tool_box.programming_tools as programming_tools
+import MultiMech.tool_box.programming_tools as programming_tools
 
 ########################################################################
 #                     Parametric loading functions                     #

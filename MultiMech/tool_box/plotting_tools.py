@@ -8,9 +8,9 @@ import matplotlib.colors as plt_colors
 
 import matplotlib.ticker as ticker
 
-import source.tool_box.file_handling_tools as file_tools
+import MultiMech.tool_box.file_handling_tools as file_tools
 
-import source.tool_box.programming_tools as programming_tools
+import MultiMech.tool_box.programming_tools as programming_tools
 
 ########################################################################
 #                          Bidimensional plots                         #
@@ -230,7 +230,8 @@ highlight_pointsColors='black', parent_path=None):
 
             multiple_curves = len(y_data)
 
-            if not isinstance(x_data[0], list):
+            if (not isinstance(x_data[0], list)) and (not isinstance(
+            x_data[0], np.ndarray)):
 
                 if len(x_data)!=len(y_data[0]):
 
@@ -260,12 +261,14 @@ highlight_pointsColors='black', parent_path=None):
 
                 for i in range(len(y_data)):
 
-                    if not isinstance(x_data[i], list):
+                    if (not isinstance(x_data[i], list)) and (
+                    not isinstance(x_data[i], np.ndarray)):
 
                         raise TypeError("The "+str(i+1)+"-th curve doe"+
                         "s not have the x_data as a list.")
 
-                    elif not isinstance(y_data[i], list):
+                    elif (not isinstance(y_data[i], list)) and (
+                    not isinstance(y_data[i], np.ndarray)):
 
                         raise TypeError("The "+str(i+1)+"-th curve doe"+
                         "s not have the y_data as a list.")

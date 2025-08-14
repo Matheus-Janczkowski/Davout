@@ -4,11 +4,11 @@ import numpy as np
 
 from scipy import sparse
 
-import plotting_tools
+import MultiMech.tool_box.plotting_tools as plotting_tools
 
-import variational_tools
+import FENN.tests.unidimensional.variational_tools as variational_tools
 
-import hyperelastic_1D_energies as hyperelastic_energy_densities
+import FENN.tests.unidimensional.hyperelastic_1D_energies as hyperelastic_energy_densities
 
 # Defines a function to set the data for the FEA of a hyperelastic bar
 

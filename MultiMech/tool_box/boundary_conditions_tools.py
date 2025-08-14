@@ -6,11 +6,11 @@ import numpy as np
 
 from copy import copy
 
-import source.tool_box.programming_tools as programming_tools
+import MultiMech.tool_box.programming_tools as programming_tools
 
-import source.tool_box.mesh_handling_tools as mesh_tools
+import MultiMech.tool_box.mesh_handling_tools as mesh_tools
 
-import source.tool_box.numerical_tools as numerical_tools
+import MultiMech.tool_box.numerical_tools as numerical_tools
 
 ########################################################################
 #              Heterogeneous Dirichlet boundary conditions             #

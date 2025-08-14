@@ -6,13 +6,13 @@ import ufl_legacy
 
 import copy
 
-import source.tool_box.tensor_tools as tensor_tools
+import MultiMech.tool_box.tensor_tools as tensor_tools
 
-import source.tool_box.programming_tools as programming_tools
+import MultiMech.tool_box.programming_tools as programming_tools
 
-import source.tool_box.surface_loading_tools as surface_loading_tools
+import MultiMech.tool_box.surface_loading_tools as surface_loading_tools
 
-import source.tool_box.body_forces_loading_tools as body_loading_tools
+import MultiMech.tool_box.body_forces_loading_tools as body_loading_tools
 
 ########################################################################
 #                            Internal work                             #

@@ -8,15 +8,15 @@ import time
 
 import inspect
 
-import source.tool_box.mesh_handling_tools as mesh_tools
+import MultiMech.tool_box.mesh_handling_tools as mesh_tools
 
-import source.tool_box.post_processing_tools as post_processing_tools
+import MultiMech.tool_box.post_processing_tools as post_processing_tools
 
-import source.tool_box.programming_tools as programming_tools
+import MultiMech.tool_box.programming_tools as programming_tools
 
-import source.post_processes.post_processes_classes as post_classes
+import MultiMech.post_processes.post_processes_classes as post_classes
 
-import source.tool_box.functional_tools as functional_tools
+import MultiMech.tool_box.functional_tools as functional_tools
 
 ########################################################################
 #                        Newton-Raphson schemes                        #

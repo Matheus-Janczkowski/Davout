@@ -10,7 +10,7 @@ from copy import copy
 
 from scipy.spatial import KDTree
 
-import source.tool_box.programming_tools as programming_tools
+import MultiMech.tool_box.programming_tools as programming_tools
 
 # Defines a class for the mesh data
 
