@@ -6,13 +6,13 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
-import MultiMech.tool_box.functional_tools as functional_tools
+from ...tool_box import functional_tools
 
-import MultiMech.tool_box.programming_tools as programming_tools
+from ...tool_box import programming_tools
 
-import MultiMech.tool_box.boundary_conditions_tools as BC_tools
+from ...tool_box import boundary_conditions_tools as BC_tools
 
-import MultiMech.multiscale.multiscale_boundary_conditions.multiscale_expressions as multiscale_expressions
+from ...multiscale.multiscale_boundary_conditions import multiscale_expressions
 
 ########################################################################
 #                Boundary conditions's classes templates               #

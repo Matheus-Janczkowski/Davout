@@ -4,15 +4,15 @@ from dolfin import *
 
 import numpy as np
 
-import MultiMech.tool_box.file_handling_tools as file_tools
+from ..tool_box import file_handling_tools as file_tools
 
-import MultiMech.tool_box.variational_tools as variational_tools
+from ..tool_box import variational_tools
 
-import MultiMech.tool_box.programming_tools as programming_tools
+from ..tool_box import programming_tools
 
-import MultiMech.tool_box.functional_tools as functional_tools
+from ..tool_box import functional_tools
 
-import MultiMech.tool_box.tensor_tools as tensor_tools
+from ..tool_box import tensor_tools
 
 # Defines a function to homogenize a generic field
 

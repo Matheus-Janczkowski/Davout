@@ -2,15 +2,11 @@
 
 from dolfin import *
 
-import numpy as np
+from ..tool_box import programming_tools
 
-from copy import copy
+from ..tool_box import mesh_handling_tools as mesh_tools
 
-import MultiMech.tool_box.programming_tools as programming_tools
-
-import MultiMech.tool_box.mesh_handling_tools as mesh_tools
-
-import MultiMech.tool_box.numerical_tools as numerical_tools
+from ..tool_box import numerical_tools
 
 ########################################################################
 #              Heterogeneous Dirichlet boundary conditions             #

@@ -3,7 +3,7 @@
 
 from dolfin import *
 
-import MultiMech.post_processes.post_processes_functions as post_functions
+from ..post_processes import post_processes_functions as post_functions
 
 ########################################################################
 #                   Post-process's classes templates                   #

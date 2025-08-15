@@ -2,17 +2,17 @@
 
 from dolfin import *
 
-import MultiMech.tool_box.mesh_handling_tools as mesh_tools
+from ..tool_box import mesh_handling_tools as mesh_tools
 
-import MultiMech.tool_box.variational_tools as variational_tools
+from ..tool_box import variational_tools
 
-import MultiMech.tool_box.pseudotime_stepping_tools as newton_raphson_tools
+from ..tool_box import pseudotime_stepping_tools as newton_raphson_tools
 
-import MultiMech.tool_box.programming_tools as programming_tools
+from ..tool_box import programming_tools
 
-import MultiMech.tool_box.functional_tools as functional_tools
+from ..tool_box import functional_tools
 
-import MultiMech.tool_box.multiscale_boundary_conditions_tools as multiscale_BCsTools
+from ..tool_box import multiscale_boundary_conditions_tools as multiscale_BCsTools
 
 # Defines a function to model a hyperelastic problem with a displacement
 # only in the microscale. It uses the macro quantities read from txt fi-

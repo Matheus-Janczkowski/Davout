@@ -8,9 +8,9 @@ import matplotlib.colors as plt_colors
 
 import matplotlib.ticker as ticker
 
-import MultiMech.tool_box.file_handling_tools as file_tools
+from ..tool_box import file_handling_tools as file_tools
 
-import MultiMech.tool_box.programming_tools as programming_tools
+from ..tool_box import programming_tools
 
 ########################################################################
 #                          Bidimensional plots                         #

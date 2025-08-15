@@ -1,16 +1,14 @@
 # Routine to plot the homogenization of the stress tensors
 
-import os
-
 import numpy as np
 
 import matplotlib.pyplot as plt
 
 from dolfin import *
 
-import MultiMech.tool_box.plotting_tools as plotting_tools
+from ...tool_box import plotting_tools
 
-import MultiMech.tool_box.file_handling_tools as file_tools
+from ...tool_box import file_handling_tools as file_tools
 
 # Defines a function to plot the homogenized stress tensors
 

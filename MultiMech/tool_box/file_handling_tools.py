@@ -9,7 +9,7 @@ from collections import OrderedDict
 
 from pathlib import Path
 
-import MultiMech.tool_box.programming_tools as programming_tools
+from ..tool_box import programming_tools
 
 ########################################################################
 #                            Parsing tools                             #

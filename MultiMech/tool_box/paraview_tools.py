@@ -3,9 +3,9 @@
 
 from paraview.simple import *
 
-import MultiMech.tool_box.file_handling_tools as file_tools
+from ..tool_box import file_handling_tools as file_tools
 
-import MultiMech.tool_box.programming_tools as programming_tools
+from ..tool_box import programming_tools
 
 ########################################################################
 #                           Frozen snapshots                           #

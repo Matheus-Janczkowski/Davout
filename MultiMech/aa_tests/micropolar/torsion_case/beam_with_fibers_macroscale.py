@@ -6,13 +6,13 @@ import traceback
 
 import numpy as np
 
-import MultiMech.constitutive_models.hyperelasticity.micropolar_hyperelasticity as micropolar_constitutiveModels
+from ....constitutive_models.hyperelasticity import micropolar_hyperelasticity as micropolar_constitutiveModels
 
-import MultiMech.physics.hyperelastic_micropolar_continuum as variational_framework
+from ....physics import hyperelastic_micropolar_continuum as variational_framework
 
-import MultiMech.tool_box.file_handling_tools as file_tools
+from ....tool_box import file_handling_tools as file_tools
 
-import CuboidGmsh.aa_tests.micropolar_meshes.beam_micropolar_case_1 as beam_gmsh
+from .....CuboidGmsh.aa_tests.micropolar_meshes import beam_micropolar_case_1 as beam_gmsh
 
 # Defines a function to try multiple parameters
 

@@ -5,9 +5,7 @@ from dolfin import *
 
 import ufl_legacy as ufl
 
-import numpy as np
-
-import MultiMech.tool_box.numerical_tools as numerical_tools
+from ..tool_box import numerical_tools
 
 # Define the indices for Einstein summation notation
 

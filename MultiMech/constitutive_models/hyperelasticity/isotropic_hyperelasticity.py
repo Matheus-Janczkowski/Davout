@@ -6,15 +6,11 @@
 
 from abc import ABC, abstractmethod
 
-import numpy as np
-
 from dolfin import *
 
 import ufl_legacy as ufl
 
-import MultiMech.tool_box.tensor_tools as tensor_tools
-
-import MultiMech.tool_box.constitutive_tools as constitutive_tools
+from ...tool_box import constitutive_tools
 
 # Defines an abstract class to force all classes ahead to have the same
 # methods. To enforce it, the abstract method is used before the methods.

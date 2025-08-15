@@ -1,13 +1,13 @@
 # Routine to store the variational form and other accessories for a hy-
 # perelastic Cauchy continuum in solid mechanics
 
-import MultiMech.tool_box.mesh_handling_tools as mesh_tools
+from ..tool_box import mesh_handling_tools as mesh_tools
 
-import MultiMech.tool_box.variational_tools as variational_tools
+from ..tool_box import variational_tools
 
-import MultiMech.tool_box.pseudotime_stepping_tools as newton_raphson_tools
+from ..tool_box import pseudotime_stepping_tools as newton_raphson_tools
 
-import MultiMech.tool_box.programming_tools as programming_tools
+from ..tool_box import programming_tools
 
 # Defines a function to model a hyperelastic problem with displacement,
 # pressure and jacobian fields

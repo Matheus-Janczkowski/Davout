@@ -6,11 +6,11 @@ import ufl_legacy as ufl
 
 import numpy as np
 
-import MultiMech.tool_box.mesh_handling_tools as mesh_tools
+from ..tool_box import mesh_handling_tools as mesh_tools
 
-import MultiMech.tool_box.tensor_tools as tensor_tools
+from ..tool_box import tensor_tools
 
-import MultiMech.tool_box.numerical_tools as numerical_tools
+from ..tool_box import numerical_tools
 
 ########################################################################
 #                          Referential forces                          #

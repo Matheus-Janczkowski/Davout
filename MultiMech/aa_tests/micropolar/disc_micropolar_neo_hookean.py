@@ -2,9 +2,9 @@
 
 import os
 
-import MultiMech.constitutive_models.hyperelasticity.micropolar_hyperelasticity as micropolar_constitutiveModels
+from ...constitutive_models.hyperelasticity import micropolar_hyperelasticity as micropolar_constitutiveModels
 
-import MultiMech.physics.hyperelastic_micropolar_continuum as variational_framework
+from ...physics import hyperelastic_micropolar_continuum as variational_framework
 
 ########################################################################
 ########################################################################

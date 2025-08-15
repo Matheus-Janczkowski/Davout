@@ -9,15 +9,15 @@ from abc import ABC, abstractmethod
 
 from petsc4py import PETSc
 
-import MultiMech.tool_box.file_handling_tools as file_tools
+from ..tool_box import file_handling_tools as file_tools
 
-import MultiMech.tool_box.numerical_tools as numerical_tools
+from ..tool_box import numerical_tools
 
-import MultiMech.tool_box.programming_tools as programming_tools
+from ..tool_box import programming_tools
 
-import MultiMech.tool_box.boundary_conditions_tools as bc_tools
+from ..tool_box import boundary_conditions_tools as bc_tools
 
-import MultiMech.tool_box.dirichlet_load_tools as dirichlet_tools
+from ..tool_box import dirichlet_load_tools as dirichlet_tools
 
 ########################################################################
 #                     Boundary conditions selector                     #

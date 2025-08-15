@@ -6,9 +6,9 @@ import numpy as np
 
 import matplotlib.colors as plt_colors
 
-import MultiMech.tool_box.file_handling_tools as file_tools
+from ....tool_box import file_handling_tools as file_tools
 
-import MultiMech.tool_box.plotting_tools as plotting_tools
+from ....tool_box import plotting_tools
 
 # Defines a function to run the process
 

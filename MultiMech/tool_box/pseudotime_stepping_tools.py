@@ -6,15 +6,15 @@ import numpy as np
 
 import time
 
-import MultiMech.tool_box.mesh_handling_tools as mesh_tools
+from ..tool_box import mesh_handling_tools as mesh_tools
 
-import MultiMech.tool_box.post_processing_tools as post_processing_tools
+from ..tool_box import post_processing_tools
 
-import MultiMech.tool_box.programming_tools as programming_tools
+from ..tool_box import programming_tools
 
-import MultiMech.post_processes.post_processes_classes as post_classes
+from ..post_processes import post_processes_classes as post_classes
 
-import MultiMech.tool_box.functional_tools as functional_tools
+from ..tool_box import functional_tools
 
 ########################################################################
 #                        Newton-Raphson schemes                        #

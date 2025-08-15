@@ -2,17 +2,15 @@
 
 import os
 
-import numpy as np
-
 from dolfin import *
 
 from mshr import *
 
-import MultiMech.constitutive_models.hyperelasticity.isotropic_hyperelasticity as constitutive_models
+from ....constitutive_models.hyperelasticity import isotropic_hyperelasticity as constitutive_models
 
-import MultiMech.multiscale.multiscale_hyperelasticity as variational_framework
+from ....multiscale import multiscale_hyperelasticity as variational_framework
 
-import CuboidGmsh.aa_tests.micropolar_meshes.beam_micropolar_case_1 as beam_gmsh
+from .....CuboidGmsh.aa_tests.micropolar_meshes import beam_micropolar_case_1 as beam_gmsh
 
 ########################################################################
 ########################################################################

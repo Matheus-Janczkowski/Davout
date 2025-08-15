@@ -10,13 +10,13 @@ from dolfin import *
 
 from mshr import *
 
-import MultiMech.constitutive_models.hyperelasticity.micropolar_hyperelasticity as micropolar_constitutiveModels
+from ....constitutive_models.hyperelasticity import micropolar_hyperelasticity as micropolar_constitutiveModels
 
-import MultiMech.multiscale.multiscale_micropolar as variational_framework
+from ....multiscale import multiscale_micropolar as variational_framework
 
-import MultiMech.tool_box.file_handling_tools as file_tools
+from ....tool_box import file_handling_tools as file_tools
 
-import CuboidGmsh.aa_tests.micropolar_meshes.beam_micropolar_case_1 as beam_gmsh
+from .....CuboidGmsh.aa_tests.micropolar_meshes import beam_micropolar_case_1 as beam_gmsh
 
 # Defines a function to try multiple parameters
 
