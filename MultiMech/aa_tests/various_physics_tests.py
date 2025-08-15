@@ -19,7 +19,7 @@ class TestANNTools(unittest.TestCase):
         "okean                          #\n###########################"+
         "#############################################\n")
 
-        import tests.hyperelasticity.disc_neo_hookean
+        import aa_tests.hyperelasticity.disc_neo_hookean
 
     # Defines a function to test the Cauchy-continuum HGO model
     
@@ -30,7 +30,7 @@ class TestANNTools(unittest.TestCase):
         "O                              #\n###########################"+
         "#############################################\n")
 
-        import tests.hyperelasticity.disc_HGO
+        import aa_tests.hyperelasticity.disc_HGO
 
     # Defines a function to test the Micropolar-continuum Neo-Hookean 
     # model

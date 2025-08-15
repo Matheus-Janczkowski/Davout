@@ -4,13 +4,11 @@ import os
 
 import numpy as np
 
-import matplotlib.pyplot as plt
-
 import matplotlib.colors as plt_colors
 
-import source.tool_box.file_handling_tools as file_tools
+import MultiMech.tool_box.file_handling_tools as file_tools
 
-import source.tool_box.plotting_tools as plotting_tools
+import MultiMech.tool_box.plotting_tools as plotting_tools
 
 # Defines a function to run the process
 

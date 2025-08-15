@@ -2,27 +2,26 @@
 
 import os
 
-import sys
-
 import traceback
 
 import numpy as np
 
-import source.constitutive_models.hyperelasticity.micropolar_hyperelasticity as micropolar_constitutiveModels
+import MultiMech.constitutive_models.hyperelasticity.micropolar_hyperelasticity as micropolar_constitutiveModels
 
-import source.physics.hyperelastic_micropolar_continuum as variational_framework
+import MultiMech.physics.hyperelastic_micropolar_continuum as variational_framework
 
-import source.tool_box.file_handling_tools as file_tools
+import MultiMech.tool_box.file_handling_tools as file_tools
 
-from source.tool_box.file_handling_tools import float_toString
-
-sys.path.insert(1, '/home/matheus-janczkowski/Github')
-
-import CuboidGmsh.tests.micropolar_meshes.beam_micropolar_case_1 as beam_gmsh
+import CuboidGmsh.aa_tests.micropolar_meshes.beam_micropolar_case_1 as beam_gmsh
 
 # Defines a function to try multiple parameters
 
 def case1_varyingMicropolarNumber(flag_newMesh=False):
+
+    # Sets the mesh file directory path
+
+    mesh_file_directory = os.path.join(file_tools.get_parent_path_of_file(
+    file=__file__, path_bits_to_be_excluded=3),"test_meshes")
 
     # Defines the load factor
 
@@ -161,7 +160,8 @@ def case1_varyingMicropolarNumber(flag_newMesh=False):
 
     # Saves the parameters set
 
-    base_path = os.getcwd()+"//tests//micropolar//bending_case//results"
+    base_path = os.path.join(file_tools.get_parent_path_of_file(file=
+    __file__), "results")
 
     file_tools.list_toTxt(file_tools.named_list(parameters_sets), "par"+
     "ameters_sets", parent_path=base_path)
@@ -194,7 +194,8 @@ def case1_varyingMicropolarNumber(flag_newMesh=False):
             n_RVEsY, n_RVEsZ=n_RVEsZ, RVE_localizationX=
             RVE_localizationX, RVE_localizationY=RVE_localizationY, 
             RVE_localizationZ=RVE_localizationZ, flag_newMesh=flag_mesh, 
-            subfolder_name=simulation_name)
+            subfolder_name=simulation_name, mesh_file_directory=
+            mesh_file_directory)
 
         # Shows the exception and keeps going
 
@@ -217,7 +218,8 @@ N_micropolarMatrix, N_micropolarFiber, characteristic_lengthMatrix,
 characteristic_lengthFiber, flag_bending, load_factor, gamma_matrix=0.0, 
 gamma_fiber=0.0, RVE_width=1.0, RVE_length=1.0, fiber_radius=0.25, 
 n_RVEsX=1, n_RVEsY=1, n_RVEsZ=5, RVE_localizationX=1, RVE_localizationY=
-1, RVE_localizationZ=3, flag_newMesh=True, subfolder_name="simulation"):
+1, RVE_localizationZ=3, flag_newMesh=True, subfolder_name="simulation",
+mesh_file_directory=os.getcwd()+"//aa_tests//test_meshes"):
 
     # Evaluates the fiber ratio
 
@@ -458,8 +460,6 @@ n_RVEsX=1, n_RVEsY=1, n_RVEsZ=5, RVE_localizationX=1, RVE_localizationY=
     # file termination, e.g. .msh or .xdmf; both options will be saved 
     # automatically
 
-    file_directory = os.getcwd()+"//tests//test_meshes"
-
     mesh_fileName = "micropolar_beam_with_fibers_bending"
 
     if flag_newMesh:
@@ -467,7 +467,7 @@ n_RVEsX=1, n_RVEsY=1, n_RVEsZ=5, RVE_localizationX=1, RVE_localizationY=
         beam_gmsh.case_1(RVE_width, RVE_length, fiber_radius, n_RVEsX, 
         n_RVEsY, n_RVEsZ, RVE_localizationX, RVE_localizationY, 
         RVE_localizationZ, mesh_fileName=mesh_fileName, file_directory=
-        file_directory)
+        mesh_file_directory)
 
     # Defines a set of physical groups to create a submesh
 
@@ -566,7 +566,7 @@ n_RVEsX=1, n_RVEsY=1, n_RVEsZ=5, RVE_localizationX=1, RVE_localizationY=
 
     variational_framework.hyperelasticity_displacementMicrorotationBased(
     constitutive_model, traction_dictionary, moment_dictionary, 
-    maximum_loadingSteps, t_final, post_processes, file_directory+"//"+
+    maximum_loadingSteps, t_final, post_processes, mesh_file_directory+"//"+
     mesh_fileName, solver_parameters, polynomial_degreeDisplacement=
     polynomial_degreeDisplacement, polynomial_degreeMicrorotation=
     polynomial_degreeMicrorotation, t=t, solution_name=[["Displacement",

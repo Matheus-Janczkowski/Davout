@@ -7,7 +7,7 @@ import copy
 
 from collections import OrderedDict
 
-import numpy as np
+from pathlib import Path
 
 import MultiMech.tool_box.programming_tools as programming_tools
 
@@ -735,6 +735,25 @@ def take_outFileNameTermination(file_name, get_termination=False):
     else:
 
         return clean_fileName
+    
+# Defines a function to get the path to a file
+
+def get_parent_path_of_file(file="__file__", path_bits_to_be_excluded=1):
+
+    if file=="__file__":
+
+        raise NameError("To get the parent path of a file, you should "+
+        "type file=file, where file is an imported file; or you should"+
+        " type file=__file__ to get the parent path to the current file")
+    
+    # Gets a list of the bits of the whole path
+    
+    current_path = Path(os.path.abspath(file)).parts
+
+    # Joins them again without the last bit, which is the name of the 
+    # file itself
+
+    return Path(*current_path[0:-path_bits_to_be_excluded])
 
 ########################################################################
 #                              txt files                               #

@@ -2,8 +2,6 @@
 
 import os
 
-import sys
-
 import traceback
 
 import numpy as np
@@ -13,10 +11,6 @@ import MultiMech.constitutive_models.hyperelasticity.micropolar_hyperelasticity 
 import MultiMech.physics.hyperelastic_micropolar_continuum as variational_framework
 
 import MultiMech.tool_box.file_handling_tools as file_tools
-
-from MultiMech.tool_box.file_handling_tools import float_toString
-
-#sys.path.insert(1, '/home/matheus-janczkowski/Github')
 
 import CuboidGmsh.aa_tests.micropolar_meshes.beam_micropolar_case_1 as beam_gmsh
 
@@ -31,6 +25,11 @@ def case1_varyingMicropolarNumber(flag_newMesh=False):
     # Defines the load factor
 
     load_factor = 0.75
+
+    # Sets the mesh file directory path
+
+    mesh_file_directory = os.path.join(file_tools.get_parent_path_of_file(
+    file=__file__, path_bits_to_be_excluded=3),"test_meshes")
 
     # Defines the RVE overall parameters
 
@@ -324,9 +323,8 @@ def case1_varyingMicropolarNumber(flag_newMesh=False):
 
     # Saves the parameters set
 
-    current_file_path = os.path.abspath(__file__)
-
-    base_path = os.path.join(current_file_path, "results")#os.getcwd()+"//tests//micropolar//torsion_case//results"
+    base_path = os.path.join(file_tools.get_parent_path_of_file(file=
+    __file__), "results")
 
     file_tools.list_toTxt(file_tools.named_list(parameters_sets), "par"+
     "ameters_sets", parent_path=base_path)
@@ -358,7 +356,8 @@ def case1_varyingMicropolarNumber(flag_newMesh=False):
             RVE_localizationX, RVE_localizationY=RVE_localizationY, 
             RVE_localizationZ=RVE_localizationZ, flag_newMesh=flag_mesh, 
             subfolder_name=simulation_name, intermediate_savingFlag=
-            intermediate_savingFlag)
+            intermediate_savingFlag, mesh_file_directory=
+            mesh_file_directory)
 
         # Shows the exception and keeps going
 
@@ -382,7 +381,8 @@ characteristic_lengthFiber, flag_bending, load_factor, gamma_matrix=0.0,
 gamma_fiber=0.0, RVE_width=1.0, RVE_length=1.0, fiber_radius=0.25, 
 n_RVEsX=1, n_RVEsY=1, n_RVEsZ=5, RVE_localizationX=1, RVE_localizationY=
 1, RVE_localizationZ=3, flag_newMesh=True, subfolder_name="simulation",
-intermediate_savingFlag=False):
+intermediate_savingFlag=False, mesh_file_directory=os.getcwd()+"//aa_t"+
+"ests//test_meshes"):
 
     # Gets the coefficient k2 for torsion of rectangular shafts from 
     # Gere's Mechanics of Materials
@@ -655,8 +655,6 @@ intermediate_savingFlag=False):
     # file termination, e.g. .msh or .xdmf; both options will be saved 
     # automatically
 
-    file_directory = os.getcwd()+"//tests//test_meshes"
-
     mesh_fileName = "micropolar_beam_with_fibers_torsion"
 
     if flag_newMesh:
@@ -664,7 +662,7 @@ intermediate_savingFlag=False):
         beam_gmsh.case_1(RVE_width, RVE_length, fiber_radius, n_RVEsX, 
         n_RVEsY, n_RVEsZ, RVE_localizationX, RVE_localizationY, 
         RVE_localizationZ, mesh_fileName=mesh_fileName, file_directory=
-        file_directory)
+        mesh_file_directory)
 
     # Defines a set of physical groups to create a submesh
 
@@ -762,8 +760,8 @@ intermediate_savingFlag=False):
 
     variational_framework.hyperelasticity_displacementMicrorotationBased(
     constitutive_model, traction_dictionary, moment_dictionary, 
-    maximum_loadingSteps, t_final, post_processes, file_directory+"//"+
-    mesh_fileName, solver_parameters, polynomial_degreeDisplacement=
+    maximum_loadingSteps, t_final, post_processes, mesh_file_directory+
+    "//"+mesh_fileName, solver_parameters, polynomial_degreeDisplacement=
     polynomial_degreeDisplacement, polynomial_degreeMicrorotation=
     polynomial_degreeMicrorotation, t=t, solution_name=[["Displacement", 
     "DNS"], ["Microrotation", "DNS"]], volume_physGroupsSubmesh=

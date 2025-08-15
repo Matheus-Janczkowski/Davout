@@ -2,21 +2,17 @@
 
 import os
 
-import sys
-
 import numpy as np
 
 from dolfin import *
 
 from mshr import *
 
-import source.constitutive_models.hyperelasticity.isotropic_hyperelasticity as constitutive_models
+import MultiMech.constitutive_models.hyperelasticity.isotropic_hyperelasticity as constitutive_models
 
-import source.multiscale.multiscale_hyperelasticity as variational_framework
+import MultiMech.multiscale.multiscale_hyperelasticity as variational_framework
 
-sys.path.insert(1, '/home/matheus-janczkowski/Github')
-
-import CuboidGmsh.tests.micropolar_meshes.beam_micropolar_case_1 as beam_gmsh
+import CuboidGmsh.aa_tests.micropolar_meshes.beam_micropolar_case_1 as beam_gmsh
 
 ########################################################################
 ########################################################################

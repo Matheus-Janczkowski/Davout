@@ -2,27 +2,23 @@
 
 import os
 
-import sys
-
 import numpy as np
 
 from dolfin import *
 
 from mshr import *
 
-import source.constitutive_models.hyperelasticity.micropolar_hyperelasticity as micropolar_constitutiveModels
+import MultiMech.constitutive_models.hyperelasticity.micropolar_hyperelasticity as micropolar_constitutiveModels
 
-import source.constitutive_models.hyperelasticity.isotropic_hyperelasticity as cauchy_constitutiveModels
+import MultiMech.constitutive_models.hyperelasticity.isotropic_hyperelasticity as cauchy_constitutiveModels
 
-import source.multiscale.multiscale_micropolar as variational_framework
+import MultiMech.multiscale.multiscale_micropolar as variational_framework
 
-import source.multiscale.multiscale_hyperelasticity as cauchy_variationalFramework
+import MultiMech.multiscale.multiscale_hyperelasticity as cauchy_variationalFramework
 
-import source.tool_box.file_handling_tools as file_tools
+import MultiMech.tool_box.file_handling_tools as file_tools
 
-sys.path.insert(1, '/home/matheus-janczkowski/Github')
-
-import CuboidGmsh.tests.micropolar_meshes.beam_micropolar_case_1 as beam_gmsh
+import CuboidGmsh.aa_tests.micropolar_meshes.beam_micropolar_case_1 as beam_gmsh
 
 # Defines a function to try multiple parameters
 

@@ -2,15 +2,9 @@
 
 import os
 
-import sys
+import MultiMech.constitutive_models.hyperelasticity.micropolar_hyperelasticity as micropolar_constitutiveModels
 
-#sys.path.append(os.path.abspath("source/physics"))
-
-#sys.path.append(os.path.abspath("source/constitutive_models"))
-
-import source.constitutive_models.hyperelasticity.micropolar_hyperelasticity as micropolar_constitutiveModels
-
-import source.physics.hyperelastic_micropolar_continuum as variational_framework
+import MultiMech.physics.hyperelastic_micropolar_continuum as variational_framework
 
 ########################################################################
 ########################################################################

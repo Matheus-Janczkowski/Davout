@@ -6,31 +6,32 @@ import os
 
 from copy import deepcopy
 
-import sys
-
 import numpy as np
 
 from dolfin import *
 
 from mshr import *
 
-import source.constitutive_models.hyperelasticity.micropolar_hyperelasticity as micropolar_constitutiveModels
+import MultiMech.constitutive_models.hyperelasticity.micropolar_hyperelasticity as micropolar_constitutiveModels
 
-import source.constitutive_models.hyperelasticity.isotropic_hyperelasticity as cauchy_constitutiveModels
+import MultiMech.constitutive_models.hyperelasticity.isotropic_hyperelasticity as cauchy_constitutiveModels
 
-import source.multiscale.multiscale_micropolar as variational_framework
+import MultiMech.multiscale.multiscale_micropolar as variational_framework
 
-import source.multiscale.multiscale_hyperelasticity as cauchy_variationalFramework
+import MultiMech.multiscale.multiscale_hyperelasticity as cauchy_variationalFramework
 
-import source.tool_box.file_handling_tools as file_tools
+import MultiMech.tool_box.file_handling_tools as file_tools
 
-sys.path.insert(1, '/home/matheus-janczkowski/Github')
-
-import CuboidGmsh.tests.micropolar_meshes.beam_micropolar_case_1 as beam_gmsh
+import CuboidGmsh.aa_tests.micropolar_meshes.beam_micropolar_case_1 as beam_gmsh
 
 # Defines a function to try multiple parameters
 
 def evaluate_tangentOperators(flag_newMesh=False):
+
+    # Sets the mesh file directory path
+
+    mesh_file_directory = os.path.join(file_tools.get_parent_path_of_file(
+    file=__file__, path_bits_to_be_excluded=3),"test_meshes")
 
     # Sets the problem to be solved (BVP_solution for micropolar or 
     # Cauchy_BVPsolution for Cauchy hyperelasticity)
@@ -119,14 +120,15 @@ def evaluate_tangentOperators(flag_newMesh=False):
 
                 central_differencesTangentOperators(base_path, 
                 subfolder_name, 10**(pertubation_step), BVP_arguments, 
-                BVP_keywordArguments, BVP_function)
+                BVP_keywordArguments, BVP_function, mesh_file_directory)
 
 # Defines a function to perturbate the macroscale gradients to get the
 # tangent operators numerically evaluated using central finite differen-
 # ces
 
 def central_differencesTangentOperators(base_path, subfolder_name, 
-pertubation_step, BVP_arguments, BVP_keywordArguments, BVP_function):
+pertubation_step, BVP_arguments, BVP_keywordArguments, BVP_function,
+mesh_file_directory):
     
     # Gets the path to the simulation data
 
@@ -163,13 +165,15 @@ pertubation_step, BVP_arguments, BVP_keywordArguments, BVP_function):
 
             S_ahead = gradients_perturbation(base_path, results_pathText,
             subfolder_name, [k,l], "Displacement", pertubation_step, 
-            BVP_arguments, BVP_keywordArguments, BVP_function, F_inverse)
+            BVP_arguments, BVP_keywordArguments, BVP_function, F_inverse,
+            mesh_file_directory)
 
             # Again, but perturbating backwards
 
             S_abaft = gradients_perturbation(base_path, results_pathText, 
             subfolder_name, [k,l], "Displacement", -pertubation_step, 
-            BVP_arguments, BVP_keywordArguments, BVP_function, F_inverse)
+            BVP_arguments, BVP_keywordArguments, BVP_function, F_inverse,
+            mesh_file_directory)
 
             # Subtracts and divides them by the step to get the finite
             # differences
@@ -221,7 +225,7 @@ pertubation_step, BVP_arguments, BVP_keywordArguments, BVP_function):
 
 def gradients_perturbation(base_path, results_pathText, subfolder_name, 
 perturbed_indices, perturbed_field, pertubation_step, BVP_arguments, 
-BVP_keywordArguments, BVP_function, F_inv):
+BVP_keywordArguments, BVP_function, F_inv, mesh_file_directory):
     
     # Reads the displacement gradient
 
@@ -288,7 +292,8 @@ BVP_keywordArguments, BVP_function, F_inv):
     BVP_keywordArguments[7], flag_newMesh=BVP_keywordArguments[8], 
     subfolder_name=BVP_keywordArguments[9], fluctuation_field=
     BVP_keywordArguments[10], transfinite_directions=
-    BVP_keywordArguments[11], bias_directions=BVP_keywordArguments[12])
+    BVP_keywordArguments[11], bias_directions=BVP_keywordArguments[12],
+    mesh_file_directory=mesh_file_directory)
 
     # Reads the homogenized first Piola-Kirchhoff stress tensor
 
@@ -460,7 +465,8 @@ gamma_fiber=0.0, RVE_width=1.0, RVE_length=1.0, fiber_radius=0.25,
 n_RVEsX=1, n_RVEsY=1, n_RVEsZ=1, RVE_localizationX=1, RVE_localizationY=
 1, RVE_localizationZ=3, flag_newMesh=True, subfolder_name=["simulation"],
 fluctuation_field=False, transfinite_directions=[6, 6, 3, 4, 3], 
-bias_directions={"cylinder radial": 1.5, "box radial": 1.5}):
+bias_directions={"cylinder radial": 1.5, "box radial": 1.5},
+mesh_file_directory=os.getcwd()+"//aa_tests//test_meshes"):
 
     ####################################################################
     #                        Simulation results                        #
@@ -574,8 +580,6 @@ bias_directions={"cylinder radial": 1.5, "box radial": 1.5}):
     # file termination, e.g. .msh or .xdmf; both options will be saved 
     # automatically
 
-    file_directory = os.getcwd()+"//tests//test_meshes"
-
     mesh_fileName = "micropolar_beam_with_fibers_microscale"
 
     if flag_newMesh:
@@ -583,7 +587,7 @@ bias_directions={"cylinder radial": 1.5, "box radial": 1.5}):
         beam_gmsh.case_1(RVE_width, RVE_length, fiber_radius, n_RVEsX, 
         n_RVEsY, n_RVEsZ, RVE_localizationX, RVE_localizationY, 
         RVE_localizationZ, mesh_fileName=mesh_fileName, file_directory=
-        file_directory, transfinite_directions=transfinite_directions,
+        mesh_file_directory, transfinite_directions=transfinite_directions,
         translation=[RVE_length*(RVE_localizationX-1), RVE_width*(
         RVE_localizationY-1), RVE_width*(RVE_localizationZ-1)],
         bias_directions=bias_directions)
@@ -648,7 +652,7 @@ bias_directions={"cylinder radial": 1.5, "box radial": 1.5}):
     displacement_multiscaleBC, microrotation_multiscaleBC,
     macro_displacementName, macro_gradDisplacementName, 
     macro_microrotationName, macro_gradMicrorotationName, 
-    constitutive_model, post_processes, file_directory+"//"+
+    constitutive_model, post_processes, mesh_file_directory+"//"+
     mesh_fileName, solver_parameters, polynomial_degreeDisplacement=
     polynomial_degreeDisplacement, polynomial_degreeMicrorotation=
     polynomial_degreeMicrorotation, verbose=verbose, fluctuation_field=
@@ -664,7 +668,8 @@ gamma_fiber=0.0, RVE_width=1.0, RVE_length=1.0, fiber_radius=0.25,
 n_RVEsX=1, n_RVEsY=1, n_RVEsZ=1, RVE_localizationX=1, RVE_localizationY=
 1, RVE_localizationZ=3, flag_newMesh=True, subfolder_name=["simulation"],
 fluctuation_field=False, transfinite_directions=[6, 6, 3, 4, 3], 
-bias_directions={"cylinder radial": 1.5, "box radial": 1.5}):
+bias_directions={"cylinder radial": 1.5, "box radial": 1.5}, 
+mesh_file_directory=os.getcwd()+"//aa_tests//test_meshes"):
 
     ####################################################################
     #                        Simulation results                        #
@@ -744,8 +749,6 @@ bias_directions={"cylinder radial": 1.5, "box radial": 1.5}):
     # file termination, e.g. .msh or .xdmf; both options will be saved 
     # automatically
 
-    file_directory = os.getcwd()+"//tests//test_meshes"
-
     mesh_fileName = "micropolar_beam_with_fibers_microscale"
 
     if flag_newMesh:
@@ -753,7 +756,7 @@ bias_directions={"cylinder radial": 1.5, "box radial": 1.5}):
         beam_gmsh.case_1(RVE_width, RVE_length, fiber_radius, n_RVEsX, 
         n_RVEsY, n_RVEsZ, RVE_localizationX, RVE_localizationY, 
         RVE_localizationZ, mesh_fileName=mesh_fileName, file_directory=
-        file_directory, transfinite_directions=transfinite_directions,
+        mesh_file_directory, transfinite_directions=transfinite_directions,
         translation=[RVE_length*(RVE_localizationX-1), RVE_width*(
         RVE_localizationY-1), RVE_width*(RVE_localizationZ-1)],
         bias_directions=bias_directions)
@@ -809,7 +812,7 @@ bias_directions={"cylinder radial": 1.5, "box radial": 1.5}):
     cauchy_variationalFramework.hyperelastic_microscale(
     displacement_multiscaleBC, macro_displacementName, 
     macro_gradDisplacementName, constitutive_model, post_processes, 
-    file_directory+"//"+mesh_fileName, solver_parameters, 
+    mesh_file_directory+"//"+mesh_fileName, solver_parameters, 
     polynomial_degree=polynomial_degreeDisplacement, verbose=verbose, 
     fluctuation_field=fluctuation_field)
 

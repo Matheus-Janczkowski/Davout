@@ -8,9 +8,9 @@ import matplotlib.pyplot as plt
 
 from dolfin import *
 
-import source.tool_box.plotting_tools as plotting_tools
+import MultiMech.tool_box.plotting_tools as plotting_tools
 
-import source.tool_box.file_handling_tools as file_tools
+import MultiMech.tool_box.file_handling_tools as file_tools
 
 # Defines a function to plot the homogenized stress tensors
 
@@ -18,7 +18,7 @@ def plot_stress():
 
     # Gets the current path
 
-    base_path = os.getcwd()+"//tests//micropolar"
+    base_path = file_tools.get_parent_path_of_file(file=__file__)
 
     # Defines the paths to the stress tensor files
 
