@@ -6,9 +6,9 @@ import tensorflow as tf
 
 import numpy as np
 
-import DeepMech.source.tool_box.ANN_tools as ANN_tools
+from ...tool_box import ANN_tools
 
-import DeepMech.source.tool_box.training_tools as training_tools
+from ...tool_box import training_tools
 
 # Defines a function to test the ANN tools methods
 

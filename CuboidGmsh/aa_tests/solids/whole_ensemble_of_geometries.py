@@ -2,17 +2,15 @@
 
 import numpy as np
 
-import os 
+from ...solids import cuboid_prisms as prisms
 
-import CuboidGmsh.source.solids.cuboid_prisms as prisms
+from ...solids import cuboid_cylinders as cylinders
 
-import CuboidGmsh.source.solids.cuboid_cylinders as cylinders
+from ...solids import cuboid_ellipsoids as ellipsoids
 
-import CuboidGmsh.source.solids.cuboid_ellipsoids as ellipsoids
+from ...solids import cuboid_helicoids as helicoids
 
-import CuboidGmsh.source.solids.cuboid_helicoids as helicoids
-
-import CuboidGmsh.source.tool_box.meshing_tools as tools
+from ...tool_box import meshing_tools as tools
 
 ########################################################################
 #                           Battery of tests                           #

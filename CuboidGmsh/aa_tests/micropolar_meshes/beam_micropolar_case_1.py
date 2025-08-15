@@ -3,13 +3,11 @@
 
 from tqdm import tqdm
 
-import CuboidGmsh.solids.cuboid_cylinders as cylinders
+from ...solids import cuboid_cylinders as cylinders
 
-import CuboidGmsh.solids.cuboid_prisms as prisms
+from ...tool_box import meshing_tools as tools
 
-import CuboidGmsh.tool_box.meshing_tools as tools
-
-import CuboidGmsh.tool_box.region_finder as region_finder
+from ...tool_box import region_finder
 
 def case_1(RVE_width, RVE_length, fiber_radius, n_RVEsX, n_RVEsY, 
 n_RVEsZ, RVE_localizationX, RVE_localizationY, RVE_localizationZ, 

@@ -2,13 +2,11 @@
 
 import numpy as np
 
-import os
+from ...solids import cuboid_cylinders
 
-import CuboidGmsh.solids.cuboid_cylinders as cuboid_cylinders
+from ...solids import cuboid_ellipsoids
 
-import CuboidGmsh.solids.cuboid_ellipsoids as cuboid_ellipsoids
-
-import CuboidGmsh.tool_box.meshing_tools as tools
+from ...tool_box import meshing_tools as tools
 
 # Sets the inner arterial radius and the thickness of each layer
 

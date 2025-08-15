@@ -7,7 +7,7 @@ import numpy as np
 
 import copy
 
-import CuboidGmsh.tool_box.geometric_tools as geo
+from ..tool_box import geometric_tools as geo
 
 ########################################################################
 #                      Whole cuboid manufacturing                      #

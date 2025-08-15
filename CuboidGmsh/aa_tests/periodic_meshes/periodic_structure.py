@@ -4,11 +4,11 @@ import numpy as np
 
 import meshio
 
-import CuboidGmsh.aa_tests.periodic_meshes.fiber_matrix_parameters as parameters_file
+from ...aa_tests.periodic_meshes import fiber_matrix_parameters as parameters_file
 
-import CuboidGmsh.tool_box.mesh_data_retriever as mesh_data_retriever
+from ...tool_box import mesh_data_retriever
 
-import CuboidGmsh.tool_box.meshing_tools as mesh_tools
+from ...tool_box import meshing_tools as mesh_tools
 
 def generate_periodicMesh(file_name, flag_transfinite=1, verbose=
 False):

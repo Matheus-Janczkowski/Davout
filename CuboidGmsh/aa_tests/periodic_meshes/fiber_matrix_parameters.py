@@ -1,10 +1,10 @@
 import numpy as np
 
-import CuboidGmsh.tool_box.region_finder as region_finder
+from ...tool_box import region_finder
 
-import CuboidGmsh.aa_tests.RVEs.transfinite.RVE_matrix_with_fiber_transfinite as RVE_transfinite
+from ...aa_tests.RVEs.transfinite import RVE_matrix_with_fiber_transfinite as RVE_transfinite
 
-import CuboidGmsh.aa_tests.RVEs.non_transfinite.RVE_matrix_with_fiber as RVE_nonTransfinite
+from ...aa_tests.RVEs.non_transfinite import RVE_matrix_with_fiber as RVE_nonTransfinite
 
 # Defines a function to generate parameters for the periodic mesh
 

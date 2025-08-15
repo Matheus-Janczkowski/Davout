@@ -4,7 +4,7 @@ import math
 
 import numpy as np
 
-import CuboidGmsh.tool_box.meshing_tools as tools
+from ....tool_box import meshing_tools as tools
 
 # Defines a function that constructs the top and bottom surfaces of the
 # RVE

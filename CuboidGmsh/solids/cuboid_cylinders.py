@@ -2,13 +2,13 @@
 
 import numpy as np
 
-import CuboidGmsh.solids.cuboid_generator as cuboid
+from ..solids import cuboid_generator as cuboid
 
-import CuboidGmsh.tool_box.meshing_tools as tools
+from ..tool_box import meshing_tools as tools
 
-import CuboidGmsh.tool_box.geometric_tools as geo
+from ..tool_box import geometric_tools as geo
 
-import CuboidGmsh.tool_box.verification_tools as verification
+from ..tool_box import verification_tools as verification
 
 # Defines a function to create a cylinder with no hole, but it can be 
 # cut in the edges not perpendicular to its axis
