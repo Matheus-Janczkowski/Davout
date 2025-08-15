@@ -8,17 +8,17 @@ import traceback
 
 import numpy as np
 
-import source.constitutive_models.hyperelasticity.micropolar_hyperelasticity as micropolar_constitutiveModels
+import MultiMech.constitutive_models.hyperelasticity.micropolar_hyperelasticity as micropolar_constitutiveModels
 
-import source.physics.hyperelastic_micropolar_continuum as variational_framework
+import MultiMech.physics.hyperelastic_micropolar_continuum as variational_framework
 
-import source.tool_box.file_handling_tools as file_tools
+import MultiMech.tool_box.file_handling_tools as file_tools
 
-from source.tool_box.file_handling_tools import float_toString
+from MultiMech.tool_box.file_handling_tools import float_toString
 
-sys.path.insert(1, '/home/matheus-janczkowski/Github')
+#sys.path.insert(1, '/home/matheus-janczkowski/Github')
 
-import CuboidGmsh.tests.micropolar_meshes.beam_micropolar_case_1 as beam_gmsh
+import CuboidGmsh.aa_tests.micropolar_meshes.beam_micropolar_case_1 as beam_gmsh
 
 # Defines a function to try multiple parameters
 
@@ -324,7 +324,9 @@ def case1_varyingMicropolarNumber(flag_newMesh=False):
 
     # Saves the parameters set
 
-    base_path = os.getcwd()+"//tests//micropolar//torsion_case//results"
+    current_file_path = os.path.abspath(__file__)
+
+    base_path = os.path.join(current_file_path, "results")#os.getcwd()+"//tests//micropolar//torsion_case//results"
 
     file_tools.list_toTxt(file_tools.named_list(parameters_sets), "par"+
     "ameters_sets", parent_path=base_path)
