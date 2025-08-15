@@ -101,6 +101,6 @@ output_imageFileName="plot.png"):
 
 # Tests the frozen snapshots
 
-frozen_snapshots("displacement.xdmf", "Displacement", input_path="/hom"+
+"""frozen_snapshots("displacement.xdmf", "Displacement", input_path="/hom"+
 "e/matheus-janczkowski/Github/MultiMech/tests/micropolar/bending_case/"+
-"results/graphics/simulation_11", execution_rootPath="/home/matheus-janczkowski/Github/MultiMech")
+"results/graphics/simulation_11", execution_rootPath="/home/matheus-janczkowski/Github/MultiMech")"""
