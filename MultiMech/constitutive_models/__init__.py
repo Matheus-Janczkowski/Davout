@@ -19,11 +19,15 @@ def find_repo_root(start_path: Path) -> Path:
 
             return parent
         
-    raise FileNotFoundError("No .git folder found in any parent direct+"
+    raise FileNotFoundError("No .git folder found in any parent direct"+
     "ory. Hence, this file is not in a valid git repository")
 
-repo_root = find_repo_root(Path(__file__))
+# Finds the module parent path
 
-if not (str(repo_root) in sys.path):
+repository_root = find_repo_root(Path(__file__))
 
-    sys.path.insert(1, str(repo_root))
+# if it is not already in the paths of the system, adds it
+
+if not (str(repository_root) in sys.path):
+
+    sys.path.insert(1, str(repository_root))
