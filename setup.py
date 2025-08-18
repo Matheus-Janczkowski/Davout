@@ -8,6 +8,9 @@ setup(
     name='grante',
     version='0.1',
     packages=find_packages(),
+    long_description=long_description,
+    author="Matheus Janczkowski",
+    author_email="matheusj2009@hotmail.com",
     install_requires=['numpy', 'scipy', 'matplotlib'],
     include_package_data=True,
     package_data={
