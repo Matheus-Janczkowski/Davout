@@ -8,14 +8,15 @@ Download the repository, unzip the file, put it in a suitable place for you.
 Activate a python virtual environment (follow instruction in the booklet to
 create a virtual environment if you don't have one), go into the directory 
 where the files are located through the virtual environment terminal. Then, 
-type in terminal:
+type in terminal (instead of python you might need to explicitely type in
+the version, like python3):
 
-python3 setup.py bdist_wheel sdist
+python setup.py bdist_wheel sdist
 
 pip install .
 
 To test the installation:
 
-python3
+python
 
 import Grante
