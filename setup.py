@@ -1,13 +1,14 @@
 from setuptools import setup, find_packages
 
-with open("README.md", 'r') as f:
+with open("source/README.md", 'r') as f:
 
     long_description = f.read()
 
 setup(
     name='grante',
     version='0.1',
-    packages=find_packages(),
+    package_dir={"": "source"},
+    packages=find_packages(where="source"),
     long_description=long_description,
     author="Matheus Janczkowski",
     author_email="matheusj2009@hotmail.com",
