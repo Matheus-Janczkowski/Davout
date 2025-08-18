@@ -2,6 +2,8 @@
 
 import unittest
 
+import os
+
 import tensorflow as tf
 
 import numpy as np
@@ -9,6 +11,8 @@ import numpy as np
 from ...tool_box import ANN_tools
 
 from ...tool_box import training_tools
+
+from ....MultiMech.tool_box import file_handling_tools
 
 # Defines a function to test the ANN tools methods
 
@@ -173,7 +177,11 @@ class TestANNTools(unittest.TestCase):
 
         model = ANN_tools.MultiLayerModel(2, config)()
 
-        model_path = "mixed_activation_model.keras"
+        model_path = os.path.join(file_handling_tools.get_parent_path_of_file(
+        file=__file__), "mixed_activation_mo"+
+        "del.keras")
+
+        print(model_path)
 
         # Saves the model
 
