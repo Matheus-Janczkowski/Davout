@@ -11,5 +11,7 @@ python3 setup.py bdist_wheel sdist
 pip install .
 
 To test the installation:
+
 python3
+
 import Grante
