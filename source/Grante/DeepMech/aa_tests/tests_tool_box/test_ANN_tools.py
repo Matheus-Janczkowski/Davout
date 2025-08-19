@@ -298,71 +298,38 @@ class TestANNTools(unittest.TestCase):
 
         # Creates the custom model with custom layers
 
-        evaluate_parameters_gradient="sum of samples"
+        evaluate_parameters_gradient="individual samples"
 
-        custom_model, gradient = ANN_tools.MultiLayerModel(2, 
-        self.layers_information, enforce_customLayers=True,
-        evaluate_parameters_gradient=evaluate_parameters_gradient)()#"sum of samples")()
+        ANN_class = ANN_tools.MultiLayerModel(2, [{"sigmoid": 3},
+        {"linear": 2}], enforce_customLayers=True, 
+        evaluate_parameters_gradient=evaluate_parameters_gradient)
 
-        print("Original input tensor:")
-
-        print(self.test_inputTensor)
-
-        print("\nFirst sample of the input tensor:")
-
-        print(tf.expand_dims(self.test_inputTensor[0],0))
-
-        test_gradient = []
-
-        for i in range(self.test_inputTensor.shape[0]):
-
-            test_gradient.append(gradient(tf.expand_dims(self.test_inputTensor[i],0)))
-
-        print("\nGradient converted to array:")
-
-        for i in range(self.test_inputTensor.shape[0]):
-
-            print("\nSample "+str(i+1)+":")
-
-            for var, g in zip(custom_model.trainable_variables, test_gradient[i]):
-                
-                print(f"{var.name} (shape {g.shape}):")
-                
-                print(g.numpy(), "\n")
-
-        test_gradient = gradient(self.test_inputTensor)
-
-        print("\n\nGradient of the model at the total set:")
-
-        for var, g in zip(custom_model.trainable_variables, test_gradient):
-                
-            print(f"{var.name} (shape {g.shape}):")
-            
-            print(g.numpy(), "\n")
-
-        evaluate_parameters_gradient=True
-
-        custom_model, gradient = ANN_tools.MultiLayerModel(2, 
-        self.layers_information, enforce_customLayers=True,
-        evaluate_parameters_gradient=evaluate_parameters_gradient)()#"sum of samples")()
+        custom_model, gradient = ANN_class()
 
         print("Original input tensor:")
 
         print(self.test_inputTensor)
 
+        """test_gradient = []
+
+        for i in range(self.test_inputTensor.shape[0]):
+
+            test_gradient.append(gradient(tf.expand_dims(self.test_inputTensor[i],0)))"""
+
+        print("\nGradient for the individual samples:")
+
         test_gradient = gradient(self.test_inputTensor)
 
-        print("\nGradient converted to array:")
+        print(test_gradient)
 
-        for i in range(len(test_gradient)):
+        gradient = ANN_class.model_gradient(custom_model, 
+        evaluate_parameters_gradient="teste")
 
-            print("\nSample "+str(i+1)+":")
+        print("\nGradient as a matrix:")
 
-            for var, g in zip(custom_model.trainable_variables, test_gradient[i]):
-                
-                print(f"{var.name} (shape {g.shape}):")
-                
-                print(g.numpy(), "\n")
+        test_gradient = gradient(self.test_inputTensor)
+
+        print(test_gradient)
 
 # Runs all tests
 

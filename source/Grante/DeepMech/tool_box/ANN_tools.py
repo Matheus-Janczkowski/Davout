@@ -41,6 +41,14 @@ class MultiLayerModel:
 
         self.evaluate_parameters_gradient = evaluate_parameters_gradient
 
+        # Gets the number of neurons in the output layer
+
+        self.output_dimension = 0
+
+        for n_neurons in self.layers_info[-1].values():
+
+            self.output_dimension += n_neurons
+
     # Defines a function to verify the list of dictionaries and, then,
     # it creates the model accordingly
 
@@ -166,12 +174,16 @@ class MultiLayerModel:
     # Defines a method to evaluate the derivative of the model with res-
     # pect to the parameters (weights and biases)
 
-    def model_gradient(self, model):
+    def model_gradient(self, model, evaluate_parameters_gradient=None):
 
-        # Defines a function to compute the sum of the gradient of each
-        # input sample w.r.t. the parameters (TensorFlow default option)
+        if evaluate_parameters_gradient is None:
 
-        if self.evaluate_parameters_gradient=="sum of samples":
+            evaluate_parameters_gradient = self.evaluate_parameters_gradient
+
+        # Defines a function to compute the sum of the gradient (jacobi-
+        # an of the model) with respect to the model parameters
+
+        if evaluate_parameters_gradient=="individual samples":
 
             @tf.function
             def gradient_evaluator(x):
@@ -180,50 +192,179 @@ class MultiLayerModel:
 
                     model_response = model(x)
 
-                gradient = tape.gradient(model_response, 
+                return tape.jacobian(model_response, 
                 model.trainable_variables)
-
-                return gradient
             
             return gradient_evaluator
         
-        # Defines a function to compute the gradient w.r.t. the parame-
-        # ters and evaluate it at each input sample separately
-
-        elif self.evaluate_parameters_gradient=="individual samples" or (
-        self.evaluate_parameters_gradient==True):
+        elif evaluate_parameters_gradient in ["derivative matrix",
+        True]:
             
+            # Defines a function to compute a matrix of derivatives of
+            # the model w.r.t. to the vector of parameters. Each column
+            # corresponds to the gradient evaluated at a sample of in-
+            # puts. The structure of the matrix is:
+            #
+            # dy1(x1)/dp1 dy1(x2)/dp1 … dy1(xn)/dp1 
+            # dy1(x1)/dp2 dy1(x2)/dp2 … dy1(xn)/dp2 
+            # … 
+            # dy1(x1)/dpm dy1(x2)/dpm … dy1(xn)/dpm 
+            # dy2(x1)/dp1 dy2(x2)/dp1 … dy2(xn)/dp1 
+            # dy2(x1)dp2 dy2(x2)/dp2 … dy2(xn)/dp2 
+            # … 
+            # dyl(x1)dpm dyl(x2)/dpm … dyl(xn)/dpm 
+            # 
+            # n: number of input samples; m: number of model trainable 
+            # variables; l: number of output neurons; yi is the i-th 
+            # output neuron of the model. Hence, the matrix would be
+            # (l*m)xn
+
             @tf.function
+            def gradient_evaluator(x):
+
+                # Flattens the parameters (weights and biases) list
+
+                params = tf.concat([tf.reshape(p, [-1]) for p in (
+                model.trainable_variables)], axis=0)
+
+                # Counts the number of parameters and the number of sam-
+                # ples
+
+                n_parameters = tf.shape(params)[0]
+
+                n_samples = tf.shape(x)[0]
+
+                # Initializes the sample and the output indices
+
+                sample_index = tf.Variable(0, dtype=tf.int32)
+
+                output_index = tf.Variable(0, dtype=tf.int32)
+
+                # Gets the derivative tape
+
+                with tf.GradientTape(persistent=True) as tape:
+
+                    model_response = model(x)[sample_index, output_index]
+
+                # Initializes the matrix of gradients as a list
+
+                gradient_matrix = []
+
+                # Iterates through the number of samples
+
+                for i in range(n_samples):
+
+                    # Iterates through the number of outputs
+
+                    for j in range(self.output_dimension):
+
+                        # Updates the indices
+
+                        sample_index.assign(i)
+
+                        output_index.assign(j)
+
+                        # Gets the gradient of this output evaluated at
+                        # this sample
+
+                        gradient_on_sample = tape.gradient(
+                        model_response, model.trainable_variables)
+
+                        print("sample "+str(i)+", output "+str(j)+": "+
+                        str(gradient_on_sample)+"\n")
+
+                        # Flattens this gradient and appends it to the 
+                        # gradients matrix
+
+                        gradient_matrix.append(tf.concat([tf.reshape(
+                        layer, [-1]) for layer in gradient_on_sample], 
+                        axis=0))
+
+                # Deletes the tape to spare memory
+
+                del tape
+
+                # Stacks the gradient matrix to the format of number of
+                # samples times the output dimension rows
+
+                gradient_matrix = tf.stack(gradient_matrix, axis=0)
+
+                # Reshapes the matrix and tranposes it
+
+                gradient_matrix = tf.reshape(gradient_matrix, (n_samples,
+                self.output_dimension, n_parameters))
+
+                gradient_matrix = tf.transpose(gradient_matrix, (1,2,0))
+
+                gradient_matrix = tf.reshape(gradient_matrix, (
+                self.output_dimension*n_parameters, n_samples))
+
+                return gradient_matrix
+            
+            return gradient_evaluator
+        
+        elif evaluate_parameters_gradient=="teste":
+
             def gradient_evaluator(x):
 
                 gradient_samples = []
 
                 for sample_counter in range(x.shape[0]):
 
-                    # Gets the sample and differentiates
-
                     x_sample = tf.expand_dims(x[sample_counter], 0)
 
                     with tf.GradientTape() as tape:
 
-                        model_response_sample = model(x_sample)
+                        model_response = model(x_sample)[0,0]
 
-                    gradient = tape.gradient(model_response_sample, 
+                    safe_grads = tape.gradient(model_response,
                     model.trainable_variables)
 
-                    # Appends the gradient to the list
+                    flat_grad = tf.concat([tf.reshape(g, [-1]) for g in safe_grads], axis=0)
 
-                    gradient_samples.append(gradient)
+                    gradient_samples.append(flat_grad.numpy())
 
                 return gradient_samples
-            
+
+            return gradient_evaluator
+        
+        elif evaluate_parameters_gradient==("vectorized derivativ"+
+        "e matrix"):
+
+            @tf.function
+            def gradient_evaluator(x):
+                # Forward pass
+                with tf.GradientTape() as tape:
+                    y = model(x)                   # shape: (n, l)
+
+                n = tf.shape(y)[0]                 # number of samples
+                l = tf.shape(y)[1]                 # number of outputs
+
+                # For each trainable variable v:
+                #   J_v = dy/dv has shape (n, l, *v.shape)
+                per_var_jac = [tape.jacobian(y, v) for v in model.trainable_variables]
+
+                # Flatten parameter axes of each J_v to a single axis k_v
+                # => shapes become (n, l, k_v)
+                per_var_flat = [tf.reshape(Jv, (n, l, -1)) for Jv in per_var_jac]
+
+                # Concatenate along parameters to get (n, l, m)
+                J_nlm = tf.concat(per_var_flat, axis=2)
+
+                # Reorder to (l, m, n), then flatten to (l*m, n)
+                J_lmn = tf.transpose(J_nlm, (1, 2, 0))
+                J_lm_n = tf.reshape(J_lmn, (-1, n))   # (l*m, n)
+
+                return J_lm_n
+
             return gradient_evaluator
         
         else:
 
             raise NameError("The flag 'evaluate_parameters_gradient' i"+
-            "n 'MultiLayerModel' can be either 'sum of samples', 'indi"+
-            "vidual samples', or True")
+            "n 'MultiLayerModel' can be either 'individual samples', o"+
+            "r 'derivative matrix', True (defaults to 'derivative matr"+
+            "ix'), or 'vectorized derivative matrix'")
 
 # Defines a class to construct a layer with different activation 
 # functions. Receives a dictionary of activation functions, the activa-
