@@ -4,13 +4,19 @@ import unittest
 
 import os
 
+import time
+
 import tensorflow as tf
+
+import scipy
 
 import numpy as np
 
 from ...tool_box import ANN_tools
 
 from ...tool_box import training_tools
+
+from ...tool_box import differentiation_tools as diff_tools
 
 from ....MultiMech.tool_box import file_handling_tools
 
@@ -295,41 +301,158 @@ class TestANNTools(unittest.TestCase):
         "###################\n#                       Tests gradient e"+
         "valuation                      #\n###########################"+
         "#############################################\n")
+        
+        # Creates the new test data
+
+        input_dimension = 9
+
+        output_dimension = 100
+
+        n_samples = 100
+
+        x_min = -1.0
+
+        x_max = 1.0
+
+        data_matrix = []
+
+        for i in range(n_samples):
+
+            data_matrix.append([ANN_tools.random_inRange(x_min, x_max
+            ) for j in range(input_dimension)])
+
+        # Converts the data to tensors
+
+        input_test_data = tf.constant(data_matrix, dtype=
+        tf.float32)
 
         # Creates the custom model with custom layers
 
-        evaluate_parameters_gradient="individual samples"
+        evaluate_parameters_gradient=True
 
-        ANN_class = ANN_tools.MultiLayerModel(2, [{"sigmoid": 3},
-        {"linear": 2}], enforce_customLayers=True, 
-        evaluate_parameters_gradient=evaluate_parameters_gradient)
+        ANN_class = ANN_tools.MultiLayerModel(input_dimension, [{"sigm"+
+        "oid": 3}, {"linear": output_dimension}], enforce_customLayers=
+        True, evaluate_parameters_gradient=evaluate_parameters_gradient)
 
         custom_model, gradient = ANN_class()
 
-        print("Original input tensor:")
+        #print("Original input tensor:")
 
-        print(self.test_inputTensor)
+        #print(input_test_data)
 
-        """test_gradient = []
+        """gradient = ANN_class.model_jacobian(custom_model, 
+        evaluate_parameters_gradient="tensorflow gradient")
 
-        for i in range(self.test_inputTensor.shape[0]):
+        t_initial = time.time()
 
-            test_gradient.append(gradient(tf.expand_dims(self.test_inputTensor[i],0)))"""
+        test_gradient = gradient(input_test_data)
 
-        print("\nGradient for the individual samples:")
+        elapsed_time = time.time()-t_initial
 
-        test_gradient = gradient(self.test_inputTensor)
+        print("\nelapsed time: "+str(elapsed_time)+". Gradient as a ma"+
+        "trix computing the gradient function from tensorflow:")
 
-        print(test_gradient)
+        print(test_gradient)"""
 
-        gradient = ANN_class.model_gradient(custom_model, 
-        evaluate_parameters_gradient="teste")
+        """gradient = ANN_class.model_jacobian(custom_model, 
+        evaluate_parameters_gradient="tensorflow jacobian")
 
-        print("\nGradient as a matrix:")
+        t_initial = time.time()
 
-        test_gradient = gradient(self.test_inputTensor)
+        test_gradient = gradient(input_test_data)
 
-        print(test_gradient)
+        elapsed_time = time.time()-t_initial
+
+        print("\nelapsed time: "+str(elapsed_time)+". Gradient as a ma"+
+        "trix computing the jacobian function from tensorflow:")
+
+        print(test_gradient)"""
+
+        gradient = diff_tools.model_jacobian(custom_model, 
+        ANN_class.output_dimension, evaluate_parameters_gradient="vect"+
+        "orized tensorflow jacobian")
+
+        t_initial = time.time()
+
+        test_gradient = gradient(input_test_data)
+
+        elapsed_time = time.time()-t_initial
+
+        print("\nelapsed time: "+str(elapsed_time)+". Gradient as a matrix computing the vectorized jacobia"+
+        "n function from tensorflow:")
+
+        #print(test_gradient)
+
+    # Defines a test to pick up the model parameters as a numpy array and
+    # reassign them
+
+    def test_parameters_conversion(self):
+
+        print("\n#####################################################"+
+        "###################\n#                      Tests parameters "+
+        "conversion                     #\n###########################"+
+        "#############################################\n")
+        
+        # Creates the new test data
+
+        input_dimension = 2
+
+        output_dimension = 2
+
+        n_samples = 2
+
+        x_min = -1.0
+
+        x_max = 1.0
+
+        data_matrix = []
+
+        for i in range(n_samples):
+
+            data_matrix.append([ANN_tools.random_inRange(x_min, x_max
+            ) for j in range(input_dimension)])
+
+        # Converts the data to tensors
+
+        input_test_data = tf.constant(data_matrix, dtype=
+        tf.float32)
+
+        # Creates the custom model with custom layers
+
+        evaluate_parameters_gradient=False
+
+        ANN_class = ANN_tools.MultiLayerModel(input_dimension, [{"sigm"+
+        "oid": 3}, {"linear": output_dimension}], enforce_customLayers=
+        True, evaluate_parameters_gradient=evaluate_parameters_gradient)
+
+        custom_model = ANN_class()
+
+        # Gets the model parameters as a list
+
+        model_params = ANN_tools.model_parameters_to_numpy(custom_model)
+
+        print("Original model parameters:")
+
+        print(model_params)
+
+        print("Response of the model:")
+
+        print(custom_model(input_test_data))
+
+        # Reassigns the same model parameters
+
+        custom_model = ANN_tools.update_model_parameters(custom_model,
+        model_params)
+
+        # Gets the model again and shows them
+
+        print("\nReassigned model parameters:")
+
+        print(ANN_tools.model_parameters_to_numpy(custom_model))
+
+        print("Response of the model:")
+
+        print(custom_model(input_test_data))
 
 # Runs all tests
 
