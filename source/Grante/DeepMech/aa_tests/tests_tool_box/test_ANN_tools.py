@@ -18,6 +18,8 @@ from ...tool_box import training_tools
 
 from ...tool_box import differentiation_tools as diff_tools
 
+from ...tool_box import loss_tools
+
 from ....MultiMech.tool_box import file_handling_tools
 
 # Defines a function to test the ANN tools methods
@@ -453,6 +455,131 @@ class TestANNTools(unittest.TestCase):
         print("Response of the model:")
 
         print(custom_model(input_test_data))
+
+    # Defines a test the new loss function as the multiplication of a
+    # coefficient matrix by the model output
+
+    def test_linear_loss(self):
+
+        print("\n#####################################################"+
+        "###################\n#                      Tests linear loss"+
+        " function                      #\n###########################"+
+        "#############################################\n")
+        
+        # Creates the new test data
+
+        input_dimension = 9
+
+        output_dimension = 100
+
+        n_samples = 100
+
+        x_min = -1.0
+
+        x_max = 1.0
+
+        data_matrix = []
+
+        for i in range(n_samples):
+
+            data_matrix.append([ANN_tools.random_inRange(x_min, x_max
+            ) for j in range(input_dimension)])
+
+        # Converts the data to tensors
+
+        input_test_data = tf.constant(data_matrix, dtype=
+        tf.float32)
+
+        # Creates the custom model with custom layers
+
+        evaluate_parameters_gradient=False
+
+        ANN_class = ANN_tools.MultiLayerModel(input_dimension, [{"sigm"+
+        "oid": 100}, {"linear": output_dimension}], enforce_customLayers=
+        True, evaluate_parameters_gradient=evaluate_parameters_gradient)
+
+        custom_model = ANN_class()
+
+        # Gets the coefficient matrix
+
+        coefficient_matrix = tf.random.normal((n_samples, 
+        output_dimension))
+
+        # Sets the loss function
+
+        loss = lambda x, model: loss_tools.linear_loss(x, model, 
+        coefficient_matrix)
+
+        # Sets a function to capture the value and the gradient of the
+        # loss 
+
+        def objective_function(custom_model=custom_model, loss=loss,
+        input_test_data=input_test_data):
+
+            loss_value, gradient = diff_tools.scalar_gradient_wrt_trainable_params(
+            loss, custom_model, input_test_data)
+
+            # Converts to numpy
+
+            return (loss_value.numpy(), 
+            diff_tools.convert_scalar_gradient_to_numpy(gradient))
+        
+        # Sets a function to capture the value and the gradient of the
+        # loss function setting the model parameters as input
+
+        """def objective_function_with_parameters(model_parameters, 
+        custom_model=custom_model, loss=loss, input_test_data=
+        input_test_data):
+
+            # Reassigns the same model parameters
+
+            custom_model = ANN_tools.update_model_parameters(
+            custom_model, model_parameters)
+
+            # Gets the loss and the gradient
+
+            loss_value, gradient = diff_tools.scalar_gradient_wrt_trainable_params(
+            loss, custom_model, input_test_data)
+
+            # Converts to numpy
+
+            return (loss_value.numpy(), 
+            diff_tools.convert_scalar_gradient_to_numpy(gradient))"""
+
+        objective_function_with_parameters = loss_tools.build_loss_varying_model_parameters(
+        custom_model, loss, input_test_data)
+
+        # Gets the value
+
+        t_initial = time.time()
+
+        result = objective_function()
+
+        elapsed_time = time.time()-t_initial
+
+        print("Elapsed time: "+str(elapsed_time)+". Loss function and "+
+        "gradient:")
+
+        print(result[0])
+
+        print(result[1])
+
+        # Gets the model parameters as a list
+
+        model_params = ANN_tools.model_parameters_to_numpy(custom_model)
+
+        # Gets the value using the model parameters as input
+
+        t_initial = time.time()
+
+        result2 = objective_function_with_parameters(model_params*2.0)
+
+        elapsed_time = time.time()-t_initial
+
+        print("Elapsed time with model parameters: "+str(elapsed_time)+
+        ". Loss function and gradient:")
+
+        print(np.linalg.norm(result[1]-result2[1]))
 
 # Runs all tests
 

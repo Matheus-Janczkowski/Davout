@@ -17,9 +17,9 @@ input_tensor):
 
     # Creates the tape
 
-    with tf.GradientTape as tape:
+    with tf.GradientTape() as tape:
 
-        phi = scalar_function(model, input_tensor)
+        phi = scalar_function(input_tensor, model)
 
     # Gets the gradient
 
@@ -199,3 +199,15 @@ True):
         "ultiLayerModel' can be either 'tensorflow gradient', or 'tens"+
         "orflow jacobian', True (defaults to 'vectorized tensorflow ja"+
         "cobian'), or 'vectorized tensorflow jacobian'")
+    
+########################################################################
+#                              Utilities                               #
+########################################################################
+ 
+# Defines a function to convert the gradient of a scalar loss function 
+# with respect to the trainable variables to a numpy array
+
+def convert_scalar_gradient_to_numpy(gradient):
+
+    return tf.concat([tf.reshape(layer, [-1] ) for layer in gradient], 
+    axis=0)
