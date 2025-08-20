@@ -472,7 +472,7 @@ class TestANNTools(unittest.TestCase):
 
         output_dimension = 100
 
-        n_samples = 100
+        n_samples = 1000
 
         x_min = -1.0
 
@@ -549,21 +549,6 @@ class TestANNTools(unittest.TestCase):
         objective_function_with_parameters = loss_tools.build_loss_varying_model_parameters(
         custom_model, loss, input_test_data)
 
-        # Gets the value
-
-        t_initial = time.time()
-
-        result = objective_function()
-
-        elapsed_time = time.time()-t_initial
-
-        print("Elapsed time: "+str(elapsed_time)+". Loss function and "+
-        "gradient:")
-
-        print(result[0])
-
-        print(result[1])
-
         # Gets the model parameters as a list
 
         model_params = ANN_tools.model_parameters_to_numpy(custom_model)
@@ -579,7 +564,33 @@ class TestANNTools(unittest.TestCase):
         print("Elapsed time with model parameters: "+str(elapsed_time)+
         ". Loss function and gradient:")
 
-        print(np.linalg.norm(result[1]-result2[1]))
+        # Gets the value using the model parameters as input
+
+        t_initial = time.time()
+
+        result2 = objective_function_with_parameters(model_params*3.0)
+
+        elapsed_time = time.time()-t_initial
+
+        print("Elapsed time with model parameters: "+str(elapsed_time)+
+        ". Loss function and gradient:")
+
+        # Gets the value
+
+        t_initial = time.time()
+
+        result = objective_function()
+
+        elapsed_time = time.time()-t_initial
+
+        print("Elapsed time: "+str(elapsed_time)+". Loss function and "+
+        "gradient:")
+
+        print(result[0])
+
+        print(result[1])
+
+        #print(np.linalg.norm(result[1]-result2[1]))
 
 # Runs all tests
 
