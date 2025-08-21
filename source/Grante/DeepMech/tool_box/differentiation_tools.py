@@ -4,12 +4,14 @@ import tensorflow as tf
 
 import numpy as np
 
+from ..tool_box import parameters_tools
+
 ########################################################################
 #                          NN model gradient                           #
 ########################################################################
 
-# Defines a function to evaluate the a scalar function and its gradient
-# with respect to the model trainable parameters
+# Defines a function to evaluate the gradient of a scalar function with 
+# respect to the model trainable parameters
 
 @tf.function
 def scalar_gradient_wrt_trainable_params(scalar_function, model, 
@@ -19,11 +21,45 @@ input_tensor):
 
     with tf.GradientTape() as tape:
 
-        phi = scalar_function(input_tensor, model)
+        # Evaluates the model output
+
+        y = model(input_tensor)
+
+        # Evaluates the scalar function
+
+        phi = scalar_function(y)
 
     # Gets the gradient
 
-    return phi, tape.gradient(phi, model.trainable_variables)
+    return tape.gradient(phi, model.trainable_variables)
+
+# Defines a function to evaluate the gradient of a scalar function with 
+# respect to the model trainable parameters, when the parameters are gi-
+# ven as a 1D tensor
+
+@tf.function
+def scalar_gradient_wrt_trainable_params_given_parameters(
+scalar_function, model, input_tensor, trainable_parameters, 
+shapes_trainable_parameters):
+
+    # Creates the tape
+
+    with tf.GradientTape() as tape:
+
+        tape.watch(trainable_parameters)
+
+        # Gets the response of the model and multiplies by the coeffici-
+        # ent matrix, then, sums everything together
+
+        y = parameters_tools.model_output_given_trainable_parameters(
+        input_tensor, model, trainable_parameters, 
+        shapes_trainable_parameters)
+
+        phi = scalar_function(y)
+
+    # Gets the gradient
+
+    return tape.gradient(phi, trainable_parameters)
 
 ########################################################################
 #                       NN model jacobian matrix                       #

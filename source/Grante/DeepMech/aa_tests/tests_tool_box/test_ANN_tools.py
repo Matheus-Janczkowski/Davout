@@ -8,8 +8,6 @@ import time
 
 import tensorflow as tf
 
-import scipy
-
 import numpy as np
 
 from ...tool_box import ANN_tools
@@ -17,6 +15,8 @@ from ...tool_box import ANN_tools
 from ...tool_box import training_tools
 
 from ...tool_box import differentiation_tools as diff_tools
+
+from ...tool_box import parameters_tools
 
 from ...tool_box import loss_tools
 
@@ -116,10 +116,7 @@ class TestANNTools(unittest.TestCase):
 
         # Sets the architecture
 
-        self.layers_information = [{"sigmoid": 1000}, {"sigmoid":1000},
-        {"linear": 1}]
-
-        self.layers_information = [{"sigmoid": 2}, {"sigmoid":2},
+        self.layers_information = [{"sigmoid": 100}, {"sigmoid":100},
         {"linear": 1}]
 
     # 1. Defines a function to test the custom layer class
@@ -139,15 +136,9 @@ class TestANNTools(unittest.TestCase):
         mixed_layer = ANN_tools.MixedActivationLayer(activation_dict,
         live_activationsDict=live_activations)
 
-        output_call = mixed_layer.call(self.input_tensor)
-
         output_direct = mixed_layer(self.input_tensor)
 
-        print("Output with call:", output_call.numpy())
-
         print("Output with direct call:", output_direct.numpy())
-
-        self.assertEqual(output_call.shape, output_direct.shape)
 
     # 2. Defines a function to test the multilayered model
 
@@ -221,8 +212,8 @@ class TestANNTools(unittest.TestCase):
     def test_trainability(self):
 
         print("\n#####################################################"+
-        "###################\n#                          Tests trainab"+
-        "ility                          #\n###########################"+
+        "###################\n#                  Tests trainability of"+
+        " custom layer                  #\n###########################"+
         "#############################################\n")
 
         # Creates the custom model with custom layers
@@ -254,8 +245,8 @@ class TestANNTools(unittest.TestCase):
     def test_trainabilityKeras(self):
 
         print("\n#####################################################"+
-        "###################\n#                          Tests trainab"+
-        "ility                          #\n###########################"+
+        "###################\n#                       Tests trainabili"+
+        "ty Keras                       #\n###########################"+
         "#############################################\n")
 
         # Initializes the Keras model
@@ -431,7 +422,8 @@ class TestANNTools(unittest.TestCase):
 
         # Gets the model parameters as a list
 
-        model_params = ANN_tools.model_parameters_to_numpy(custom_model)
+        model_params = parameters_tools.model_parameters_to_numpy(
+        custom_model)
 
         print("Original model parameters:")
 
@@ -443,14 +435,14 @@ class TestANNTools(unittest.TestCase):
 
         # Reassigns the same model parameters
 
-        custom_model = ANN_tools.update_model_parameters(custom_model,
-        model_params)
+        custom_model = parameters_tools.update_model_parameters(
+        custom_model, model_params)
 
         # Gets the model again and shows them
 
         print("\nReassigned model parameters:")
 
-        print(ANN_tools.model_parameters_to_numpy(custom_model))
+        print(parameters_tools.model_parameters_to_numpy(custom_model))
 
         print("Response of the model:")
 
@@ -496,7 +488,8 @@ class TestANNTools(unittest.TestCase):
 
         ANN_class = ANN_tools.MultiLayerModel(input_dimension, [{"sigm"+
         "oid": 100}, {"linear": output_dimension}], enforce_customLayers=
-        True, evaluate_parameters_gradient=evaluate_parameters_gradient)
+        True, evaluate_parameters_gradient=evaluate_parameters_gradient,
+        verbose=True)
 
         custom_model = ANN_class()
 
@@ -507,7 +500,7 @@ class TestANNTools(unittest.TestCase):
 
         # Sets the loss function
 
-        loss = lambda x, model: loss_tools.linear_loss(x, model, 
+        loss = lambda model_response: loss_tools.linear_loss(model_response, 
         coefficient_matrix)
 
         # Sets a function to capture the value and the gradient of the
@@ -516,42 +509,19 @@ class TestANNTools(unittest.TestCase):
         def objective_function(custom_model=custom_model, loss=loss,
         input_test_data=input_test_data):
 
-            loss_value, gradient = diff_tools.scalar_gradient_wrt_trainable_params(
+            gradient = diff_tools.scalar_gradient_wrt_trainable_params(
             loss, custom_model, input_test_data)
 
             # Converts to numpy
 
-            return (loss_value.numpy(), 
-            diff_tools.convert_scalar_gradient_to_numpy(gradient))
+            return diff_tools.convert_scalar_gradient_to_numpy(gradient)
         
-        # Sets a function to capture the value and the gradient of the
-        # loss function setting the model parameters as input
+        # Sets the same function but enabling the model parameters as 
+        # argument from a numpy array
 
-        """def objective_function_with_parameters(model_parameters, 
-        custom_model=custom_model, loss=loss, input_test_data=
-        input_test_data):
-
-            # Reassigns the same model parameters
-
-            custom_model = ANN_tools.update_model_parameters(
-            custom_model, model_parameters)
-
-            # Gets the loss and the gradient
-
-            loss_value, gradient = diff_tools.scalar_gradient_wrt_trainable_params(
-            loss, custom_model, input_test_data)
-
-            # Converts to numpy
-
-            return (loss_value.numpy(), 
-            diff_tools.convert_scalar_gradient_to_numpy(gradient))"""
-
-        objective_function_with_parameters = loss_tools.build_loss_varying_model_parameters(
-        custom_model, loss, input_test_data)
-
-        # Gets the model parameters as a list
-
-        model_params = ANN_tools.model_parameters_to_numpy(custom_model)
+        objective_function_with_parameters, model_params = loss_tools.build_loss_varying_model_parameters(
+        custom_model, loss, input_test_data, trainable_variables_type=
+        "numpy")
 
         # Gets the value using the model parameters as input
 
@@ -575,6 +545,17 @@ class TestANNTools(unittest.TestCase):
         print("Elapsed time with model parameters: "+str(elapsed_time)+
         ". Loss function and gradient:")
 
+        # Gets the value using the model parameters as input
+
+        t_initial = time.time()
+
+        result2 = objective_function_with_parameters(model_params)
+
+        elapsed_time = time.time()-t_initial
+
+        print("Elapsed time with model parameters: "+str(elapsed_time)+
+        ". Loss function and gradient:")
+
         # Gets the value
 
         t_initial = time.time()
@@ -586,11 +567,42 @@ class TestANNTools(unittest.TestCase):
         print("Elapsed time: "+str(elapsed_time)+". Loss function and "+
         "gradient:")
 
-        print(result[0])
+        print(result)
 
-        print(result[1])
+        theta0, shapes = parameters_tools.model_parameters_to_flat_tensor_and_shapes(
+        custom_model)
 
-        #print(np.linalg.norm(result[1]-result2[1]))
+        L, g = parameters_tools.loss_and_grad(theta0, custom_model, input_test_data, coefficient_matrix, shapes)
+
+        t_initial = time.time()
+
+        L, g = parameters_tools.loss_and_grad(theta0, custom_model, input_test_data, coefficient_matrix, shapes)
+
+        elapsed_time = time.time()-t_initial
+        print("Elapsed time: "+str(elapsed_time)+". Using call with pa"+
+        "rameters")
+
+        print(np.linalg.norm(result-g))
+
+        print(np.linalg.norm(result-result2))
+
+        # Sets the same function but enabling the model parameters as 
+        # argument from a tensorflow 1D tensor
+
+        objective_function_with_parameters, model_params = loss_tools.build_loss_varying_model_parameters(
+        custom_model, loss, input_test_data)
+
+        result3 = objective_function_with_parameters(model_params)
+
+        t_initial = time.time()
+
+        result3 = objective_function_with_parameters(model_params)
+
+        elapsed_time = time.time()-t_initial
+
+        print("Elapsed time: "+str(elapsed_time)+". Using automatic ca"+
+        "ll with parameters. The difference to the gradient without au"+
+        "tomatic function assembly: "+str(np.linalg.norm(result3-g)))
 
 # Runs all tests
 

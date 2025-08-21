@@ -21,13 +21,18 @@ from ..tool_box import differentiation_tools as diff_tools
 class MultiLayerModel:
 
     def __init__(self, input_dimension, layers_activationInfo, 
-    enforce_customLayers=False, evaluate_parameters_gradient=False):
+    enforce_customLayers=False, evaluate_parameters_gradient=False,
+    flat_trainable_parameters=False, verbose=False):
         
         # Retrieves the parameters
 
         self.input_dimension = input_dimension
 
         self.layers_info = layers_activationInfo
+
+        self.verbose = verbose
+
+        self.flat_trainable_parameters = flat_trainable_parameters
 
         # Initializes the dictionary of live-wired activation functions
 
@@ -76,11 +81,19 @@ class MultiLayerModel:
 
         if flag_customLayers or self.enforce_customLayers:
 
+            if self.verbose:
+
+                print("Uses custom layers to build the model\n")
+
             return self.multilayer_modelCustomLayers()
         
         # Otherwise, uses the Keras standard model
 
         else:
+
+            if self.verbose:
+
+                print("Uses Keras layers to build the model\n")
 
             return self.multilayer_modelKeras()
 
@@ -120,7 +133,13 @@ class MultiLayerModel:
         if self.evaluate_parameters_gradient:
         
             return model, diff_tools.model_jacobian(model, 
-            self.output_dimension, self.evaluate_parameters_gradient)#self.model_jacobian(model)
+            self.output_dimension, self.evaluate_parameters_gradient)
+        
+        # If the flat parameters tensor vector is to be given
+
+        if self.flat_trainable_parameters:
+
+            return model, flatten_variables(model)
         
         # If not, returns the model only
 
@@ -214,17 +233,21 @@ class MixedActivationLayer(tf.keras.layers.Layer):
 
         self.layer = layer
 
+    # Defines a function to help Keras build the layer
+
+    def build(self, input_shape):
+
         # Counts the number of neurons in the layer
 
         total_neurons = sum(self.functions_dict.values())
 
+        # Gets a list with the numbers of neurons per activation function
+
+        self.neurons_per_activation = list(self.functions_dict.values())
+
         # Constructs a dense layer with identity activation functions
 
         self.dense = tf.keras.layers.Dense(total_neurons)
-
-    # Defines a function to help Keras build the layer
-
-    def build(self, input_shape):
 
         super().build(input_shape)
 
@@ -232,32 +255,44 @@ class MixedActivationLayer(tf.keras.layers.Layer):
 
     def call(self, input):
 
-        # Gets the input in the ANN format using the dense layer
+        # Initializes the input as dense layer and split it into the 
+        # different families of activation functions. This keeps the in-
+        # put as a tensor
 
-        x = self.dense(input)
+        x_splits = tf.split(self.dense(input), 
+        self.neurons_per_activation,  axis=-1)
 
         # Initializes a list of outputs for each family of neurons (or-
         # ganized by their activation functions)
+        
+        output_activations = [self.live_activationFunctions[name](split
+        ) for name, split in zip(self.functions_dict.keys(), x_splits)]
 
-        output_activations = []
+        # Concatenates the response and returns it. Uses flag axis=-1 to
+        # concatenate next to the last row
 
-        # Sets a counter of neurons that have already been evaluated
+        return tf.concat(output_activations, axis=-1)
+    
+    # Defines a function to get the output of such a mixed layer given 
+    # the parameters (weights and biases) as a flat list (still a tensor)
 
-        n_evaluated = 0
+    def call_with_parameters(self, input, parameters):
 
-        # Iterates through the dictionary of activation functions
+        # Gets the weights and biases
 
-        for activation_name, neurons_number in self.functions_dict.items():
+        weights, biases = parameters
 
-            # Appends the result of the neurons with this activation 
+        # Multiplies the weights by the inputs and adds the biases, then
+        # splits by activation function family
 
-            output_activations.append(self.live_activationFunctions[
-            activation_name](x[:,n_evaluated:(n_evaluated+neurons_number
-            )]))
+        x_splits = tf.split(tf.matmul(input, weights)+biases, 
+        self.neurons_per_activation, axis=-1)
 
-            # Updates the number of evaluated neurons
-
-            n_evaluated += neurons_number
+        # Initializes a list of outputs for each family of neurons (or-
+        # ganized by their activation functions)
+        
+        output_activations = [self.live_activationFunctions[name](split
+        ) for name, split in zip(self.functions_dict.keys(), x_splits)]
 
         # Concatenates the response and returns it. Uses flag axis=-1 to
         # concatenate next to the last row
@@ -289,55 +324,6 @@ class MixedActivationLayer(tf.keras.layers.Layer):
     def from_config(cls, config):
 
         return cls(**config)
-    
-########################################################################
-#                     Assembly of model parameters                     #
-########################################################################
-
-# Defines a function to get the model parameters, flatten them, and con-
-# vert to a numpy array
-
-def model_parameters_to_numpy(model, as_numpy=True):
-
-    flat_parameters = tf.concat([tf.reshape(var, [-1]) for var in (
-    model.trainable_variables)], axis=0)
-
-    return flat_parameters.numpy() if as_numpy else flat_parameters
-
-# Defines a function to update the trainable parameters of a NN model 
-# given a list of them
-
-def update_model_parameters(model, new_parameters):
-
-    # Converts the parameters to tensorflow constant
-
-    new_parameters = tf.constant(new_parameters, dtype=
-    model.trainable_variables[0].dtype)
-
-    # Iterates over the layers
-
-    offset = 0
-
-    for layer in model.trainable_variables:
-
-        size = tf.size(layer)
-
-        # Gets a slice of the parameters
-
-        parameters_slice = tf.reshape(new_parameters[offset:(offset+size
-        )], layer.shape)
-
-        # Assigns the values
-
-        layer.assign(parameters_slice)
-
-        # Updates the offset 
-
-        offset += size
-
-    # Returns the updated model
-
-    return model
 
 ########################################################################
 #                               Utilities                              #
