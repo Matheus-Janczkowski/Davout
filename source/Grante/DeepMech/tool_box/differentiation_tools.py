@@ -107,6 +107,8 @@ class ScalarGradientWrtTrainableParamsGivenParameters:
         # Gets the gradient
 
         return tape.gradient(phi, trainable_parameters)
+    
+    # Defines a function to update the 
 
 ########################################################################
 #                       NN model jacobian matrix                       #

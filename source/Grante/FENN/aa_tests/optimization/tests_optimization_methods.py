@@ -91,9 +91,7 @@ class TestOptimizationWrappers(unittest.TestCase):
 
         ANN_class = ANN_tools.MultiLayerModel(
         self.input_dimension_gradient_tests, 
-        self.activation_list_gradient_tests, enforce_customLayers=True, 
-        evaluate_parameters_gradient=evaluate_parameters_gradient,
-        verbose=True)
+        self.activation_list_gradient_tests, enforce_customLayers=True)
 
         custom_model = ANN_class()
 
