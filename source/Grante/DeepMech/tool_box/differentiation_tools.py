@@ -108,12 +108,14 @@ class ScalarGradientWrtTrainableParamsGivenParameters:
 
         return tape.gradient(phi, trainable_parameters)
     
-    # Defines a function to update the loss function if it is paramete-
-    # rizable by externally-given quantities
+    # Defines a function to update the scalar function if it is parame-
+    # terizable by externally-given quantities
 
-    def update_loss_function(self, *external_arguments):
+    def update_function(self, *external_arguments):
 
-        pass
+        # Calls the method to update the scalar function
+
+        self.scalar_function.update_arguments(external_arguments)
 
 ########################################################################
 #                       NN model jacobian matrix                       #

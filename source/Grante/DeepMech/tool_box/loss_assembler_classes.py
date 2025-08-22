@@ -20,6 +20,12 @@ class LinearLossAssembler(tf.keras.losses.Loss):
 
         super().__init__(name=name, reduction=reduction)
 
+        # Stores some parameters
+
+        self.trainable_coefficient_matrix = trainable_coefficient_matrix
+
+        self.tensorflow_type = dtype
+
         # Stores the coefficient matrix as a TensorFlow constant
         
         self.coefficient_matrix = tf.Variable(coefficient_matrix, dtype=
@@ -31,6 +37,15 @@ class LinearLossAssembler(tf.keras.losses.Loss):
         
         return loss_tools.linear_loss(model_response, 
         self.coefficient_matrix)
+    
+    # Defines a method to update the coefficient matrix
+
+    def update_arguments(self, coefficient_matrix):
+
+        # Updates the coefficient matrix as a TensorFlow constant
+        
+        self.coefficient_matrix = tf.Variable(coefficient_matrix, dtype=
+        self.tensorflow_type, trainable=self.trainable_coefficient_matrix)
     
     # Redefines configurations for model saving
 

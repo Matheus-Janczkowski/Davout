@@ -509,8 +509,8 @@ class TestANNTools(unittest.TestCase):
 
         # Sets the loss function
 
-        loss = lambda model_response: loss_tools.linear_loss(model_response, 
-        coefficient_matrix)
+        """loss = lambda model_response: loss_tools.linear_loss(model_response, 
+        coefficient_matrix)"""
 
         loss = loss_assemblers.LinearLossAssembler(coefficient_matrix)
 
@@ -631,6 +631,21 @@ class TestANNTools(unittest.TestCase):
         "ll with parameters and Keras layers. The difference of the gr"+
         "adient between using Keras and custom layer is "+str(
         np.linalg.norm(result3-result4)))
+
+        # Updates the coefficient matrix
+
+        objective_function_with_parameters.update_function(
+        coefficient_matrix)
+
+        t_initial = time.time()
+
+        objective_function_with_parameters.update_function(
+        coefficient_matrix)
+
+        elapsed_time = time.time()-t_initial
+
+        print("The elapsed time to update the coefficient matrix of th"+
+        "e loss function through the class method is: "+str(elapsed_time))
 
 # Runs all tests
 
