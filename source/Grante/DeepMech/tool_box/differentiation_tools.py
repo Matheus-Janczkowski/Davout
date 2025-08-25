@@ -115,7 +115,7 @@ class ScalarGradientWrtTrainableParamsGivenParameters:
 
         # Calls the method to update the scalar function
 
-        self.scalar_function.update_arguments(external_arguments)
+        self.scalar_function.update_arguments(*external_arguments)
 
 ########################################################################
 #                       NN model jacobian matrix                       #
