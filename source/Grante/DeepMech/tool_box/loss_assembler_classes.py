@@ -3,6 +3,8 @@
 
 import tensorflow as tf
 
+import scipy as sp
+
 from ..tool_box import loss_tools
 
 from ..tool_box import numerical_tools
@@ -138,9 +140,9 @@ class LinearLossAssembler(tf.keras.losses.Loss):
 @tf.keras.utils.register_keras_serializable(package="custom_losses")
 class QuadraticLossOverLinearResidualAssembler(tf.keras.losses.Loss):
 
-    def __init__(self, A_matrix, b_vector, conditioning_matrix,
-    trainable_A_matrix=False, trainable_b_vector=False, dtype=tf.float32, 
-    name="quadratic_loss_over_linear_residual", reduction=
+    def __init__(self, A_matrix, b_vector, conditioning_matrix="identi"+
+    "ty", trainable_A_matrix=False, trainable_b_vector=False, dtype=
+    tf.float32, name="quadratic_loss_over_linear_residual", reduction=
     tf.keras.losses.Reduction.SUM, check_tensors=False, 
     block_multiplication=False):
 
@@ -198,6 +200,13 @@ class QuadraticLossOverLinearResidualAssembler(tf.keras.losses.Loss):
             "s retrieved from the coefficient vector, "+str(
             self.n_samples)+". Thus, the quadratic loss function for a"+
             "linear residual cannot be performed")
+        
+        # If the conditioning matrix is equal to the identity
+
+        if conditioning_matrix=="identity":
+
+            conditioning_matrix = sp.sparse.identity(self.n_outputs, 
+            dtype=float, format='coo')
 
         # If block multiplication is selected
 
@@ -231,8 +240,8 @@ class QuadraticLossOverLinearResidualAssembler(tf.keras.losses.Loss):
 
             # Creates a variable for the b vector
 
-            self.b_vector = tf.transpose(tf.Variable(b_vector, dtype=
-            self.tensorflow_type))
+            self.b_vector = tf.Variable(b_vector, dtype=
+            self.tensorflow_type)
 
             # Creates a sparse tensor for the conditioning matrix
 
@@ -267,24 +276,33 @@ class QuadraticLossOverLinearResidualAssembler(tf.keras.losses.Loss):
         
         else:
 
-            # Reshapes the model response into a tensor (n_samples, 
-            # n_outputs, 1)
+            # Initializes a list of residual vectors, one for each sam-
+            # ple
 
-            reshaped_model_response = tf.transpose(model_response)[:,:,
-            tf.newaxis]
+            R_list = []
 
-            # Evaluates the residue and stores it as a (n_samples, 
-            # n_outputs) tensor. Then, eshapes the residual vectors into 
-            # a single long vector, and computes the loss
+            # Iterates through the samples
 
-            R = tf.reshape(tf.squeeze(tf.sparse.sparse_dense_matmul(
-            self.A_matrix, reshaped_model_response), axis=-1)-
-            self.b_vector, (-1,))
+            for i in range(self.n_samples):
 
-            # Evaluates the quadratic loss function and returns it
+                # Gets the residual vector
 
-            return 0.5*tf.tensordot(R, tf.sparse.sparse_dense_matmul(
-            self.conditioning_matrix, R), axes=1)
+                R_sample = tf.sparse.sparse_dense_matmul(self.A_matrix[i
+                ], model_response[:,i:(i+1)])-self.b_vector[:,i:(i+1)]
+
+                # Flattens the residual vector and appends to the list
+
+                R_list.append(tf.reshape(R_sample, [-1]))
+
+            # Concatenates the residual list into a single vector
+
+            R_list = tf.concat(R_list, axis=0)
+
+            # Evaluates the loss and returns it
+
+            return 0.5*tf.tensordot(R_list, 
+            tf.sparse.sparse_dense_matmul(self.conditioning_matrix, 
+            R_list), axes=1)
     
     # Defines a method to update the coefficient matrix
 

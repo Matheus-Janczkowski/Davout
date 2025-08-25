@@ -104,69 +104,36 @@ reorder_indices=True, block_multiplication=True):
 
     elif isinstance(sparse_matrix, list):
 
-        # Initializes the lists for the indices and for the values of the
-        # non-zero positions of the sparse matrices inside the list 
-
-        non_zero_indices = []
-
-        non_zero_values = []
-
-        # Gets the number of batches and he maximum number of rows and
-        # columns
-
-        n_batches = len(sparse_matrix)
-
-        max_rows = 0
-
-        max_columns = 0
-
         # Iterates through the sparse matrices inside the list
 
-        for batch_index, sub_matrix in enumerate(sparse_matrix):
-
-            # Updates the number of maximum rows and columns
-
-            max_rows = max(max_rows, sub_matrix.shape[0])
-
-            max_columns = max(max_columns, sub_matrix.shape[1])
+        for i in range(len(sparse_matrix)):
 
             # Enforces the COOrdinate sparse format
 
-            sub_matrix = sub_matrix.tocoo(copy=False)
+            sub_matrix = sparse_matrix[i].tocoo(copy=False)
 
-            # Gets the indices of the non-zero positions and sums the 
-            # number of dimensions of the previously tracked matrices
+            # Gets the indices of the non-zero positions
 
-            indices = np.stack([np.full_like(sub_matrix.row, 
-            batch_index, dtype=np.int64), sub_matrix.row.astype(dtype=
-            np.int64), sub_matrix.col.astype(dtype=np.int64)], axis=1)
+            indices = (np.vstack((sub_matrix.row, sub_matrix.col)
+            ).T.astype(np.int64))
+
+            # Adds the TensorFlow sparse tensor in a specific number ty-
+            # pe. If the tensor is to be reordered in lexigrographic in-
+            # dices, which is useful for TensorFlow operations
+
+            if reorder_indices:
+
+                sparse_matrix[i] = tf.sparse.reorder(tf.SparseTensor(
+                indices=indices, values=sub_matrix.data.astype(dtype), 
+                dense_shape=sub_matrix.shape))
             
-            # Gets the values of these positions
+            else:
 
-            values = sub_matrix.data.astype(dtype)
+                sparse_matrix[i] = tf.SparseTensor(indices=indices, 
+                values=sub_matrix.data.astype(dtype), dense_shape=
+                sub_matrix.shape)
 
-            # Adds to the indices and values arrays
-
-            non_zero_indices.append(indices)
-
-            non_zero_values.append(values)
-
-        # Returns the TensorFlow sparse tensor in a specific number type.
-        # If the tensor is to be reordered in lexigrographic indices, 
-        # which is useful for TensorFlow operations
-
-        if reorder_indices:
-
-            return tf.sparse.reorder(tf.SparseTensor(indices=np.concatenate(
-            non_zero_indices, axis=0), values=np.concatenate(non_zero_values, 
-            axis=0), dense_shape=(n_batches, max_rows, max_columns)))
-        
-        else:
-
-            return tf.SparseTensor(indices=np.concatenate(
-            non_zero_indices, axis=0), values=np.concatenate(
-            non_zero_values, axis=0), dense_shape=(n_batches, max_rows, 
-            max_columns))
+        return sparse_matrix
 
     else:
 
