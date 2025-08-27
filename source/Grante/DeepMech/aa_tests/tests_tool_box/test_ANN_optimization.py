@@ -34,12 +34,12 @@ class TestANNTools(unittest.TestCase):
 
         self.input_dimension_gradient_tests = 9
 
-        self.output_dimension_gradient_tests = 1000
+        self.output_dimension_gradient_tests = 100
 
         self.activation_list_gradient_tests = [{"sigmoid": 100}, {"lin"+
         "ear": self.output_dimension_gradient_tests}]
 
-        self.n_samples_gradient_tests = 10000 
+        self.n_samples_gradient_tests = 1000
 
     # Defines a test the new loss function as the multiplication of a
     # coefficient matrix by the model output

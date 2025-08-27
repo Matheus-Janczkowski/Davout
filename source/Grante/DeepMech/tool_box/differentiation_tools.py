@@ -62,8 +62,7 @@ class ScalarGradientWrtTrainableParams:
 class ScalarGradientWrtTrainableParamsGivenParameters:
     
     def __init__(self, scalar_function, model, input_tensor, 
-    shapes_trainable_parameters, model_true_values=None, custom_gradient=
-    False):
+    shapes_trainable_parameters, model_true_values=None):
         
         self.scalar_function = scalar_function
 
@@ -88,7 +87,13 @@ class ScalarGradientWrtTrainableParamsGivenParameters:
         # Saves a flag to tell to use the custom gradient defined within
         # the loss function class or not
 
-        self.custom_gradient = custom_gradient
+        if hasattr(self.scalar_function, "custom_gradient_usage"):
+
+            self.custom_gradient = self.scalar_function.custom_gradient_usage
+
+        else:
+
+            self.custom_gradient = False
 
         # If the custom gradient is to be used, prepare it sharing the 
         # same model and input tensor

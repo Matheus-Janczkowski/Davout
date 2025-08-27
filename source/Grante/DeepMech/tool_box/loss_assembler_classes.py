@@ -321,6 +321,8 @@ class QuadraticLossOverLinearResidualAssembler(tf.keras.losses.Loss):
 
     def custom_gradient(self, expected_response, model_response,
     trainable_parameters):
+        
+        print("Uses custom gradient")
 
         # If block multiplication is selected
 
