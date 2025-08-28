@@ -12,17 +12,9 @@ import numpy as np
 
 from ...tool_box import ANN_tools
 
-from ...tool_box import training_tools
-
-from ...tool_box import differentiation_tools as diff_tools
-
-from ...tool_box import parameters_tools
-
 from ...tool_box import loss_tools
 
 from ...tool_box import loss_assembler_classes as loss_assemblers
-
-from ....MultiMech.tool_box import file_handling_tools
 
 # Defines a function to test the ANN tools methods
 
@@ -34,9 +26,9 @@ class TestANNTools(unittest.TestCase):
 
         self.input_dimension_gradient_tests = 9
 
-        self.output_dimension_gradient_tests = 100
+        self.output_dimension_gradient_tests = 1000
 
-        self.activation_list_gradient_tests = [{"sigmoid": 100}, {"lin"+
+        self.activation_list_gradient_tests = [{"sigmoid": 500}, {"lin"+
         "ear": self.output_dimension_gradient_tests}]
 
         self.n_samples_gradient_tests = 1000

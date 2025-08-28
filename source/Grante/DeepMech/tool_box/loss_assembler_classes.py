@@ -321,8 +321,6 @@ class QuadraticLossOverLinearResidualAssembler(tf.keras.losses.Loss):
 
     def custom_gradient(self, expected_response, model_response,
     trainable_parameters):
-        
-        print("Uses custom gradient")
 
         # If block multiplication is selected
 
@@ -346,8 +344,9 @@ class QuadraticLossOverLinearResidualAssembler(tf.keras.losses.Loss):
             # Multiplies it by the coefficient matrix transpose, then,
             # reshapes it to the format (n_samples, n_outputs)
 
-            R = tf.reshape(tf.sparse.sparse_dense_matmul(tf.transpose(
-            self.A_matrix), R), (self.n_samples, self.n_outputs))
+            R = tf.reshape(tf.sparse.sparse_dense_matmul(
+            tf.sparse.transpose(self.A_matrix), R), (self.n_samples, 
+            self.n_outputs))
 
             # Updates the coefficient matrix of the helper linear loss 
             # inside the gradient function
@@ -387,7 +386,7 @@ class QuadraticLossOverLinearResidualAssembler(tf.keras.losses.Loss):
                 # of samples
 
                 helper_coefficient_list.append(tf.reshape(
-                tf.sparse.sparse_dense_matmul(tf.transpose(
+                tf.sparse.sparse_dense_matmul(tf.sparse.transpose(
                 self.A_matrix[i]), R_sample), [-1]))
 
             # Updates the coefficient matrix of the helper linear loss 
