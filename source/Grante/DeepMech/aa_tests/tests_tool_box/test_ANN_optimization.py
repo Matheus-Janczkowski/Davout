@@ -89,7 +89,7 @@ class TestANNTools(unittest.TestCase):
 
         t_initial = time.time()
 
-        result3 = objective_function_with_parameters(model_params)
+        result = objective_function_with_parameters(model_params)
 
         elapsed_time = time.time()-t_initial
 
@@ -210,7 +210,7 @@ class TestANNTools(unittest.TestCase):
 
             t_initial = time.time()
 
-            result3 = objective_function_with_parameters(model_params)
+            result = objective_function_with_parameters(model_params)
 
             elapsed_time = time.time()-t_initial
 
@@ -218,7 +218,7 @@ class TestANNTools(unittest.TestCase):
 
             t_initial = time.time()
 
-            result3 = objective_function_with_parameters(model_params)
+            result = objective_function_with_parameters(model_params)
 
             elapsed_time = time.time()-t_initial
 
@@ -239,7 +239,7 @@ class TestANNTools(unittest.TestCase):
 
             t_initial = time.time()
 
-            result3 = objective_function_with_parameters(model_params)
+            result = objective_function_with_parameters(model_params)
 
             elapsed_time = time.time()-t_initial
 
@@ -248,7 +248,7 @@ class TestANNTools(unittest.TestCase):
 
             t_initial = time.time()
 
-            result3 = objective_function_with_parameters(model_params)
+            result = objective_function_with_parameters(model_params)
 
             elapsed_time = time.time()-t_initial
 
@@ -269,7 +269,7 @@ class TestANNTools(unittest.TestCase):
 
         t_initial = time.time()
 
-        result3 = objective_function_with_parameters(model_params)
+        result = objective_function_with_parameters(model_params)
 
         elapsed_time = time.time()-t_initial
 
@@ -277,7 +277,7 @@ class TestANNTools(unittest.TestCase):
 
         t_initial = time.time()
 
-        result3 = objective_function_with_parameters(model_params)
+        result = objective_function_with_parameters(model_params)
 
         elapsed_time = time.time()-t_initial
 
@@ -296,7 +296,7 @@ class TestANNTools(unittest.TestCase):
 
         t_initial = time.time()
 
-        result3 = objective_function_with_parameters(model_params)
+        result = objective_function_with_parameters(model_params)
 
         elapsed_time = time.time()-t_initial
 
@@ -304,7 +304,7 @@ class TestANNTools(unittest.TestCase):
 
         t_initial = time.time()
 
-        result3 = objective_function_with_parameters(model_params)
+        result = objective_function_with_parameters(model_params)
 
         elapsed_time = time.time()-t_initial
 
@@ -329,7 +329,7 @@ class TestANNTools(unittest.TestCase):
 
             t_initial = time.time()
 
-            result3 = objective_function_with_parameters(model_params)
+            result = objective_function_with_parameters(model_params)
 
             elapsed_time = time.time()-t_initial
 
@@ -337,7 +337,7 @@ class TestANNTools(unittest.TestCase):
 
             t_initial = time.time()
 
-            result3 = objective_function_with_parameters(model_params)
+            result = objective_function_with_parameters(model_params)
 
             elapsed_time = time.time()-t_initial
 
@@ -358,7 +358,7 @@ class TestANNTools(unittest.TestCase):
 
             t_initial = time.time()
 
-            result3 = objective_function_with_parameters(model_params)
+            result = objective_function_with_parameters(model_params)
 
             elapsed_time = time.time()-t_initial
 
@@ -367,7 +367,7 @@ class TestANNTools(unittest.TestCase):
 
             t_initial = time.time()
 
-            result3 = objective_function_with_parameters(model_params)
+            result = objective_function_with_parameters(model_params)
 
             elapsed_time = time.time()-t_initial
 
@@ -389,7 +389,7 @@ class TestANNTools(unittest.TestCase):
 
         t_initial = time.time()
 
-        result3 = objective_function_with_parameters(model_params)
+        result = objective_function_with_parameters(model_params)
 
         elapsed_time = time.time()-t_initial
 
@@ -397,7 +397,7 @@ class TestANNTools(unittest.TestCase):
 
         t_initial = time.time()
 
-        result3 = objective_function_with_parameters(model_params)
+        result = objective_function_with_parameters(model_params)
 
         elapsed_time = time.time()-t_initial
 
@@ -416,7 +416,7 @@ class TestANNTools(unittest.TestCase):
 
         t_initial = time.time()
 
-        result3 = objective_function_with_parameters(model_params)
+        result = objective_function_with_parameters(model_params)
 
         elapsed_time = time.time()-t_initial
 
@@ -424,7 +424,7 @@ class TestANNTools(unittest.TestCase):
 
         t_initial = time.time()
 
-        result3 = objective_function_with_parameters(model_params)
+        result = objective_function_with_parameters(model_params)
 
         elapsed_time = time.time()-t_initial
 
@@ -514,7 +514,7 @@ class TestANNTools(unittest.TestCase):
 
             t_initial = time.time()
 
-            result3 = objective_function_with_parameters(model_params)
+            result = objective_function_with_parameters(model_params)
 
             elapsed_time = time.time()-t_initial
 
@@ -522,7 +522,7 @@ class TestANNTools(unittest.TestCase):
 
             t_initial = time.time()
 
-            result3 = objective_function_with_parameters(model_params)
+            result = objective_function_with_parameters(model_params)
 
             elapsed_time = time.time()-t_initial
 
@@ -543,7 +543,7 @@ class TestANNTools(unittest.TestCase):
 
             t_initial = time.time()
 
-            result3 = objective_function_with_parameters(model_params)
+            result = objective_function_with_parameters(model_params)
 
             elapsed_time = time.time()-t_initial
 
@@ -552,7 +552,7 @@ class TestANNTools(unittest.TestCase):
 
             t_initial = time.time()
 
-            result3 = objective_function_with_parameters(model_params)
+            result = objective_function_with_parameters(model_params)
 
             elapsed_time = time.time()-t_initial
 
@@ -573,7 +573,7 @@ class TestANNTools(unittest.TestCase):
 
         t_initial = time.time()
 
-        result3 = objective_function_with_parameters(model_params)
+        result = objective_function_with_parameters(model_params)
 
         elapsed_time = time.time()-t_initial
 
@@ -581,7 +581,7 @@ class TestANNTools(unittest.TestCase):
 
         t_initial = time.time()
 
-        result3 = objective_function_with_parameters(model_params)
+        result = objective_function_with_parameters(model_params)
 
         elapsed_time = time.time()-t_initial
 
@@ -600,7 +600,7 @@ class TestANNTools(unittest.TestCase):
 
         t_initial = time.time()
 
-        result3 = objective_function_with_parameters(model_params)
+        result = objective_function_with_parameters(model_params)
 
         elapsed_time = time.time()-t_initial
 
@@ -608,7 +608,7 @@ class TestANNTools(unittest.TestCase):
 
         t_initial = time.time()
 
-        result3 = objective_function_with_parameters(model_params)
+        result = objective_function_with_parameters(model_params)
 
         elapsed_time = time.time()-t_initial
 
@@ -689,7 +689,7 @@ class TestANNTools(unittest.TestCase):
 
         t_initial = time.time()
 
-        result3 = objective_function_with_parameters(model_params)
+        result = objective_function_with_parameters(model_params)
 
         elapsed_time = time.time()-t_initial
 
@@ -697,7 +697,7 @@ class TestANNTools(unittest.TestCase):
 
         t_initial = time.time()
 
-        result3 = objective_function_with_parameters(model_params)
+        result = objective_function_with_parameters(model_params)
 
         elapsed_time = time.time()-t_initial
 
@@ -716,7 +716,7 @@ class TestANNTools(unittest.TestCase):
 
         t_initial = time.time()
 
-        result3 = objective_function_with_parameters(model_params)
+        result = objective_function_with_parameters(model_params)
 
         elapsed_time = time.time()-t_initial
 
@@ -724,7 +724,7 @@ class TestANNTools(unittest.TestCase):
 
         t_initial = time.time()
 
-        result3 = objective_function_with_parameters(model_params)
+        result = objective_function_with_parameters(model_params)
 
         elapsed_time = time.time()-t_initial
 
