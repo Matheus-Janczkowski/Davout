@@ -162,8 +162,8 @@ class ScalarGradientWrtTrainableParamsGivenParameters:
 class ScalarGradientWrtTrainableParamsGivenParametersConvexModel:
     
     def __init__(self, scalar_function, model, input_tensor, 
-    shapes_trainable_parameters, regularizing_function="absolute value",
-    model_true_values=None):
+    shapes_trainable_parameters, regularizing_function="smooth absolut"+
+    "e value", model_true_values=None):
         
         self.scalar_function = scalar_function
 

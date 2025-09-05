@@ -23,5 +23,5 @@ setup(
         'License :: OSI Approved :: MIT License',
         # Add more classifiers as needed
     ],
-    python_requires='>=3.6',  # Specify the required Python version
+    python_requires='>=3.10',  # Specify the required Python version
 )

@@ -4,6 +4,8 @@ import numpy as np
 
 import tensorflow as tf 
 
+from ...PythonicUtilities import dictionary_tools
+
 ########################################################################
 #                            Linear Algebra                            #
 ########################################################################
@@ -255,7 +257,19 @@ def build_tensorflow_math_expressions(expression_name):
 
     if expression_name["name"]=="smooth absolute value":
 
-        pass
+        # Verifies if the dictionary has keys that are not for this ex-
+        # pression
+
+        expression_name = dictionary_tools.verify_dictionary_keys(
+        expression_name, {"name": "", "eps": 1E-6}, fill_in_keys=True)
+
+        # Returns the smooth absolute value
+
+        eps = expression_name["eps"]
+
+        eps_squared = eps*eps
+
+        return lambda x: tf.sqrt(tf.square(x)+eps_squared)-eps
 
     else:
 
