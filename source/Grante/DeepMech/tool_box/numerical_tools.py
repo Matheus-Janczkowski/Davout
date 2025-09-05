@@ -243,4 +243,22 @@ def build_tensorflow_math_expressions(expression_name):
 
         expression_name = {"name": expression_name}
 
-    # 
+    # Verifies if it is not a dictionary
+
+    elif not isinstance(expression_name, dict):
+
+        raise TypeError("The argument 'expression_name' for function '"+
+        "build_tensorflow_math_expressions' must be a string or a dict"+
+        "ionary")
+
+    # Verifies if the expression to be used is the smooth absolute value
+
+    if expression_name["name"]=="smooth absolute value":
+
+        pass
+
+    else:
+
+        raise KeyError("The name of the expression for the function 'b"+
+        "uild_tensorflow_math_expressions' must be one of the availabl"+
+        "e options: 'smooth absolute value'")
