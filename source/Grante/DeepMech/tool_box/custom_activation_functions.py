@@ -37,6 +37,12 @@ class CustomActivationFunctions:
                 self.custom_activation_functions_dict[method_name] = (
                 method_function)
 
+        signature_test = inspect.signature(self.quadratic)
+
+        for name, param in signature_test.parameters.items():
+
+            print(str(name)+"="+str(param.default)+str(type(param.default)))
+
     # Defines a quadratic activation function
     
     def quadratic(self, x, a2=1.0, a1=0.0, a0=0.0):
