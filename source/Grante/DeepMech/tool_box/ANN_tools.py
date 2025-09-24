@@ -8,6 +8,8 @@ from ..tool_box import differentiation_tools as diff_tools
 
 from ..tool_box import parameters_tools
 
+from ..tool_box.custom_activation_functions import CustomActivationFunctions
+
 ########################################################################
 #                       ANN construction classes                       #
 ########################################################################
@@ -26,6 +28,11 @@ class MultiLayerModel:
     enforce_customLayers=False, evaluate_parameters_gradient=False,
     flat_trainable_parameters=False, verbose=False, parameters_dtype=
     "float32"):
+        
+        # Instantiates the class of custom activation functions
+
+        self.custom_activations_class = CustomActivationFunctions(dtype=
+        parameters_dtype)
         
         # Retrieves the parameters
 
@@ -84,7 +91,7 @@ class MultiLayerModel:
 
             self.live_activations, flag_customLayers = verify_activationDict(
             layer_dictionary, layer_counter, self.live_activations, 
-            flag_customLayers)
+            flag_customLayers, self.custom_activations_class)
 
             layer_counter += 1
 
@@ -124,15 +131,16 @@ class MultiLayerModel:
         # rectly due to the call function. It goes directly there
 
         output_eachLayer = MixedActivationLayer(self.layers_info[0], 
-        live_activationsDict=self.live_activations, layer=0)(input_layer)
+        self.custom_activations_class, live_activationsDict=
+        self.live_activations, layer=0)(input_layer)
 
         # Iterates through the other layers
 
         for i in range(1,len(self.layers_info)):
 
             output_eachLayer = MixedActivationLayer(self.layers_info[i],
-            live_activationsDict=self.live_activations, layer=i)(
-            output_eachLayer)
+            self.custom_activations_class, live_activationsDict=
+            self.live_activations, layer=i)(output_eachLayer)
 
         # Assembles the model
 
@@ -227,8 +235,8 @@ class MultiLayerModel:
 
 class MixedActivationLayer(tf.keras.layers.Layer):
 
-    def __init__(self, activation_functionDict, live_activationsDict=
-    dict(), layer=0, **kwargs):
+    def __init__(self, activation_functionDict, custom_activations_class,
+    live_activationsDict=dict(), layer=0, **kwargs):
 
         # Initializes the parent class, i.e. Layer. The kwargs are opti-
         # onal arguments used during layer creation and deserialization, 
@@ -242,7 +250,8 @@ class MixedActivationLayer(tf.keras.layers.Layer):
         if (live_activationsDict is None) or live_activationsDict=={}: 
 
             self.live_activationFunctions, *_ = verify_activationDict(
-            activation_functionDict, layer, {}, True)
+            activation_functionDict, layer, {}, True,
+            custom_activations_class)
 
         else:
 
@@ -361,9 +370,13 @@ def random_inRange(x_min, x_max):
 # Defines a function to test whether an activation function's name cor-
 # responds to an actual activation function in TensorFlow
 
-def verify_activationName(name):
+def verify_activationName(name, custom_activations_class):
 
     if name=="linear":
+
+        return True
+    
+    elif name in custom_activations_class.custom_activation_functions_dict:
 
         return True
     
@@ -376,7 +389,7 @@ def verify_activationName(name):
 # has real activation names
 
 def verify_activationDict(activation_dict, layer, 
-live_activationFunctions, flag_customLayers):
+live_activationFunctions, flag_customLayers, custom_activations_class):
 
     # Verifies if the dictionary is empty
 
@@ -411,18 +424,23 @@ live_activationFunctions, flag_customLayers):
 
     for name in activation_names:
 
-        if not verify_activationName(name):
+        if not verify_activationName(name, custom_activations_class):
 
             error_message += ("\n          "+str(name)+", in layer "+
             str(layer)+", is not a name of an actual activation functi"+
-            "on in TensorFlow")
+            "on in TensorFlow nor in the list\n          of custom act"+
+            "ivation functions of DeepMech (see the DeepMech's list:\n"+
+            "          "+str(
+            custom_activations_class.custom_activation_functions_dict.keys(
+            ))[11:-2]+")")
 
         # Verifies if this activation function has not already been map-
         # ped into the dictionary of live-wired activation functions
 
         elif not (name in live_activations):
 
-            live_activationFunctions[name] = get_activationFunction(name)
+            live_activationFunctions[name] = get_activationFunction(name,
+            custom_activations_class)
 
     # If the error message is not empty, raises an exception
 
@@ -436,11 +454,15 @@ live_activationFunctions, flag_customLayers):
     
 # Defines a function to get the activation function by its name
 
-def get_activationFunction(name):
+def get_activationFunction(name, custom_activations_class):
 
     if name=="linear":
 
         return tf.identity
+    
+    elif name in custom_activations_class.custom_activation_functions_dict:
+
+        return custom_activations_class.custom_activation_functions_dict[name]
     
     else:
 

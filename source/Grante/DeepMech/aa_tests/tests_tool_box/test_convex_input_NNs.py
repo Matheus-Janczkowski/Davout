@@ -22,8 +22,8 @@ class TestANNTools(unittest.TestCase):
 
         self.output_dimension_gradient_tests = 1
 
-        self.activation_list_gradient_tests = [{"leaky_relu": 100}, {"leaky_relu": 10}, {"lin"+
-        "ear": self.output_dimension_gradient_tests}]
+        self.activation_list_gradient_tests = [{"quadratic": 100}, {"l"+
+        "inear": self.output_dimension_gradient_tests}]
 
         self.n_samples_gradient_tests = 1000
 
@@ -35,7 +35,7 @@ class TestANNTools(unittest.TestCase):
 
             for x_i in x:
 
-                value = x_i**2
+                value += x_i**2
 
             return value
         
@@ -45,9 +45,9 @@ class TestANNTools(unittest.TestCase):
 
          # Creates the new test data
 
-        x_min = -1.0
+        self.x_min = -1.0
 
-        x_max = 1.0
+        self.x_max = 1.0
 
         data_matrix = []
 
@@ -55,8 +55,9 @@ class TestANNTools(unittest.TestCase):
 
         for i in range(self.n_samples_gradient_tests):
 
-            data_matrix.append([ANN_tools.random_inRange(x_min, x_max
-            ) for j in range(self.input_dimension_gradient_tests)])
+            data_matrix.append([ANN_tools.random_inRange(self.x_min, 
+            self.x_max) for j in range(self.input_dimension_gradient_tests
+            )])
 
             # Evaluaets the true function
 
@@ -125,7 +126,7 @@ class TestANNTools(unittest.TestCase):
         self.training_inputTensor, self.training_trueTensor, 
         self.loss_metric, convex_input_model=True, verbose=True,
         n_iterations=self.maximum_iterations, verbose_deltaIterations=
-        self.verbose_deltaIterations, float_type=self.dtype)
+        self.verbose_deltaIterations)
 
         t_initial = time.time()
 

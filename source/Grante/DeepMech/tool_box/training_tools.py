@@ -148,7 +148,7 @@ class ModelCustomTraining:
 
     def __init__(self, model, training_inputArray, training_trueArray,
     loss_metric, optimizer="CG", n_iterations=1000, gradient_tolerance=
-    1E-3, float_type=tf.float32, verbose_deltaIterations=100, 
+    1E-3, float_type=None, verbose_deltaIterations=100, 
     convex_input_model=False, verbose=False, regularizing_function="sm"+
     "ooth absolute value"):
         
@@ -171,6 +171,27 @@ class ModelCustomTraining:
         self.verbose_deltaIterations = verbose_deltaIterations
 
         self.verbose = verbose
+
+        # Gets the float type of the model trainable parameters
+
+        model_parameters_dtype = self.model.trainable_variables[0].dtype
+
+        # If no float type has been prescribed, selects the type of the
+        # trainable parameters as master type
+
+        if float_type is None:
+
+            float_type = model_parameters_dtype
+
+        elif model_parameters_dtype!=float_type:
+
+            # If the model trainable parameters and the float type are 
+            # not the same, raises an error
+
+            raise TypeError("The 'float_type' asked for the 'ModelCust"+
+            "omTraining', "+str(float_type)+", is different to that of"+
+            " the trainable parameters of the given model, "+str(
+            model_parameters_dtype))
 
         # Transforms the data to TensorFlow tensors
 
