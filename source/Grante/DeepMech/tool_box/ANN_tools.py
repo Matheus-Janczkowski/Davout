@@ -12,7 +12,7 @@ from ..tool_box import parameters_tools
 
 from ..tool_box.custom_activation_functions import CustomActivationFunctions
 
-from ...PythonicUtilities import dictionary_tools
+from ...PythonicUtilities import dictionary_tools, function_tools
 
 ########################################################################
 #                       ANN construction classes                       #
@@ -68,7 +68,30 @@ class MultiLayerModel:
 
         for n_neurons in self.layers_info[-1].values():
 
-            self.output_dimension += n_neurons
+            # Verifies if the value attached to this activation function
+            # is a dictionary, i.e. it has further information for key-
+            # word arguments
+
+            if isinstance(n_neurons, dict):
+
+                # Verifies if it has the key number of neurons
+
+                if "number of neurons" in n_neurons:
+
+                    self.output_dimension += n_neurons["number of neur"+
+                    "ons"]
+
+                else:
+
+                    raise KeyError("The last layer of the model, "+str(
+                    self.layers_info)+", has a value for one activatio"+
+                    "n function which is "+str(n_neurons)+". This is a"+
+                    " dictionary, but no key 'number of neurons' was p"+
+                    "rovided")
+
+            else:
+
+                self.output_dimension += n_neurons
 
         # Sets the type of the parameters
 
@@ -271,13 +294,17 @@ class MixedActivationLayer(tf.keras.layers.Layer):
 
     def build(self, input_shape):
 
-        # Counts the number of neurons in the layer
-
-        total_neurons = sum(self.functions_dict.values())
-
         # Gets a list with the numbers of neurons per activation function
 
-        self.neurons_per_activation = list(self.functions_dict.values())
+        self.neurons_per_activation = [value["number of neurons"] if (
+        isinstance(value, dict)) else value for value in (
+        self.functions_dict.values())]
+
+        # Counts the number of neurons in the layer. But takes cares if 
+        # the value attached to each name of activation function is a 
+        # dictionary
+
+        total_neurons = sum(self.neurons_per_activation)
 
         # Constructs a dense layer with identity activation functions
 
@@ -374,35 +401,20 @@ def random_inRange(x_min, x_max):
 # Defines a function to test whether an activation function's name cor-
 # responds to an actual activation function in TensorFlow
 
-def verify_activationName(name, custom_activations_class):
-
-    # Verifies if the name is a dictionary, i.e. keyword arguments have
-    # been passed as well
-
-    function_name = ""
-
-    if isinstance(name, dict):
-
-        # Verifies if the name of the activation function have been 
-        # passed
-
-        if not ("name" in name):
-
-            raise KeyError("A dictionary has been used to set an activ"+
-            "ation function, "+str(name)+", but no 'name' key has been"+
-            " included")
-
-        # Gets the name of the function
-
-        function_name = name["name"]
-
-    else:
-
-        # Simply gets the name of the activation function
-
-        function_name = name
+def verify_activationName(function_name, custom_activations_class, 
+arguments):
 
     if function_name=="linear":
+
+        # Verifies if arguments have been prescribed, which are not al-
+        # lowed for this activation function
+
+        if not (arguments is None):
+
+            raise KeyError("The activation function 'linear' cannot ha"+
+            "ve addtional arguments, thus, its corresponding value in "+
+            "the dictionary of activation functions musn't be a dictio"+
+            "nary with any other key beside 'number of neurons'")
 
         return True
     
@@ -412,6 +424,17 @@ def verify_activationName(name, custom_activations_class):
         return True
     
     else:
+
+        # Verifies if arguments have been prescribed, which are not al-
+        # lowed for native tensorflow activation functions
+
+        if not (arguments is None):
+
+            raise KeyError("The activation function '"+str(function_name
+            )+"', native to tensorflow, cannot have addtional argument"+
+            "s, thus, its corresponding value in the dictionary of act"+
+            "ivation functions musn't be a dictionary with any other k"+
+            "ey beside 'number of neurons'")
 
         return (hasattr(tf.nn, function_name) and callable(getattr(tf.nn, 
         function_name, None)))
@@ -429,17 +452,13 @@ live_activationFunctions, flag_customLayers, custom_activations_class):
         raise KeyError("The layer "+str(layer)+" has no activation fun"+
         "ction information. You must provide at least one activation f"+
         "unction and the number of neurons to it.")
-
-    # Gets the names of the activation functions
-
-    activation_names = list(activation_dict.keys())
-
+    
     # Checks if there is more than one key in the dictionary, i.e. if 
     # there is more than one activation function type in this layer
 
     if not flag_customLayers:
 
-        if len(activation_names)>1:
+        if len(activation_dict.keys())>1:
 
             flag_customLayers = True
 
@@ -453,9 +472,42 @@ live_activationFunctions, flag_customLayers, custom_activations_class):
 
     # Iterates over the activation functions' names
 
-    for name in activation_names:
+    for name, activation_info in activation_dict.items():
 
-        if not verify_activationName(name, custom_activations_class):
+        # Verifies if the activation_info is a dictionary, i.e. keyword 
+        # arguments have been passed as well
+
+        arguments = None
+
+        if isinstance(activation_info, dict):
+
+            # Verifies if the number of neurons that use this activation 
+            # function has been passed
+
+            if not ("number of neurons" in activation_info):
+
+                raise KeyError("A dictionary has been used to set an a"+
+                "ctivation function information, "+str(activation_info)+
+                ", but no 'number of neurons' key has been included")
+            
+            # Gets the arguments and deletes the key for the number of 
+            # neurons
+
+            arguments = deepcopy(activation_info)
+
+            del arguments["number of neurons"]
+
+            # If this dictionary is empty, turns this variable into None
+            # again
+
+            if not arguments:
+
+                arguments = None
+
+        # Verifies if the name of this activation function exists
+
+        if not verify_activationName(name, 
+        custom_activations_class, arguments):
 
             error_message += ("\n          "+str(name)+", in layer "+
             str(layer)+", is not a name of an actual activation functi"+
@@ -470,8 +522,8 @@ live_activationFunctions, flag_customLayers, custom_activations_class):
 
         elif not (name in live_activations):
 
-            live_activationFunctions[name] = get_activationFunction(name,
-            custom_activations_class)
+            live_activationFunctions[name] = get_activationFunction(
+            name, custom_activations_class, arguments)
 
     # If the error message is not empty, raises an exception
 
@@ -485,41 +537,8 @@ live_activationFunctions, flag_customLayers, custom_activations_class):
     
 # Defines a function to get the activation function by its name
 
-def get_activationFunction(name, custom_activations_class):
-
-    # Verifies if the name is a dictionary, i.e. keyword arguments have
-    # been passed as well
-
-    arguments = None
-
-    function_name = ""
-
-    if isinstance(name, dict):
-
-        # Verifies if the name of the activation function have been 
-        # passed
-
-        if not ("name" in name):
-
-            raise KeyError("A dictionary has been used to set an activ"+
-            "ation function, "+str(name)+", but no 'name' key has been"+
-            " included")
-
-        # Gets the name of the function
-
-        function_name = name["name"]
-        
-        # Gets the arguments and deletes the key for the name
-
-        arguments = deepcopy(name)
-
-        del arguments["name"]
-
-    else:
-
-        # Simply gets the name of the activation function
-
-        function_name = name
+def get_activationFunction(function_name, custom_activations_class, 
+arguments):
 
     if function_name=="linear":
 
@@ -547,10 +566,11 @@ def get_activationFunction(name, custom_activations_class):
             "ition of custom activation function '"+str(function_name)+
             "'", fill_in_keys=True)
 
-            # Uses a lambda function to set the new values for the key-
-            # word arguments
-
-            return lambda x: function_info[0](x, **arguments)
+            # Uses a wrapper to wrap the function to set the new values 
+            # for the keyword arguments
+        
+            return function_tools.construct_lambda_function(
+            function_info[0], arguments)
 
         # If no arguments have been prescribed, returns the function 
         # simply

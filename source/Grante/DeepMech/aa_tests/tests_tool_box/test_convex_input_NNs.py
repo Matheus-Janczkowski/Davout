@@ -22,10 +22,13 @@ class TestANNTools(unittest.TestCase):
 
         self.output_dimension_gradient_tests = 1
 
-        self.activation_list_gradient_tests = [{"quadratic": 100}, {"l"+
-        "inear": self.output_dimension_gradient_tests}]
+        self.activation_list_gradient_tests = [{"quadratic": {"number "+
+        "of neurons": 100, "a2": 2.0}}, {"linear": 
+        self.output_dimension_gradient_tests}]
 
         self.n_samples_gradient_tests = 1000
+
+        self.maximum_iterations = 5000
 
         # Defines a function to get the true values
 
@@ -96,8 +99,6 @@ class TestANNTools(unittest.TestCase):
         # Sets the optimizer
 
         self.optimizer = "CG"
-
-        self.maximum_iterations = 5000
 
         self.verbose_deltaIterations = 1000
 

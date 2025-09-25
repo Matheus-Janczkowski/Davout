@@ -39,18 +39,6 @@ class CustomActivationFunctions:
                 self.custom_activation_functions_dict[method_name] = [
                 method_function, function_tools.get_functions_arguments(
                 method_function)]
-
-    # Defines a quadratic activation function
-    
-    def quadratic(self, x, a2=1.0, a1=0.0, a0=0.0):
-        
-        a2 = tf.constant(a2, dtype=self.dtype)
-        
-        a1 = tf.constant(a1, dtype=self.dtype)
-        
-        a0 = tf.constant(a0, dtype=self.dtype)
-
-        return (a2*tf.square(x))+(a1*x)+a0
     
     # Defines a method to update the tensorflow type of the constants of
     # this class
@@ -64,6 +52,32 @@ class CustomActivationFunctions:
         else:
 
             self.dtype = dtype
+
+    ####################################################################
+    #             Define special activation functions below            #
+    ####################################################################
+
+    # Defines a quadratic activation function
+    
+    def quadratic(self, x, a2=1.0, a1=0.0, a0=0.0):
+        
+        a2 = tf.constant(a2, dtype=self.dtype)
+        
+        a1 = tf.constant(a1, dtype=self.dtype)
+        
+        a0 = tf.constant(a0, dtype=self.dtype)
+
+        return (a2*tf.square(x))+(a1*x)+a0
+    
+    # Defines an exponential function
+    
+    def exponential(self, x, a1=1.0, a0=0.0):
+        
+        a1 = tf.constant(a1, dtype=self.dtype)
+        
+        a0 = tf.constant(a0, dtype=self.dtype)
+
+        return tf.exp((a1*x)+a0)
     
 ########################################################################
 #                               Testing                                #

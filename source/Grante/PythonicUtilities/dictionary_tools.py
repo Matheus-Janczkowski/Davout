@@ -50,7 +50,7 @@ must_have_all_keys=False, fill_in_keys=False):
 
                 raise KeyError("The dictionary "+str(dictionary_location
                 )+" has the key '"+str(current_key)+"', but it is not "+
-                "in the list of master keys")
+                "in the list of master keys: "+str(master_keys))
 
         # Fill in the missing keys from master keys
 
