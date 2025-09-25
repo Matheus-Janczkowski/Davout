@@ -34,24 +34,27 @@ None):
 
     offset = 0
 
-    for layer in model.trainable_variables:
+    for i in range(len(model.trainable_variables)):
 
-        size = tf.size(layer)
+        size = tf.size(model.trainable_variables[i])
 
         # Gets a slice of the parameters
 
         parameters_slice = tf.reshape(new_parameters[offset:(offset+size
-        )], layer.shape)
+        )], model.trainable_variables[i].shape)
 
-        # Assigns the values
+        # Assigns the values and regularizes only if the layer is of 
+        # weights
 
-        if regularizing_function is None:
+        if (regularizing_function is None) or (model.trainable_variables[
+        i].name.lower()=="bias"):
 
-            layer.assign(parameters_slice)
+            model.trainable_variables[i].assign(parameters_slice)
 
         else:
 
-            layer.assign(regularizing_function(parameters_slice))
+            model.trainable_variables[i].assign(regularizing_function(
+            parameters_slice))
 
         # Updates the offset 
 

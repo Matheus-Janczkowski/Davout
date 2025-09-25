@@ -137,6 +137,14 @@ class TestANNTools(unittest.TestCase):
 
         print("\nTrains at "+str(elapsed_time)+" seconds")
 
+        # Checks the loss again with the model with the regularized pa-
+        # rameters
+
+        print("\nThe loss function evaluated again over the set of tra"+
+        "ining data is "+str(training_class.loss_unseen_data(
+        self.training_trueTensor, self.training_inputTensor, 
+        output_as_numpy=True)))
+
 # Runs all tests
 
 if __name__=="__main__":
