@@ -1,0 +1,1 @@
+# Routine to store methods to be used with and for functions

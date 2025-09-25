@@ -1,4 +1,4 @@
-# Routine to store methods to be used with dictionaries
+# Routine to store methods to be used with and for dictionaries
 
 ########################################################################
 #                             Verification                             #
