@@ -4,6 +4,8 @@ import tensorflow as tf
 
 import inspect
 
+from ...PythonicUtilities import function_tools
+
 class CustomActivationFunctions:
 
     def __init__(self, dtype=tf.float32):
@@ -34,14 +36,9 @@ class CustomActivationFunctions:
                 # Adds to the dictionary all methods except those inside
                 # the list of exceptions
 
-                self.custom_activation_functions_dict[method_name] = (
-                method_function)
-
-        signature_test = inspect.signature(self.quadratic)
-
-        for name, param in signature_test.parameters.items():
-
-            print(str(name)+"="+str(param.default)+str(type(param.default)))
+                self.custom_activation_functions_dict[method_name] = [
+                method_function, function_tools.get_functions_arguments(
+                method_function)]
 
     # Defines a quadratic activation function
     

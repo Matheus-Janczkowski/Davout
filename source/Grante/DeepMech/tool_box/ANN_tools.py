@@ -4,11 +4,15 @@ import tensorflow as tf
 
 import numpy as np
 
+from copy import deepcopy
+
 from ..tool_box import differentiation_tools as diff_tools
 
 from ..tool_box import parameters_tools
 
 from ..tool_box.custom_activation_functions import CustomActivationFunctions
+
+from ...PythonicUtilities import dictionary_tools
 
 ########################################################################
 #                       ANN construction classes                       #
@@ -372,18 +376,45 @@ def random_inRange(x_min, x_max):
 
 def verify_activationName(name, custom_activations_class):
 
-    if name=="linear":
+    # Verifies if the name is a dictionary, i.e. keyword arguments have
+    # been passed as well
+
+    function_name = ""
+
+    if isinstance(name, dict):
+
+        # Verifies if the name of the activation function have been 
+        # passed
+
+        if not ("name" in name):
+
+            raise KeyError("A dictionary has been used to set an activ"+
+            "ation function, "+str(name)+", but no 'name' key has been"+
+            " included")
+
+        # Gets the name of the function
+
+        function_name = name["name"]
+
+    else:
+
+        # Simply gets the name of the activation function
+
+        function_name = name
+
+    if function_name=="linear":
 
         return True
     
-    elif name in custom_activations_class.custom_activation_functions_dict:
+    elif function_name in (
+    custom_activations_class.custom_activation_functions_dict):
 
         return True
     
     else:
 
-        return (hasattr(tf.nn, name) and callable(getattr(tf.nn, name, 
-        None)))
+        return (hasattr(tf.nn, function_name) and callable(getattr(tf.nn, 
+        function_name, None)))
 
 # Defines a function to check if the dictionary of activation functions
 # has real activation names
@@ -456,14 +487,76 @@ live_activationFunctions, flag_customLayers, custom_activations_class):
 
 def get_activationFunction(name, custom_activations_class):
 
-    if name=="linear":
+    # Verifies if the name is a dictionary, i.e. keyword arguments have
+    # been passed as well
+
+    arguments = None
+
+    function_name = ""
+
+    if isinstance(name, dict):
+
+        # Verifies if the name of the activation function have been 
+        # passed
+
+        if not ("name" in name):
+
+            raise KeyError("A dictionary has been used to set an activ"+
+            "ation function, "+str(name)+", but no 'name' key has been"+
+            " included")
+
+        # Gets the name of the function
+
+        function_name = name["name"]
+        
+        # Gets the arguments and deletes the key for the name
+
+        arguments = deepcopy(name)
+
+        del arguments["name"]
+
+    else:
+
+        # Simply gets the name of the activation function
+
+        function_name = name
+
+    if function_name=="linear":
 
         return tf.identity
     
-    elif name in custom_activations_class.custom_activation_functions_dict:
+    elif function_name in (
+    custom_activations_class.custom_activation_functions_dict):
+        
+        # Gets the pair of function and keyword arguments
 
-        return custom_activations_class.custom_activation_functions_dict[name]
+        function_info = (
+        custom_activations_class.custom_activation_functions_dict[
+        function_name])
+
+        # If arguments have been prescribed
+
+        if not (arguments is None):
+
+            # Verifies if the dictionary of arguments has arguments that
+            # are allowed and adds the default values which were not 
+            # prescribed
+
+            arguments = dictionary_tools.verify_dictionary_keys(
+            arguments, function_info[1], dictionary_location="at defin"+
+            "ition of custom activation function '"+str(function_name)+
+            "'", fill_in_keys=True)
+
+            # Uses a lambda function to set the new values for the key-
+            # word arguments
+
+            return lambda x: function_info[0](x, arguments)
+
+        # If no arguments have been prescribed, returns the function 
+        # simply
+
+        return function_info[0]
     
     else:
 
-        return getattr(tf.nn, name)
+        return getattr(tf.nn, function_name)
