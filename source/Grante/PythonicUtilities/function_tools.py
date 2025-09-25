@@ -23,13 +23,14 @@ def get_functions_arguments(function_object):
 
     for argument_name, default_value in signature.parameters.items():
 
-        # If the default value is not empty
+        # If the default value is not empty (empty default value means 
+        # the argument is positional and obligatory)
 
         if default_value!=inspect._empty:
 
             # Saves the argument and its default value
 
-            keyword_arguments[argument_name] = default_value
+            keyword_arguments[argument_name] = default_value.default
 
     # Returns the dictionary of keyword arguments
 

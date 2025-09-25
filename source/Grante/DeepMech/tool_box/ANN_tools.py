@@ -550,7 +550,7 @@ def get_activationFunction(name, custom_activations_class):
             # Uses a lambda function to set the new values for the key-
             # word arguments
 
-            return lambda x: function_info[0](x, arguments)
+            return lambda x: function_info[0](x, **arguments)
 
         # If no arguments have been prescribed, returns the function 
         # simply
