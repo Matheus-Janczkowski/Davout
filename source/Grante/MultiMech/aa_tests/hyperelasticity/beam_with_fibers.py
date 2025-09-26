@@ -4,9 +4,13 @@ import os
 
 #import periodic_structure as mesher
 
-import source.constitutive_models.hyperelasticity.isotropic_hyperelasticity as constitutive_models
+from ...tool_box import file_handling_tools
 
-import source.physics.hyperelastic_cauchy_continuum as variational_framework
+from ...constitutive_models.hyperelasticity import isotropic_hyperelasticity as constitutive_models#source.constitutive_models.hyperelasticity.isotropic_hyperelasticity as constitutive_models
+
+from ...physics import hyperelastic_cauchy_continuum as variational_framework#source.physics.hyperelastic_cauchy_continuum as variational_framework
+
+from ...aa_tests import test_meshes_paths
 
 ########################################################################
 ########################################################################
@@ -20,7 +24,8 @@ import source.physics.hyperelastic_cauchy_continuum as variational_framework
 
 # Defines the path to the results directory 
 
-results_path = os.getcwd()+"//tests//hyperelasticity//results"
+results_path = os.path.join(file_handling_tools.get_parent_path_of_file(
+), "results")
 
 displacement_fileName = "displacement.xdmf"
 
@@ -33,7 +38,7 @@ post_processes["SaveCauchyStressField"] = {"directory path":
 results_path, "file name": "cauchy_stress.xdmf", "polynomia"+
 "l degree": 1}
 
-post_processes["FirstElasticityTensorAtPoint"] = {"directory path": 
+"""post_processes["FirstElasticityTensorAtPoint"] = {"directory path": 
 results_path, "file name": "first_elasticity_tensor_dP_dF", "polynomia"+
 "l degree": 1, "point coordinates": [0.5, 0.5, 1.0], "flag plotting": 
 False, "voigt notation": "conventional", "plotting arguments": {"scalin"+
@@ -49,7 +54,7 @@ post_processes["ThirdElasticityTensorAtPoint"] = {"directory path":
 results_path, "file name": "third_elasticity_tensor_dsigma_db", "polyn"+
 "omial degree": 1, "point coordinates": [0.5, 0.5, 1.0], "flag plottin"+
 "g": False, "voigt notation": "natural", "plotting arguments": {"s"+
-"caling function additional parameters": {"alpha":5}}}
+"caling function additional parameters": {"alpha":5}}}"""
 
 ########################################################################
 #                         Material properties                          #
@@ -82,7 +87,8 @@ constitutive_model = constitutive_models.Neo_Hookean(material_properties)
 # le termination, e.g. .msh or .xdmf; both options will be saved automa-
 # tically
 
-mesh_fileName = "tests//test_meshes//micropolar_beam_with_fibers_bending"
+mesh_fileName = test_meshes_paths.get_mesh_path("micropolar_beam_with_"+
+"fibers_bending")
 
 ########################################################################
 #                            Function space                            #
@@ -136,7 +142,7 @@ maximum_loadingSteps = 5
 
 # Defines a load expression
 
-maximum_load = -2E6#1E-1
+maximum_load = -2E5#1E-1
 
 traction_boundary = {"load case": "UniformReferentialTraction", "ampli"+
 "tude_tractionX": 0.0, "amplitude_tractionY": maximum_load, "amplitude"+

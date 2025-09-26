@@ -5,6 +5,8 @@ import os
 
 import copy
 
+import inspect
+
 from collections import OrderedDict
 
 from pathlib import Path
@@ -742,9 +744,33 @@ def get_parent_path_of_file(file="__file__", path_bits_to_be_excluded=1):
 
     if file=="__file__":
 
-        raise NameError("To get the parent path of a file, you should "+
-        "type file=file, where file is an imported file; or you should"+
-        " type file=__file__ to get the parent path to the current file")
+        # Tries to automatically retrieve where this function has been
+        # called
+
+        # Gets the previous frame, where the function has been called
+
+        last_frame = inspect.stack()[1]
+
+        # Gets the module where it's been called
+
+        module = inspect.getmodule(last_frame[0])
+
+        # Verifies if this module is valid and gets the __file__ attri-
+        # bute
+
+        if (module is not None) and hasattr(module, "__file__"):
+
+            file = module.__file__ 
+
+        else:
+
+            raise NameError("To get the parent path of a file, you sho"+
+            "uld type file=file, where file is an imported file; or yo"+
+            "u should type file=__file__ to get the parent path to the"+
+            " current file. Otherwise, it will try to get the path of "+
+            "the file where this function, 'get_parent_path_of_file', "+
+            "has been called last. Unfortunately, to no avail this tim"+
+            "e")
     
     # Gets a list of the bits of the whole path
     
