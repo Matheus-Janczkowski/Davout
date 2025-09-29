@@ -4,6 +4,8 @@ import unittest
 
 import numpy as np
 
+from copy import deepcopy
+
 from ...PythonicUtilities import plotting_tools
 
 # Defines a function to test the ANN optimization wrappers
@@ -49,12 +51,12 @@ class TestPlots(unittest.TestCase):
         # Calls the plotter
 
         plotting_tools.plane_plot(x_data=self.unimodal_x_data, y_data=
-        self.unimodal_y_data, error_bar=error_bar, file_name="test_err"+
-        "or_bar", plot_type="scatter")
+        self.unimodal_y_data, error_bar=deepcopy(error_bar), file_name=
+        "test_error_bar", plot_type="scatter")
 
         plotting_tools.plane_plot(x_data=self.unimodal_x_data, y_data=
-        self.unimodal_y_data, error_bar=error_bar, file_name="test_err"+
-        "or_region", plot_type="line")
+        self.unimodal_y_data, error_bar=deepcopy(error_bar), file_name=
+        "test_error_region", plot_type="line")
 
         # Calls with multimodal data
 
@@ -65,11 +67,21 @@ class TestPlots(unittest.TestCase):
             error_bar.append([((i+1)/10) for j in range(len(
             self.multimodal_x_data[i]))])
 
-        print(error_bar)
-
         plotting_tools.plane_plot(x_data=self.multimodal_x_data, y_data=
-        self.multimodal_y_data, error_bar=error_bar, file_name="test_err"+
-        "or_region_multimodal", plot_type="line")
+        self.multimodal_y_data, error_bar=deepcopy(error_bar), file_name=
+        "test_error_region_multimodal", plot_type="line")
+
+        plotting_tools.plane_plot(x_data=self.unimodal_x_data, y_data=
+        self.multimodal_y_data, error_bar="t-Student", file_name="test_e"+
+        "rror_region_t_student", plot_type="line")
+
+        plotting_tools.plane_plot(x_data=self.unimodal_x_data, y_data=
+        self.multimodal_y_data, error_bar="normal distribution", 
+        file_name="test_error_region_z_score", plot_type="line")
+
+        plotting_tools.plane_plot(x_data=self.unimodal_x_data, y_data=
+        self.multimodal_y_data, error_bar="normal distribution", 
+        file_name="test_error_bar_z_score", plot_type="scatter")
 
 # Runs all tests
 

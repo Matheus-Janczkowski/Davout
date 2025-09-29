@@ -4,6 +4,8 @@ import numpy as np
 
 from copy import deepcopy
 
+from scipy import stats
+
 import matplotlib.pyplot as plt
 
 import matplotlib.colors as plt_colors
@@ -246,7 +248,7 @@ highlight_pointsColors='black', parent_path=None, error_bar=None):
 
                 x_data = x_data.tolist()
 
-        elif not isinstance(y_data, list):
+        if not isinstance(y_data, list):
 
             # Verifies if does not have the to list method
 
@@ -604,6 +606,133 @@ highlight_pointsColors='black', parent_path=None, error_bar=None):
     # Plots the error bars first if they are needed
 
     if error_bar is not None:
+                
+        # Verifies if the error bar is a string
+
+        if isinstance(error_bar, str) or isinstance(error_bar, dict):
+
+            # Verifies if the error bar is a dictionary and if it has
+            # the name key. Initializes the confidence and the z-score
+            # or t-Student values
+
+            confidence = 0.95
+
+            statistic_parameter = 0.0
+
+            if isinstance(error_bar, dict):
+
+                if not ("name" in error_bar):
+
+                    raise KeyError("The key 'name' is not in the dicti"+
+                    "onary 'error_bar', thus, no statistical distribut"+
+                    "ion can be picked for the automatic evaluation of"+
+                    " the confidence interval")
+                
+                # Verifies if it has the key confidence
+
+                if "confidence" in error_bar:
+
+                    confidence = error_bar["confidence"]
+
+                # Turns this variable into the name
+
+                error_bar = error_bar["name"]
+
+            # Checks if more curves were supplied
+
+            if not multiple_curves:
+
+                raise IndexError("Multiple curves in y_data must be pr"+
+                "ovided to automatically evaluate the error bar")
+
+            # Verifies the distribution name
+
+            if error_bar=="t-Student":
+
+                statistic_parameter = stats.t.ppf(0.5*(1+confidence),
+                len(y_data)-1)
+
+                print("For a confidence of "+str(confidence)+", uses t"+
+                "he t-Student coefficient of "+str(statistic_parameter)+
+                "\n")
+        
+            elif error_bar=="normal distribution":
+
+                statistic_parameter = stats.norm.ppf(0.5*(1+confidence))
+
+                print("For a confidence of "+str(confidence)+", uses t"+
+                "he z-score coefficient of "+str(statistic_parameter)+
+                "\n")
+        
+            else:
+                
+                raise ValueError("'error_bar', if string, can be eithe"+
+                "r 't-Student' or 'normal distribution' to automatical"+
+                "ly evaluate the confidence interval")
+
+            # Gets the error bar as a list
+
+            error_bar = []
+
+            # Gets the mean value
+
+            mean_y = []
+
+            # Gets the confidence interval
+
+            for i in range(len(y_data[0])):
+
+                # Initializes the statistical moments
+
+                mean = 0.0
+
+                standard_deviation = 0.0
+
+                # Evaluates average
+
+                for j in range(len(y_data)):
+
+                    mean += y_data[j][i]
+
+                # Normalizes by the quantity of data points
+
+                mean = mean/len(y_data)
+
+                mean_y.append(mean)
+
+                # Evaluates the standard deviation
+
+                for j in range(len(y_data)):
+
+                    standard_deviation += (standard_deviation-y_data[j][
+                    i])**2
+
+                # Takes the square root and divides by the number of de-
+                # grees of freedom
+
+                standard_deviation = np.sqrt(standard_deviation/(len(
+                y_data)-1))
+
+                # Gets the confidence radius
+
+                error_bar.append((standard_deviation/(np.sqrt(len(y_data
+                ))))*statistic_parameter)
+
+            # Unifies the y_data into the mean
+
+            y_data = deepcopy(mean_y)
+
+            # Disables the flag of multiple curves
+
+            multiple_curves = False
+
+            # Updates the plotting information for a single curve case
+
+            element_style = element_style[0]
+
+            element_size = element_size[0]
+
+            color = color[0]
 
         # If multiple curves a required
 
@@ -613,17 +742,19 @@ highlight_pointsColors='black', parent_path=None, error_bar=None):
 
             if not isinstance(error_bar, list):
 
-                raise TypeError("'error_bar' must be a list. Each valu"+
-                "e of this list must contain a list with the correspon"+
-                "ding confidence intervals of the corresponding curve")
+                raise TypeError("'error_bar' must be a list. Each "+
+                "value of this list must contain a list with the c"+
+                "orresponding confidence intervals of the correspo"+
+                "nding curve")
             
-            # Verifies if it has the same length as the vector of y data
+            # Verifies if it has the same length as the vector of y 
+            # data
 
             elif len(error_bar)!=len(y_data):
 
                 raise IndexError("'error_bar' list has "+str(len(
-                error_bar))+" elements, whereas 'y_data' has "+str(len(
-                y_data))+" curves. They must have the same")
+                error_bar))+" elements, whereas 'y_data' has "+str(
+                len( y_data))+" curves. They must have the same")
 
             # Plots the error regions or bars
 
@@ -681,6 +812,14 @@ highlight_pointsColors='black', parent_path=None, error_bar=None):
                     linewidth=element_size, color=color[i], alpha=0.3)
 
             elif plot_type=="scatter":
+
+                # Verifies if the curve is a single scatter curve
+
+                if not isinstance(error_bar[0], list):
+
+                    for i in range(len(error_bar)):
+
+                        error_bar[i] = [error_bar[i]]
 
                 # Iterates through the curves
 
