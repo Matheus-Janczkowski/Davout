@@ -1,5 +1,7 @@
 # Routine to store tools for managing strings
 
+import numpy as np
+
 from ..PythonicUtilities import recursion_tools
 
 ########################################################################
@@ -467,6 +469,10 @@ def convert_value(value):
 
     return value
 
+########################################################################
+#                  Parsing strings to simpler formats                  #
+########################################################################
+
 # Defines a function to try to convert string variables to some useful
 # other formats
 
@@ -521,20 +527,55 @@ def float_toString(number):
 
     return new_number
 
+# Defines a function to convert a float to a string in scientific nota-
+# tion
+
+def float_to_scientific_notation(number, decimal_places=5):
+
+    # Gets the logarithm
+
+    log_number = np.log10(number)
+
+    # Gets the floor value
+
+    floor_log = np.floor(log_number)
+
+    # Gets the rest
+
+    rest = log_number-floor_log
+
+    # Evaluates the corresponding part to the rest
+
+    front_number = str(10.0**rest)[0:(decimal_places+2)]
+
+    # Returns the whole string
+    
+    return front_number+"e"+str(int(floor_log)) 
+
 ########################################################################
 #                               Testing                                #
 ########################################################################
 
-if __name__=="__main__":
+def test_stringToDict():
 
-    def test_stringToDict():
+    t = "[0.0]"
 
-        t = "[0.0]"
+    t = {"1":1, 2:"dois", (1,"teste"): [0.0], "dicionário": {1: "numero", "dic": {"3": 3}, 4: "4"}}
 
-        t = {"1":1, 2:"dois", (1,"teste"): [0.0], "dicionário": {1: "numero", "dic": {"3": 3}, 4: "4"}}
+    print(t)
+    
+    print(string_toDict(str(t)), "\n\n")
 
-        print(t)
-        
-        print(string_toDict(str(t)), "\n\n")
+def test_scientific_notation():
 
-    test_stringToDict()
+    t = 0.0123
+
+    q = 123000.0
+
+    print(str(t)+"->"+float_to_scientific_notation(t))
+
+    print(str(q)+"->"+float_to_scientific_notation(q))
+
+#test_stringToDict()
+
+#test_scientific_notation()

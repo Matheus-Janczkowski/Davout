@@ -20,6 +20,8 @@ from ..tool_box import parameters_tools
 
 from ...PythonicUtilities import path_tools
 
+from ...PythonicUtilities import string_tools
+
 # Defines a class to optimize the model's parameters
 
 class ModelTraining:
@@ -672,7 +674,8 @@ class ModelCustomTraining:
 
         for model_number, model_loss in models_ranking_dict.items():
 
-            print("model "+str(model_number+1)+": "+str(model_loss))
+            print("model "+str(model_number+1)+": "+str(
+            string_tools.float_to_scientific_notation(model_loss)))
 
         print("")
 
