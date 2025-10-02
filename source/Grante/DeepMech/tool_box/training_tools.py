@@ -703,8 +703,9 @@ class ModelCustomTraining:
         len(elapsed_time_list)-2)))
 
         print("With a confidence of 95%, the time for training a model"+
-        " lies in the interval "+str(mean_elapsed_time-confidence_radius
-        )+" < t < "+str(mean_elapsed_time+confidence_radius)+" s\n")
+        " lies in the in-\nterval "+str(mean_elapsed_time-
+        confidence_radius)+" < t < "+str(mean_elapsed_time+
+        confidence_radius)+" seconds\n")
 
         for model_number, model_loss in models_ranking_dict.items():
 
