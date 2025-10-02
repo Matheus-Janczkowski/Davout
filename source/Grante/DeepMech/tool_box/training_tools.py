@@ -14,6 +14,8 @@ from copy import deepcopy
 
 from scipy.optimize import minimize
 
+from scipy import stats
+
 from ..tool_box import loss_tools
 
 from ..tool_box import parameters_tools
@@ -466,7 +468,7 @@ class ModelCustomTraining:
 
         # Evaluates the elapsed time
 
-        elapsed_time = time.time()-start_time
+        self.elapsed_time = time.time()-start_time
 
         if self.verbose:
 
@@ -485,7 +487,7 @@ class ModelCustomTraining:
 
             print("Final loss...: "+format(final_loss, '.5e'))
 
-            print("Training time: "+str(elapsed_time)+" seconds.\n")
+            print("Training time: "+str(self.elapsed_time)+" seconds.\n")
 
         # Gets the trained parameters and reassigns them to the model
 
@@ -561,6 +563,11 @@ class ModelCustomTraining:
 
             models_ranking_dict[i] = np.inf 
 
+        # Initializes a variable to store the elapsed time for training
+        # each model at each realization
+
+        elapsed_time_list = []
+
         # Iterates through the realizations
 
         for i in tqdm(range(n_realizations), desc="Training realizatio"+
@@ -598,6 +605,10 @@ class ModelCustomTraining:
             # Calls the training
 
             self.__call__()
+
+            # Updates the list of elapsed time for training this model
+
+            elapsed_time_list.append(self.elapsed_time)
 
             # Gets the loss function
 
@@ -659,6 +670,15 @@ class ModelCustomTraining:
 
                     break
 
+        # Evaluates the mean time for training a model and the standard
+        # deviation
+
+        elapsed_time_list = np.array(elapsed_time_list)
+
+        mean_elapsed_time = np.mean(elapsed_time_list)
+
+        standard_deviation_elapsed_time = np.std(elapsed_time_list)
+
         # Loads the best model
 
         print("\n#####################################################"+
@@ -671,6 +691,20 @@ class ModelCustomTraining:
         print("The best fitting models follow below. The number of the"+
         " model and its\ncorresponding loss function at the training s"+
         "et of data\n")
+
+        print("The mean time for training a model was: "+str(
+        mean_elapsed_time))
+
+        print("The standard deviation was: "+str(
+        standard_deviation_elapsed_time))
+
+        confidence_radius = (stats.t.ppf(0.5*(1+0.95), len(
+        elapsed_time_list)-1)*(standard_deviation_elapsed_time/np.sqrt(
+        len(elapsed_time_list)-2)))
+
+        print("With a confidence of 95%, the time for training a model"+
+        " lies in the interval "+str(mean_elapsed_time-confidence_radius
+        )+" < t < "+str(mean_elapsed_time+confidence_radius)+" s\n")
 
         for model_number, model_loss in models_ranking_dict.items():
 
