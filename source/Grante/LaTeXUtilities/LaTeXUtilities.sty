@@ -1,6 +1,17 @@
+% File to store functions and commands to work with LaTeX. Created by
+% Matheus Janczkowski Fogaça
+
+\ProvidesPackage{LaTeXUtilities}[2025/10/06 Custom commands by Matheus Janczkowski Fogaca]
+
+% Requires packages for the methods bellow
+
+\RequirePackage{xcolor}
+\RequirePackage{ulem}
+\RequirePackage{amsmath}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%                              Comands                               %%
+%%                              Commands                              %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -22,10 +33,7 @@
 
 % Command for coloring text blue
 
-\newcommand{\textblue}[1]{\textcolor{blue}{#1}}
-
-\definecolor{LightGray}{gray}{0.7}
-\definecolor{DarkGray}{gray}{0.4}
+\newcommand{\TextBlue}[1]{\textcolor{blue}{#1}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                              Equations                               %
@@ -35,3 +43,11 @@
 % neath it
 
 \newcommand{\CommentedArrow}[2]{\xRightarrow[#2]{#1}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                Colors                                %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\definecolor{LightGray}{gray}{0.7}
+
+\definecolor{DarkGray}{gray}{0.4}
