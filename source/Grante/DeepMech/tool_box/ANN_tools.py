@@ -263,7 +263,8 @@ class MultiLayerModel:
 class MixedActivationLayer(tf.keras.layers.Layer):
 
     def __init__(self, activation_functionDict, custom_activations_class,
-    live_activationsDict=dict(), layer=0, **kwargs):
+    live_activationsDict=dict(), activations_accessory_layer_dict=dict(), 
+    layer=0, **kwargs):
 
         # Initializes the parent class, i.e. Layer. The kwargs are opti-
         # onal arguments used during layer creation and deserialization, 
@@ -276,13 +277,31 @@ class MixedActivationLayer(tf.keras.layers.Layer):
         self.custom_activations_class = custom_activations_class
 
         # Adds the dictionary of live-wired activation functions. But 
-        # checks if if is given as argument
+        # checks if it is given as argument
 
         if (live_activationsDict is None) or live_activationsDict=={}: 
 
-            self.live_activationFunctions, *_ = verify_activationDict(
-            activation_functionDict, layer, {}, True,
-            self.custom_activations_class)
+            # Checks for the activation functions of the accessory net-
+            # work, too
+
+            if activations_accessory_layer_dict:
+
+                # Concatenates the two dictionaries, but overrides the 
+                # values of the accessory dictionary with the values of
+                # the conventional one
+
+                self.live_activationFunctions, *_ = verify_activationDict(
+                activations_accessory_layer_dict | activation_functionDict, 
+                layer, {}, True, self.custom_activations_class)
+
+            # Otherwise, gets only the activation functions from the con-
+            # ventional dictionary
+
+            else:
+
+                self.live_activationFunctions, *_ = verify_activationDict(
+                activation_functionDict, layer, {}, True,
+                self.custom_activations_class)
 
         else:
 
@@ -294,6 +313,11 @@ class MixedActivationLayer(tf.keras.layers.Layer):
 
         self.layer = layer
 
+        # Gets the dictionary of functions of the accessory network in 
+        # the case of partially input-convex networks
+
+        self.functions_dict_acessory_network = activations_accessory_layer_dict
+
     # Defines a function to help Keras build the layer
 
     def build(self, input_shape):
@@ -303,6 +327,14 @@ class MixedActivationLayer(tf.keras.layers.Layer):
         self.neurons_per_activation = [value["number of neurons"] if (
         isinstance(value, dict)) else value for value in (
         self.functions_dict.values())]
+
+        # Gets a list with the numbers of neurons per activation function
+        # for the accessory network (u) in case of partially input-convex
+        # neural networks (AMOS ET AL, Input convex neural networks)
+
+        self.neurons_per_activation_acessory_layer = [value["number of"+
+        " neurons"] if isinstance(value, dict) else value for value in (
+        self.functions_dict_acessory_network.values())]
 
         # Counts the number of neurons in the layer. But takes cares if 
         # the value attached to each name of activation function is a 
@@ -363,6 +395,86 @@ class MixedActivationLayer(tf.keras.layers.Layer):
         # concatenate next to the last row
 
         return tf.concat(output_activations, axis=-1)
+    
+    # Defines a function to get the output of a layer that constitutes a
+    # partially input-convex neural network (AMOS ET AL, Input Convex 
+    # Neural Networks)
+
+    def call_partially_convex_layer(self, layer_input, 
+    acessory_layer_input, network_convex_input, parameters):
+        
+        # Gets the weights and biases
+
+        W_tilde, b_tilde, W_z, W_zu, W_y, W_yu, W_u, b_z, b_y, b_layer = (
+        parameters)
+
+        ################################################################
+        #                    Accessory layer update                    #
+        ################################################################
+
+        # Multiplies the weights of the acessory network (u) by the in-
+        # puts of the acessory layer and, then, adds the biases. Finally,
+        # splits by activation function family
+
+        x_splits_u = tf.split(tf.matmul(acessory_layer_input, W_tilde)+
+        b_tilde, self.neurons_per_activation_acessory_layer, axis=-1)
+
+        # Initializes a list of outputs for each family of neurons (or-
+        # ganized by their activation functions) for the accessory layer
+        
+        output_activations_u = [self.live_activationFunctions[name](split
+        ) for name, split in zip(self.functions_dict_acessory_network.keys(
+        ), x_splits_u)]
+
+        # Concatenates the response and saves it into u_(i+1). Uses flag 
+        # axis=-1 to concatenate next to the last row
+
+        output_u = tf.concat(output_activations_u, axis=-1)
+
+        ################################################################
+        #                      Main layer update                       #
+        ################################################################
+
+        # Gets the multiplication of the matrix W_u by the output of the
+        # accessory previous layer, and adds this layer bias
+
+        parcel_1 = tf.matmul(acessory_layer_input, W_u)+b_layer
+
+        # Gets the parcel of the convex input multiplied by the bit made
+        # of the accessory layer using the Hadamard product. Then, mul-
+        # tiplies the whole by the corresponding weight matrix
+
+        parcel_2 = tf.matmul(tf.multiply(network_convex_input, tf.matmul(
+        acessory_layer_input, W_yu)+b_y), W_y)
+
+        # Gets the parcel of the input of the main network multiplied by
+        # the absolute value of the bit given by accessory previous 
+        # layer, using the Hadamard product. Then, multiplies by the cor-
+        # responding weight matrix
+
+        parcel_3 = tf.matmul(tf.multiply(layer_input, tf.abs(tf.matmul(
+        acessory_layer_input, W_zu)+b_z)), W_z)
+
+        # Sums the parcels and splits it according to the families of 
+        # activation functions
+
+        x_splits_z = tf.split(parcel_1+parcel_2+parcel_3,
+        self.neurons_per_activation, axis=-1)
+
+        # Initializes a list of outputs for each family of neurons (or-
+        # ganized by their activation functions) for the main layer
+        
+        output_activations_z = [self.live_activationFunctions[name](split
+        ) for name, split in zip(self.functions_dict.keys(), x_splits_z)]
+
+        # Concatenates the response and saves it into z_(i+1). Uses flag 
+        # axis=-1 to concatenate next to the last row
+
+        output_z = tf.concat(output_activations_z, axis=-1)
+
+        # Returns both outputs
+
+        return output_z, output_u
     
     # Defines a function to construct a dictionary of instructions to
     # save and load the model using TensorFlow methods
