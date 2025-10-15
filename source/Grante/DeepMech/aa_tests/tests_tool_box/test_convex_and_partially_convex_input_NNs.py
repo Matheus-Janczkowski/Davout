@@ -28,6 +28,9 @@ class TestANNTools(unittest.TestCase):
         "of neurons": 100, "a2": 1.0}}, {"linear": 
         self.output_dimension_gradient_tests}]
 
+        self.accessory_activation_list_gradient_tests = [{"relu": 100}, 
+        {"linear": 2}]
+
         self.n_samples_gradient_tests = 1000
 
         self.maximum_iterations = 5000
@@ -122,8 +125,8 @@ class TestANNTools(unittest.TestCase):
         ANN_class = ANN_tools.MultiLayerModel(
         self.input_dimension_gradient_tests, 
         self.activation_list_gradient_tests, enforce_customLayers=True, 
-        evaluate_parameters_gradient=False, verbose=True, parameters_dtype=
-        "float64")
+        evaluate_parameters_gradient=False, verbose=True, 
+        parameters_dtype="float64")
 
         custom_model = ANN_class()
 
@@ -164,7 +167,67 @@ class TestANNTools(unittest.TestCase):
         # Tests Monte Carlo training
 
         training_class.monte_carlo_training(n_realizations=5, 
-        best_models_rank_size=30, show_reinitialization_distance=True)
+        best_models_rank_size=10, show_reinitialization_distance=True)
+
+    # Defines a function to test the partially convex-input neural net-
+    # works
+
+    def test_partially_convex_input_nn(self):
+
+        print("\n#####################################################"+
+        "###################\n#             Tests partially convex-inp"+
+        "ut neural network              #\n###########################"+
+        "#############################################\n")
+
+        # Tests now with custom layers
+
+        ANN_class = ANN_tools.MultiLayerModel(
+        self.input_dimension_gradient_tests, 
+        self.activation_list_gradient_tests, enforce_customLayers=True, 
+        evaluate_parameters_gradient=False, verbose=True, 
+        parameters_dtype="float64", accessory_layers_activationInfo=
+        self.accessory_activation_list_gradient_tests)
+
+        custom_model = ANN_class()
+
+        """# Sets the optimization class for training
+
+        training_class = training_tools.ModelCustomTraining(custom_model,
+        self.training_inputTensor, self.training_trueTensor, 
+        self.loss_metric, convex_input_model=True, verbose=True,
+        n_iterations=self.maximum_iterations, verbose_deltaIterations=
+        self.verbose_deltaIterations, save_model_file=
+        self.save_model_file)
+
+        t_initial = time.time()
+
+        training_class()
+
+        elapsed_time = time.time()-t_initial
+
+        print("\nTrains at "+str(elapsed_time)+" seconds")
+
+        # Checks the loss again with the model with the regularized pa-
+        # rameters
+
+        print("\nThe loss function evaluated again over the set of tra"+
+        "ining data is "+str(training_class.loss_unseen_data(
+        self.training_trueTensor, self.training_inputTensor, 
+        output_as_numpy=True)))
+
+        # Checks the hessian matrices
+
+        hessian_matrices = training_class.get_hessian_outputs_model(
+        eigenvalues=True)
+
+        print("\nThere follow the hessian matrices")
+
+        print(hessian_matrices)
+
+        # Tests Monte Carlo training
+
+        training_class.monte_carlo_training(n_realizations=5, 
+        best_models_rank_size=30, show_reinitialization_distance=True)"""
 
 # Runs all tests
 

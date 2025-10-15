@@ -31,7 +31,7 @@ class MultiLayerModel:
     def __init__(self, input_dimension, layers_activationInfo, 
     enforce_customLayers=False, evaluate_parameters_gradient=False,
     flat_trainable_parameters=False, verbose=False, parameters_dtype=
-    "float32"):
+    "float32", accessory_layers_activationInfo=[]):
         
         # Instantiates the class of custom activation functions
 
@@ -43,6 +43,15 @@ class MultiLayerModel:
         self.input_dimension = input_dimension
 
         self.layers_info = layers_activationInfo
+
+        if len(accessory_layers_activationInfo)==0:
+
+            self.accessory_layers_info = [{} for i in range(len(
+            self.layers_info))]
+
+        else:
+
+            self.accessory_layers_info = accessory_layers_activationInfo
 
         self.verbose = verbose
 
@@ -114,11 +123,21 @@ class MultiLayerModel:
 
         layer_counter = 1
 
-        for layer_dictionary in self.layers_info:
+        for i in range(len(self.layers_info)):
 
             self.live_activations, flag_customLayers = verify_activationDict(
-            layer_dictionary, layer_counter, self.live_activations, 
+            self.layers_info[i], layer_counter, self.live_activations, 
             flag_customLayers, self.custom_activations_class)
+
+            # Verifies if the accessory layer in case of partially input-
+            # convex neural networks is used
+
+            if self.accessory_layers_info[i]:
+
+                self.live_activations, flag_customLayers = verify_activationDict(
+                self.accessory_layers_info[i], layer_counter, 
+                self.live_activations, flag_customLayers, 
+                self.custom_activations_class)
 
             layer_counter += 1
 
@@ -159,7 +178,8 @@ class MultiLayerModel:
 
         output_eachLayer = MixedActivationLayer(self.layers_info[0], 
         self.custom_activations_class, live_activationsDict=
-        self.live_activations, layer=0)(input_layer)
+        self.live_activations, activations_accessory_layer_dict=
+        self.accessory_layers_info[0], layer=0)(input_layer)
 
         # Iterates through the other layers
 
@@ -167,7 +187,8 @@ class MultiLayerModel:
 
             output_eachLayer = MixedActivationLayer(self.layers_info[i],
             self.custom_activations_class, live_activationsDict=
-            self.live_activations, layer=i)(output_eachLayer)
+            self.live_activations, activations_accessory_layer_dict=
+            self.accessory_layers_info[i], layer=i)(output_eachLayer)
 
         # Assembles the model
 
