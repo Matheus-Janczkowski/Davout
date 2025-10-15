@@ -78,16 +78,12 @@ class TestPlots(unittest.TestCase):
 
         plot_object = plotting_tools.plane_plot(x_data=
         self.unimodal_x_data, y_data=self.unimodal_y_data, file_name=
-        "test_error_bar_separate_plotting", plot_type="scatter")
-
-        plot_object = plotting_tools.plane_plot(x_data=self.unimodal_x_data, y_data=
-        self.unimodal_y_data, file_name="test_error_bar_separate_plott"+
-        "ing", plot_type="scatter", plot_object=plot_object, error_bar=
-        deepcopy(error_bar))
+        "test_error_bar_separate_plotting", plot_type="scatter", 
+        error_bar=deepcopy(error_bar))
 
         plotting_tools.plane_plot(x_data=self.unimodal_x_data, y_data=
-        self.unimodal_y_data2, file_name="test_error_bar_separate_plott"+
-        "ing", plot_type="line", plot_object=plot_object)
+        self.unimodal_y_data2, file_name="test_error_bar_separate_plot"+
+        "ting", plot_type="line", plot_object=plot_object)
 
         # Scatter single curve given the error bar
 

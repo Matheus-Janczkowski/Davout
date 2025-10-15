@@ -110,7 +110,7 @@ plot_object=None):
     imum values of the color bar are to be put in. False (default) o
     therwise
 
-    error_bar                             - list with the confidence
+    error_bar_copy                             - list with the confidence
     interval if error bars with shaded areas are to be plotted. None 
     (default) if no error bars are to be plotted
     """
@@ -645,11 +645,13 @@ plot_object=None):
 
     # Plots the error bars first if they are needed
 
-    if error_bar is not None:
+    error_bar_copy = deepcopy(error_bar)
+
+    if error_bar_copy is not None:
                 
         # Verifies if the error bar is a string
 
-        if isinstance(error_bar, str) or isinstance(error_bar, dict):
+        if isinstance(error_bar_copy, str) or isinstance(error_bar_copy, dict):
 
             # Verifies if the error bar is a dictionary and if it has
             # the name key. Initializes the confidence and the z-score
@@ -659,24 +661,24 @@ plot_object=None):
 
             statistic_parameter = 0.0
 
-            if isinstance(error_bar, dict):
+            if isinstance(error_bar_copy, dict):
 
-                if not ("name" in error_bar):
+                if not ("name" in error_bar_copy):
 
                     raise KeyError("The key 'name' is not in the dicti"+
-                    "onary 'error_bar', thus, no statistical distribut"+
+                    "onary 'error_bar_copy', thus, no statistical distribut"+
                     "ion can be picked for the automatic evaluation of"+
                     " the confidence interval")
                 
                 # Verifies if it has the key confidence
 
-                if "confidence" in error_bar:
+                if "confidence" in error_bar_copy:
 
-                    confidence = error_bar["confidence"]
+                    confidence = error_bar_copy["confidence"]
 
                 # Turns this variable into the name
 
-                error_bar = error_bar["name"]
+                error_bar_copy = error_bar_copy["name"]
 
             # Checks if more curves were supplied
 
@@ -687,7 +689,7 @@ plot_object=None):
 
             # Verifies the distribution name
 
-            if error_bar=="t-Student":
+            if error_bar_copy=="t-Student":
 
                 statistic_parameter = stats.t.ppf(0.5*(1+confidence),
                 len(y_data)-1)
@@ -696,7 +698,7 @@ plot_object=None):
                 "he t-Student coefficient of "+str(statistic_parameter)+
                 "\n")
         
-            elif error_bar=="normal distribution":
+            elif error_bar_copy=="normal distribution":
 
                 statistic_parameter = stats.norm.ppf(0.5*(1+confidence))
 
@@ -706,13 +708,13 @@ plot_object=None):
         
             else:
                 
-                raise ValueError("'error_bar', if string, can be eithe"+
+                raise ValueError("'error_bar_copy', if string, can be eithe"+
                 "r 't-Student' or 'normal distribution' to automatical"+
                 "ly evaluate the confidence interval")
 
             # Gets the error bar as a list
 
-            error_bar = []
+            error_bar_copy = []
 
             # Gets the mean value
 
@@ -755,7 +757,7 @@ plot_object=None):
 
                 # Gets the confidence radius
 
-                error_bar.append((standard_deviation/(np.sqrt(len(y_data
+                error_bar_copy.append((standard_deviation/(np.sqrt(len(y_data
                 ))))*statistic_parameter)
 
             # Unifies the y_data into the mean
@@ -780,9 +782,9 @@ plot_object=None):
 
             # Verifies if error bar is a list
 
-            if not isinstance(error_bar, list):
+            if not isinstance(error_bar_copy, list):
 
-                raise TypeError("'error_bar' must be a list. Each "+
+                raise TypeError("'error_bar_copy' must be a list. Each "+
                 "value of this list must contain a list with the c"+
                 "orresponding confidence intervals of the correspo"+
                 "nding curve")
@@ -790,10 +792,10 @@ plot_object=None):
             # Verifies if it has the same length as the vector of y 
             # data
 
-            elif len(error_bar)!=len(y_data):
+            elif len(error_bar_copy)!=len(y_data):
 
-                raise IndexError("'error_bar' list has "+str(len(
-                error_bar))+" elements, whereas 'y_data' has "+str(
+                raise IndexError("'error_bar_copy' list has "+str(len(
+                error_bar_copy))+" elements, whereas 'y_data' has "+str(
                 len( y_data))+" curves. They must have the same")
             
             local_plot_type = None 
@@ -817,11 +819,11 @@ plot_object=None):
                     # Verifies if there is the same number of points in
                     # the confidence interval list as in the curve
 
-                    if len(y_data[i])!=len(error_bar[i]):
+                    if len(y_data[i])!=len(error_bar_copy[i]):
 
                         raise IndexError("The data has "+str(len(y_data[
                         i]))+" elements in the "+str(i+1)+"-th curve, "+
-                        "whereas the error bar has "+str(len(error_bar[i
+                        "whereas the error bar has "+str(len(error_bar_copy[i
                         ]))+" values of confidence interval")
 
                     # Creates the error limits
@@ -834,7 +836,7 @@ plot_object=None):
 
                         # Verifies if the error bar is a number
 
-                        confidence_interval = error_bar[i][j]
+                        confidence_interval = error_bar_copy[i][j]
 
                         if not (isinstance(confidence_interval, int) or 
                         isinstance(confidence_interval, float)):
@@ -848,10 +850,10 @@ plot_object=None):
                         # Evaluates the superior and inferior limits
 
                         error_superior_limit.append(y_data[i][j]+
-                        error_bar[i][j])
+                        error_bar_copy[i][j])
 
                         error_inferior_limit.append(y_data[i][j]-
-                        error_bar[i][j])
+                        error_bar_copy[i][j])
 
                     # Uses 30% opacity to highlight the line itself lat-
                     # ter
@@ -865,11 +867,11 @@ plot_object=None):
 
                 # Verifies if the curve is a single scatter curve
 
-                if not isinstance(error_bar[0], list):
+                if not isinstance(error_bar_copy[0], list):
 
-                    for i in range(len(error_bar)):
+                    for i in range(len(error_bar_copy)):
 
-                        error_bar[i] = [error_bar[i]]
+                        error_bar_copy[i] = [error_bar_copy[i]]
 
                 # Iterates through the curves
 
@@ -878,19 +880,19 @@ plot_object=None):
                     # Verifies if the error bar has only numbers as ele-
                     # ments
 
-                    for j in range(len(error_bar[i])):
+                    for j in range(len(error_bar_copy[i])):
 
-                        if not (isinstance(error_bar[i][j], int) or isinstance(
-                        error_bar[i][j], float)):
+                        if not (isinstance(error_bar_copy[i][j], int) or isinstance(
+                        error_bar_copy[i][j], float)):
                             
                             raise TypeError("The "+str(j)+"-th element"+
-                            " of the 'error_bar' of the "+str(i)+" cur"+
+                            " of the 'error_bar_copy' of the "+str(i)+" cur"+
                             "ve is not an integer nor a float. It's no"+
                             "t possible to plot the error bar otherwis"+
                             "e")
 
                     plotted_entities = plot_object.errorbar(x_data[i
-                    ], y_data[i], yerr=error_bar[i], color=color[i], fmt=
+                    ], y_data[i], yerr=error_bar_copy[i], color=color[i], fmt=
                     'o', alpha=0.3)
 
             else:
@@ -906,19 +908,19 @@ plot_object=None):
 
             # Verifies if error bar is a list
 
-            if not isinstance(error_bar, list):
+            if not isinstance(error_bar_copy, list):
 
-                raise TypeError("'error_bar' must be a list, even for "+
+                raise TypeError("'error_bar_copy' must be a list, even for "+
                 "plotting a single curve with error regions. Each valu"+
                 "e of this list must be corresponding confidence inter"+
                 "val")
             
             # Verifies if it has the same length as the vector of y data
 
-            elif len(error_bar)!=len(y_data):
+            elif len(error_bar_copy)!=len(y_data):
 
-                raise IndexError("'error_bar' list has "+str(len(
-                error_bar))+" elements, whereas 'y_data' has "+str(len(
+                raise IndexError("'error_bar_copy' list has "+str(len(
+                error_bar_copy))+" elements, whereas 'y_data' has "+str(len(
                 y_data))+". They must have the same")
 
             # Plots the error regions or bars
@@ -935,21 +937,21 @@ plot_object=None):
 
                     # Verifies if the error bar is a number
 
-                    confidence_interval = error_bar[i]
+                    confidence_interval = error_bar_copy[i]
 
                     if not (isinstance(confidence_interval, int) or 
                     isinstance(confidence_interval, float)):
                         
                         raise TypeError("The "+str(i)+"-th element of "+
-                        "the 'error_bar' is not an integer nor a float"+
+                        "the 'error_bar_copy' is not an integer nor a float"+
                         ". It's not possible to plot the error bar oth"+
                         "erwise")
                     
                     # Evaluates the superior and inferior limits
 
-                    error_superior_limit.append(y_data[i]+error_bar[i])
+                    error_superior_limit.append(y_data[i]+error_bar_copy[i])
 
-                    error_inferior_limit.append(y_data[i]-error_bar[i])
+                    error_inferior_limit.append(y_data[i]-error_bar_copy[i])
 
                 # Uses 30% opacity to highlight the line itself later
 
@@ -962,18 +964,18 @@ plot_object=None):
 
                 # Verifies if the error bar has only numbers as elements
 
-                for i in range(len(error_bar)):
+                for i in range(len(error_bar_copy)):
 
-                    if not (isinstance(error_bar[i], int) or isinstance(
-                    error_bar[i], float)):
+                    if not (isinstance(error_bar_copy[i], int) or isinstance(
+                    error_bar_copy[i], float)):
                         
                         raise TypeError("The "+str(i)+"-th element of "+
-                        "the 'error_bar' is not an integer nor a float"+
+                        "the 'error_bar_copy' is not an integer nor a float"+
                         ". It's not possible to plot the error bar oth"+
                         "erwise")
 
                 plotted_entities = plot_object.errorbar(x_data, 
-                y_data, yerr=error_bar, color=color, fmt='o', alpha=0.3)
+                y_data, yerr=error_bar_copy, color=color, fmt='o', alpha=0.3)
 
             else:
 
