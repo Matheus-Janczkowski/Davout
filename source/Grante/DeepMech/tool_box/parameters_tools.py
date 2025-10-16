@@ -242,6 +242,10 @@ regularization_function):
 
     return tensors
 
+########################################################################
+#             Call with parameters method for custom layers            #
+########################################################################
+
 # Defines a function to compute the output of a NN model given the para-
 # meters (weights and biases) as input. The regularizing function modu-
 # lates the weights and biases, one example is with convex-input neural
@@ -249,6 +253,71 @@ regularization_function):
 
 def model_output_given_trainable_parameters(input_variables, model,
 model_parameters, parameters_shapes, regularizing_function=None):
+    
+    # Gets the parameters from a 1D tensor to the conventional tensor 
+    # format for building models
+
+    if regularizing_function is None:
+    
+        parameters = unflatten_parameters(model_parameters, 
+        parameters_shapes)
+
+    else:
+    
+        parameters = unflatten_regularize_parameters(model_parameters, 
+        parameters_shapes, regularizing_function)
+
+    # Initializes the index of the parameters to be read in the new ten-
+    # sor format
+    
+    parameter_index = 0
+
+    # Iterates through the layers
+
+    for layer in model.layers:
+        
+        # Verifies if the layer has the call with parameters attribute,
+        # which signals it as an instance of the MixedActivationLayer 
+        # class
+
+        if hasattr(layer, "call_with_parameters"):
+
+            # Gets the number of parameters in this layer
+
+            n_parameters = len(layer.trainable_variables)
+
+            # Gets the output of this layer from the method call with 
+            # parameters
+            
+            input_variables = layer.call_with_parameters(input_variables, 
+            parameters[parameter_index:(parameter_index+n_parameters)])
+
+            # Updates the index of the parameter tensors
+
+            parameter_index += n_parameters
+
+        # Verifies if it is not an input layer, throws an error, because
+        # the input layer does not do anything really
+
+        elif layer.__class__.__name__!="InputLayer":
+
+            raise TypeError("Layer '"+str(layer.__class__.__name__)+"'"+
+            " is not an instance of 'MixedActivationLayer' nor of 'Inp"+
+            "utLayer'")
+        
+    # Returns the input variables as the output of the NN model, because
+    # it has been passed through the NN model
+        
+    return input_variables
+
+# Defines a function to compute the output of a partially input convex
+# NN model given the parameters (weights and biases) as input. The regu-
+# larizing function modulates the weights W_z (AMOS ET AL, Input convex
+# neural networks)
+
+def partially_convex_model_output_given_trainable_parameters(
+input_variables, model, model_parameters, parameters_shapes, 
+regularizing_function=None):
     
     # Gets the parameters from a 1D tensor to the conventional tensor 
     # format for building models

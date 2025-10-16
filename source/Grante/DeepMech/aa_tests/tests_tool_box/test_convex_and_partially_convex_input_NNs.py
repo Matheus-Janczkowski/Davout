@@ -22,6 +22,8 @@ class TestANNTools(unittest.TestCase):
 
         self.input_dimension_gradient_tests = 3
 
+        self.input_size_accessory_network = 1
+
         self.output_dimension_gradient_tests = 1
 
         self.activation_list_gradient_tests = [{"quadratic": {"number "+
@@ -167,7 +169,7 @@ class TestANNTools(unittest.TestCase):
         # Tests Monte Carlo training
 
         training_class.monte_carlo_training(n_realizations=5, 
-        best_models_rank_size=10, show_reinitialization_distance=True)
+        best_models_rank_size=5, show_reinitialization_distance=True)
 
     # Defines a function to test the partially convex-input neural net-
     # works
@@ -186,7 +188,8 @@ class TestANNTools(unittest.TestCase):
         self.activation_list_gradient_tests, enforce_customLayers=True, 
         evaluate_parameters_gradient=False, verbose=True, 
         parameters_dtype="float64", accessory_layers_activationInfo=
-        self.accessory_activation_list_gradient_tests)
+        self.accessory_activation_list_gradient_tests, 
+        input_size_accessory_network=self.input_size_accessory_network)
 
         custom_model = ANN_class()
 
