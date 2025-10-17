@@ -2,6 +2,8 @@
 
 import numpy as np
 
+from copy import deepcopy
+
 ########################################################################
 #                       Useful and famous tensors                      #
 ########################################################################
@@ -91,3 +93,56 @@ def tridimensional_rotation_tensor(pseudo_vector: np.ndarray):
     # Returns the rotation tensor
 
     return R
+
+########################################################################
+#                          Finite differences                          #
+########################################################################
+
+# Defines a function to evaluate scalar derivatives with respect to vec-
+# tor-valued arguments using central finite differences
+
+def central_finite_differences(function, vector_argument, h=1E-5):
+
+    # Gets the number of variables
+
+    n_variables = None
+
+    if isinstance(vector_argument, list):
+
+        n_variables = len(vector_argument)
+
+    else:
+
+        n_variables = vector_argument.shape[0]
+
+    # Initializes the vector of derivatives
+
+    derivative = np.zeros(n_variables)
+
+    # Iterates through the variables
+
+    for i in range(n_variables):
+
+        # Gets the input ahead
+
+        input_ahead = deepcopy(vector_argument)
+
+        input_ahead[i] += h 
+
+        # Gets the input abaft
+
+        input_abaft = deepcopy(vector_argument)
+
+        input_abaft[i] -= h
+
+        # Gets the function evaluations
+
+        function_ahead = function(input_ahead)
+
+        function_abaft = function(input_abaft)
+
+        # Gets the derivative's approximation
+
+        derivative[i] = (function_ahead-function_abaft)/(2*h)
+
+    return derivative

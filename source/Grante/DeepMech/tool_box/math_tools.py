@@ -4,11 +4,11 @@ import numpy as np
 
 from scipy.optimize import minimize
 
-from ...PythonicUtilities.tensor_tools import kroneckers_delta as delta
+from ...PythonicUtilities.tensor_and_math_tools import kroneckers_delta as delta
 
-from ...PythonicUtilities.tensor_tools import third_order_permutation_tensor_components as epsilon
+from ...PythonicUtilities.tensor_and_math_tools import third_order_permutation_tensor_components as epsilon
 
-from ...PythonicUtilities.tensor_tools import tridimensional_rotation_tensor as R_tensor
+from ...PythonicUtilities.tensor_and_math_tools import tridimensional_rotation_tensor as R_tensor
 
 ########################################################################
 #                 Identification of rigid body motion                  #
@@ -19,7 +19,7 @@ from ...PythonicUtilities.tensor_tools import tridimensional_rotation_tensor as 
 
 def get_rigid_body_motion(displacement_points: np.ndarray, 
 reference_points: np.ndarray, optimization_method="CG", 
-gradient_tolerance=1E-4, n_max_iterations=1000):
+gradient_tolerance=1E-4, n_max_iterations=1000, verbose=False):
     
     """
     displacement_points: a numpy array n x 3, with the displacement 
@@ -48,14 +48,32 @@ gradient_tolerance=1E-4, n_max_iterations=1000):
 
         translated_deformed_points[i,:] -= average_displacement
 
-        rotation_pseudovector += np.cross(reference_points[i,:],
-        displacement_points[i,:])
+        local_rotation_axle = np.cross(reference_points[i,:],
+        displacement_points[i,:]-average_displacement)
+
+        local_rotation_axle = ((1/np.linalg.norm(local_rotation_axle))*
+        local_rotation_axle)
+
+        # Gets the estimation of the angle
+
+        estimated_angle = np.arcsin(1.0/max(np.linalg.norm(
+        displacement_points[i,:]-average_displacement)*np.linalg.norm(
+        reference_points[i,:]), 1E-5))
+
+        rotation_pseudovector += estimated_angle*local_rotation_axle
 
     # Divides the rotation estimation by the number of points to get the
     # average
 
     rotation_pseudovector = (1/displacement_points.shape[0]
     )*rotation_pseudovector
+
+    rotation_pseudovector = np.array([0.0, 0.0, 1.0])
+
+    if verbose:
+
+        print("\nThe initial estimation for the rotation pseudo-vector"+
+        " is: "+str(rotation_pseudovector)+"\n")
 
     # Sets the objective function as a function of the rotation pseudo-
     # vector
@@ -71,13 +89,22 @@ gradient_tolerance=1E-4, n_max_iterations=1000):
     # Sets the minimization problem using the minimize class from scipy
 
     minimization_problem = minimize(objective_function, 
-    rotation_pseudovector, method=optimization_method, jac=
-    objective_gradient, tol=gradient_tolerance, options={"maxiter": 
-    n_max_iterations})
+    rotation_pseudovector, method=optimization_method, tol=
+    gradient_tolerance, options={"maxiter": 
+    n_max_iterations, "disp": verbose})
 
     # Gets the optimized rotation pseudo-vector
 
     rotation_pseudovector = minimization_problem.x
+
+    if verbose:
+
+        print("\nThe norm of the difference between the rigid body mot"+
+        "ion and the original\ncomplete motion is: "+str(
+        objective_function(rotation_pseudovector))+"\nThe norm of the "+
+        "gradient of the objective function at the end of the\noptimiz"+
+        "ation problem is: "+str(np.linalg.norm(objective_gradient(
+        rotation_pseudovector)))+"\n")
 
     # Returns the translation motion, the rotation tensor, and the rota-
     # tion tensor
