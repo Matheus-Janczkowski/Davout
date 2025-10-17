@@ -233,8 +233,8 @@ regularization_function):
         else:
 
             tensors.append(regularization_function(tf.reshape(
-            flat_parameters[parameter_index:(parameter_index+size)], shape[0
-            ])))
+            flat_parameters[parameter_index:(parameter_index+size)], 
+            shape[0])))
 
         # Updates the index counter
 
