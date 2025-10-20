@@ -30,7 +30,7 @@ class TestANNTools(unittest.TestCase):
         "of neurons": 100, "a2": 1.0}}, {"linear": 
         self.output_dimension_gradient_tests}]
 
-        self.accessory_activation_list_gradient_tests = [{"relu": 100}, 
+        self.accessory_activation_list_gradient_tests = [{"relu": 10}, 
         {"linear": 2}]
 
         self.n_samples_gradient_tests = 1000

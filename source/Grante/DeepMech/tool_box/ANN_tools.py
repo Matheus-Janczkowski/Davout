@@ -463,10 +463,14 @@ class MixedActivationLayer(tf.keras.layers.Layer):
         if self.functions_dict_acessory_network:
 
             # Constructs a dense layer with identity activation functions
-            # with no biases
+            # with no biases only if this is not the first layer. Be-
+            # cause, at the first hidden layer, there the whole input of
+            # the model is simply fed into this first hidden layer
 
-            self.dense = tf.keras.layers.Dense(total_neurons, use_bias=
-            False)
+            if self.layer!=0:
+
+                self.dense = tf.keras.layers.Dense(total_neurons, 
+                use_bias=False)
 
             # Gets a list with the numbers of neurons per activation 
             # function for the accessory network (u) in case of partial-
@@ -492,7 +496,9 @@ class MixedActivationLayer(tf.keras.layers.Layer):
 
             self.dense_Wzu = tf.keras.layers.Dense(
             self.input_size_main_layer, input_shape=(
-            self.input_size_accessory_layer,))
+            self.input_size_accessory_layer,), name="Wzu_layer_"+str(self.layer))
+
+            self.dense_Wzu.layer_tag = "Wzu_layer_"+str(self.layer)
 
             # Creates a dense layer for the bit of the accessory layer's
             # result that multiplies the initial convex input using the

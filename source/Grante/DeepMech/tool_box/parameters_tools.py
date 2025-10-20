@@ -153,6 +153,12 @@ def model_parameters_to_flat_tensor_and_shapes(model):
 
     for layer in model.trainable_variables:
 
+        print("Object: "+str(layer.name)+", shape: "+str(layer.shape))
+
+        if hasattr(layer, "layer_tag"):
+
+            print("Object has layer tag: "+str(layer.layer_tag)+"\n")
+
         # Adds the shape of the layer tensor of parameters, and adds the
         # name of the layer also
 
