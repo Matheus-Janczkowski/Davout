@@ -151,6 +151,10 @@ def model_parameters_to_flat_tensor_and_shapes(model):
 
     # Iterates over the layers
 
+    for layer in model.layers:
+
+        print(layer.name)
+
     for layer in model.trainable_variables:
 
         print("Object: "+str(layer.name)+", shape: "+str(layer.shape))

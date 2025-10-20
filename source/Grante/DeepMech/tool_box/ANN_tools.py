@@ -496,9 +496,8 @@ class MixedActivationLayer(tf.keras.layers.Layer):
 
             self.dense_Wzu = tf.keras.layers.Dense(
             self.input_size_main_layer, input_shape=(
-            self.input_size_accessory_layer,), name="Wzu_layer_"+str(self.layer))
-
-            self.dense_Wzu.layer_tag = "Wzu_layer_"+str(self.layer)
+            self.input_size_accessory_layer,), name="Wzu_layer_"+str(
+            self.layer))
 
             # Creates a dense layer for the bit of the accessory layer's
             # result that multiplies the initial convex input using the
@@ -532,6 +531,10 @@ class MixedActivationLayer(tf.keras.layers.Layer):
             self.dense = tf.keras.layers.Dense(total_neurons)
 
         super().build(input_shape)
+
+        if hasattr(self, "dense"):
+
+            print("Layer name: "+str(self.dense.name))
 
     # Defines a function to get the output of such a mixed layer
 
