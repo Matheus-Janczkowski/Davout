@@ -44,27 +44,48 @@ def reinitialize_model_parameters(model):
             model.layers[i].bias.assign(initializer(shape=
             layer.bias.shape, dtype=layer.bias.dtype))
 
-        # Treats the case of mixed activation layer
+        # Treats the case of a layer as instance of MixedActivationLayer
 
-        elif hasattr(layer, "dense"):
+        elif hasattr(layer, "functions_dict"):
 
-            # Gets the initializer for the weights
+            # Iterates through the attributes of the class to look for
+            # dense objects
 
-            initializer = type(layer.dense.kernel_initializer)() 
+            for attribute_value in vars(layer).values():
 
-            # Reinitializes the weights
+                # Verifies if it is a weight matrix
 
-            model.layers[i].dense.kernel.assign(initializer(shape=
-            layer.dense.kernel.shape, dtype=layer.dense.kernel.dtype))
+                if (hasattr(attribute_value, "kernel") and hasattr(
+                attribute_value, "kernel_initializer")):
+                    
+                    if attribute_value.kernel is not None:
 
-            # Gets the initializer for the biases
+                        # Gets the initializer for the weights
 
-            initializer = type(layer.dense.bias_initializer)() 
-            
-            # Reinitializes the biases
+                        initializer = type(attribute_value.kernel_initializer)() 
 
-            model.layers[i].dense.bias.assign(initializer(shape=
-            layer.dense.bias.shape, dtype=layer.dense.bias.dtype))
+                        # Reinitializes the weights
+
+                        attribute_value.kernel.assign(initializer(shape=
+                        attribute_value.kernel.shape, dtype=
+                        attribute_value.kernel.dtype))
+
+                # Verifies if it is a bias vector
+
+                elif  (hasattr(attribute_value, "bias") and hasattr(
+                attribute_value, "bias_initializer")):
+                    
+                    if attribute_value.bias is not None:
+
+                        # Gets the initializer for the biases
+
+                        initializer = type(attribute_value.bias_initializer)() 
+                        
+                        # Reinitializes the biases
+
+                        attribute_value.bias.assign(initializer(shape=
+                        attribute_value.bias.shape, dtype=
+                        attribute_value.bias.dtype))
 
         # Some layers don't have parameters to be reinitialized. Raises
         # an error only if this layer is not one of such layer types

@@ -451,6 +451,11 @@ class MixedActivationLayer(tf.keras.layers.Layer):
 
         self.input_convex_model = input_convex_model
 
+        # Gets the dictionary of functions of the accessory network in 
+        # the case of partially input-convex networks
+
+        self.functions_dict_acessory_network = activations_accessory_layer_dict
+
         # Verifies the input convex flag and the corresponding required
         # activation functions
 
@@ -460,21 +465,16 @@ class MixedActivationLayer(tf.keras.layers.Layer):
             # put, activation functions for the accessory network must
             # be provided
 
-            if not activations_accessory_layer_dict:
+            if not self.functions_dict_acessory_network:
 
                 raise ValueError("A partially input convex model has b"+
                 "een required, but no activations functions were given"+
                 " to the accessory network")
 
-        # Gets the dictionary of functions of the accessory network in 
-        # the case of partially input-convex networks
-
-        self.functions_dict_acessory_network = activations_accessory_layer_dict
-
         # Selects the method that will give the ouput of the layer based
         # on the existence or not of an accessory layer
 
-        if activations_accessory_layer_dict:
+        if self.functions_dict_acessory_network:
 
             # Defines the method that will be used to call the layer's 
             # response when the trainable parameters are fixed
@@ -602,6 +602,8 @@ class MixedActivationLayer(tf.keras.layers.Layer):
 
         super().build(input_shape)
 
+        print("Deserializes initial")
+
         # Adds the custom tag for regularization of the weights in case
         # of convex neural networks
 
@@ -644,9 +646,13 @@ class MixedActivationLayer(tf.keras.layers.Layer):
 
                     tensor.regularizable = True
 
+        print("Deserializes final layer="+str(self.layer))
+
     # Defines a function to get the output of such a mixed layer
 
     def call(self, input):
+
+        print("Calls layer "+str(self.layer))
 
         return self.call_from_input_method(input)
 
@@ -662,6 +668,8 @@ class MixedActivationLayer(tf.keras.layers.Layer):
 
     def call_from_input_no_accessory_layer(self, input):
 
+        print("Call with no accessory layer")
+
         # Initializes the input as dense layer and split it into the 
         # different families of activation functions. This keeps the in-
         # put as a tensor
@@ -669,11 +677,15 @@ class MixedActivationLayer(tf.keras.layers.Layer):
         x_splits = tf.split(self.dense(input), 
         self.neurons_per_activation,  axis=-1)
 
+        print("Splits x")
+
         # Initializes a list of outputs for each family of neurons (or-
         # ganized by their activation functions)
         
         output_activations = [self.live_activationFunctions[name](split
         ) for name, split in zip(self.functions_dict.keys(), x_splits)]
+
+        print("Gets the activation functions evaluated")
 
         # Concatenates the response and returns it. Uses flag axis=-1 to
         # concatenate next to the last row
@@ -686,6 +698,8 @@ class MixedActivationLayer(tf.keras.layers.Layer):
     # ral networks
 
     def call_from_input_with_accessory_layer(self, input):
+
+        print("Call with accessory layer")
 
         # The first element in the input tuple is the main layer. The 
         # second element is due to the accessory layer. The third element

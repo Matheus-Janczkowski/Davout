@@ -736,6 +736,8 @@ class ModelCustomTraining:
 
         print("")
 
+        print("Loads the best model")
+
         self.model = tf.keras.models.load_model(self.parent_path+"//1_"+
         "best_model.keras")
 
