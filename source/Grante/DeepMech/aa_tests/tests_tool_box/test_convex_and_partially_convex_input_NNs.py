@@ -203,7 +203,7 @@ class TestANNTools(unittest.TestCase):
         self.verbose_deltaIterations, save_model_file=
         self.save_model_file)
 
-        """t_initial = time.time()
+        t_initial = time.time()
 
         training_class()
 
@@ -231,7 +231,7 @@ class TestANNTools(unittest.TestCase):
         # Tests Monte Carlo training
 
         training_class.monte_carlo_training(n_realizations=5, 
-        best_models_rank_size=30, show_reinitialization_distance=True)"""
+        best_models_rank_size=5, show_reinitialization_distance=True)
 
 # Runs all tests
 

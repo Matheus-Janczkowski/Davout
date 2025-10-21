@@ -87,8 +87,7 @@ None, convex_input_model=None, regularizing_function="smooth absolute "+
 
             print("\nThe shape of the model parameters flat tensor: "+
             str(model_parameters.shape)+".\n\nThere are "+str(len(
-            parameters_shapes))+" tensors of trainable parameters, and"+
-            " the vector of shapes is: "+str(parameters_shapes)+"\n")
+            parameters_shapes))+" tensors of trainable parameters\n")
 
         # Gets the class instance to evaluate the gradient and returns 
         # it alongside the 1D tensor of model parameters

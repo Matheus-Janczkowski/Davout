@@ -284,33 +284,20 @@ class MultiLayerModel:
             self.live_activations, activations_accessory_layer_dict=
             self.accessory_layers_info[i], input_size_main_network=
             self.input_size_main_network, input_size_main_layer=
-            input_size_main_layer, layer=i, input_convex_model=
-            self.input_convex_model)(output_eachLayer)
+            input_size_main_layer, layer=layer_number, 
+            input_convex_model=self.input_convex_model)(output_eachLayer)
 
         # Assembles the model
 
-        model = None 
+        model = tf.keras.Model(inputs=input_layer, outputs=
+        output_eachLayer)
 
-        # If the model has an accessory layer, lets as output just the
-        # first one, corresponding to the main network
+        # Adds the input convex information and the dimension of the 
+        # output layer
 
-        if self.input_size_main_network is not None:
+        model.input_convex_model = self.input_convex_model
 
-            model = tf.keras.Model(inputs=input_layer, outputs=
-            output_eachLayer[0])
-
-            # Adds the input convex information
-
-            model.input_convex_model = self.input_convex_model
-
-        else:
-
-            model = tf.keras.Model(inputs=input_layer, outputs=
-            output_eachLayer)
-
-            # Adds the input convex information
-
-            model.input_convex_model = self.input_convex_model
+        model.output_dimension = self.output_dimension
 
         # If the gradient is to be evaluated too
 
@@ -380,13 +367,19 @@ class MultiLayerModel:
         if self.evaluate_parameters_gradient:
 
             keras_model = tf.keras.Sequential(model_parameters)
+
+            keras_model.output_dimension = self.output_dimension
         
             return keras_model, diff_tools.model_jacobian(keras_model, 
             self.output_dimension, self.evaluate_parameters_gradient)
 
         else:
+
+            keras_model = tf.keras.Sequential(model_parameters)
+
+            keras_model.output_dimension = self.output_dimension
             
-            return tf.keras.Sequential(model_parameters)
+            return keras_model
 
 # Defines a class to construct a layer with different activation 
 # functions. Receives a dictionary of activation functions, the activa-
@@ -796,10 +789,18 @@ class MixedActivationLayer(tf.keras.layers.Layer):
 
         # Concatenates the response and returns it. Uses flag axis=-1 to
         # concatenate next to the last row. Returns always the main layer
-        # first, then the accessory layer
+        # first, then the accessory layer. If this layer is the last one,
+        # returns just the main layer
 
-        return (tf.concat(output_activations_main_layer, axis=-1), 
-        tf.concat(output_activations_accessory_layer, axis=-1), input[2])
+        if self.layer==-1:
+
+            return tf.concat(output_activations_main_layer, axis=-1)
+        
+        else:
+
+            return (tf.concat(output_activations_main_layer, axis=-1), 
+            tf.concat(output_activations_accessory_layer, axis=-1), 
+            input[2])
     
     # Defines a function to get the output of such a mixed layer given 
     # the parameters (weights and biases) as a flat list (still a tensor)
@@ -835,15 +836,15 @@ class MixedActivationLayer(tf.keras.layers.Layer):
     def call_partially_convex_layer_with_parameters(self, layer_input, 
     parameters):
         
-        # Gets the weights and biases
-
-        W_tilde, b_tilde, W_z, W_zu, W_y, W_yu, W_u, b_z, b_y, b_layer = (
-        parameters)
-        
         # If it's the first layer, the input tensor must be sliced: one
         # bit for the main network, the rest for the accessory network
 
         if self.layer==0:
+        
+            # Gets the weights and biases
+
+            W_tilde, b_tilde, W_yu, b_y, W_u, b_layer, W_y = (
+            parameters)
 
             layer_input = (layer_input[..., :self.input_size_main_network
             ], layer_input[..., self.input_size_main_network:])
@@ -896,6 +897,11 @@ class MixedActivationLayer(tf.keras.layers.Layer):
         ################################################################
         #                    Accessory layer update                    #
         ################################################################
+        
+        # Gets the weights and biases
+
+        W_z, W_tilde, b_tilde, W_zu, b_z, W_yu, b_y, W_u, b_layer, W_y = (
+        parameters)
 
         # Multiplies the weights of the acessory network (u) by the in-
         # puts of the acessory layer and, then, adds the biases. Finally,
@@ -964,7 +970,7 @@ class MixedActivationLayer(tf.keras.layers.Layer):
 
             return output_z
 
-        return output_z, output_u
+        return output_z, output_u, layer_input[2]
     
     # Defines a function to construct a dictionary of instructions to
     # save and load the model using TensorFlow methods

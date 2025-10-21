@@ -301,9 +301,16 @@ class ModelCustomTraining:
         self.input_convex_model, regularizing_function=
         regularizing_function, verbose=verbose)
 
-        # Gets the number of output neurons
+        # Gets the number of output neurons. Tries to get first via a 
+        # custom attribute
+
+        if hasattr(self.model, "output_dimension"):
+
+            self.n_outputs = self.model.output_dimension
+
+        else:
         
-        self.n_outputs = self.model.trainable_variables[-1].shape[0]
+            self.n_outputs = self.model.trainable_variables[-1].shape[0]
 
     # Defines a method to evaluate the hessian of each output neuron of
     # the model
