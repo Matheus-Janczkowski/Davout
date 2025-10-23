@@ -54,13 +54,20 @@
 % Macro to put a dot over an expresion, important when there is a dot 
 % over another dot
 
-\newcommand*{\dotao}[1]{%
-\accentset{\mbox{\large .}}{#1}}
+\newcommand*{\dotao}[1]{\accentset{\mbox{\large .}}{#1}}
 
 % Macro to make integral differentials prettier
 % Example: \dit t
 
 \newcommand*\dif{\mathop{}\!\mathrm{d}}
+
+% Command for typing the intersection operator
+
+\newcommand{\IntersectionOperator}[2]{\bigcap\limits_{#1}^{#2}}
+
+% Command for typing the argument operator
+
+\newcommand{\ArgumentOperator}[2]{\operatorname*{arg}_{#1}\{#2\}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                              Code blocks                             %
