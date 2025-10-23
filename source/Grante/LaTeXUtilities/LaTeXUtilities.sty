@@ -11,6 +11,7 @@
 \RequirePackage{xcolor}
 \RequirePackage{ulem}
 \RequirePackage{amsmath}
+\RequirePackage{mathtools}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -48,7 +49,7 @@
 % Command for creating an implication arrow with text above and under-
 % neath it
 
-\newcommand{\CommentedArrow}[2]{\xRightarrow[#2]{#1}}
+\newcommand*{\CommentedArrow}[2]{\xRightarrow[#2]{#1}}
 
 % Macro to put a dot over an expresion, important when there is a dot 
 % over another dot
