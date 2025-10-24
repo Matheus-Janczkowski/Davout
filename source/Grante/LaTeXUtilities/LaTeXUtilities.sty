@@ -12,6 +12,7 @@
 \RequirePackage{ulem}
 \RequirePackage{amsmath}
 \RequirePackage{mathtools}
+\RequirePackage{tikz}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -73,13 +74,16 @@
 %                              Code blocks                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% Command for defining the code block style         
+% Command for defining the code block style    
+
+\definecolor{CodeLightGray}{gray}{0.95}
+\definecolor{CodeBarColor}{rgb}{0.8,0.8,0.8}     
 
 \lstdefinestyle{ffcode}{
-  backgroundcolor=\color{lightgray},
+  backgroundcolor=\color{CodeLightGray},
   basicstyle=\ttfamily\footnotesize,
   frame=single,
-  rulecolor=\color{barcolor},
+  rulecolor=\color{CodeBarColor},
   xleftmargin=2em,
   framexleftmargin=1.5em,
   numbers=left,
@@ -112,6 +116,16 @@
 }
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                           Cardinal numbers                           %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Command to put the "o" of first (Portuguese) and "a" of feminine first
+% (Portuguese)
+
+\newcommand{\oCardinal}{$^{\mathrm o}$}
+\newcommand{\aCardinal}{$^{\mathrm a}$}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                              Algorithms                              %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -135,3 +149,25 @@
 \definecolor{LightGray}{gray}{0.7}
 
 \definecolor{DarkGray}{gray}{0.4}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                               Charts                               %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\usetikzlibrary{shapes.geometric, arrows}
+
+% Creates flowchart elements
+
+\tikzstyle{terminator} = [rectangle, draw, text centered, rounded corners,%
+minimum height=2em]
+
+\tikzstyle{process} = [rectangle, draw, text centered, minimum height=2em]
+
+\tikzstyle{decision} = [diamond, draw, text centered, minimum height=2em]
+
+\tikzstyle{data}=[trapezium, draw, text centered, trapezium left angle=60, %
+trapezium right angle=120, minimum height=2em]
+
+\tikzstyle{connector} = [draw, -latex']
