@@ -6,13 +6,53 @@
 
 \ProvidesPackage{LaTeXUtilities}[2025/10/06 Custom commands by Matheus Janczkowski Fogaca]
 
-% Requires packages for the methods below
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                            Load packages                           %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\RequirePackage{xcolor}
+% Loads a set of packages, so that none has to be loaded in the file's
+% preamble
+
 \RequirePackage{ulem}
-\RequirePackage{amsmath}
 \RequirePackage{mathtools}
 \RequirePackage{tikz}
+\RequirePackage[english]{babel}
+\RequirePackage{amsmath}
+\RequirePackage{mattens}
+\RequirePackage{amsthm}
+\RequirePackage{amssymb}
+\RequirePackage{multirow}
+\RequirePackage{amsfonts}
+\RequirePackage{hhline}
+\RequirePackage{commath}
+\RequirePackage{graphicx}
+\RequirePackage[utf8]{inputenc}
+\RequirePackage{bm}
+\RequirePackage[T1]{fontenc}
+\RequirePackage{url}
+\RequirePackage[title]{appendix}
+\RequirePackage{mathrsfs}
+%\RequirePackage{authblk}
+\RequirePackage{accents}
+\RequirePackage{hyperref}
+\RequirePackage{algpseudocode}
+\RequirePackage[algo2e,ruled,linesnumbered]{algorithm2e}
+\RequirePackage{breakcites}
+\RequirePackage{xcolor}
+% Package to force nocn to enumerate the code lines from 1
+\RequirePackage[nocn]{ffcode} 
+\RequirePackage{colortbl}
+% Package to enumerate with letters
+\RequirePackage[shortlabels]{enumitem}
+% Package to place figures within the sections where they had been al
+% ready placed.
+\RequirePackage[section]{placeins}
+\RequirePackage{comment}
+\RequirePackage{listings}
+\lstset{basicstyle=\ttfamily, breaklines=true, columns=fullflexible}
+\RequirePackage[numbers]{natbib}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -60,7 +100,7 @@
 % Macro to make integral differentials prettier
 % Example: \dit t
 
-\newcommand*\dif{\mathop{}\!\mathrm{d}}
+\newcommand*\IntegralDif{\mathop{}\!\mathrm{d}}
 
 % Command for typing the intersection operator
 
@@ -72,7 +112,8 @@
 
 % Command for typing the minimum argument operator
 
-\newcommand{\MinimumArgumentOperator}[2]{\operatorname*{argmin}_{#1}\{#2\}}
+\newcommand{\MinimumArgumentOperator}[2]{\operatorname*{argmin}_{#1}\{%
+#2\}}
 
 % Command for making a generic operator with lower and upper text, like
 % U_{j=1}^{k}. The arguments are: the letter to symbolize the operator,
@@ -171,6 +212,23 @@
 % it clearing pages above and bellow
 
 \newcommand{\ContentsPage}{\clearpage\tableofcontents\clearpage}
+
+% Command to generate and set the appendix
+
+\newcommand{\AppendixSetup}{\appendix\setcounter{figure}{0}%
+\renewcommand\thefigure{A.\arabic{figure}}\addcontentsline{toc}{section%
+}{Appendix}}
+
+% Command to insert the bibliography in the file
+
+\newcommand{\InsertBibliography}[1]{\bibliographystyle{%
+elsarticle-num-names}\bibliography{#1}}
+
+% Command to take out the text "Preprint submitted to Elsevier"
+
+\newcommand{\TakeOutPreprintElsevier}{\makeatletter\def\ps@pprintTitle{%
+\let\@oddhead\@empty\let\@evenhead\@empty\def\@oddfoot{\reset@font\hfil%
+\thepage\hfil}\let\@evenfoot\@oddfoot}\makeatother}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

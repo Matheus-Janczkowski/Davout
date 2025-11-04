@@ -1,65 +1,10 @@
 \documentclass[12pt,3p]{elsarticle}
-\usepackage[english]{babel}
-\usepackage{amsmath}
-\usepackage{mattens}
-\usepackage{amsthm}
-\usepackage{amssymb}
-\usepackage{multirow}
-\usepackage{amsfonts}
-\usepackage{hhline}
-\usepackage{commath}
-\usepackage{graphicx}
-\usepackage[utf8]{inputenc}
-\usepackage{bm}
-\usepackage[T1]{fontenc}
-\usepackage{url}
-\usepackage[title]{appendix}
-\usepackage{mathrsfs}% F fresco da transformada de Fourier
-%\usepackage{authblk}
-\usepackage{accents}
-\usepackage{hyperref}
-\usepackage{algpseudocode}
-\usepackage[algo2e,ruled,linesnumbered]{algorithm2e}
-\usepackage{breakcites}
-\usepackage{xcolor}
-\usepackage[nocn]{ffcode} % Pacote para fazer código estilo do terminal. O 'nocn' faz com que a numeração das linhas comece sempre em 1
-\usepackage{colortbl}
-\usepackage[shortlabels]{enumitem}% Package to enumerate with letters
-\usepackage[section]{placeins}% Package to place figures within the sections where they had been already placed.
-\usepackage{comment}
-\usepackage{listings}
-\lstset{
-  basicstyle=\ttfamily,
-  breaklines=true,
-  columns=fullflexible
-}
-\usepackage[numbers]{natbib}
-\usepackage{tikz}
 
-% Calls our own package
-
+% Calls our own package, which already loads a bunch of other packages
 \usepackage{LaTeXUtilities}
 
-\usepackage{etoolbox}
-\usepackage{caption}
-\DeclareCaptionType{command}[Command][List of Commands]
-
-%\usepackage[left=15mm,right=15mm,top=20mm,bottom=20mm]{geometry}
-
-% Define a cor cinza
-\definecolor{LightGray}{gray}{0.7}
-\definecolor{DarkGray}{gray}{0.4}
-
-% Macro para tirar o Preprint submitted to Elsevier
-
-\makeatletter
-\def\ps@pprintTitle{%
-  \let\@oddhead\@empty
-  \let\@evenhead\@empty
-  \def\@oddfoot{\reset@font\hfil\thepage\hfil}
-  \let\@evenfoot\@oddfoot
-}
-\makeatother
+% Takes out the tag "Preprint submitted to Elsevier"
+\TakeOutPreprintElsevier
 
 \begin{document}
 
@@ -92,17 +37,30 @@ C. Iulius Caesar \sep Germanicus Iulius Caesar \sep Cn. Iulius Agricola \sep M. 
 
 \end{frontmatter}
 
-\pagebreak
+% Adds the page of contents
+\ContentsPage
 
-\tableofcontents
+\section{Equation}\label{sec:equation}
 
-\pagebreak
+Hactenus principia tradidi, quibus philosophiæ naturalis partes mathematicae innituntur; ex his propositiones sequenti libro deducentur,
+%
+\begin{flalign}\label{eq:segunda_lei}
+\boldsymbol{F}=m\boldsymbol{a},
+\end{flalign}
+%
+where $\boldsymbol{F}$ is the force vector; $m$ is the mass; and $\boldsymbol{a}$ is the acceleration vector.
+
+Equation \eqref{eq:segunda_lei} is the cornerstone of classical mechanics. Even in continuum mechanics, the equilibrium equations are derived using Eq. \eqref{eq:segunda_lei}.
+
+\subsection{Citation}\label{subsec:citation}
+
+There are two kinds of citation: one that is not the phrase's subject \cite{BoyceDiPrima}; another where \citet{BoyceDiPrima} are the subject indeed.
 
 \section{Figure}\label{sec:figure}
 
 \begin{figure}[h!]%
 \centering
-\includegraphics[width=0.6\textwidth]{Figuras/aplicacoes_multiescala.pdf}
+\includegraphics[width=0.6\textwidth]{Figures/multiscale_figure.png}
 \caption{Multiscale applications.}
 \label{fig:multiscale_applications}
 \end{figure}
@@ -136,7 +94,7 @@ C. Iulius Caesar \sep Germanicus Iulius Caesar \sep Cn. Iulius Agricola \sep M. 
 \hline
 \cellcolor{LightGray} & \multicolumn{4}{|c|}{\cellcolor{LightGray}{2024}} & \multicolumn{4}{|c|}{\cellcolor{LightGray}{2025}} \\
 \cline{2-9}
-\multirow{-2}{*}{\cellcolor{LightGray}{Atividades}} & \cellcolor{LightGray}{1\oCardinal$\;$Bi} & \cellcolor{LightGray}{2\oCardinal $\;$Bi} & \cellcolor{LightGray}{3\oCardinal $\;$Bi} & \cellcolor{LightGray}{4\oCardinal $\;$Bi} & \cellcolor{LightGray}{1\oCardinal $\;$Bi} & \cellcolor{LightGray}{2\oCardinal $\;$Bi} & \cellcolor{LightGray}{3\oCardinal $\;$Bi} & \cellcolor{LightGray}{4\oCardinal $\;$Bi} \\
+\multirow{-2}{*}{\cellcolor{LightGray}{Atividades}} & \cellcolor{LightGray}{1\oOrdinal$\;$Bi} & \cellcolor{LightGray}{2\oOrdinal $\;$Bi} & \cellcolor{LightGray}{3\oOrdinal $\;$Bi} & \cellcolor{LightGray}{4\oOrdinal $\;$Bi} & \cellcolor{LightGray}{1\oOrdinal $\;$Bi} & \cellcolor{LightGray}{2\oOrdinal $\;$Bi} & \cellcolor{LightGray}{3\oOrdinal $\;$Bi} & \cellcolor{LightGray}{4\oOrdinal $\;$Bi} \\
 \hline
 01 &  \cellcolor{DarkGray} & \cellcolor{DarkGray} & \cellcolor{DarkGray} & \cellcolor{DarkGray} &  &  &  & \\
 \hline
@@ -177,6 +135,13 @@ C. Iulius Caesar \sep Germanicus Iulius Caesar \sep Cn. Iulius Agricola \sep M. 
 \label{tab:plano_de_trabalho_2024_2025}
 \vspace{2mm}
 \end{table}
+
+\subsection{Enumeration}\label{subsec:enumeration}
+
+\begin{enumerate}
+\item Item 1;
+\item Item 2.
+\end{enumerate}
 
 \section{Flowchart}\label{sec:flowchart}
 
@@ -249,15 +214,12 @@ sudo curl -fsSL https://keys.anydesk.com/repos/DEB-GPG-KEY -o /etc/apt/keyrings/
 sudo chmod a+r /etc/apt/keyrings/keys.anydesk.com.asc
 \end{ffcodeMimic}
 
-\appendix
-\setcounter{figure}{0}
-\renewcommand\thefigure{A.\arabic{figure}}
-\addcontentsline{toc}{section}{Appendix}
+% Adds the appendix heading and sets the list of appendices
+\AppendixSetup
 
 \section{Appendix template}\label{sec:appendix_template}
 
-\bibliographystyle{elsarticle-num-names}
-
-\bibliography{bibliografia} 
+% Inserts the bibliography using the bibliographia.bib file
+\InsertBibliography{bibliographia}
 
 \end{document}
