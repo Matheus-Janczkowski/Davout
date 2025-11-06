@@ -1,225 +1,301 @@
-\documentclass[12pt,3p]{elsarticle}
-
-% Calls our own package, which already loads a bunch of other packages
-\usepackage{LaTeXUtilities}
-
-% Takes out the tag "Preprint submitted to Elsevier"
-\TakeOutPreprintElsevier
-
-\begin{document}
-
-\begin{frontmatter}
-
-\title{Templates for figures, tables, and other structures}
-
-\author{Matheus Janczkowski Fogaça}
-
-\affiliation[1]{department={Mechanical Engineering Department,},
-organization={Santa Catarina Federal University},
-addressline={Eng. Agronômico Andrei Cristian Ferreira Street, no number - Trindade},
-city={Florianópolis},
-country={Brazil}}
-
-\begin{abstract}  
-Arma virumque canō, Trōiae quī prīmus ab ōrīs
-Ītaliam, fātō profugus, Lāvīniaque vēnit
-lītora — multum ille et terrīs iactātus et altō
-vī superum saevae memorem Iūnōnis ob īram;
-multa quoque et bellō passus, dum conderet urbem,
-inferretque deōs Latiō — genus unde Latīnum,
-Albānīque patrēs, atque altae moenia Rōmae.
-\end{abstract}
-
-
-\begin{keyword}
-C. Iulius Caesar \sep Germanicus Iulius Caesar \sep Cn. Iulius Agricola \sep M. Ulpius Traianus
-\end{keyword}
-
-\end{frontmatter}
-
-% Adds the page of contents
-\ContentsPage
-
-\section{Equation}\label{sec:equation}
-
-Hactenus principia tradidi, quibus philosophiæ naturalis partes mathematicae innituntur; ex his propositiones sequenti libro deducentur,
+% File to store functions and commands to work with LaTeX. Created by
+% Matheus Janczkowski Fogaça
 %
-\begin{flalign}\label{eq:segunda_lei}
-\boldsymbol{F}=m\boldsymbol{a},
-\end{flalign}
-%
-where $\boldsymbol{F}$ is the force vector; $m$ is the mass; and $\boldsymbol{a}$ is the acceleration vector.
+% Usage instructions, paste on preambule:
+% \usepackage{LaTeXUtilities}
 
-Equation \eqref{eq:segunda_lei} is the cornerstone of classical mechanics. Even in continuum mechanics, the equilibrium equations are derived using Eq. \eqref{eq:segunda_lei}.
+\ProvidesPackage{LaTeXUtilities}[2025/10/06 Custom commands by Matheus Janczkowski Fogaca]
 
-\subsection{Citation}\label{subsec:citation}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                            Load packages                           %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-There are two kinds of citation: one that is not the phrase's subject \cite{BoyceDiPrima}; another where \citet{BoyceDiPrima} are the subject indeed.
+% Loads a set of packages, so that none has to be loaded in the file's
+% preamble
 
-\section{Figure}\label{sec:figure}
+\RequirePackage{ulem}
+\RequirePackage{mathtools}
+\RequirePackage{tikz}
+\RequirePackage[english]{babel}
+\RequirePackage{amsmath}
+\RequirePackage{mattens}
+\RequirePackage{amsthm}
+\RequirePackage{amssymb}
+\RequirePackage{multirow}
+\RequirePackage{amsfonts}
+\RequirePackage{hhline}
+\RequirePackage{commath}
+\RequirePackage{graphicx}
+\RequirePackage[utf8]{inputenc}
+\RequirePackage{bm}
+\RequirePackage[T1]{fontenc}
+\RequirePackage{url}
+\RequirePackage[title]{appendix}
+\RequirePackage{mathrsfs}
+%\RequirePackage{authblk}
+\RequirePackage{accents}
+\RequirePackage{hyperref}
+\RequirePackage{algpseudocode}
+\RequirePackage[algo2e,ruled,linesnumbered]{algorithm2e}
+\RequirePackage{breakcites}
+\RequirePackage{xcolor}
+% Package to force nocn to enumerate the code lines from 1
+\RequirePackage[nocn]{ffcode} 
+\RequirePackage{colortbl}
+% Package to enumerate with letters
+\RequirePackage[shortlabels]{enumitem}
+% Package to place figures within the sections where they had been al
+% ready placed.
+\RequirePackage[section]{placeins}
+\RequirePackage{comment}
+\RequirePackage{listings}
+\lstset{basicstyle=\ttfamily, breaklines=true, columns=fullflexible}
+\RequirePackage[numbers]{natbib}
 
-\begin{figure}[h!]%
-\centering
-\includegraphics[width=0.6\textwidth]{Figures/multiscale_figure.png}
-\caption{Multiscale applications.}
-\label{fig:multiscale_applications}
-\end{figure}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                              Commands                              %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Table}\label{sec:table}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                        Corrections and review                        %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\begin{table}[h]
-\centering
-\begin{tabular}{|p{1.5cm}|p{1.5cm}|p{1.5cm}|}
-%\begin{tabular}{ C{1.7cm} |  C{2cm} | C{2cm} | C{1.5cm} | C{1cm} | C{2cm} | C{2cm}}
-\hline
-\cellcolor{LightGray}{Case} & 
-\cellcolor{LightGray}{$N$} & \cellcolor{LightGray}{$l_{b}\;[mm]$} \\
-\hline
-\cellcolor{LightGray}{$\text{I}_{\text{bending}}$} & 0.001 & 1.0\\
-\hline
-\cellcolor{LightGray}{$\text{II}_{\text{bending}}$} & 0.08 & 1.0 \\
-\hline
-\end{tabular}
-\caption{$N$ and $l_{b}$ for the bending case. The same parameter values were assigned to both matrix and fiber phases. The same parameters are set for the DNS and for the RVE.}%
-\label{tab:material_parameters_bending}
-\vspace{2mm}
-\end{table}
+% Following Prof. Eduardo Lenz correction and reviewing standard, the 
+% commands below are defined
 
-\subsection{Schedule}\label{subsec:schedule}
+% Command for coloring text red
 
-\begin{table}[!htbp]
-\centering
-\begin{tabular}{|p{2cm}|p{1.25cm}|p{1.25cm}|p{1.25cm}|p{1.25cm}|p{1.25cm}|p{1.25cm}|p{1.25cm}|p{1.25cm}|}
-%\begin{tabular}{ C{1.7cm} |  C{2cm} | C{2cm} | C{1.5cm} | C{1cm} | C{2cm} | C{2cm}}
-\hline
-\cellcolor{LightGray} & \multicolumn{4}{|c|}{\cellcolor{LightGray}{2024}} & \multicolumn{4}{|c|}{\cellcolor{LightGray}{2025}} \\
-\cline{2-9}
-\multirow{-2}{*}{\cellcolor{LightGray}{Atividades}} & \cellcolor{LightGray}{1\oOrdinal$\;$Bi} & \cellcolor{LightGray}{2\oOrdinal $\;$Bi} & \cellcolor{LightGray}{3\oOrdinal $\;$Bi} & \cellcolor{LightGray}{4\oOrdinal $\;$Bi} & \cellcolor{LightGray}{1\oOrdinal $\;$Bi} & \cellcolor{LightGray}{2\oOrdinal $\;$Bi} & \cellcolor{LightGray}{3\oOrdinal $\;$Bi} & \cellcolor{LightGray}{4\oOrdinal $\;$Bi} \\
-\hline
-01 &  \cellcolor{DarkGray} & \cellcolor{DarkGray} & \cellcolor{DarkGray} & \cellcolor{DarkGray} &  &  &  & \\
-\hline
-02 & \cellcolor{DarkGray} &  &  &  &  &  &  & \\
-\hline
-03 &  & \cellcolor{DarkGray} &  &  &  &  &  & \\
-\hline
-04 &  &  & \cellcolor{DarkGray} & \cellcolor{DarkGray} &  &  &  & \\
-\hline
-05 & \cellcolor{DarkGray} &  &  &  &  &  &  & \\
-\hline
-06 &  & \cellcolor{DarkGray} &  &  &  &  &  & \\
-\hline
-07 &  &  & \cellcolor{DarkGray} &  &  &  &  & \\
-\hline
-08 &  &  &  & \cellcolor{DarkGray} & \cellcolor{DarkGray} &  &  & \\
-\hline
-09 &  &  &  &  & \cellcolor{DarkGray} &  &  & \\
-\hline
-10 &  &  &  &  & \cellcolor{DarkGray} &  &  & \\
-\hline
-11 &  &  &  &  & \cellcolor{DarkGray} & \cellcolor{DarkGray} &  & \\
-\hline
-12 &  &  &  &  &  & \cellcolor{DarkGray} & \cellcolor{DarkGray} & \\
-\hline
-13 &  &  &  &  &  &  & \cellcolor{DarkGray} & \cellcolor{DarkGray}\\
-\hline
-14 &  &  &  &  &  &  & \cellcolor{DarkGray} & \cellcolor{DarkGray}\\
-\hline
-15 &  &  &  &  &  &  &  & \cellcolor{DarkGray}\\
-\hline
-16 &  &  &  &  &  &  &  & \cellcolor{DarkGray}\\
-\hline
-30 &  &  &  & \cellcolor{DarkGray} & \cellcolor{DarkGray} & \cellcolor{DarkGray} & \cellcolor{DarkGray} & \\
-\hline
-\end{tabular}
-\caption{Plano de trabalho - atividades planejadas para cada bimestre (Bi) dos anos de $2024$ e de $2025$.}%
-\label{tab:plano_de_trabalho_2024_2025}
-\vspace{2mm}
-\end{table}
+\newcommand{\TextRed}[1]{\textcolor{red}{#1}}
 
-\subsection{Enumeration}\label{subsec:enumeration}
+% Command for coloring text red and making it crossed out
 
-\begin{enumerate}
-\item Item 1;
-\item Item 2.
-\end{enumerate}
+\newcommand{\TextRedOut}[1]{\textcolor{red}{\sout{#1}}}
 
-\section{Flowchart}\label{sec:flowchart}
+% Command for coloring text blue
 
-\begin{figure}[!htb]
-\centering
-\begin{tikzpicture}
-\node [terminator, fill=red!20] at (0,0) (start) {\textbf{Problem}};
-\node [process, fill=blue!20] at (0,-1.5) (process1) {Analyze and understand the problem};
-\node [process, fill=blue!20, text width=45mm] at (0,-3) (process2) {Define steps to solve it and create a flowchart};
-\node [process, fill=blue!20] at (0,-4.5) (process3) {Write a pseudocode (PC)};
-\node [decision, fill=yellow!40, text width=20mm] at (0,-7) (decision) {Does the PC make sense?};
-\node [process, fill=blue!20, text width=40mm] at (5.7,-7) (implementacao) {Implement it in a programming language};
-\node [decision, fill=yellow!40, text width=15mm] at (5.7,-10.7) (decision2) {Does it work?};
-\node [process, fill=blue!20, text width=25mm] at (2.2,-10.7) (teste) {Run several different tests};
-\node [decision, fill=yellow!40, text width=15mm] at (-1.3,-10.7) (decision3) {Does it work?};
-\node [process, fill=green!20, text width=15mm] at (-1.3,-12.9) (sucesso) {Success};
-\node [terminator, fill=blue!45] at (2.2,-12.9) (end) {\textbf{Solution}};
+\newcommand{\TextBlue}[1]{\textcolor{blue}{#1}}
 
-\node[draw=none] at (-2.3, -6.75) {No};
-\node[draw=none] at (2.3, -6.75) {Yes};
-\node[draw=none] at (7.5, -10.45) {No};
-\node[draw=none] at (4.1, -10.45) {Yes};
-\node[draw=none] at (-0.6, -9.05) {No};
-\node[draw=none] at (-0.9, -12.1) {Yes};
+% Command for coloring text red and making it bold
 
-\path [connector] (start) -- (process1);
-\path [connector] (process1) -- (process2);
-\path [connector] (process2) -- (process3);
-\path [connector] (process3) -- (decision);
-\draw[-latex'] (decision) -- (-3,-7) -- (-3,-3) -- (process2);
-\path [connector] (decision) -- (implementacao);
-\path [connector] (implementacao) -- (decision2);
-\draw[-latex'] (decision2) -- (8.3,-10.7) -- (8.3,-4.5) -- (process3);
-\path [connector] (decision2) -- (teste);
-\path [connector] (teste) -- (decision3);
-\draw[-latex'] (decision3) -- (-1.3,-9.3) -- (3,-9.3) -- (implementacao);
-\path [connector] (decision3) -- (sucesso);
-\path [connector] (sucesso) -- (end);
-\end{tikzpicture}
-\caption{Flowchart illustrating how to program.}
-\label{fig:flowchart_programming}
-\end{figure}
+\newcommand{\TextRedBold}[1]{\textbf{\textcolor{red}{#1}}}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                             Equations                              %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Algorithm}\label{sec:algorithm}\begin{algorithm2e}[ht!]
-\caption{Generation of plane truss meshes to simulate the transient response due to periodic excitation. Comparisons between the HS method, the Newmark-beta method and the analytical response using the Generalized Integrating Factor will be made} \label{alg:efficient_evaluation_HS}
-\begin{algorithmic}
-\State Sets the initial problem with number of nodes to determine the edges of the structure and their positions\\
-Sets the excited degrees of freedom and the function of the force\\
-Defines a set of divisions of the domain in the horizontal direction $x$, $\lbrace 1, 2, 3, \dots, n_{x}\rbrace$\\
-Defines a set of divisions of the domain in the vertical direction $y$, $\lbrace 1, 2, 3, \dots, n_{y}\rbrace$\\
-Iterates through the divisions in the $x$ direction\\
-\textbf{for} $i=1,2,\dots,n_{x}$\\
-\Indp Iterates through the divisions in the $y$ direction\\
-\textbf{for} $j=1,2,\dots,n_{y}$\\
-\Indp Generates a truss mesh with $i\times j$ divisions, \textit{i.e.} $\left(i+1\right)\left(j+1\right)$ nodes\\
-Calculates the characteristic matrices $\mathbf{M}$ and $\mathbf{K}$ using FEA\\
-\Indm \textbf{end}\\
-\Indm \textbf{end}
-\end{algorithmic}
-\end{algorithm2e}
+% Command for creating an implication arrow with text above and under-
+% neath it
 
-\section{Code}\label{sec:code}
+\newcommand*{\CommentedArrow}[2]{\xRightarrow[#2]{#1}}
 
-\begin{ffcodeMimic}
-sudo apt update
-sudo apt install ca-certificates curl apt-transport-https
-sudo install -m 0755 -d /etc/apt/keyrings
-sudo curl -fsSL https://keys.anydesk.com/repos/DEB-GPG-KEY -o /etc/apt/keyrings/keys.anydesk.com.asc
-sudo chmod a+r /etc/apt/keyrings/keys.anydesk.com.asc
-\end{ffcodeMimic}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                               Calculus                               %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% Adds the appendix heading and sets the list of appendices
-\AppendixSetup
+% Macro to put a dot over an expresion, important when there is a dot 
+% over another dot
 
-\section{Appendix template}\label{sec:appendix_template}
+\newcommand*{\DotWithLine}[1]{\accentset{\mbox{\large .}}{#1}}
 
-% Inserts the bibliography using the bibliographia.bib file
-\InsertBibliography{bibliographia}
+% Macro to make integral differentials prettier
+% Example: \IntegralDif t
 
-\end{document}
+\newcommand*\IntegralDif{\mathop{}\!\mathrm{d}}
+
+% Command for creating the vertical bar that evaluates derivatives
+
+\newcommand{\EvaluateBar}[2]{\left.#1\right|_{#2}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                      Vector and function spaces                      %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Command for typing the real vector space R^n, where n is the argument
+
+\newcommand{\RealSpace}[1]{\mathbb{R}^{#1}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                              Operators                               %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Command for typing the intersection operator
+
+\newcommand{\IntersectionOperator}[2]{\bigcap\limits_{#1}^{#2}}
+
+% Command for typing the argument operator
+
+\newcommand{\ArgumentOperator}[2]{\operatorname*{arg}_{#1}\{#2\}}
+
+% Command for typing the minimum argument operator
+
+\newcommand{\MinimumArgumentOperator}[2]{\operatorname*{argmin}_{#1}\{%
+#2\}}
+
+% Command for typing the vec operator, which transforms something into a
+% vector
+
+\newcommand*{\VecOperator}[1]{\operatorname{vec}\!\left(#1\right)}
+
+% Command for typing the sym operator, which gives the symmetric part of
+% a tensor
+
+\newcommand*{\SymOperator}[1]{\operatorname{sym}\!\left(#1\right)}
+
+% Command for making a generic operator with lower and upper text, like
+% U_{j=1}^{k}. The arguments are: the letter to symbolize the operator,
+% the lower limit, and the upper limit
+
+\newcommand{\GenericOperator}[3]{\mathop{#1}\limits_{#2}^{#3}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                             Code blocks                            %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Command for defining the code block style    
+
+\definecolor{CodeLightGray}{gray}{0.95}
+\definecolor{CodeBarColor}{rgb}{0.8,0.8,0.8}     
+
+\lstdefinestyle{ffcode}{
+  backgroundcolor=\color{CodeLightGray},
+  basicstyle=\ttfamily\footnotesize,
+  frame=single,
+  rulecolor=\color{CodeBarColor},
+  xleftmargin=2em,
+  framexleftmargin=1.5em,
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  numbersep=0.5em,
+  breaklines=true,
+  tabsize=2,
+  columns=fullflexible
+}
+
+% Command for creating a code block
+
+\lstnewenvironment{ffcodeMimic}[1][]{
+  \lstset{style=ffcode,#1}
+}{}
+
+% Another command for code block
+
+\newenvironment{ffcodeMimicRef}[2][]{%
+  \noindent
+  \ifstrempty{#2}{}{%
+    \captionof{command}{#2}%
+  }%
+  \ifstrempty{#1}{}{%
+    \label{#1}%
+  }%
+  \begin{ffcodeMimic}
+}{%
+  \end{ffcodeMimic}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                          Ordinal numbers                           %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Command to put the "o" of first (Portuguese) and "a" of feminine first
+% (Portuguese)
+
+\newcommand{\oOrdinal}{$^{\mathrm o}$}
+
+\newcommand{\aOrdinal}{$^{\mathrm a}$}
+
+% Command to put "st", "nd", "rd", and "th"
+
+\newcommand{\stOrdinal}{$^{\mathrm st}$}
+
+\newcommand{\ndOrdinal}{$^{\mathrm nd}$}
+
+\newcommand{\rdOrdinal}{$^{\mathrm rd}$}
+
+\newcommand{\thOrdinal}{$^{\mathrm th}$}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                             Algorithms                             %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Comamand to generate identation blocks in algorithms
+
+\newlength\myindent
+\setlength\myindent{2em}
+\newcommand\bindent{%
+  \begingroup
+  \setlength{\itemindent}{\myindent}
+  \addtolength{\algorithmicindent}{\myindent}
+}
+\newcommand\eindent{\endgroup}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                           Textual commands                           %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Command to generate the table of contents and automatically separate 
+% it clearing pages above and bellow
+
+\newcommand{\ContentsPage}{\clearpage\tableofcontents\clearpage}
+
+% Command to generate and set the appendix
+
+\newcommand{\AppendixSetup}{\appendix\setcounter{figure}{0}%
+\renewcommand\thefigure{A.\arabic{figure}}\addcontentsline{toc}{section%
+}{Appendix}}
+
+% Command to insert the bibliography in the file
+
+\newcommand{\InsertBibliography}[1]{\bibliographystyle{%
+elsarticle-num-names}\bibliography{#1}}
+
+% Command to take out the text "Preprint submitted to Elsevier"
+
+\newcommand{\TakeOutPreprintElsevier}{\makeatletter\def\ps@pprintTitle{%
+\let\@oddhead\@empty\let\@evenhead\@empty\def\@oddfoot{\reset@font\hfil%
+\thepage\hfil}\let\@evenfoot\@oddfoot}\makeatother}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                               Colors                               %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\definecolor{LightGray}{gray}{0.7}
+
+\definecolor{DarkGray}{gray}{0.4}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                               Charts                               %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\usetikzlibrary{shapes.geometric, arrows}
+
+% Creates flowchart elements
+
+\tikzstyle{terminator} = [rectangle, draw, text centered, rounded corners,%
+minimum height=2em]
+
+\tikzstyle{process} = [rectangle, draw, text centered, minimum height=2em]
+
+\tikzstyle{decision} = [diamond, draw, text centered, minimum height=2em]
+
+\tikzstyle{data}=[trapezium, draw, text centered, trapezium left angle=60, %
+trapezium right angle=120, minimum height=2em]
+
+\tikzstyle{connector} = [draw, -latex']
