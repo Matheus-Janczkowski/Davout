@@ -144,6 +144,10 @@ top=3cm, bottom=2cm}}\onehalfspacing\setlength{\parindent}{1.25cm}%
 %                         Vectors and matrices                         %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% Command for the norm 
+
+\newcommand{\Norm}[2]{\left\lVert #1 \right\rVert_{#2}}
+
 % Command for typing the transposition T
 
 \newcommand{\Transpose}[1]{{#1}^{\!\raisebox{0.2ex}{\scriptsize$%
@@ -167,7 +171,8 @@ top=3cm, bottom=2cm}}\onehalfspacing\setlength{\parindent}{1.25cm}%
 
 % Command for typing the argument operator
 
-\newcommand{\ArgumentOperator}[2]{\operatorname*{arg}_{#1}\{#2\}}
+\newcommand{\ArgumentOperator}[2]{\operatorname*{arg}_{#1}\left\lbrace#2%
+\right\rbrace}
 
 % Command for typing the minimum argument operator
 
