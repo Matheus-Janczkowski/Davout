@@ -192,6 +192,39 @@ top=3cm, bottom=2cm}}\onehalfspacing\setlength{\parindent}{1.25cm}%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                            Optimization                            %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Command for typesetting an uncontrained optimization problem. The first
+% argument is the design variables; the second argument is the objective
+% function
+%
+% Usage example: P=\UnconstrainedOptimizationProblem{x}{f\left(x\right)}
+
+\newcommand{\UnconstrainedOptimizationProblem}[2]{\vcenter{\hbox{%
+$\displaystyle\left\{\begin{aligned}
+& \min_{#1} && #2
+\end{aligned}
+\right.$}}}
+
+% Command for typesetting a constrained optimization problem. The first
+% argument is the design variables; the second argument is the objective
+% function; and the third is the set of constraints (as they would be 
+% manually written)
+%
+% Usage example: P=\ConstrainedOptimizationProblem{x}{f\left(x\right)}{
+% g_1(x) = 0,\quad i=1,\dots,m,\\& && h_j(x) \le 0, \quad j=1,\dots,p.}
+
+\newcommand{\ConstrainedOptimizationProblem}[3]{\vcenter{\hbox{%
+$\displaystyle\left\{\begin{aligned}
+& \min_{#1} && #2 \\
+& \text{s.t.} && {#3}
+\end{aligned}
+\right.$}}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%                             Code blocks                            %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
