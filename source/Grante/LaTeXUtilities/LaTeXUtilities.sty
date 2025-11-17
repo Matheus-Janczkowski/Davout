@@ -205,7 +205,12 @@ top=3cm, bottom=2cm}}\onehalfspacing\setlength{\parindent}{1.25cm}%
 % U_{j=1}^{k}. The arguments are: the letter to symbolize the operator,
 % the lower limit, and the upper limit
 
-\newcommand{\GenericOperator}[3]{\mathop{#1}\limits_{#2}^{#3}}
+\newcommand{\GenericOperator}[3]{\mathop{\mathchoice{\raisebox{-0.9ex}{%
+\scalebox{1.9}{$\displaystyle #1$}}}% displaystyle
+{\raisebox{-0.5ex}{\scalebox{1.6}{$\textstyle #1$}}}% textstyle
+{\raisebox{-0.1ex}{\scalebox{1.3}{$\scriptstyle #1$}}}% scriptstyle
+{\raisebox{0ex}{\scalebox{1.0}{$\scriptscriptstyle #1$}}}% scriptscriptstyle
+}\limits_{#2}^{#3}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
