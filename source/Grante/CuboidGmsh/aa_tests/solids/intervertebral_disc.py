@@ -52,7 +52,7 @@ def mesh_disc():
 
     def right_expression(x, y, z):
 
-        return x
+        return x+length_x
 
     # YZ plane at x = x_length
 
@@ -70,18 +70,82 @@ def mesh_disc():
     surface_regionsNames = ['back', 'front', 'lower', 'upper', 'right',
     'left']
 
+    ####################################################################
+    #                    Volumetric regions setting                    #
+    ####################################################################
+    
+    # Volume expresions
+
+    def volume_1(x, y, z):
+
+        if x>=0.0:
+
+            return True 
+        
+        else:
+
+            return False
+        
+    def volume_2(x, y, z):
+
+        if x<=0.0:
+
+            return True 
+        
+        else:
+
+            return False
+
+    # Sets a list of expressions to find the volumetric regions to be 
+    # named
+        
+    volume_regionsExpressions = [volume_1, volume_2]
+
+    volume_regionsNames = ['volume 1', 'volume 2']
+
+    ####################################################################
+    #                              Cuboids                             #
+    ####################################################################
+
+    # Initializes the geometric data
+
     geometric_data = tools.gmsh_initialization(surface_regionsExpressions
     =surface_regionsExpressions, surface_regionsNames=
-    surface_regionsNames, tolerance_finders=1E-9)
+    surface_regionsNames, volume_regionsExpressions=
+    volume_regionsExpressions, volume_regionsNames=volume_regionsNames,
+    tolerance_finders=1E-9)
+
+    # Volume 1
 
     corner_points = [[length_x, 0.0, 0.0], [length_x, length_y, 0.0], [
     0.0, length_y, 0.0], [0.0, 0.0, 0.0], [length_x, 0.0, length_z], [
     length_x, length_y, length_z], [0.0, length_y, length_z], [0.0, 0.0, 
     length_z]]
 
+    edge_points = {"1": [[1.1*length_x, 0.2*length_y, 0.0], 
+    [0.9*length_x, 0.4*length_y, 0.0], [1.2*length_x, 0.6*length_y, 0.0], 
+    [0.8*length_x, 0.8*length_y, 0.0]]}
+
     geometric_data = prisms.hexahedron_from_corners(corner_points, 
     transfinite_directions=transfinite_directions, geometric_data=
-    geometric_data)
+    geometric_data, edges_points=edge_points)
+
+    # Volume 2
+
+    corner_points = [[0.0, 0.0, 0.0], [0.0, length_y, 0.0], [
+    -length_x, length_y, 0.0], [-length_x, 0.0, 0.0], [0.0, 0.0, 
+    length_z], [0.0, length_y, length_z], [-length_x, length_y, 
+    length_z], [-length_x, 0.0, length_z]]
+
+    edge_points = {"3": [[-1.1*length_x, 0.2*length_y, 0.0], 
+    [-0.9*length_x, 0.4*length_y, 0.0], [-1.2*length_x, 0.6*length_y, 0.0], 
+    [-0.8*length_x, 0.8*length_y, 0.0]]}
+
+    geometric_data = prisms.hexahedron_from_corners(corner_points, 
+    transfinite_directions=transfinite_directions, geometric_data=
+    geometric_data, edges_points=edge_points)
+
+    # Creates the geometry and meshes it
 
     tools.gmsh_finalize(geometric_data=geometric_data, file_name="inte"+
     "rvertebral_disc")

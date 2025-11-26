@@ -42,9 +42,14 @@ shape_spin=0.0, geometric_data=[0, [[],[],[],[]], [[],[],[],[]], [[],[],
 
 # Defines a function to create a generic 6-sided prism
 
-def hexahedron_from_corners(corner_points, transfinite_directions=[], 
-bias_directions=dict(), geometric_data=[0, [[],[],[],[]
-], [[],[],[],[]], [[],[],[]], dict(), [], dict(), [], [], [], 0.5, False]):
+def hexahedron_from_corners(corner_points, edges_points=None,
+transfinite_directions=[], bias_directions=dict(), geometric_data=[0, [[
+],[],[],[]], [[],[],[],[]], [[],[],[]], dict(), [], dict(), [], [], [], 
+0.5, False]):
+
+    ####################################################################
+    #                       Arguments consistency                      #
+    ####################################################################
     
     # Tests if the corner points is a numpy array
 
@@ -55,6 +60,11 @@ bias_directions=dict(), geometric_data=[0, [[],[],[],[]
         if corner_points.shape==(8,3):
 
             corner_points = corner_points.T
+
+            # Sets the flag to inform if the rows represent points ins-
+            # tead of coordinates
+
+            rows_are_points = True
 
         elif corner_points.shape!=(3,8):
 
@@ -71,6 +81,11 @@ bias_directions=dict(), geometric_data=[0, [[],[],[],[]
         if len(corner_points)==8:
 
             corner_points = (np.array(corner_points).T).tolist()
+
+            # Sets the flag to inform if the rows represent points ins-
+            # tead of coordinates
+
+            rows_are_points = True
 
         elif len(corner_points)!=3:
 
@@ -91,10 +106,105 @@ bias_directions=dict(), geometric_data=[0, [[],[],[],[]
         raise TypeError("'corner_points' should be a list of lists or "+
         "numpy array of shape (8,3) or (3,8) to create a hexadron")
 
+    ####################################################################
+    #                        Lines construction                        #
+    ####################################################################   
+
+    lines_instructions = dict()
+    
+    if edges_points is not None:
+
+        # Verifies if it is a dictionary
+        
+        if isinstance(edges_points, dict):
+
+            lines_numbers = ["1", "2", "3", "4", "5", "6", "7", "8", "9",
+            "10", "11", "12"]
+
+            # Iterates through the edges
+
+            for edge_number, edge_coordinates in edges_points.items():
+
+                # Verifies if the number is valid
+
+                if not str(edge_number) in lines_numbers:
+
+                    raise ValueError("The edge number '"+str(edge_number
+                    )+"' is not a valid number to index lines in a hex"+
+                    "adron. The keys must be 1, 2, ..., 12")
+                
+                # Verifies if the edge coordinates is a numpy array
+
+                if isinstance(edge_coordinates, np.ndarray):
+
+                    # Tests if it has the right shape
+
+                    if not (edge_coordinates.shape[0]==3 or (
+                    edge_coordinates.shape[1]==3)):
+
+                        raise ValueError("'edge_coordinates' is a nump"+
+                        "y array of shape "+str(edge_coordinates.shape)+
+                        ", but it should have 3 rows or 3 columns to c"+
+                        "reate a 3D spline as the edge of a hexadron")
+                    
+                    # If the rows represent points, the matrix must be
+                    # transposed for the cuboid works with coordinates x
+                    # points
+                        
+                    if rows_are_points:
+
+                        edge_coordinates = edge_coordinates.T
+                    
+                    # Transforms it to a list
+
+                    edge_coordinates = edge_coordinates.tolist()
+
+                elif isinstance(edge_coordinates, list):
+
+                    if not (len(edge_coordinates)==3 or len(
+                    edge_coordinates[0])==3):
+
+                        raise IndexError("'edge_coordinates' is a list"+
+                        ", but it has length of "+str(len(
+                        edge_coordinates))+", whereas it should be 3 t"+
+                        "o construct a hexadron")
+                        
+                    # If the rows represent points, the matrix must be
+                    # transposed for the cuboid works with coordinates x
+                    # points
+                        
+                    if rows_are_points:
+
+                        edge_coordinates = (np.array(edge_coordinates).T
+                        ).tolist()
+                            
+                else:
+
+                    raise TypeError("'edge_coordinates' should be a li"+
+                    "st of lists or numpy array of 3 rows or 3 columns"+
+                    " to create a hexadron")
+                
+                # After the verifications, adds the line
+
+                lines_instructions[int(edge_number)] = ["spline", 
+                edge_coordinates]
+
+        else:
+
+            raise TypeError("'egde_points' must be a dictionary with s"+
+            "tring numbering from '1' to '12' as keys and a list or nu"+
+            "mpy array as values. Each key-value is used to construct "+
+            "the corresponding edge using splines for a hexadron")              
+
+    ####################################################################
+    #                        Geometry generation                       #
+    ####################################################################
+
     # Makes the shape
 
     geometric_data = cuboid.make_cuboid(corner_points, 
     transfinite_directions=transfinite_directions, bias_directions=
-    bias_directions, geometric_data=geometric_data)
+    bias_directions, geometric_data=geometric_data, 
+    lines_instructionsOriginal=lines_instructions)
 
     return geometric_data
