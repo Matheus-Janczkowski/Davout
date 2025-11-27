@@ -16,92 +16,23 @@ def mesh_disc():
 
     length_z = 2.5
 
-    transfinite_directions = [7,7,11]
+    transfinite_directions = [7,30,11]
 
     ####################################################################
     #                     Boundary surfaces setting                    #
     ####################################################################
 
-    # Sets the finder for the boundary surfaces
-
-    # XY plane at z = 0
-
-    def back_expression(x, y, z):
-
-        return z
-
-    # XY plane at z = length_z
-
-    def front_expression(x, y, z):
-
-        return z-length_z
-
-    # XZ plane at y = 0
-
-    def lower_expression(x, y, z):
-
-        return y
-
-    # XZ plane at y = length_y
-
-    def upper_expression(x, y, z):
-
-        return y-length_y
-
-    # YZ plane at x = 0
-
-    def right_expression(x, y, z):
-
-        return x+length_x
-
-    # YZ plane at x = x_length
-
-    def left_expression(x, y, z):
-
-        return x-length_x
-
-    # Sets a list of expressions to find the surfaces at the boundaries
-
-    surface_regionsExpressions = [back_expression, front_expression, 
-    lower_expression, upper_expression, right_expression, left_expression]
-
     # Sets the names of the surface regions
 
-    surface_regionsNames = ['back', 'front', 'lower', 'upper', 'right',
-    'left']
+    surface_regionsNames = ['lower', 'upper']
 
     ####################################################################
     #                    Volumetric regions setting                    #
     ####################################################################
-    
-    # Volume expresions
 
-    def volume_1(x, y, z):
+    # Sets the names of the volume regions
 
-        if x>=0.0:
-
-            return True 
-        
-        else:
-
-            return False
-        
-    def volume_2(x, y, z):
-
-        if x<=0.0:
-
-            return True 
-        
-        else:
-
-            return False
-
-    # Sets a list of expressions to find the volumetric regions to be 
-    # named
-        
-    volume_regionsExpressions = [volume_1, volume_2]
-
-    volume_regionsNames = ['volume 1', 'volume 2']
+    volume_regionsNames = ['nucleus', 'annulus']
 
     ####################################################################
     #                              Cuboids                             #
@@ -109,26 +40,26 @@ def mesh_disc():
 
     # Initializes the geometric data
 
-    geometric_data = tools.gmsh_initialization(surface_regionsExpressions
-    =surface_regionsExpressions, surface_regionsNames=
-    surface_regionsNames, volume_regionsExpressions=
-    volume_regionsExpressions, volume_regionsNames=volume_regionsNames,
-    tolerance_finders=1E-9)
+    geometric_data = tools.gmsh_initialization(surface_regionsNames=
+    surface_regionsNames, volume_regionsNames=volume_regionsNames)
 
     # Volume 1
 
-    corner_points = [[length_x, 0.0, 0.0], [length_x, length_y, 0.0], [
+    corner_points = [[length_x*1.2, 0.0, 0.0], [length_x, length_y, 0.0], [
     0.0, length_y, 0.0], [0.0, 0.0, 0.0], [length_x, 0.0, length_z], [
     length_x, length_y, length_z], [0.0, length_y, length_z], [0.0, 0.0, 
     length_z]]
 
-    edge_points = {"1": [[1.1*length_x, 0.2*length_y, 0.0], 
+    """edge_points = {"1": [[1.1*length_x, 0.2*length_y, 0.0], 
     [0.9*length_x, 0.4*length_y, 0.0], [1.2*length_x, 0.6*length_y, 0.0], 
-    [0.8*length_x, 0.8*length_y, 0.0]]}
+    [0.8*length_x, 0.8*length_y, 0.0]], "5": [[1.1*length_x, 0.2*length_y, length_z], 
+    [0.9*length_x, 0.4*length_y, length_z], [1.2*length_x, 0.6*length_y, length_z], 
+    [0.8*length_x, 0.8*length_y, length_z]]}"""
 
     geometric_data = prisms.hexahedron_from_corners(corner_points, 
     transfinite_directions=transfinite_directions, geometric_data=
-    geometric_data, edges_points=edge_points)
+    geometric_data,  explicit_volume_physical_group_name="nucleus",
+    explicit_surface_physical_group_name={1: "lower", 6: "upper"})
 
     # Volume 2
 
@@ -146,8 +77,8 @@ def mesh_disc():
     geometric_data = prisms.hexahedron_from_corners(corner_points, 
     transfinite_directions=transfinite_directions, geometric_data=
     geometric_data, edges_points=edge_points, 
-    explicit_volume_physical_group_name="volume 2",
-    explicit_surface_physical_group_name={1: "back"})
+    explicit_volume_physical_group_name='annulus',
+    explicit_surface_physical_group_name={1: "lower", 6: "upper"})
 
     # Creates the geometry and meshes it
 

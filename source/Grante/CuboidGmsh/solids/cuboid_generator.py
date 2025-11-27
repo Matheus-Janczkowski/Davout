@@ -163,7 +163,7 @@ explicit_surface_physical_group_name=None):
 
                 # Colors the volume
 
-                color = color_interpolation(i+1, len(volume_identifiers))
+                color = color_interpolation(i+1, len(volume_regionsNames))
 
                 gmsh.model.setColor([(3,volume)], *color)
 
