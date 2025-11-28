@@ -2,6 +2,8 @@
 
 import numpy as np
 
+from copy import deepcopy
+
 from ..solids import cuboid_generator as cuboid
 
 from ..tool_box import geometric_tools as geo
@@ -42,15 +44,45 @@ shape_spin=0.0, geometric_data=[0, [[],[],[],[]], [[],[],[],[]], [[],[],
 
 # Defines a function to create a generic 6-sided prism
 
-def hexahedron_from_corners(corner_points, edges_points=None,
-transfinite_directions=[], bias_directions=dict(), geometric_data=[0, [[
-],[],[],[]], [[],[],[],[]], [[],[],[]], dict(), [], dict(), [], [], [], 
-0.5, False], explicit_volume_physical_group_name=None,
-explicit_surface_physical_group_name=None):
+def hexahedron_from_corners(corner_points, parametric_curves=None, 
+edges_points=None, transfinite_directions=[], bias_directions=dict(), 
+geometric_data=[0, [[],[],[],[]], [[],[],[],[]], [[],[],[]], dict(), [], 
+dict(), [], [], [], 0.5, False], explicit_volume_physical_group_name=
+None, explicit_surface_physical_group_name=None):
 
     ####################################################################
     #                       Arguments consistency                      #
     ####################################################################
+
+    # Checks if parametric curves are given
+
+    if parametric_curves is not None:
+
+        # Tests it is not a dictionary
+
+        if not isinstance(parametric_curves, dict):
+
+            raise TypeError("'parametric_curves' must be a dictionary "+
+            "in 'hexahedron_from_corners'. The keys must be strings; a"+
+            "nd the values must be functions of a single variable")
+        
+        else:
+
+            # Checks if the keys are strings
+
+            for key in parametric_curves:
+
+                if not isinstance(key, str):
+
+                    raise TypeError("'parametric_curves' must be a dic"+
+                    "tionary in 'hexahedron_from_corners'. The keys mu"+
+                    "st be strings; and the values must be functions o"+
+                    "f a single variable. The key '"+str(key)+"' is no"+
+                    "t a string")
+                
+    else:
+
+        parametric_curves = {}
     
     # Tests if the corner points is a numpy array
 
@@ -81,7 +113,25 @@ explicit_surface_physical_group_name=None):
 
         if len(corner_points)==8:
 
-            corner_points = (np.array(corner_points).T).tolist()
+            # Checks if the sublist has two elements only
+
+            old_points = deepcopy(corner_points)
+
+            corner_points = [[], [], []]
+
+            for i in range(8):
+
+                corner_points[0].append(old_points[i][0])
+
+                corner_points[1].append(old_points[i][1])
+
+                if len(old_points[i])==2:
+
+                    corner_points[2].append(0.0)
+
+                else:
+
+                    corner_points[2].append(old_points[i][2])
 
             # Sets the flag to inform if the rows represent points ins-
             # tead of coordinates
@@ -94,18 +144,66 @@ explicit_surface_physical_group_name=None):
             "ngth of "+str(len(corner_points))+", whereas it should be"+
             " 3 or 8 (transposed) to construct a hexadron")
 
-        for point in corner_points:
+        for dimension in corner_points:
 
-            if len(point)!=8:
+            if len(dimension)!=8:
 
-                raise IndexError("The sublist '"+str(point)+"' in "+
-                "'corner_points' does not have length of 8. Thus, "+
-                "it is not possible to create a hexadron")
+                raise IndexError("The sublist '"+str(dimension)+"' in "+
+                "'corner_points' does not have length of 8. Thus, it i"+
+                "s not possible to create a hexadron")
                 
     else:
 
         raise TypeError("'corner_points' should be a list of lists or "+
         "numpy array of shape (8,3) or (3,8) to create a hexadron")
+    
+    # Checks if the corner points are given using the parametric curves
+
+    for i in range(8):
+
+        if isinstance(corner_points[0][i], str):
+
+            # Gets the name of the parametric curve
+
+            curve_name = corner_points[0][i]
+
+            # Checks if this name is in the parametric curve dictionary
+
+            if not (curve_name in parametric_curves):
+
+                raise KeyError("The name '"+str(curve_name)+"' is not "+
+                "a key of the 'parametric_curves' dictionary. Thus, it"+
+                " is not possible to use it to get a corner in 'hexahe"+
+                "dron_from_corners'. The 'parametric_curves' dictionar"+
+                "y has the keys: "+str(parametric_curves.keys()))
+            
+            # Gets the parametric curve result
+
+            parametric_result = parametric_curves[curve_name](
+            corner_points[1][i])
+
+            # Verifies if the result is a list and if it has three slots
+
+            if not isinstance(parametric_result, list):
+
+                raise TypeError("The result of the parametric curve '"+
+                str(curve_name)+"' must be a list in 'hexahedron_from_"+
+                "corners'")
+            
+            if len(parametric_result)!=3:
+
+                raise IndexError("The result of the parametric curve '"+
+                str(curve_name)+"' must be a list of length 3 in 'hexa"+
+                "hedron_from_corners'. The current length is "+str(len(
+                parametric_result)))
+            
+            # Puts the result in the x, y, and z order
+
+            corner_points[0][i] = parametric_result[0]*1.0
+
+            corner_points[1][i] = parametric_result[1]*1.0
+
+            corner_points[2][i] = parametric_result[2]*1.0
 
     ####################################################################
     #                        Lines construction                        #
@@ -163,12 +261,88 @@ explicit_surface_physical_group_name=None):
                 elif isinstance(edge_coordinates, list):
 
                     if not (len(edge_coordinates)==3 or len(
-                    edge_coordinates[0])==3):
+                    edge_coordinates)==4 or len(edge_coordinates[0])==3):
 
                         raise IndexError("'edge_coordinates' is a list"+
                         ", but it has length of "+str(len(
                         edge_coordinates))+", whereas it should be 3 t"+
-                        "o construct a hexadron")
+                        "o construct a hexadron or 4 to inform the par"+
+                        "ametric curve name using a string, the initia"+
+                        "l parameter, the final parameter, and the num"+
+                        "ber of points in between")
+                    
+                    # Checks if a parametric curve name is asked
+
+                    if isinstance(edge_coordinates[0], str):
+
+                        if len(edge_coordinates)!=4:
+
+                            raise IndexError("'"+str(edge_coordinates)+
+                            "' has length of "+str(len(edge_coordinates)
+                            )+", whereas it should have length of 4: s"+
+                            "tring name for the parametric curve; init"+
+                            "ial parameter value; final parameter valu"+
+                            "e; number of points inside the edge")
+
+                        # Checks if the first value is a string
+
+                        curve_name = edge_coordinates[0]
+
+                        # Checks if this name is in the dictionary 
+                        # of parametric curves
+
+                        if not (curve_name in parametric_curves):
+
+                            raise KeyError("The name '"+str(
+                            curve_name)+"' is not a key of the 'parame"+
+                            "tric_curves' dictionary. Thus, it is not "+
+                            "possible to use it to get an edge in 'hex"+
+                            "ahedron_from_corners'. The 'parametric_cu"+
+                            "rves' dictionary has the keys: "+str(
+                            parametric_curves.keys()))
+                        
+                        # Calculates the delta of parameter
+
+                        theta_initial = deepcopy(edge_coordinates[1])
+
+                        delta_theta = ((edge_coordinates[2]-
+                        edge_coordinates[1])/(edge_coordinates[3]+1))
+
+                        n_points = deepcopy(edge_coordinates[3])
+
+                        edge_coordinates = []
+
+                        # Iterates through the points 
+
+                        for i in range(n_points):
+
+                            # Gets the result of the parametric curve
+
+                            parametric_result = parametric_curves[
+                            curve_name](theta_initial+((i+1)*delta_theta
+                            ))
+
+                            # Verifies if the result is a list and if it 
+                            # has three slots
+
+                            if not isinstance(parametric_result, list):
+
+                                raise TypeError("The result of the par"+
+                                "ametric curve '"+str(curve_name)+"' m"+
+                                "ust be a list in 'hexahedron_from_cor"+
+                                "ners'")
+                            
+                            if len(parametric_result)!=3:
+
+                                raise IndexError("The result of the pa"+
+                                "rametric curve '"+str(curve_name)+"' "+
+                                "must be a list of length 3 in 'hexahe"+
+                                "dron_from_corners'. The current lengt"+
+                                "h is "+str(len(parametric_result)))
+                            
+                            # Adds the result as a point
+
+                            edge_coordinates.append(parametric_result)
                         
                     # If the rows represent points, the matrix must be
                     # transposed for the cuboid works with coordinates x

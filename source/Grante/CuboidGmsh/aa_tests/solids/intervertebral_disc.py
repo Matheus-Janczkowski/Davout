@@ -10,31 +10,47 @@ from ...tool_box import meshing_tools as tools
 
 def mesh_disc():
 
+    height = 2.5
+
     n_points_spline = 15
 
     inner_radius = 3.0
 
     outer_radius = 5.0
 
-    inner_curve_x = lambda theta: inner_radius*np.cos((2*np.pi*theta)+(
-    (7/4)*np.pi))
+    cube_radius = 0.5*inner_radius
 
-    inner_curve_y = lambda theta: 1.0*inner_radius*np.sin((2*np.pi*theta)+(
-    (7/4)*np.pi))
+    inferior_curve_cube = lambda theta: [cube_radius*np.cos((2*np.pi*
+    theta)+((7/4)*np.pi)), cube_radius*np.sin((2*np.pi*theta)+((7/4)*
+    np.pi)), 0.0]
 
-    outer_curve_x = lambda theta: outer_radius*np.cos((2*np.pi*theta)+(
-    (7/4)*np.pi))
+    superior_curve_cube = lambda theta: [cube_radius*np.cos((2*np.pi*
+    theta)+((7/4)*np.pi)), cube_radius*np.sin((2*np.pi*theta)+((7/4)*
+    np.pi)), height]
 
-    outer_curve_y = lambda theta: outer_radius*np.sin((2*np.pi*theta)+(
-    (7/4)*np.pi))
+    inferior_curve_inner = lambda theta: [inner_radius*np.cos((2*np.pi*
+    theta)+((7/4)*np.pi)), inner_radius*np.sin((2*np.pi*theta)+((7/4)*
+    np.pi)), 0.0]
 
-    length_x_core = 1.0
+    superior_curve_inner = lambda theta: [inner_radius*np.cos((2*np.pi*
+    theta)+((7/4)*np.pi)), inner_radius*np.sin((2*np.pi*theta)+((7/4)*
+    np.pi)), height]
 
-    length_y_core = 1.5
+    inferior_curve_outer = lambda theta: [outer_radius*np.cos((2*np.pi*
+    theta)+((7/4)*np.pi)), outer_radius*np.sin((2*np.pi*theta)+((7/4)*
+    np.pi)), 0.0]
 
-    height = 2.5
+    superior_curve_outer = lambda theta: [outer_radius*np.cos((2*np.pi*
+    theta)+((7/4)*np.pi)), outer_radius*np.sin((2*np.pi*theta)+((7/4)*
+    np.pi)), height]
 
-    transfinite_directions = [10,10,20]
+    parametric_curves = {"inferior square": inferior_curve_cube, "supe"+
+    "rior square": superior_curve_cube, "inferior inner": 
+    inferior_curve_inner, "superior inner": superior_curve_inner, "inf"+
+    "erior outer": inferior_curve_outer, "superior outer":
+    superior_curve_outer}
+
+    transfinite_directions = [10, 10, 20]
 
     ####################################################################
     #                     Boundary surfaces setting                    #
@@ -63,17 +79,16 @@ def mesh_disc():
 
     # Center cube
 
-    corner_points_center = [[0.5*length_x_core, -0.5*length_y_core, 0.0], [0.5*
-    length_x_core, 0.5*length_y_core, 0.0], [-0.5*length_x_core, 0.5*
-    length_y_core, 0.0], [-0.5*length_x_core, -0.5*length_y_core, 0.0], 
-    [0.5*length_x_core, -0.5*length_y_core, height], [0.5*length_x_core, 
-    0.5*length_y_core, height], [-0.5*length_x_core, 0.5*length_y_core, 
-    height], [-0.5*length_x_core, -0.5*length_y_core, height]]
+    corner_points = [["inferior square", 0.0], ["inferior square", 0.25], 
+    ["inferior square", 0.5], ["inferior square", 0.75], ["superior sq"+
+    "uare", 0.0], ["superior square", 0.25], ["superior square", 0.5], [
+    "superior square", 0.75]]
 
-    geometric_data = prisms.hexahedron_from_corners(corner_points_center, 
+    geometric_data = prisms.hexahedron_from_corners(corner_points, 
     transfinite_directions=transfinite_directions, geometric_data=
     geometric_data, explicit_volume_physical_group_name="nucleus",
-    explicit_surface_physical_group_name={1: "lower", 6: "upper"})
+    explicit_surface_physical_group_name={1: "lower", 6: "upper"},
+    parametric_curves=parametric_curves)
 
     # First nucleus flare
 
@@ -81,31 +96,21 @@ def mesh_disc():
 
     theta_2 = 0.25
 
-    corner_points = [[inner_curve_x(theta_1), inner_curve_y(theta_1), 
-    0.0], [inner_curve_x(theta_2), inner_curve_y(theta_2), 0.0], 
-    corner_points_center[1], corner_points_center[0], [inner_curve_x(theta_1), 
-    inner_curve_y(theta_1), height], [inner_curve_x(theta_2), 
-    inner_curve_y(theta_2), height], corner_points_center[5], corner_points_center[4]]
+    corner_points = [["inferior inner", theta_1], ["inferior inner", 
+    theta_2], ["inferior square", theta_2], ["inferior square", theta_1
+    ], ["superior inner", theta_1], ["superior inner", theta_2], ["sup"+
+    "erior square", theta_2], ["superior square", theta_1]]
 
-    edge_points_1 = []
+    edge_points_1 = ["inferior inner", theta_1, theta_2, n_points_spline]
 
-    edge_points_5 = []
-
-    delta_theta = (theta_2-theta_1)/(n_points_spline+1)
-
-    for i in range(n_points_spline):
-
-        edge_points_1.append([inner_curve_x(theta_1+(delta_theta*(i+1))),
-        inner_curve_y(theta_1+(delta_theta*(i+1))), 0.0])
-
-        edge_points_5.append([inner_curve_x(theta_1+(delta_theta*(i+1))),
-        inner_curve_y(theta_1+(delta_theta*(i+1))), height])
+    edge_points_5 = ["superior inner", theta_1, theta_2, n_points_spline]
 
     geometric_data = prisms.hexahedron_from_corners(corner_points, 
     transfinite_directions=transfinite_directions, geometric_data=
     geometric_data, explicit_volume_physical_group_name="nucleus",
     explicit_surface_physical_group_name={1: "lower", 6: "upper"},
-    edges_points={1: edge_points_1, 5: edge_points_5})
+    edges_points={1: edge_points_1, 5: edge_points_5},
+    parametric_curves=parametric_curves)
 
     # Second nucleus flare
 
@@ -113,32 +118,21 @@ def mesh_disc():
 
     theta_2 = 0.5
 
-    corner_points = [[inner_curve_x(theta_1), inner_curve_y(theta_1), 
-    0.0], [inner_curve_x(theta_2), inner_curve_y(theta_2), 0.0], 
-    corner_points_center[2], corner_points_center[1], [inner_curve_x(
-    theta_1), inner_curve_y(theta_1), height], [inner_curve_x(theta_2), 
-    inner_curve_y(theta_2), height], corner_points_center[6], 
-    corner_points_center[5]]
+    corner_points = [["inferior inner", theta_1], ["inferior inner", 
+    theta_2], ["inferior square", theta_2], ["inferior square", theta_1
+    ], ["superior inner", theta_1], ["superior inner", theta_2], ["sup"+
+    "erior square", theta_2], ["superior square", theta_1]]
 
-    edge_points_1 = []
+    edge_points_1 = ["inferior inner", theta_1, theta_2, n_points_spline]
 
-    edge_points_5 = []
-
-    delta_theta = (theta_2-theta_1)/(n_points_spline+1)
-
-    for i in range(n_points_spline):
-
-        edge_points_1.append([inner_curve_x(theta_1+(delta_theta*(i+1))),
-        inner_curve_y(theta_1+(delta_theta*(i+1))), 0.0])
-
-        edge_points_5.append([inner_curve_x(theta_1+(delta_theta*(i+1))),
-        inner_curve_y(theta_1+(delta_theta*(i+1))), height])
+    edge_points_5 = ["superior inner", theta_1, theta_2, n_points_spline]
 
     geometric_data = prisms.hexahedron_from_corners(corner_points, 
     transfinite_directions=transfinite_directions, geometric_data=
     geometric_data, explicit_volume_physical_group_name="nucleus",
     explicit_surface_physical_group_name={1: "lower", 6: "upper"},
-    edges_points={1: edge_points_1, 5: edge_points_5})
+    edges_points={1: edge_points_1, 5: edge_points_5},
+    parametric_curves=parametric_curves)
 
     # Third nucleus flare
 
@@ -146,32 +140,21 @@ def mesh_disc():
 
     theta_2 = 0.75
 
-    corner_points = [[inner_curve_x(theta_1), inner_curve_y(theta_1), 
-    0.0], [inner_curve_x(theta_2), inner_curve_y(theta_2), 0.0], 
-    corner_points_center[3], corner_points_center[2], [inner_curve_x(
-    theta_1), inner_curve_y(theta_1), height], [inner_curve_x(theta_2), 
-    inner_curve_y(theta_2), height], corner_points_center[7], 
-    corner_points_center[6]]
+    corner_points = [["inferior inner", theta_1], ["inferior inner", 
+    theta_2], ["inferior square", theta_2], ["inferior square", theta_1
+    ], ["superior inner", theta_1], ["superior inner", theta_2], ["sup"+
+    "erior square", theta_2], ["superior square", theta_1]]
 
-    edge_points_1 = []
+    edge_points_1 = ["inferior inner", theta_1, theta_2, n_points_spline]
 
-    edge_points_5 = []
-
-    delta_theta = (theta_2-theta_1)/(n_points_spline+1)
-
-    for i in range(n_points_spline):
-
-        edge_points_1.append([inner_curve_x(theta_1+(delta_theta*(i+1))),
-        inner_curve_y(theta_1+(delta_theta*(i+1))), 0.0])
-
-        edge_points_5.append([inner_curve_x(theta_1+(delta_theta*(i+1))),
-        inner_curve_y(theta_1+(delta_theta*(i+1))), height])
+    edge_points_5 = ["superior inner", theta_1, theta_2, n_points_spline]
 
     geometric_data = prisms.hexahedron_from_corners(corner_points, 
     transfinite_directions=transfinite_directions, geometric_data=
     geometric_data, explicit_volume_physical_group_name="nucleus",
     explicit_surface_physical_group_name={1: "lower", 6: "upper"},
-    edges_points={1: edge_points_1, 5: edge_points_5})
+    edges_points={1: edge_points_1, 5: edge_points_5},
+    parametric_curves=parametric_curves)
 
     # Fourth nucleus flare
 
@@ -179,32 +162,21 @@ def mesh_disc():
 
     theta_2 = 1.0
 
-    corner_points = [[inner_curve_x(theta_1), inner_curve_y(theta_1), 
-    0.0], [inner_curve_x(theta_2), inner_curve_y(theta_2), 0.0], 
-    corner_points_center[0], corner_points_center[3], [inner_curve_x(
-    theta_1), inner_curve_y(theta_1), height], [inner_curve_x(theta_2), 
-    inner_curve_y(theta_2), height], corner_points_center[4], 
-    corner_points_center[7]]
+    corner_points = [["inferior inner", theta_1], ["inferior inner", 
+    theta_2], ["inferior square", theta_2], ["inferior square", theta_1
+    ], ["superior inner", theta_1], ["superior inner", theta_2], ["sup"+
+    "erior square", theta_2], ["superior square", theta_1]]
 
-    edge_points_1 = []
+    edge_points_1 = ["inferior inner", theta_1, theta_2, n_points_spline]
 
-    edge_points_5 = []
-
-    delta_theta = (theta_2-theta_1)/(n_points_spline+1)
-
-    for i in range(n_points_spline):
-
-        edge_points_1.append([inner_curve_x(theta_1+(delta_theta*(i+1))),
-        inner_curve_y(theta_1+(delta_theta*(i+1))), 0.0])
-
-        edge_points_5.append([inner_curve_x(theta_1+(delta_theta*(i+1))),
-        inner_curve_y(theta_1+(delta_theta*(i+1))), height])
+    edge_points_5 = ["superior inner", theta_1, theta_2, n_points_spline]
 
     geometric_data = prisms.hexahedron_from_corners(corner_points, 
     transfinite_directions=transfinite_directions, geometric_data=
     geometric_data, explicit_volume_physical_group_name="nucleus",
     explicit_surface_physical_group_name={1: "lower", 6: "upper"},
-    edges_points={1: edge_points_1, 5: edge_points_5})
+    edges_points={1: edge_points_1, 5: edge_points_5},
+    parametric_curves=parametric_curves)
 
     # First annulus flare
 
@@ -212,34 +184,21 @@ def mesh_disc():
 
     theta_2 = 0.25
 
-    corner_points = [[outer_curve_x(theta_1), outer_curve_y(theta_1), 
-    0.0], [outer_curve_x(theta_2), outer_curve_y(theta_2), 0.0], [
-    inner_curve_x(theta_2), inner_curve_y(theta_2), 0.0], [inner_curve_x(
-    theta_1), inner_curve_y(theta_1), 0.0], [outer_curve_x(theta_1), 
-    outer_curve_y(theta_1), height], [outer_curve_x(theta_2), 
-    outer_curve_y(theta_2), height], [inner_curve_x(theta_2), 
-    inner_curve_y(theta_2), height], [inner_curve_x(theta_1), 
-    inner_curve_y(theta_1), height]]
+    corner_points = [["inferior outer", theta_1], ["inferior outer", 
+    theta_2], ["inferior inner", theta_2], ["inferior inner", theta_1],
+    ["superior outer", theta_1], ["superior outer", theta_2], ["superi"+
+    "or inner", theta_2], ["superior inner", theta_1]]
 
-    edge_points_1 = []
+    edge_points_1 = ["inferior outer", theta_1, theta_2, n_points_spline]
 
-    edge_points_5 = []
-
-    delta_theta = (theta_2-theta_1)/(n_points_spline+1)
-
-    for i in range(n_points_spline):
-
-        edge_points_1.append([outer_curve_x(theta_1+(delta_theta*(i+1))),
-        outer_curve_y(theta_1+(delta_theta*(i+1))), 0.0])
-
-        edge_points_5.append([outer_curve_x(theta_1+(delta_theta*(i+1))),
-        outer_curve_y(theta_1+(delta_theta*(i+1))), height])
+    edge_points_5 = ["superior outer", theta_1, theta_2, n_points_spline]
 
     geometric_data = prisms.hexahedron_from_corners(corner_points, 
     transfinite_directions=transfinite_directions, geometric_data=
     geometric_data, explicit_volume_physical_group_name="annulus",
     explicit_surface_physical_group_name={1: "lower", 6: "upper", 2:
-    "outer side"}, edges_points={1: edge_points_1, 5: edge_points_5})
+    "outer side"}, edges_points={1: edge_points_1, 5: edge_points_5},
+    parametric_curves=parametric_curves)
 
     # Second annulus flare
 
@@ -247,34 +206,21 @@ def mesh_disc():
 
     theta_2 = 0.5
 
-    corner_points = [[outer_curve_x(theta_1), outer_curve_y(theta_1), 
-    0.0], [outer_curve_x(theta_2), outer_curve_y(theta_2), 0.0], [
-    inner_curve_x(theta_2), inner_curve_y(theta_2), 0.0], [inner_curve_x(
-    theta_1), inner_curve_y(theta_1), 0.0], [outer_curve_x(theta_1), 
-    outer_curve_y(theta_1), height], [outer_curve_x(theta_2), 
-    outer_curve_y(theta_2), height], [inner_curve_x(theta_2), 
-    inner_curve_y(theta_2), height], [inner_curve_x(theta_1), 
-    inner_curve_y(theta_1), height]]
+    corner_points = [["inferior outer", theta_1], ["inferior outer", 
+    theta_2], ["inferior inner", theta_2], ["inferior inner", theta_1],
+    ["superior outer", theta_1], ["superior outer", theta_2], ["superi"+
+    "or inner", theta_2], ["superior inner", theta_1]]
 
-    edge_points_1 = []
+    edge_points_1 = ["inferior outer", theta_1, theta_2, n_points_spline]
 
-    edge_points_5 = []
-
-    delta_theta = (theta_2-theta_1)/(n_points_spline+1)
-
-    for i in range(n_points_spline):
-
-        edge_points_1.append([outer_curve_x(theta_1+(delta_theta*(i+1))),
-        outer_curve_y(theta_1+(delta_theta*(i+1))), 0.0])
-
-        edge_points_5.append([outer_curve_x(theta_1+(delta_theta*(i+1))),
-        outer_curve_y(theta_1+(delta_theta*(i+1))), height])
+    edge_points_5 = ["superior outer", theta_1, theta_2, n_points_spline]
 
     geometric_data = prisms.hexahedron_from_corners(corner_points, 
     transfinite_directions=transfinite_directions, geometric_data=
     geometric_data, explicit_volume_physical_group_name="annulus",
-    explicit_surface_physical_group_name={1: "lower", 6: "upper", 2: 
-    "outer side"}, edges_points={1: edge_points_1, 5: edge_points_5})
+    explicit_surface_physical_group_name={1: "lower", 6: "upper", 2:
+    "outer side"}, edges_points={1: edge_points_1, 5: edge_points_5},
+    parametric_curves=parametric_curves)
 
     # Third annulus flare
 
@@ -282,34 +228,21 @@ def mesh_disc():
 
     theta_2 = 0.75
 
-    corner_points = [[outer_curve_x(theta_1), outer_curve_y(theta_1), 
-    0.0], [outer_curve_x(theta_2), outer_curve_y(theta_2), 0.0], [
-    inner_curve_x(theta_2), inner_curve_y(theta_2), 0.0], [inner_curve_x(
-    theta_1), inner_curve_y(theta_1), 0.0], [outer_curve_x(theta_1), 
-    outer_curve_y(theta_1), height], [outer_curve_x(theta_2), 
-    outer_curve_y(theta_2), height], [inner_curve_x(theta_2), 
-    inner_curve_y(theta_2), height], [inner_curve_x(theta_1), 
-    inner_curve_y(theta_1), height]]
+    corner_points = [["inferior outer", theta_1], ["inferior outer", 
+    theta_2], ["inferior inner", theta_2], ["inferior inner", theta_1],
+    ["superior outer", theta_1], ["superior outer", theta_2], ["superi"+
+    "or inner", theta_2], ["superior inner", theta_1]]
 
-    edge_points_1 = []
+    edge_points_1 = ["inferior outer", theta_1, theta_2, n_points_spline]
 
-    edge_points_5 = []
-
-    delta_theta = (theta_2-theta_1)/(n_points_spline+1)
-
-    for i in range(n_points_spline):
-
-        edge_points_1.append([outer_curve_x(theta_1+(delta_theta*(i+1))),
-        outer_curve_y(theta_1+(delta_theta*(i+1))), 0.0])
-
-        edge_points_5.append([outer_curve_x(theta_1+(delta_theta*(i+1))),
-        outer_curve_y(theta_1+(delta_theta*(i+1))), height])
+    edge_points_5 = ["superior outer", theta_1, theta_2, n_points_spline]
 
     geometric_data = prisms.hexahedron_from_corners(corner_points, 
     transfinite_directions=transfinite_directions, geometric_data=
     geometric_data, explicit_volume_physical_group_name="annulus",
-    explicit_surface_physical_group_name={1: "lower", 6: "upper", 2: 
-    "outer side"}, edges_points={1: edge_points_1, 5: edge_points_5})
+    explicit_surface_physical_group_name={1: "lower", 6: "upper", 2:
+    "outer side"}, edges_points={1: edge_points_1, 5: edge_points_5},
+    parametric_curves=parametric_curves)
 
     # Fourth annulus flare
 
@@ -317,34 +250,21 @@ def mesh_disc():
 
     theta_2 = 1.0
 
-    corner_points = [[outer_curve_x(theta_1), outer_curve_y(theta_1), 
-    0.0], [outer_curve_x(theta_2), outer_curve_y(theta_2), 0.0], [
-    inner_curve_x(theta_2), inner_curve_y(theta_2), 0.0], [inner_curve_x(
-    theta_1), inner_curve_y(theta_1), 0.0], [outer_curve_x(theta_1), 
-    outer_curve_y(theta_1), height], [outer_curve_x(theta_2), 
-    outer_curve_y(theta_2), height], [inner_curve_x(theta_2), 
-    inner_curve_y(theta_2), height], [inner_curve_x(theta_1), 
-    inner_curve_y(theta_1), height]]
+    corner_points = [["inferior outer", theta_1], ["inferior outer", 
+    theta_2], ["inferior inner", theta_2], ["inferior inner", theta_1],
+    ["superior outer", theta_1], ["superior outer", theta_2], ["superi"+
+    "or inner", theta_2], ["superior inner", theta_1]]
 
-    edge_points_1 = []
+    edge_points_1 = ["inferior outer", theta_1, theta_2, n_points_spline]
 
-    edge_points_5 = []
-
-    delta_theta = (theta_2-theta_1)/(n_points_spline+1)
-
-    for i in range(n_points_spline):
-
-        edge_points_1.append([outer_curve_x(theta_1+(delta_theta*(i+1))),
-        outer_curve_y(theta_1+(delta_theta*(i+1))), 0.0])
-
-        edge_points_5.append([outer_curve_x(theta_1+(delta_theta*(i+1))),
-        outer_curve_y(theta_1+(delta_theta*(i+1))), height])
+    edge_points_5 = ["superior outer", theta_1, theta_2, n_points_spline]
 
     geometric_data = prisms.hexahedron_from_corners(corner_points, 
     transfinite_directions=transfinite_directions, geometric_data=
     geometric_data, explicit_volume_physical_group_name="annulus",
-    explicit_surface_physical_group_name={1: "lower", 6: "upper", 2: 
-    "outer side"}, edges_points={1: edge_points_1, 5: edge_points_5})
+    explicit_surface_physical_group_name={1: "lower", 6: "upper", 2:
+    "outer side"}, edges_points={1: edge_points_1, 5: edge_points_5},
+    parametric_curves=parametric_curves)
 
     # Creates the geometry and meshes it
 
