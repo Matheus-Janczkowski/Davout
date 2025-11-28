@@ -12,7 +12,7 @@ import numpy as np
 # space
 
 def spline_3D_interpolation(x_points=None, y_points=None, z_points=None, 
-points_array=None):
+points_array=None, add_initial_point_as_end_point=False):
     
     """
     Function for creating a cubic spline interpolation function of a
@@ -29,6 +29,9 @@ points_array=None):
     points_array: list of lists or numpy array of the values of the 
     points. It can be a list with 3 sublists (one for each dimension), or
     one sublist with 3 values for each point. Likewise for numpy arrays
+
+    add_initial_point_as_end_point: Flag to add a copy of the initial 
+    point as end point to close the curve
     """
 
     # Tests if the points array is not None
@@ -114,6 +117,12 @@ points_array=None):
                         point)+"; it should have 3 elements: x, y, and"+
                         " z")
                     
+                    x_points.append(point[0])
+
+                    y_points.append(point[1])
+
+                    z_points.append(point[2])
+                    
         else:
 
             raise TypeError("'points_array' in 'spline_3D_interpolatio"+
@@ -143,19 +152,36 @@ points_array=None):
 
     n_points = len(x_points)
 
+    if n_points==0:
+
+        raise IndexError("No points were given for 'spline_3D_interpol"+
+        "ation', x_points="+str(x_points))
+
     if len(y_points)!=n_points:
 
-        print("There are "+str(n_points)+" points in the x direction; "+
-        "whereas there are "+str(len(y_points))+" points in the y dire"+
-        "ction. They must have the same size in 'spline_3D_interpolati"+
-        "on'")
+        raise IndexError("There are "+str(n_points)+" points in the x "+
+        "direction; whereas there are "+str(len(y_points))+" points in"+
+        " the y direction. They must have the same size in 'spline_3D_"+
+        "interpolation'")
 
     elif len(z_points)!=n_points:
 
-        print("There are "+str(n_points)+" points in the x direction; "+
-        "whereas there are "+str(len(z_points))+" points in the z dire"+
-        "ction. They must have the same size in 'spline_3D_interpolati"+
-        "on'")
+        raise IndexError("There are "+str(n_points)+" points in the x "+
+        "direction; whereas there are "+str(len(z_points))+" points in"+
+        " the z direction. They must have the same size in 'spline_3D_"+
+        "interpolation'")
+    
+    # If the initial point is meant to be copied as the end point
+
+    if add_initial_point_as_end_point:
+
+        x_points.append(x_points[0])
+
+        y_points.append(y_points[0])
+
+        z_points.append(z_points[0])
+
+        n_points += 1
 
     # Gets the range of the parametric variable
 

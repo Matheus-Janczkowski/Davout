@@ -6,6 +6,8 @@ from ...solids import cuboid_prisms as prisms
 
 from ...tool_box import meshing_tools as tools
 
+from ....PythonicUtilities.interpolation_tools import spline_3D_interpolation
+
 # Defines a function to construct the intervertebral disc using prisms
 
 def mesh_disc():
@@ -20,29 +22,84 @@ def mesh_disc():
 
     cube_radius = 0.5*inner_radius
 
-    inferior_curve_cube = lambda theta: [cube_radius*np.cos((2*np.pi*
-    theta)+((7/4)*np.pi)), cube_radius*np.sin((2*np.pi*theta)+((7/4)*
-    np.pi)), 0.0]
+    # Square curve
 
-    superior_curve_cube = lambda theta: [cube_radius*np.cos((2*np.pi*
-    theta)+((7/4)*np.pi)), cube_radius*np.sin((2*np.pi*theta)+((7/4)*
-    np.pi)), height]
+    points_array_inferior_square = [[cube_radius*np.cos(np.pi*(7/4)), 
+    cube_radius*np.sin(np.pi*(7/4)), 0.0], [cube_radius*np.cos(np.pi*(9/
+    4)), cube_radius*np.sin(np.pi*(9/4)), 0.0], [cube_radius*np.cos(
+    np.pi*(11/4)), cube_radius*np.sin(np.pi*(11/4)), 0.0], [cube_radius*
+    np.cos(np.pi*(13/4)), cube_radius*np.sin(np.pi*(13/4)), 0.0]]
 
-    inferior_curve_inner = lambda theta: [inner_radius*np.cos((2*np.pi*
+    points_array_superior_square = [[cube_radius*np.cos(np.pi*(7/4)), 
+    cube_radius*np.sin(np.pi*(7/4)), height], [cube_radius*np.cos(np.pi*
+    (9/4)), cube_radius*np.sin(np.pi*(9/4)), height], [cube_radius*
+    np.cos(np.pi*(11/4)), cube_radius*np.sin(np.pi*(11/4)), height], [
+    cube_radius*np.cos(np.pi*(13/4)), cube_radius*np.sin(np.pi*(13/4)), 
+    height]]
+
+    inferior_curve_cube = spline_3D_interpolation(points_array=
+    points_array_inferior_square, add_initial_point_as_end_point=True)
+
+    superior_curve_cube = spline_3D_interpolation(points_array=
+    points_array_superior_square, add_initial_point_as_end_point=True)
+
+    # Inner curve
+
+    points_array_inferior_inner = [[inner_radius*np.cos(np.pi*(7/4)), 
+    inner_radius*np.sin(np.pi*(7/4)), 0.0], [inner_radius*np.cos(np.pi*(9/
+    4)), inner_radius*np.sin(np.pi*(9/4)), 0.0], [inner_radius*np.cos(
+    np.pi*(11/4)), inner_radius*np.sin(np.pi*(11/4)), 0.0], [inner_radius*
+    np.cos(np.pi*(13/4)), inner_radius*np.sin(np.pi*(13/4)), 0.0]]
+
+    points_array_superior_inner = [[inner_radius*np.cos(np.pi*(7/4)), 
+    inner_radius*np.sin(np.pi*(7/4)), height], [inner_radius*np.cos(np.pi*
+    (9/4)), inner_radius*np.sin(np.pi*(9/4)), height], [inner_radius*
+    np.cos(np.pi*(11/4)), inner_radius*np.sin(np.pi*(11/4)), height], [
+    inner_radius*np.cos(np.pi*(13/4)), inner_radius*np.sin(np.pi*(13/4)), 
+    height]]
+
+    """inferior_curve_inner = lambda theta: [inner_radius*np.cos((2*np.pi*
     theta)+((7/4)*np.pi)), inner_radius*np.sin((2*np.pi*theta)+((7/4)*
     np.pi)), 0.0]
 
     superior_curve_inner = lambda theta: [inner_radius*np.cos((2*np.pi*
     theta)+((7/4)*np.pi)), inner_radius*np.sin((2*np.pi*theta)+((7/4)*
-    np.pi)), height]
+    np.pi)), height]"""
 
-    inferior_curve_outer = lambda theta: [outer_radius*np.cos((2*np.pi*
+    inferior_curve_inner = spline_3D_interpolation(points_array=
+    points_array_inferior_inner, add_initial_point_as_end_point=True)
+
+    superior_curve_inner = spline_3D_interpolation(points_array=
+    points_array_superior_inner, add_initial_point_as_end_point=True)
+
+    # Outer curve
+
+    points_array_inferior_outer = [[outer_radius*np.cos(np.pi*(7/4)), 
+    outer_radius*np.sin(np.pi*(7/4)), 0.0], [outer_radius*np.cos(np.pi*(9/
+    4)), outer_radius*np.sin(np.pi*(9/4)), 0.0], [outer_radius*np.cos(
+    np.pi*(11/4)), outer_radius*np.sin(np.pi*(11/4)), 0.0], [outer_radius*
+    np.cos(np.pi*(13/4)), outer_radius*np.sin(np.pi*(13/4)), 0.0]]
+
+    points_array_superior_outer = [[outer_radius*np.cos(np.pi*(7/4)), 
+    outer_radius*np.sin(np.pi*(7/4)), height], [outer_radius*np.cos(np.pi*
+    (9/4)), outer_radius*np.sin(np.pi*(9/4)), height], [outer_radius*
+    np.cos(np.pi*(11/4)), outer_radius*np.sin(np.pi*(11/4)), height], [
+    outer_radius*np.cos(np.pi*(13/4)), outer_radius*np.sin(np.pi*(13/4)), 
+    height]]
+
+    """inferior_curve_outer = lambda theta: [outer_radius*np.cos((2*np.pi*
     theta)+((7/4)*np.pi)), outer_radius*np.sin((2*np.pi*theta)+((7/4)*
     np.pi)), 0.0]
 
     superior_curve_outer = lambda theta: [outer_radius*np.cos((2*np.pi*
     theta)+((7/4)*np.pi)), outer_radius*np.sin((2*np.pi*theta)+((7/4)*
-    np.pi)), height]
+    np.pi)), height]"""
+
+    inferior_curve_outer = spline_3D_interpolation(points_array=
+    points_array_inferior_outer, add_initial_point_as_end_point=True)
+
+    superior_curve_outer = spline_3D_interpolation(points_array=
+    points_array_superior_outer, add_initial_point_as_end_point=True)
 
     parametric_curves = {"inferior square": inferior_curve_cube, "supe"+
     "rior square": superior_curve_cube, "inferior inner": 
