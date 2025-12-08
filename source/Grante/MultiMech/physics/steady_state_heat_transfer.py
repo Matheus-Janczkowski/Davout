@@ -150,7 +150,7 @@ from ...PythonicUtilities import programming_tools
 lambda: [], 'dirichlet_loads': lambda: [], 'solution_name': lambda: [
 "solution", "DNS"], 'volume_physGroupsSubmesh': lambda: [], ('post_pro'+
 'cessesSubmesh'): lambda: dict(), 'dirichlet_boundaryConditions': lambda: 
-dict(), "body_forcesDict": lambda: dict()})
+dict(), "heat_generation_dict": lambda: dict()})
 
 def steady_state_heat_transfer_temperature_based(constitutive_model, 
 heat_flux_dictionary, maximum_loadingSteps, t_final, post_processes, 
@@ -158,7 +158,7 @@ mesh_fileName, solver_parameters, neumann_loads=None, dirichlet_loads=
 None, polynomial_degree=2, quadrature_degree=2, t=0.0, 
 volume_physGroupsSubmesh=None, post_processesSubmesh=None, 
 solution_name=None, verbose=False, dirichlet_boundaryConditions=None,
-body_forcesDict=None):
+heat_generation_dict=None):
 
     ####################################################################
     #                               Mesh                               #
@@ -217,16 +217,17 @@ body_forcesDict=None):
 
     # Constructs the variational forms for the traction work
 
-    out_heat_flux_variational_form, neumann_loads = variational_tools.traction_work(
-    traction_dictionary, "Temperature", solution_fields, 
+    out_heat_flux_variational_form, neumann_loads = variational_tools.boundary_heat_flux_work(
+    heat_flux_dictionary, "Temperature", solution_fields, 
     variation_fields, solution_new, fields_namesDict, mesh_dataClass, 
     neumann_loads)
 
     # Constructs the variational form for the work of heat generation
 
     heat_generation_variational_form, neumann_loads = variational_tools.heat_generation_work(
-    body_forcesDict, "Temperature", solution_fields, variation_fields, 
-    solution_new, fields_namesDict, mesh_dataClass, neumann_loads)
+    heat_generation_dict, "Temperature", solution_fields, 
+    variation_fields, solution_new, fields_namesDict, mesh_dataClass, 
+    neumann_loads)
 
     ####################################################################
     #              Problem and solver parameters setting               #
@@ -246,7 +247,7 @@ body_forcesDict=None):
     #                 Solution and pseudotime stepping                 #
     ####################################################################
 
-    # Iterates through the pseudotime stepping algortihm 
+    # Iterates through the pseudotime stepping algorithm
 
     newton_raphson_tools.newton_raphsonSingleField(solver, solution_new, 
     fields_namesDict, mesh_dataClass, constitutive_model, 

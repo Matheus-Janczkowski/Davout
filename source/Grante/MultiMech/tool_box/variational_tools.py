@@ -512,7 +512,7 @@ neumann_loads):
 
     # Gets the physical groups tags
 
-    physical_groupsTags = set(mesh_dataClass.ds.subdomain_data().array(
+    physical_groupsTags = set(mesh_dataClass.dx.subdomain_data().array(
     ))
 
     # Initializes the variational form
@@ -738,7 +738,7 @@ neumann_loads):
 
     # Gets the physical groups tags
 
-    physical_groupsTags = set(mesh_dataClass.ds.subdomain_data().array(
+    physical_groupsTags = set(mesh_dataClass.dx.subdomain_data().array(
     ))
 
     # Initializes the variational form
@@ -782,6 +782,12 @@ neumann_loads):
 
     for physical_group, heat_generator in heat_generator_dict.items():
 
+        # Verifies if this physical group exists
+
+        physical_group = verify_physicalGroups(physical_group, 
+        physical_groupsTags, physical_groupsNamesToTags=
+        mesh_dataClass.domain_physicalGroupsNameToTag)
+
         # Verifies if the heat generator is a list, to add multiple loads 
         # to a single physical group
 
@@ -791,32 +797,44 @@ neumann_loads):
 
             if isinstance(heat_generator[0], list):
 
-                pass
+                # Iterates through the loads
 
-            # Iterates through the loads
+                for load in heat_generator:
 
-            for load in heat_generator:
+                    # If load is a list with the value of the heat gene-
+                    # ration in the first slot, and the load class in 
+                    # the second slot
 
-                # If load is a list with the value of the heat genera-
-                # tion in the first slot, and the load class in the se-
-                # cond slot
+                    if isinstance(load, list):
 
-                if isinstance(load, list):
+                        # Updates the variational form and the list of 
+                        # Neumann loads
 
-                    # Updates the variational form and the list of Neu-
-                    # mann loads
+                        body_form += ((load[0]*field_variation)*
+                        mesh_dataClass.dx(physical_group))
 
-                    body_form += ((load[0]*field_variation)*
-                    mesh_dataClass.dx(physical_group))
+                        neumann_loads.append(load[1])
 
-                    neumann_loads.append(load[1])
+                    else:
 
-                else:
+                        # Updates the variational form only
 
-                    # Updates the variational form only
+                        body_form += ((load*field_variation)*
+                        mesh_dataClass.dx(physical_group))
 
-                    body_form += ((load*field_variation)*
-                    mesh_dataClass.dx(physical_group))
+            # If the inner element is not a list, there is only one load
+            # for this physical group, and the first element is the load
+            # itself and the second element is the Neumann load
+
+            else:
+
+                # Updates the variational form and the list of Neumann
+                # loads
+
+                body_form += ((load[0]*field_variation)*
+                mesh_dataClass.dx(physical_group))
+
+                neumann_loads.append(load[1])
 
         # If the body force is not a list, updates the variational form 
         # directly
@@ -833,9 +851,149 @@ neumann_loads):
     if mesh_dataClass.verbose:
 
         print("Finishes creating the variational form of the work done"+
-        " by the body forces on the domain\n")
+        " by the heat generation in the domain\n")
 
     return body_form, neumann_loads
+
+########################################################################
+#                    Heat flux on the boundary work                    #
+########################################################################
+
+# Defines a function to construct the variational form of the work done
+# by heat flux on the boundary of the reference configuration given a 
+# dictionary of heat flux loads, where the keys are the corresponding 
+# boundary physical groups and the values are the heat flux (scalar, 
+# which means that it is already the inner product of the heat flux with
+# the normal vector) loads
+
+def boundary_heat_flux_work(heat_flux_dict, field_name, solution_fields, 
+variation_fields, monolithic_solution, fields_namesDict, mesh_dataClass, 
+neumann_loads):
+    
+    # Gets the symbolic field and its variation
+
+    field = solution_fields[field_name]
+
+    field_variation = variation_fields[field_name]
+
+    # Gets the physical groups tags
+
+    physical_groupsTags = set(mesh_dataClass.ds.subdomain_data().array(
+    ))
+
+    # Initializes the variational form
+
+    flux_form = 0.0
+
+    # Initializes a dictionary of load-generating functions from the 
+    # body_loading_tools file
+
+    methods_functionsDict = None
+
+    methods_functionsDict = programming_tools.dispatch_functions([], 
+    body_loading_tools, methods_functionsDict=methods_functionsDict)[1]
+
+    # Initializes the dictionary of fixed arguments for the loading 
+    # functions
+
+    fixed_arguments = {"field": field, "mesh_dataClass": mesh_dataClass,
+    "field_variation": field_variation}
+
+    # For evaluation of the value of the field at a point, the numerical
+    # information must be provided, which is trickier in mixed finite e-
+    # lements formulation
+
+    if len(fields_namesDict.keys())>1:
+
+        # Splits the solution and gets the current numerical format of
+        # the field
+
+        fixed_arguments["field_numerical"] = monolithic_solution.split()[
+        fields_namesDict[field_name]]
+
+    else:
+
+        # In single field formulations, the symbolic and numerical func-
+        # tions coincide
+
+        fixed_arguments["field_numerical"] = field
+
+    # Iterates through the dictionary
+
+    for physical_group, heat_flux in heat_flux_dict.items():
+
+        # Verifies if this physical group exists
+
+        physical_group = verify_physicalGroups(physical_group, 
+        physical_groupsTags, physical_groupsNamesToTags=
+        mesh_dataClass.boundary_physicalGroupsNameToTag)
+
+        # Verifies if the heat flux is a list, to add multiple loads to
+        # a single physical group
+
+        if isinstance(heat_flux, list):
+
+            # Tests if the first element is a list in its own right
+
+            if isinstance(heat_flux[0], list):
+
+                # Iterates through the loads
+
+                for load in heat_flux:
+
+                    # If load is a list with the value of the heat flux
+                    # in the first slot, and the load class in  the se-
+                    # cond slot
+
+                    if isinstance(load, list):
+
+                        # Updates the variational form and the list of 
+                        # Neumann loads
+
+                        flux_form += ((load[0]*field_variation)*
+                        mesh_dataClass.ds(physical_group))
+
+                        neumann_loads.append(load[1])
+
+                    else:
+
+                        # Updates the variational form only
+
+                        flux_form += ((load*field_variation)*
+                        mesh_dataClass.ds(physical_group))
+
+            # If the inner element is not a list, there is only one load
+            # for this physical group, and the first element is the load
+            # itself and the second element is the Neumann load
+
+            else:
+
+                # Updates the variational form and the list of Neumann
+                # loads
+
+                flux_form += ((load[0]*field_variation)*
+                mesh_dataClass.ds(physical_group))
+
+                neumann_loads.append(load[1])
+
+        # If the heat flux is not a list, updates the variational form 
+        # directly
+
+        else:
+            
+            # Updates the variational form only
+
+            flux_form += ((load*field_variation)*mesh_dataClass.ds(
+            physical_group))
+
+    # Returns the variational form
+
+    if mesh_dataClass.verbose:
+
+        print("Finishes creating the variational form of the work done"+
+        " by the heat fluxes on the boundary\n")
+
+    return flux_form, neumann_loads
 
 ########################################################################
 #                              Utilities                               #
