@@ -51,6 +51,91 @@ class MeshData:
 #                              Mesh files                              #
 ########################################################################
 
+# Defines a function to create a simple box mesh
+
+def create_box_mesh(length_x, length_y, length_z, n_divisions_x,
+n_divisions_y, n_divisions_z, verbose=False):
+
+    # Creates a simple box mesh
+
+    mesh = BoxMesh(Point(0,0,0), Point(length_x, length_y, length_z), 
+    n_divisions_x, n_divisions_y, n_divisions_z)
+
+    # Sets the surface domains
+
+    bottom_facet = CompiledSubDomain("near(x[2], 0)")
+
+    front_facet = CompiledSubDomain("near(x[0], length_x)", length_x=
+    length_x)
+
+    right_facet = CompiledSubDomain("near(x[1], length_y)", length_y=
+    length_y)
+
+    back_facet = CompiledSubDomain("near(x[0], 0)")
+
+    left_facet = CompiledSubDomain("near(x[1], 0)")
+
+    top_facet = CompiledSubDomain("near(x[2], length_z)", length_z=
+    length_z)
+
+    # Sets the volume markers as zero
+
+    volume_markers = MeshFunction("size_t", mesh, mesh.topology().dim())
+
+    volume_markers.set_all(0)
+
+    domain_meshCollection = MeshValueCollection("size_t", mesh, 
+    mesh.topology().dim())
+
+    domain_physicalGroupsNameToTag = {"volume": 0}
+
+    # Sets the boundaries
+
+    boundary_markers = MeshFunction("size_t", mesh, mesh.topology().dim(
+    )-1)
+
+    boundary_markers.set_all(1)
+
+    bottom_facet.mark(boundary_markers, 1)
+
+    front_facet.mark(boundary_markers, 2)
+
+    right_facet.mark(boundary_markers, 3)
+
+    back_facet.mark(boundary_markers, 4)
+
+    left_facet.mark(boundary_markers, 5)
+
+    top_facet.mark(boundary_markers, 6)
+
+    boundary_meshCollection = MeshValueCollection("size_t", mesh, 
+    mesh.topology().dim()-1)
+
+    boundary_physicalGroupsNameToTag = {"bottom": 1, "front": 2, "righ"+
+    "t": 3, "back": 4, "left": 5, "top": 6}
+
+    # Sets the integration measures
+
+    dx = Measure("dx", domain=mesh, metadata={"quadrature_degree": 2},
+    subdomain_data=volume_markers)
+
+    ds = Measure("ds", domain=mesh, subdomain_data=boundary_markers)
+
+    # Sets the normal vector to the mesh's boundary
+
+    n  = FacetNormal(mesh)
+
+    # Sets the position vector
+
+    x_position = SpatialCoordinate(mesh)
+
+    # Creates the 
+
+    return MeshData(mesh, dx, ds, n, x_position, domain_meshCollection, 
+    volume_markers, boundary_meshCollection, boundary_markers, 
+    domain_physicalGroupsNameToTag, boundary_physicalGroupsNameToTag,
+    verbose)
+
 # Defines a function to read a mesh from a msh file
 
 @programming_tools.optional_argumentsInitializer({'desired_elements':
@@ -59,6 +144,95 @@ lambda: ['tetra', 'triangle'], 'data_sets': lambda: ["domain", ("bound"+
 
 def read_mshMesh(file_name, desired_elements=None, data_sets=None, 
 quadrature_degree=2, verbose=False):
+
+    # Tests if the file name is a dictionary, which means the mesh is to
+    # be created using FEniCS built-in meshes
+
+    if isinstance(file_name, dict):
+
+        # Tests if the lengths are in the set of keys
+
+        length_x = 0.0
+
+        length_y = 0.0
+
+        length_z = 0.0
+
+        if "length x" in file_name:
+
+            length_x = file_name["length x"]
+
+        else:
+
+            raise KeyError("'file_name' is a dictionary, so a built-in"+
+            " mesh is to be used, but no key 'length x' was provided. "+
+            "The keys provided are: "+str(file_name.keys()))
+
+        if "length y" in file_name:
+
+            length_y = file_name["length y"]
+
+        else:
+
+            raise KeyError("'file_name' is a dictionary, so a built-in"+
+            " mesh is to be used, but no key 'length y' was provided. "+
+            "The keys provided are: "+str(file_name.keys()))
+
+        if "length z" in file_name:
+
+            length_z = file_name["length z"]
+
+        else:
+
+            raise KeyError("'file_name' is a dictionary, so a built-in"+
+            " mesh is to be used, but no key 'length z' was provided. "+
+            "The keys provided are: "+str(file_name.keys()))
+
+        # Adds the divisions
+
+        n_divisions_x = 0
+
+        n_divisions_y = 0
+
+        n_divisions_z = 0
+
+        if "number of divisions in x" in file_name:
+
+            n_divisions_x = file_name["number of divisions in x"]
+
+        else:
+
+            raise KeyError("'file_name' is a dictionary, so a built-in"+
+            " mesh is to be used, but no key 'number of divisions in x"+
+            "' was provided. The keys provided are: "+str(
+            file_name.keys()))
+
+        if "number of divisions in y" in file_name:
+
+            n_divisions_y = file_name["number of divisions in y"]
+
+        else:
+
+            raise KeyError("'file_name' is a dictionary, so a built-in"+
+            " mesh is to be used, but no key 'number of divisions in y"+
+            "' was provided. The keys provided are: "+str(
+            file_name.keys()))
+
+        if "number of divisions in z" in file_name:
+
+            n_divisions_z = file_name["number of divisions in z"]
+
+        else:
+
+            raise KeyError("'file_name' is a dictionary, so a built-in"+
+            " mesh is to be used, but no key 'number of divisions in z"+
+            "' was provided. The keys provided are: "+str(
+            file_name.keys()))
+
+        # Retuns the built in mesh
+
+        return create_box_mesh(length_x, length_y, length_z, 
+        n_divisions_x, n_divisions_y, n_divisions_z, verbose=verbose)
 
     # Reads the saved gmsh mesh using meshio
 
