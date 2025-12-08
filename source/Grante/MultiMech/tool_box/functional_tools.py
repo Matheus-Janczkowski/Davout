@@ -221,12 +221,25 @@ dirichlet_loads=None):
 
                 boundary_conditions.append(bc_dictionary)
 
+            # Verifies if it is a float
+
+            elif isinstance(bc_dictionary, float) or isinstance(
+            bc_dictionary, np.ndarray):
+
+                boundary_conditions.append(DirichletBC(
+                monolithic_functionSpace, Constant(bc_dictionary),
+                mesh_dataClass.boundary_meshFunction, 
+                mesh_dataClass.boundary_physicalGroupsNameToTag[
+                physical_group]))
+
             else:
 
                 raise TypeError("The information to construct a bounda"+
                 "ry condition must be a dictionary or a direct instanc"+
-                "e of DirichletBC fenics class. Whereas the given valu"+
-                "e is "+str(bc_dictionary))
+                "e of DirichletBC fenics class. It can also be a float"+
+                " or a numpy array if the boundary condition is extrem"+
+                "ely simple. Whereas the given value is "+str(
+                bc_dictionary))
     
     # Returns the boundary conditions' list and the list of controlling
     # Dirichlet boundary conditions loads

@@ -373,8 +373,8 @@ variation_fields, constitutive_modelDictionary, mesh_dataClass):
         # ce configuration
 
         heat_flux = programming_tools.get_result(
-        constitutive_model.referential_heat_flux(trial_function), "ref"+
-        "erential_heat_flux")
+        constitutive_modelDictionary.referential_heat_flux(trial_function
+        ), "referential_heat_flux")
 
         # Constructs the variational forms for the inner work
 
@@ -386,8 +386,7 @@ variation_fields, constitutive_modelDictionary, mesh_dataClass):
     if mesh_dataClass.verbose:
 
         print("Finishes creating the variational form of the inner wor"+
-        "k done by the\nfirst Piola stress tensor in a Cauchy continuu"+
-        "m medium\n")
+        "k done by the\ninner heat flux")
 
     return inner_work
 
@@ -971,10 +970,10 @@ neumann_loads):
                 # Updates the variational form and the list of Neumann
                 # loads
 
-                flux_form += ((load[0]*field_variation)*
+                flux_form += ((heat_flux[0]*field_variation)*
                 mesh_dataClass.ds(physical_group))
 
-                neumann_loads.append(load[1])
+                neumann_loads.append(heat_flux[1])
 
         # If the heat flux is not a list, updates the variational form 
         # directly
@@ -983,7 +982,7 @@ neumann_loads):
             
             # Updates the variational form only
 
-            flux_form += ((load*field_variation)*mesh_dataClass.ds(
+            flux_form += ((heat_flux*field_variation)*mesh_dataClass.ds(
             physical_group))
 
     # Returns the variational form
