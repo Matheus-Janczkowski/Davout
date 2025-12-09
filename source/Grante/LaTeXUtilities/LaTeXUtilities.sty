@@ -6,6 +6,21 @@
 
 \ProvidesPackage{LaTeXUtilities}[2025/10/06 Custom commands by Matheus Janczkowski Fogaca]
 
+% Default language for babel is English
+
+\newcommand{\LU@babelLang}{english}
+
+% Declares the options
+
+\DeclareOption{english}{\renewcommand{\LU@babelLang}{english}}
+\DeclareOption{portuguese}{\renewcommand{\LU@babelLang}{portuguese}}
+\DeclareOption{brazil}{\renewcommand{\LU@babelLang}{brazil}}
+\DeclareOption{french}{\renewcommand{\LU@babelLang}{french}}
+
+% Processes the selected options
+
+\ProcessOptions\relax
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%                            Load packages                           %%
@@ -18,7 +33,7 @@
 \RequirePackage{ulem}
 \RequirePackage{mathtools}
 \RequirePackage{tikz}
-\RequirePackage[english]{babel}
+\RequirePackage[\LU@babelLang]{babel}
 \RequirePackage{amsmath}
 \RequirePackage{mattens}
 \RequirePackage{amsthm}
@@ -46,7 +61,6 @@
 \RequirePackage{colortbl}
 % Package to enumerate with letters
 \RequirePackage[shortlabels]{enumitem}
-\RequirePackage{enumitem}
 % Package to place figures within the sections where they had been al
 % ready placed.
 \RequirePackage[section]{placeins}
