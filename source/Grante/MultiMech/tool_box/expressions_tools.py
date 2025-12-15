@@ -6,17 +6,19 @@ import numpy as np
 
 from ...PythonicUtilities.function_tools import get_functions_arguments
 
+from ...MultiMech.tool_box.mesh_handling_tools import get_domain_dofs_to_physical_group
+
 # Defines a function to interpolate a python function into a finite ele-
 # ment space, the function must return a scalar
 
 def interpolate_scalar_function(scalar_function, function_space, name=
-None):
+None, mesh_data_class=None):
 
     # Verifies the number of arguments, it must be only one: the position
     # vector in the mesh
 
     number_of_arguments = get_functions_arguments(scalar_function, 
-    number_of_arguments_only=True)
+    number_of_arguments_only=True, positional_arguments_only=True)
 
     if number_of_arguments!=1:
 
@@ -39,8 +41,23 @@ None):
 
     # Gets the values of the function in the nodes
 
-    nodes_values = np.array([scalar_function(position_vector) for (
-    position_vector) in dofs_coordinates])
+    dofs_dictionary = get_domain_dofs_to_physical_group(mesh_data_class,
+    function_space)
+
+    nodes_values = np.zeros(len(dofs_coordinates))
+
+    for dof in range(len(dofs_coordinates)):
+
+        current_physical_group = None
+
+        for physical_name, physical_dofs in dofs_dictionary.items():
+
+            if dof in physical_dofs:
+
+                current_physical_group = physical_name
+
+        nodes_values[dof] = scalar_function(dofs_coordinates[dof],
+        current_physical_group=current_physical_group, dof=dof)
 
     # Creates a Function element over the finite element space
 

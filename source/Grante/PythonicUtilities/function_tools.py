@@ -12,7 +12,7 @@ import functools
 # keyword arguments into a dictionary
 
 def get_functions_arguments(function_object, number_of_arguments_only=
-False):
+False, positional_arguments_only=False):
 
     # Gets the signature of the function
 
@@ -22,7 +22,20 @@ False):
 
     if number_of_arguments_only:
 
-        return len(signature.parameters.keys())
+        number_arguments = len(signature.parameters.keys())
+
+        if positional_arguments_only:
+
+            for default_value in signature.parameters.values():
+
+                # If the argument is not empty, it is optional, thus, 
+                # does not count it
+
+                if default_value.default!=inspect._empty:
+
+                    number_arguments -= 1
+
+        return number_arguments
 
     # Initializes the dictionary of keyword arguments
 

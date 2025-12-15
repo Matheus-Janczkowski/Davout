@@ -1235,6 +1235,98 @@ node_number=None, node_coordinates=None):
 #                            Physical groups                           #
 ########################################################################
 
+# Defines a function to get the degrees of freedom that belongs to each
+# boundary physical group. Gives a dictionary of sets
+
+def get_boundary_dofs_to_physical_group(mesh_data_class, function_space):
+
+    # Initializes the dictionary of sets
+
+    dofs_dictionary = dict()
+
+    # Gets the DOFs map for this function space
+
+    dof_map = function_space.dofmap()
+
+    # Iterates through the boundary physical groups
+
+    for physical_name, physical_tag in (
+    mesh_data_class.boundary_physicalGroupsNameToTag.items()):
+
+        # Initializes the set of DOFs
+
+        dofs_set = set()
+
+        # Iterates through the mesh facets
+
+        for facet in facets(mesh_data_class.mesh):
+
+            # Verifies if it belongs to the boundary
+
+            if mesh_data_class.boundary_meshFunction[facet]==(
+            physical_tag):
+                
+                # Iterates through the nodes of this facet
+                
+                for node in vertices(facet):
+                    
+                    dofs_set.update(dof_map.entity_dofs(
+                    mesh_data_class.mesh, 0, [node.index()]))
+
+        # Adds to the dictionary
+
+        dofs_dictionary[physical_name] = dofs_set
+
+    # Returns the dictionary
+
+    return dofs_dictionary
+
+# Defines a function to get the degrees of freedom that belongs to each
+# domain physical group. Gives a dictionary of sets
+
+def get_domain_dofs_to_physical_group(mesh_data_class, function_space):
+
+    # Initializes the dictionary of sets
+
+    dofs_dictionary = dict()
+
+    # Gets the DOFs map for this function space
+
+    dof_map = function_space.dofmap()
+
+    # Iterates through the doamin physical groups
+
+    for physical_name, physical_tag in (
+    mesh_data_class.domain_physicalGroupsNameToTag.items()):
+
+        # Initializes the set of DOFs
+
+        dofs_set = set()
+
+        # Iterates through the mesh elements
+
+        for cell in cells(mesh_data_class.mesh):
+
+            # Verifies if it belongs to the domain
+
+            if mesh_data_class.domain_meshFunction[cell]==(
+            physical_tag):
+                
+                # Iterates through the nodes of this cell
+                
+                for node in vertices(cell):
+                    
+                    dofs_set.update(dof_map.entity_dofs(
+                    mesh_data_class.mesh, 0, [node.index()]))
+
+        # Adds to the dictionary
+
+        dofs_dictionary[physical_name] = dofs_set
+
+    # Returns the dictionary
+
+    return dofs_dictionary
+
 # Defines a function to convert a (possibly) string physical group to 
 # the corresponding integer physical group
 
