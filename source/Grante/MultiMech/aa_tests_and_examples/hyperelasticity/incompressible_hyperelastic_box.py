@@ -20,6 +20,13 @@ from .....Grante.MultiMech.physics import hyperelastic_incompressible_cauchy_con
 
 results_path = get_parent_path_of_file()
 
+# The post processes list is a list of lists: each list corresponds to a
+# field of the problem. Each list has two components: the name of the 
+# field as defined in the physics file; a dictionary with the post pro-
+# cesses. The post processes dictionary has keys with the names of the
+# post processes and values which are dictionaries themselves with fur-
+# ther information
+
 post_processes = [["Displacement", dict()], ["Pressure", dict()]]
 
 post_processes[0][1]["SaveField"] = {"directory path": results_path, 
@@ -46,7 +53,9 @@ E_2 = 5E6
 poisson_2 = 0.3
 
 # Sets the material as a neo-hookean material using the corresponding
-# class
+# class. Sets the constitutive model as a dictionary: each key corres-
+# ponds to the name of the volumetric physical group; and the value is
+# the constitutive model for that physical group
 
 constitutive_model = dict()
 
