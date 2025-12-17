@@ -4,13 +4,13 @@ import os
 
 #import periodic_structure as mesher
 
-from ....PythonicUtilities import file_handling_tools
+from .....Grante.PythonicUtilities import file_handling_tools
 
-from ...constitutive_models.hyperelasticity import isotropic_hyperelasticity as constitutive_models
+from .....Grante.MultiMech.constitutive_models.hyperelasticity import isotropic_hyperelasticity as constitutive_models
 
-from ...physics import hyperelastic_cauchy_continuum as variational_framework
+from .....Grante.MultiMech.physics import hyperelastic_cauchy_continuum as variational_framework
 
-from ...aa_tests import test_meshes_paths
+from .....Grante.MultiMech.aa_tests import test_meshes_paths
 
 ########################################################################
 ########################################################################

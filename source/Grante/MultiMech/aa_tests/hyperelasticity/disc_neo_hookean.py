@@ -2,9 +2,9 @@
 
 import os
 
-from ...constitutive_models.hyperelasticity import isotropic_hyperelasticity as constitutive_models
+from .....Grante.MultiMech.constitutive_models.hyperelasticity import isotropic_hyperelasticity as constitutive_models
 
-from ...physics import hyperelastic_cauchy_continuum as variational_framework
+from .....Grante.MultiMech.physics import hyperelastic_cauchy_continuum as variational_framework
 
 ########################################################################
 ########################################################################

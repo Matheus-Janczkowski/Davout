@@ -1,10 +1,10 @@
 # Routine to test a hyperelastic disc
 
-from ....PythonicUtilities.path_tools import get_parent_path_of_file
+from .....Grante.PythonicUtilities.path_tools import get_parent_path_of_file
 
-from ....MultiMech.constitutive_models.hyperelasticity import isotropic_hyperelasticity as constitutive_models
+from .....Grante.MultiMech.constitutive_models.hyperelasticity import isotropic_hyperelasticity as constitutive_models
 
-from ....MultiMech.physics import hyperelastic_incompressible_cauchy_continuum as variational_framework
+from .....Grante.MultiMech.physics import hyperelastic_incompressible_cauchy_continuum as variational_framework
 
 ########################################################################
 ########################################################################

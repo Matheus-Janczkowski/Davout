@@ -4,17 +4,13 @@ from dolfin import *
 
 import os
 
-from mpi4py import MPI
-
-from mshr import *
-
 #import periodic_structure as mesher
 
-from ...constitutive_models.hyperelasticity import anisotropic_hyperelasticity as anisotropic_constitutiveModels
+from .....Grante.MultiMech.constitutive_models.hyperelasticity import anisotropic_hyperelasticity as anisotropic_constitutiveModels
 
-from ...constitutive_models.hyperelasticity import isotropic_hyperelasticity as isotropic_constitutiveModels
+from .....Grante.MultiMech.constitutive_models.hyperelasticity import isotropic_hyperelasticity as isotropic_constitutiveModels
 
-from ...physics import hyperelastic_cauchy_continuum as variational_framework
+from .....Grante.MultiMech.physics import hyperelastic_cauchy_continuum as variational_framework
 
 ########################################################################
 ########################################################################
