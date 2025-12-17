@@ -12,6 +12,8 @@ from ....MultiMech.tool_box import functional_tools
 
 from ....MultiMech.tool_box import variational_tools
 
+from ....MultiMech.tool_box.read_write_tools import write_field_to_xdmf
+
 # Creates a box mesh using gmsh
 
 mesh_data_class = read_mshMesh({"length x": 0.3, "length y": 0.2, "len"+
@@ -98,14 +100,4 @@ V_new = assemble(J*mesh_data_class.dx)
 print("The ratio of the new volume by the volume of the reference conf"+
 "iguration is "+str(inv_V0*V_new)+"\n")
 
-u_solution.rename("Displacement", "DNS")
-
-lambda_solution.rename("Pressure", "DNS")
-
-file = XDMFFile(get_parent_path_of_file()+"//tests//displacement.xdmf")
-
-file.write(u_solution)
-
-file = XDMFFile(get_parent_path_of_file()+"//tests//pressure.xdmf")
-
-file.write(lambda_solution)
+write_field_to_xdmf(functional_data_class)

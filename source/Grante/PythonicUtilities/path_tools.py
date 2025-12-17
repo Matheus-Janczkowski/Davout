@@ -6,6 +6,8 @@ from pathlib import Path
 
 import inspect
 
+import unicodedata
+
 ########################################################################
 #                              Path tools                              #
 ########################################################################
@@ -264,3 +266,58 @@ def take_outFileNameTermination(file_name, get_termination=False):
     else:
 
         return clean_fileName
+    
+# Defines a function to decapitalize letters and change blank spaces for
+# underline characters
+
+def decapitalize_and_insert_underline(file_name):
+
+    # Verifies if it is a string
+
+    if not isinstance(file_name, str):
+
+        raise TypeError("'file_name' is not a string in 'decapitalize_"+
+        "and_insert_underline'. Thus, it cannot be used for decapitali"+
+        "zing letters and changing blank spaces for underline characte"+
+        "rs")
+    
+    # Initializes a new file name
+
+    new_file_name = ""
+
+    # Iterates through the characters
+
+    for character in file_name:
+
+        # Verifies if the character is not ASCII
+
+        if ord(character)>127:
+        
+            character = unicodedata.normalize("NFKD", character
+            ).encode("ascii", "ignore").decode("ascii")
+
+        # Verifies if it is a blank space
+
+        if character==" ":
+
+            # Adds an underline to the new file name
+
+            new_file_name += "_"
+
+        # Verifies if the character is upper case
+
+        elif character.isupper():
+
+            # Converts to lower case
+
+            new_file_name += character.lower()
+
+        # Otherwise, just adds the character
+
+        else:
+
+            new_file_name += character 
+
+    # Returns the new file name
+
+    return new_file_name
