@@ -18,17 +18,18 @@ from .....Grante.MultiMech.physics import hyperelastic_incompressible_cauchy_con
 
 # Defines the path to the results directory 
 
-results_path = get_parent_path_of_file() #os.getcwd()+"//aa_tests//hyperelasticity//results"
+results_path = get_parent_path_of_file()
 
-displacement_fileName = "displacement.xdmf"
+post_processes = [["Displacement", dict()], ["Pressure", dict()]]
 
-post_processes = dict()
+post_processes[0][1]["SaveField"] = {"directory path": results_path, 
+"file name": "displacement.xdmf"}
 
-post_processes["SaveField"] = {"directory path":results_path, 
-"file name":displacement_fileName}
+post_processes[0][1]["SaveMeshVolumeRatioToReferenceVolume"] = {"director"+
+"y path": results_path, "file name": "volume_ratio.txt"}
 
-post_processes["SaveMeshVolumeRatioToReferenceVolume"] = {"directory p"+
-"ath":results_path, "file name": "volume_ratio.txt"}
+post_processes[1][1]["SaveField"] = {"directory path": results_path, 
+"file name": "pressure.xdmf"}
 
 ########################################################################
 #                         Material properties                          #
