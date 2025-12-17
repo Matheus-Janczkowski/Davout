@@ -10,7 +10,7 @@ from .....Grante.MultiMech.constitutive_models.hyperelasticity import isotropic_
 
 from .....Grante.MultiMech.physics import hyperelastic_cauchy_continuum as variational_framework
 
-from .....Grante.MultiMech.aa_tests import test_meshes_paths
+from .....Grante.MultiMech.aa_tests_and_examples import test_meshes_paths
 
 ########################################################################
 ########################################################################

@@ -6,15 +6,15 @@ from dolfin import *
 
 from mshr import *
 
-from ....constitutive_models.hyperelasticity import isotropic_hyperelasticity as constitutive_models
+from ......Grante.MultiMech.constitutive_models.hyperelasticity import isotropic_hyperelasticity as constitutive_models
 
-from ....multiscale import multiscale_hyperelasticity as variational_framework
+from ......Grante.MultiMech.multiscale import multiscale_hyperelasticity as variational_framework
 
-from .....CuboidGmsh.aa_tests.micropolar_meshes import beam_micropolar_case_1 as beam_gmsh
+from ......Grante.CuboidGmsh.aa_tests.micropolar_meshes import beam_micropolar_case_1 as beam_gmsh
 
-from .....PythonicUtilities import path_tools
+from ......Grante.PythonicUtilities import path_tools
 
-from ....aa_tests import test_meshes_paths
+from ......Grante.MultiMech.aa_tests_and_examples import test_meshes_paths
 
 ########################################################################
 ########################################################################
