@@ -37,22 +37,24 @@ post_processes[1][1]["SaveField"] = {"directory path": results_path,
 
 # Sets the Young modulus and the Poisson ratio
 
-E = 1E6
+E_1 = 1E6
 
-poisson = 0.3
+poisson_1 = 0.3
 
-# Sets a dictionary of properties
+E_2 = 5E6
 
-material_properties = dict()
-
-material_properties["E"] = E
-
-material_properties["nu"] = poisson
+poisson_2 = 0.3
 
 # Sets the material as a neo-hookean material using the corresponding
 # class
 
-constitutive_model = constitutive_models.Neo_Hookean(material_properties)
+constitutive_model = dict()
+
+constitutive_model["volume 1"] = constitutive_models.Neo_Hookean({"E": 
+E_1, "nu": poisson_1})
+
+constitutive_model["volume 2"] = constitutive_models.Neo_Hookean({"E": 
+E_2, "nu": poisson_2})
 
 ########################################################################
 #                                 Mesh                                 #
@@ -65,7 +67,8 @@ constitutive_model = constitutive_models.Neo_Hookean(material_properties)
 mesh_fileName = {"length x": 0.3, "length y": 0.2, "length z": 1.0, "n"+
 "umber of divisions in x": 5, "number of divisions in y": 5, "number o"+
 "f divisions in z": 25, "verbose": False, "mesh file name": "box_mesh", 
-"mesh file directory": get_parent_path_of_file()}
+"mesh file directory": get_parent_path_of_file(), "number of subdomain"+
+"s in z direction": 2}
 
 ########################################################################
 #                            Function space                            #
@@ -107,22 +110,9 @@ maximum_loadingSteps = 5
 #                          Boundary conditions                         #
 ########################################################################
 
-# Defines a load expression
-
-maximum_load = 5E5
-
-# Assemble the traction vector using this load expression
-
-traction_boundary = {"load case": "UniformReferentialTraction", "ampli"+
-"tude_tractionX": 0.0, "amplitude_tractionY": 0.0, "amplitude_tractionZ": 
-maximum_load, "parametric_load_curve": "square root", "t": t, "t_final":
-t_final}
-
 # Defines a dictionary of tractions
 
 traction_dictionary = dict()
-
-traction_dictionary["top"] = traction_boundary
 
 # Defines a dictionary of boundary conditions. Each key is a physical
 # group and each value is another dictionary or a list of dictionaries 
@@ -133,6 +123,11 @@ traction_dictionary["top"] = traction_boundary
 bcs_dictionary = dict()
 
 bcs_dictionary["bottom"] = {"BC case": "FixedSupportDirichletBC"}
+
+bcs_dictionary["top"] = {"BC case": "PrescribedDirichletBC", "bc_infor"+
+"mationsDict": {"load_function": "SurfaceTranslationAndRotation", "tra"+
+"nslation": [0.0, 0.0, 0.05], "in_planeSpinDirection": [1.0, 0.0, 0.0], 
+"in_planeSpin": 15, "normal_toPlaneSpin": 45.0}}
 
 ########################################################################
 ########################################################################

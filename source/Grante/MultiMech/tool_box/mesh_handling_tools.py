@@ -59,23 +59,64 @@ class MeshData:
 
 def create_box_mesh(length_x, length_y, length_z, n_divisions_x,
 n_divisions_y, n_divisions_z, verbose=False, file_name="box_mesh",
-file_directory=None):
+file_directory=None, n_subdomains_z=1):
+    
+    # Defines the names of the surface physical groups
+
+    surface_regions_names = ["bottom", "front", "right", "back", "left",
+    "top"]
+
+    # Defines the names of the volumetric physical groups
+
+    volume_regions_names = []
+
+    for i in range(n_subdomains_z):
+
+        volume_regions_names.append("volume "+str(i+1))
 
     # Uses CuboidGmsh to avoid topology loss with fenics built-in meshes
 
     geometric_data = tools_gmsh.gmsh_initialization(
-    surface_regionsNames=["bottom", "front", "right", "back", "left",
-    "top"], volume_regionsNames=["volume"])
+    surface_regionsNames=surface_regions_names, volume_regionsNames=
+    volume_regions_names)
 
-    geometric_data = prism_gmsh.hexahedron_from_corners(
-    [[length_x, 0.0, 0.0], [length_x, length_y, 0.0], [0.0, length_y, 
-    0.0], [0.0, 0.0, 0.0], [length_x, 0.0, length_z], [length_x, 
-    length_y, length_z], [0.0, length_y, length_z], [0.0, 0.0, length_z]
-    ], transfinite_directions=[n_divisions_x, n_divisions_y, 
-    n_divisions_z], geometric_data=geometric_data, 
-    explicit_volume_physical_group_name="volume", 
-    explicit_surface_physical_group_name={1: "bottom", 2: "front", 3: 
-    "right", 4: "back", 5: "left", 6: "top"})
+    # Iterates through the subdomains in the z direction
+
+    for i in range(n_subdomains_z):
+
+        # Gets the corner points
+
+        corner_points = [[length_x, 0.0, (i*length_z)], [length_x, 
+        length_y, (i*length_z)], [0.0, length_y, (i*length_z)], [0.0, 
+        0.0, (i*length_z)], [length_x, 0.0, ((i+1)*length_z)], [length_x, 
+        length_y, ((i+1)*length_z)], [0.0, length_y, ((i+1)*length_z)], 
+        [0.0, 0.0, ((i+1)*length_z)]]
+
+        # Gets the surface regions
+
+        explicit_surface_physical_group_name = {2: "front", 3: "right", 
+        4: "back", 5: "left"}
+
+        # If it is the first cuboid, adds the bottom surface
+
+        if i==0:
+
+            explicit_surface_physical_group_name[1] = "bottom"
+
+        # If it is the last cuboid, adds the top surface
+
+        if i==(n_subdomains_z-1):
+
+            explicit_surface_physical_group_name[6] = "top"
+
+        # Adds the cuboid
+
+        geometric_data = prism_gmsh.hexahedron_from_corners(
+        corner_points, transfinite_directions=[n_divisions_x, n_divisions_y, 
+        n_divisions_z], geometric_data=geometric_data, 
+        explicit_volume_physical_group_name="volume "+str(i+1), 
+        explicit_surface_physical_group_name=
+        explicit_surface_physical_group_name)
 
     tools_gmsh.gmsh_finalize(geometric_data=geometric_data, file_name=
     file_name, verbose=verbose, file_directory=file_directory)
@@ -175,11 +216,15 @@ quadrature_degree=2, verbose=False):
             "' was provided. The keys provided are: "+str(
             file_name.keys()))
         
+        # Adds the verbose flag
+        
         verbose_gmsh = verbose
         
         if "verbose" in file_name:
 
             verbose_gmsh = file_name["verbose"]
+
+        # Adds the file parameters
 
         mesh_directory = None
 
@@ -204,13 +249,22 @@ quadrature_degree=2, verbose=False):
             raise KeyError("'file_name' is a dictionary, so a built-in"+
             " mesh is to be used, but no key 'mesh file name' was prov"+
             "ided. The keys provided are: "+str(file_name.keys()))
+        
+        # Verifies how many subdomains are to be made in the z direction
+
+        n_subdomains_z = 1
+
+        if "number of subdomains in z direction" in file_name:
+
+            n_subdomains_z = file_name["number of subdomains in z dire"+
+            "ction"]
 
         # Retuns the built in mesh
 
         return create_box_mesh(length_x, length_y, length_z, 
         n_divisions_x, n_divisions_y, n_divisions_z, verbose=
         verbose_gmsh, file_name=mesh_file_name, file_directory=
-        mesh_directory)
+        mesh_directory, n_subdomains_z=n_subdomains_z)
 
     # Reads the saved gmsh mesh using meshio
 

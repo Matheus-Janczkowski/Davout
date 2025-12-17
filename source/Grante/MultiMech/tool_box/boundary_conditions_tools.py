@@ -21,7 +21,8 @@ lambda: [], 'dirichlet_loads': lambda: []})
 def PrescribedDirichletBC(bc_informationsDict, 
 field_functionSpace, mesh_dataClass, fields_namesDict, 
 complex_bcsFunctionsDict, boundary_conditions=None, dirichlet_loads=None, 
-t_initial=0.0, t_final=1.0, boundary_physicalGroups=None):
+t_initial=0.0, t_final=1.0, boundary_physicalGroups=None, 
+sub_fieldsToApplyBC=None):
     
     # Sets the method arguments as the dictionary for arguments to the
     # more complex BC generators
@@ -152,6 +153,10 @@ t_initial=0.0, t_final=1.0, boundary_physicalGroups=None):
             if "sub_fieldsToApplyBC" in load_info:
 
                 new_loadInfo.append(load_info["sub_fieldsToApplyBC"])
+
+            elif sub_fieldsToApplyBC is not None:
+
+                new_loadInfo.append(sub_fieldsToApplyBC)
 
             elif n_fields>1:
 

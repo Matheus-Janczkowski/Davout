@@ -626,9 +626,14 @@ second_sourceFixedArguments=None):
 
             if not (method_name in available_methodsNames):
 
-                raise KeyError("The '"+str(method_name)+"' is not an a"+
-                "vailable method. Check out the available methods: "+str(
-                available_methodsNames))
+                error_string = ("The '"+str(method_name)+"' is not an "+
+                "available method. Check out the available methods: ")
+
+                for available_name in available_methodsNames:
+
+                    error_string += "\n"+str(available_name)
+
+                raise ValueError(error_string)
 
             if isinstance(fixed_inputVariablesDict, dict):
 
@@ -841,8 +846,8 @@ all_argumentsFixed=False, second_sourceFixedArguments=None):
                     fixed_argument)+"' was given by the second source "+
                     "of arguments, but was not found in the function's"+
                     " keyword arguments. Check the list of available k"+
-                    "eyword arguments of this function: "+str(
-                    keyword_arguments))
+                    "eyword arguments of the function '"+str(method_name
+                    )+"': "+str(keyword_arguments))
 
         else:
 
