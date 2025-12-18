@@ -6,7 +6,7 @@ from dolfin import *
 
 import ufl_legacy as ufl
 
-from .....Grante.MultiMech.tool_box.constitutive_tools import check_materialDictionary
+from ....MultiMech.tool_box.constitutive_tools import check_materialDictionary
 
 # Defines an abstract class to force all classes ahead to have the same
 # methods. To enforce it, the abstract method is used before the methods.

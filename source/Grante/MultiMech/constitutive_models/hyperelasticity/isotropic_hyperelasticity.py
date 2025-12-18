@@ -10,7 +10,7 @@ from dolfin import *
 
 import ufl_legacy as ufl
 
-from .....Grante.MultiMech.tool_box import constitutive_tools
+from ....MultiMech.tool_box import constitutive_tools
 
 # Defines an abstract class to force all classes ahead to have the same
 # methods. To enforce it, the abstract method is used before the methods.
@@ -48,7 +48,7 @@ class HyperelasticMaterialModel(ABC):
 # BioUser-3-6/UM36-4.1.3.17.html. It is called there as unconstrained
 # Neo-Hookean material
 
-class Neo_Hookean(HyperelasticMaterialModel):
+class NeoHookean(HyperelasticMaterialModel):
 
     def __init__(self, material_properties):
 
