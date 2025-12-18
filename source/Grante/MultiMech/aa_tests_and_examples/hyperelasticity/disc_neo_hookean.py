@@ -175,8 +175,8 @@ bcs_dictionary["top"] = {"BC case": "PrescribedDirichletBC", "bc_infor"+
 #"""
 bcs_dictionary["top"] = {"BC case": "PrescribedDirichletBC", "bc_infor"+
 "mationsDict": {"load_function": "SurfaceTranslationAndRotation", "tra"+
-"nslation": [0.0, 0.0, 2.0], "in_planeSpinDirection": [1.0, 0.0, 0.0], 
-"in_planeSpin": 0.01, "normal_toPlaneSpin": 0.01}}#"""
+"nslation": [0.0, 0.0, 4.0], "in_planeSpinDirection": [1.0, 0.0, 0.0], 
+"in_planeSpin": 15.0, "normal_toPlaneSpin": 10.0}}#"""
 
 # Defines a dictionary of body forces
 
