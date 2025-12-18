@@ -29,7 +29,7 @@ traction_fileName = "traction.xdmf"
 post_processes = dict()
 
 post_processes["SaveField"] = {"directory path":results_path, 
-"file name":displacement_fileName}
+"file name":displacement_fileName, "intermediate saving flag": True}
 
 """post_processes["SavePressureAtPoint"] = {"directory path":results_path, 
 "file name":pressure_fileName, "polynomial degree": 1, "point coordina"+
@@ -87,25 +87,25 @@ polynomial_degree = 2
 
 solver_parameters = dict()
 
-solver_parameters["newton_relative_tolerance"] = 1e-4
+solver_parameters["newton_relative_tolerance"] = 1e-3
 
 solver_parameters["newton_absolute_tolerance"] = 1e-4
 
-solver_parameters["newton_maximum_iterations"] = 15
+solver_parameters["newton_maximum_iterations"] = 10
 
-"""
+#"""
 
-solver_parameters["linear_solver"] = "minres"
+solver_parameters["linear_solver"] = "cg"#"gmres"
 
-solver_parameters["preconditioner"] = "petsc_amg"
+solver_parameters["preconditioner"] = "ilu"#"hypre_amg"
 
-solver_parameters["krylov_absolute_tolerance"] = 1e-7
+solver_parameters["krylov_absolute_tolerance"] = 1e-8
 
-solver_parameters["krylov_relative_tolerance"] = 1e-7
+solver_parameters["krylov_relative_tolerance"] = 1e-8
 
 solver_parameters["krylov_maximum_iterations"] = 15000
 
-solver_parameters["krylov_monitor_convergence"] = False"""
+solver_parameters["krylov_monitor_convergence"] = False#"""
 
 # Sets the initial time
 
@@ -125,7 +125,7 @@ maximum_loadingSteps = 5
 
 # Defines a load expression
 
-maximum_load = 1E1
+maximum_load = 1E6
 
 # Assemble the traction vector using this load expression
 
@@ -155,7 +155,7 @@ traction_boundary = {"load case": "NormalFollowerMoment", "amplitude_b"+
 
 traction_dictionary = dict()
 
-traction_dictionary["top"] = traction_boundary
+#traction_dictionary["top"] = traction_boundary
 
 # Defines a dictionary of boundary conditions. Each key is a physical
 # group and each value is another dictionary or a list of dictionaries 
@@ -172,10 +172,10 @@ bcs_dictionary["top"] = {"BC case": "PrescribedDirichletBC", "bc_infor"+
 "mationsDict": {"load_function": "linear", "degrees_ofFreedomList": 2,
 "end_point": [1.0, 5E-2]}}"""
 
-"""
+#"""
 bcs_dictionary["top"] = {"BC case": "PrescribedDirichletBC", "bc_infor"+
 "mationsDict": {"load_function": "SurfaceTranslationAndRotation", "tra"+
-"nslation": [0.0, 0.0, 0.001], "in_planeSpinDirection": [1.0, 0.0, 0.0], 
+"nslation": [0.0, 0.0, 2.0], "in_planeSpinDirection": [1.0, 0.0, 0.0], 
 "in_planeSpin": 0.01, "normal_toPlaneSpin": 0.01}}#"""
 
 # Defines a dictionary of body forces

@@ -7,13 +7,15 @@ import numpy as np
 
 from .....Grante.MultiMech.tool_box import mesh_handling_tools
 
+from .....Grante.MultiMech.tool_box.expressions_tools import interpolate_scalar_function
+
+from .....Grante.MultiMech.tool_box.read_write_tools import write_field_to_xdmf
+
 from .....Grante.PythonicUtilities.path_tools import get_parent_path_of_file
 
 from .....Grante.PythonicUtilities.coordinate_systems_tools import cartesian_to_cylindrical_coordinates
 
 from .....Grante.PythonicUtilities.interpolation_tools import spline_1D_interpolation
-
-from .....Grante.MultiMech.tool_box.expressions_tools import interpolate_scalar_function
 
 # Defines the parametric curves for the circumferential variation of the
 # material parameter using splines. The x points are the angles in a cy-
@@ -38,10 +40,6 @@ mesh_path = (get_parent_path_of_file(path_bits_to_be_excluded=2)+"//te"+
 # Reads the mesh
 
 mesh_data_class = mesh_handling_tools.read_mshMesh(mesh_path)
-
-# Creates the function space for the property
-
-W = FunctionSpace(mesh_data_class.mesh, "CG", 1)
 
 # Gets the nodes on the outer and inner lateral surfaces
 
@@ -241,9 +239,14 @@ def k_material(x_vector, current_physical_group=None):
 
     return k_value
 
-u_interpolation = interpolate_scalar_function(k_material, W, name="k p"+
-"roperty", mesh_data_class=mesh_data_class)
+# Interpolates and gets the functional data class
 
-file = XDMFFile(get_parent_path_of_file()+"//material_property.xdmf")
+u_interpolation, functional_data_class = interpolate_scalar_function(
+k_material, {"k property": {"field type": "scalar", "interpolation fun"+
+"ction": "CG", "polynomial degree": 1}}, mesh_data_class=mesh_data_class)
 
-file.write(u_interpolation)
+# Writes the xdmf file. Additional care is taken to secure it can be 
+# load back into a fenics function later
+
+write_field_to_xdmf(functional_data_class, directory_path=
+get_parent_path_of_file())

@@ -21,9 +21,12 @@ mesh_data_class = read_mshMesh({"length x": 0.3, "length y": 0.2, "len"+
 5, "number of divisions in z": 25, "verbose": False, "mesh file name": 
 "box_mesh", "mesh file directory": get_parent_path_of_file()})
 
+mesh_data_class = read_mshMesh(get_parent_path_of_file(
+path_bits_to_be_excluded=2)+"//test_meshes//intervertebral_disc_mesh")
+
 # Neumann boundary conditions
 
-maximum_load = 5E5
+maximum_load = 5E2
 
 # Sets the constitutive model
 
