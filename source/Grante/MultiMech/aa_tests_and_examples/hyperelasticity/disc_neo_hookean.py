@@ -1,10 +1,10 @@
 # Routine to test a hyperelastic disc
 
-import os
-
 from .....Grante.MultiMech.constitutive_models.hyperelasticity import isotropic_hyperelasticity as constitutive_models
 
 from .....Grante.MultiMech.physics import hyperelastic_cauchy_continuum as variational_framework
+
+from .....Grante.PythonicUtilities.path_tools import get_parent_path_of_file
 
 ########################################################################
 ########################################################################
@@ -18,9 +18,9 @@ from .....Grante.MultiMech.physics import hyperelastic_cauchy_continuum as varia
 
 # Defines the path to the results directory 
 
-results_path = os.getcwd()+"//tests//hyperelasticity//results"
+results_path = get_parent_path_of_file()
 
-displacement_fileName = "displacement.xdmf"
+displacement_fileName = "displacement_disc.xdmf"
 
 pressure_fileName = "pressure_points.txt"
 
@@ -31,9 +31,9 @@ post_processes = dict()
 post_processes["SaveField"] = {"directory path":results_path, 
 "file name":displacement_fileName}
 
-post_processes["SavePressureAtPoint"] = {"directory path":results_path, 
+"""post_processes["SavePressureAtPoint"] = {"directory path":results_path, 
 "file name":pressure_fileName, "polynomial degree": 1, "point coordina"+
-"tes": [0.0, 0.0, 0.0], "flag plotting": True}
+"tes": [0.0, 0.0, 0.0], "flag plotting": True}"""
 
 post_processes["SaveReferentialTractionField"] = {"directory path":
 results_path, "file name": traction_fileName, "polynomial degree":1}
@@ -44,7 +44,7 @@ results_path, "file name": traction_fileName, "polynomial degree":1}
 
 # Sets the Young modulus and the Poisson ratio
 
-E = 100E6
+E = 1E6
 
 v = 0.4
 
@@ -69,7 +69,7 @@ constitutive_model = constitutive_models.Neo_Hookean(material_properties)
 # le termination, e.g. .msh or .xdmf; both options will be saved automa-
 # tically
 
-mesh_fileName = "tests//test_meshes//intervertebral_disc"
+mesh_fileName = get_parent_path_of_file(path_bits_to_be_excluded=2)+"//test_meshes//intervertebral_disc_mesh"
 
 ########################################################################
 #                            Function space                            #
@@ -125,7 +125,7 @@ maximum_loadingSteps = 5
 
 # Defines a load expression
 
-maximum_load = 2E7
+maximum_load = 1E1
 
 # Assemble the traction vector using this load expression
 
@@ -175,15 +175,15 @@ bcs_dictionary["top"] = {"BC case": "PrescribedDirichletBC", "bc_infor"+
 """
 bcs_dictionary["top"] = {"BC case": "PrescribedDirichletBC", "bc_infor"+
 "mationsDict": {"load_function": "SurfaceTranslationAndRotation", "tra"+
-"nslation": [0.0, 0.0, 0.05], "in_planeSpinDirection": [1.0, 0.0, 0.0], 
-"in_planeSpin": 15, "normal_toPlaneSpin": 45.0}}"""
+"nslation": [0.0, 0.0, 0.001], "in_planeSpinDirection": [1.0, 0.0, 0.0], 
+"in_planeSpin": 0.01, "normal_toPlaneSpin": 0.01}}#"""
 
 # Defines a dictionary of body forces
 
 body_forcesDict = dict()
 
-body_forcesDict[""] = {"load case": "UniformReferentialBodyForce", "am"+
-"plitude_bodyX":0.0, "amplitude_bodyY": 0.0, "amplitude_bodyZ": 2E5}
+#body_forcesDict[""] = {"load case": "UniformReferentialBodyForce", "am"+
+#"plitude_bodyX":0.0, "amplitude_bodyY": 0.0, "amplitude_bodyZ": 2E1}
 
 ########################################################################
 ########################################################################
