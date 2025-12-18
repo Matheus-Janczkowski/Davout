@@ -61,9 +61,9 @@ class Micropolar_Neo_Hookean(HyperelasticMaterialModel):
 
         # Checks the keys of the dictionary of material parameters
 
-        constitutive_tools.check_materialDictionary(material_properties, 
-        ["E", "nu", "flag bending", "characteristic length", "alpha",
-        "gamma", "N"])
+        material_properties = constitutive_tools.check_materialDictionary(
+        material_properties, ["E", "nu", "flag bending", "characterist"+
+        "ic length", "alpha", "gamma", "N"])
 
         # Gets the Young modulus and the Poisson ratio
 

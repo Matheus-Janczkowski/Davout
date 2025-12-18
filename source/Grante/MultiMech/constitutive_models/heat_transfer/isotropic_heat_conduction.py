@@ -43,10 +43,10 @@ class Fourier(HeatMaterialModel):
 
         # Checks the keys of the dictionary of material parameters
 
-        constitutive_tools.check_materialDictionary(material_properties, 
-        ["k"])
+        material_properties = constitutive_tools.check_materialDictionary(
+        material_properties, ["k"])
 
-        self.k = Constant(material_properties["k"])
+        self.k = material_properties["k"]
 
         # Evaluates the conductivity tensor
 

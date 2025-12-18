@@ -65,10 +65,10 @@ class HolzapfelGasserOgdenUnconstrained(HyperelasticMaterialModel):
 
         # Checks the keys of the dictionary of material parameters
 
-        constitutive_tools.check_materialDictionary(material_properties, 
-        ["c", "k1", "k2", "gamma", "kappa", "k", "local system of coor"+
-        "dinates: a direction", "local system of coordinates: d direct"+
-        "ion"])
+        material_properties = constitutive_tools.check_materialDictionary(
+        material_properties, ["c", "k1", "k2", "gamma", "kappa", "k", 
+        "local system of coordinates: a direction", "local system of c"+
+        "oordinates: d direction"])
         
         self.c = material_properties["c"]
 

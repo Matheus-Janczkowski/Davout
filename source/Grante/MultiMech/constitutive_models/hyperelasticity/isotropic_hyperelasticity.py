@@ -59,8 +59,8 @@ class Neo_Hookean(HyperelasticMaterialModel):
 
         # Checks the keys of the dictionary of material parameters
 
-        constitutive_tools.check_materialDictionary(material_properties, 
-        ["E", "nu"])
+        material_properties = constitutive_tools.check_materialDictionary(
+        material_properties, ["E", "nu"])
 
         self.E = material_properties["E"]
 

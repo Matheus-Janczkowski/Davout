@@ -104,7 +104,7 @@ boundary_heat_flux = dict()
 
 # Defines a dictionary for volumetric heat generation
 
-heat_generation_dict = {"volume": 100.0}
+heat_generation_dict = {"volume 1": 100.0}
 
 # Defines a dictionary of boundary conditions. Each key is a physical
 # group and each value is another dictionary or a list of dictionaries 
