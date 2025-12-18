@@ -64,6 +64,8 @@ class Neo_Hookean(HyperelasticMaterialModel):
 
         self.E = material_properties["E"]
 
+        #print("Maximum value of the Young Modulus: "+str(self.E.vector().max()))
+
         self.v = material_properties["nu"]
 
         # Evaluates the Lamé parameters

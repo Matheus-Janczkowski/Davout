@@ -6,7 +6,7 @@ from ...MultiMech.tool_box.functional_tools import FunctionalData, construct_mon
 
 from ...MultiMech.tool_box.mesh_handling_tools import read_mshMesh
 
-from ...PythonicUtilities.path_tools import get_parent_path_of_file, decapitalize_and_insert_underline, verify_file_existence
+from ...PythonicUtilities.path_tools import get_parent_path_of_file, decapitalize_and_insert_underline, verify_file_existence, take_outFileNameTermination
 
 ########################################################################
 ########################################################################
@@ -89,9 +89,11 @@ directory_path=None):
 
                     # Writes the function
 
-                    file = XDMFFile(file_name)
+                    file = XDMFFile(individual_field.function_space(
+                    ).mesh().mpi_comm(), file_name)
 
-                    file.write(individual_field, time)
+                    file.write_checkpoint(individual_field, 
+                    individual_field.name(), time)
 
                     # Closes the file
 
@@ -102,7 +104,7 @@ directory_path=None):
                     raise NameError("'field_name' is '"+str(field_name)+
                     "', but it is not a name of proper field. See the "+
                     "available fields' names: "+str(
-                    fields_names_dict.keys()))
+                    list(fields_names_dict.keys())))
                 
             # Otherwise, writes all fields
 
@@ -131,9 +133,11 @@ directory_path=None):
                     
                     # Writes the field
 
-                    file = XDMFFile(file_name)
+                    file = XDMFFile(individual_field.function_space(
+                    ).mesh().mpi_comm(), file_name)
 
-                    file.write(individual_field, time)
+                    file.write_checkpoint(individual_field, 
+                    individual_field.name(), time)
 
                     # Closes the file
 
@@ -168,9 +172,11 @@ directory_path=None):
 
                     # Writes the function
 
-                    file = XDMFFile(file_name)
+                    file = XDMFFile(individual_field.function_space(
+                    ).mesh().mpi_comm(), file_name)
 
-                    file.write(individual_field, time)
+                    file.write_checkpoint(individual_field, 
+                    individual_field.name(), time)
 
                     # Closes the file
 
@@ -181,7 +187,7 @@ directory_path=None):
                     raise NameError("'field_name' is '"+str(field_name)+
                     "', but it is not a name of proper field. See the "+
                     "available fields' names: "+str(
-                    fields_names_dict.keys()))
+                    list(fields_names_dict.keys())))
                 
             # Otherwise, writes as a generic solution
 
@@ -189,7 +195,7 @@ directory_path=None):
 
                 # Gets the name of the field
 
-                field_name = fields_names_dict.keys()[0]
+                field_name = list(fields_names_dict.keys())[0]
 
                 # Gets the automatic file name
 
@@ -210,9 +216,11 @@ directory_path=None):
                 
                 # Writes the field
 
-                file = XDMFFile(file_name)
+                file = XDMFFile(individual_field.function_space().mesh(
+                ).mpi_comm(), file_name)
 
-                file.write(individual_field, time)
+                file.write_checkpoint(individual_field, 
+                individual_field.name(), time)
 
                 # Closes the file
 
@@ -246,11 +254,15 @@ directory_path=None, code_given_field_name=None):
     
     # Verifies if the field file exists and if it is a xdmf file
 
+    field_file = take_outFileNameTermination(field_file)+".xdmf"
+
     verify_file_existence(field_file, termination=".xdmf")
     
     # Verifies if the mesh file exists and if it is a msh file
 
-    verify_file_existence(mesh_file, termination=".msh")
+    mesh_file = take_outFileNameTermination(mesh_file)
+
+    verify_file_existence(mesh_file+".msh")
 
     # Reads the mesh
 
@@ -318,8 +330,8 @@ directory_path=None, code_given_field_name=None):
 
         raise KeyError("'function_space_info' has "+str(len(
         function_space_info.keys()))+" key-value pairs, whereas it mus"+
-        "t have only one: field_name <-> dictionary_with_necessary_key"+
-        "s")
+        "t have only one: field name <-> dictionary_with_necessary_key"+
+        "s. The necessary keys are: "+str(necessary_keys))
     
     # Verifies if the dictionary inside the single value has the obliga-
     # tory keys
@@ -348,14 +360,16 @@ directory_path=None, code_given_field_name=None):
 
     # Renames the function
 
-    function_data_class.monolithic_solution.rename(list(
-    function_space_info.keys())[0], "DNS")
+    field_name = list(function_space_info.keys())[0]
+
+    function_data_class.monolithic_solution.rename(field_name, "DNS")
 
     # Finally reads the xdmf file with the field
 
-    with XDMFFile(field_file) as xdmf_file:
+    with XDMFFile(mesh_data_class.mesh.mpi_comm(), field_file) as xdmf_file:
 
-        xdmf_file.read(function_data_class.monolithic_solution)
+        xdmf_file.read_checkpoint(
+        function_data_class.monolithic_solution, field_name, 0)
 
     # Returns the function
 

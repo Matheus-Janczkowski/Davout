@@ -33,7 +33,11 @@ post_processes["SaveField"] = {"directory path":results_path,
 
 # Sets the Young modulus and the Poisson ratio
 
-E = 1E6
+E = {"field file": get_parent_path_of_file()+"//e.xdmf", "mesh file":
+get_parent_path_of_file()+"//box_mesh", "field type": "scalar", "inter"+
+"polation function": "CG", "polynomial degree": 1}
+
+##E = 1E6
 
 poisson = 0.3
 
@@ -58,10 +62,14 @@ constitutive_model = constitutive_models.Neo_Hookean(material_properties)
 # le termination, e.g. .msh or .xdmf; both options will be saved automa-
 # tically
 
-mesh_fileName = {"length x": 0.3, "length y": 0.2, "length z": 1.0, "n"+
-"umber of divisions in x": 5, "number of divisions in y": 5, "number o"+
-"f divisions in z": 25, "verbose": False, "mesh file name": "box_mesh", 
-"mesh file directory": get_parent_path_of_file()}
+H = 1.0
+
+W = 0.2
+
+mesh_fileName = {"length x": 0.3, "length y": W, "length z": H, "numbe"+
+"r of divisions in x": 5, "number of divisions in y": 5, "number of di"+
+"visions in z": 25, "verbose": False, "mesh file name": "box_mesh", "m"+
+"esh file directory": get_parent_path_of_file()}
 
 ########################################################################
 #                            Function space                            #
@@ -103,7 +111,7 @@ maximum_loadingSteps = 5
 
 # Defines a load expression
 
-maximum_load = 5E5
+maximum_load = 3E5
 
 # Assemble the traction vector using this load expression
 

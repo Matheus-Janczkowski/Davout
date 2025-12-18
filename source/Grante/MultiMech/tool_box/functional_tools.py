@@ -713,13 +713,15 @@ fields_namesDict):
 # instructions to create finite elements
 
 def construct_monolithicFunctionSpace(elements_dictionary, 
-mesh_dataClass, verbose=False, function_only=False):
+mesh_dataClass, verbose=False, function_only=False, 
+all_data_must_be_provided=False):
     
     # Transforms the dictionary of instructions into real finite elements
     # and get the names of the fields
 
     elements_dictionary, fields_names = construct_elementsDictionary(
-    elements_dictionary, mesh_dataClass)
+    elements_dictionary, mesh_dataClass, all_data_must_be_provided=
+    all_data_must_be_provided)
 
     # Constructs the mixed element
 
@@ -809,7 +811,8 @@ mesh_dataClass, verbose=False, function_only=False):
 # Defines a function to construct a dictionary of elements from a dic-
 # tionary of finite elements' instructions
 
-def construct_elementsDictionary(elements_dictionary, mesh_dataClass):
+def construct_elementsDictionary(elements_dictionary, mesh_dataClass,
+all_data_must_be_provided=False):
 
     # Sets a list of allowed interpolation functions
 
@@ -826,9 +829,7 @@ def construct_elementsDictionary(elements_dictionary, mesh_dataClass):
         # Verifies if this is already a fenics element. Tests by veri-
         # fying if has a cell attribute
 
-        try:
-
-            cell = element_dictionary.cell()
+        if hasattr(element_dictionary, "cell"):
 
             # Updates the list of fields' names
 
@@ -837,7 +838,7 @@ def construct_elementsDictionary(elements_dictionary, mesh_dataClass):
         # If not, it must be a dictionary with finite element's informa-
         # tion
 
-        except:
+        else:
 
             # Verifies if the element is in fact a function space
 
@@ -868,6 +869,14 @@ def construct_elementsDictionary(elements_dictionary, mesh_dataClass):
 
                     polynomial_degree = element_dictionary["polynomial"+
                     " degree"]
+
+                elif all_data_must_be_provided:
+
+                    raise KeyError("The dictionary to construct a func"+
+                    "tion space does not have the key 'polynomial degr"+
+                    "ee', but this information is obligatory. Check ou"+
+                    "t the provided dictionary: "+str(element_dictionary
+                    ))
                 
                 # Gets the interpolation function
 
@@ -904,6 +913,14 @@ def construct_elementsDictionary(elements_dictionary, mesh_dataClass):
                         str(interpolation_function)+"' is not one of t"+
                         "he admissible functions. Check the list ahead"+
                         ": "+str(allowed_interpolationFunction))
+
+                elif all_data_must_be_provided:
+
+                    raise KeyError("The dictionary to construct a func"+
+                    "tion space does not have the key 'interpolation f"+
+                    "unction' or 'shape function', but this informatio"+
+                    "n is obligatory. Check out the provided dictionar"+
+                    "y: "+str(element_dictionary))
                     
                 else:
 

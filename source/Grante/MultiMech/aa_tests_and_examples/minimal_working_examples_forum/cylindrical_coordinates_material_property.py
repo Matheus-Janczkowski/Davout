@@ -119,7 +119,7 @@ for i in range(len(inner_lateral_nodes)):
 
 # Defines a material property function in cylindrical coordinates
 
-def k_material(x_vector, current_physical_group=None, dof=None):
+def k_material(x_vector, current_physical_group=None):
 
     # Gets the coordinates
 
