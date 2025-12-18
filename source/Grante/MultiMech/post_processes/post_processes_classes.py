@@ -210,7 +210,8 @@ class SavePressureAtPoint(PostProcessMethod):
         super().__init__(post_functions.initialize_pressureAtPointSaving, 
         post_functions.update_pressureAtPointSaving, ["directory path", 
         "file name", "polynomial degree", "point coordinates", "flag p"+
-        "lotting"], [context.mesh, context.constitutive_model, context.dx,  
+        "lotting", "number of digits for the plots"], [context.mesh, 
+        context.constitutive_model, context.dx,  
         context.physical_groupsList, context.domain_physGroupsNamesToTags])
 
 # Sets a class for the method to save the ratio of the mesh's volume to

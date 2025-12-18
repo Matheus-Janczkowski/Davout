@@ -545,7 +545,7 @@ stress_solutionPlotNames, stress_name, stress_method, fields_namesDict):
 # pressure from it at a point
 
 def save_pressureAtPoint(output_object, field, time, stress_name, 
-stress_method, fields_namesDict):
+stress_method, fields_namesDict, digits=3):
     
     # Verifies if the output object has the attribute with the names of 
     # the required fields
@@ -677,7 +677,7 @@ stress_method, fields_namesDict):
     # Saves the pressure at a point to a txt file
 
     file_tools.list_toTxt(output_object.result, output_object.file_name, 
-    add_extension=True)
+    add_extension=True, parent_path=output_object.parent_path)
 
     # If it is to plot the data
 
@@ -685,9 +685,11 @@ stress_method, fields_namesDict):
 
         plotting_tools.plane_plot(output_object.file_name+".pdf", data=
         output_object.result,  x_label=r"$t$", y_label=r"$p$", title=
-        r"pressure at $x="+str(output_object.point_coordinates[0])+",\;"+
-        "y="+str(output_object.point_coordinates[1])+",\;z="+str(
-        output_object.point_coordinates[2])+"$", highlight_points=True)
+        r"pressure at $x="+str(round(output_object.point_coordinates[0],
+        digits))+",\;y="+str(round(output_object.point_coordinates[1],
+        digits))+",\;z="+str(round(output_object.point_coordinates[2],
+        digits))+"$", highlight_points=True, parent_path=
+        output_object.parent_path)
 
     return output_object
 

@@ -1600,10 +1600,11 @@ plot_object=None):
 
             plt.savefig(file_name)
 
-        except:
+        except Exception as e:
 
             raise InterruptedError("The file is probably open on a vis"+
-            "ualizer. Close it and try again")
+            "ualizer. Close it and try again. But the true error messa"+
+            "ge is: "+str(e))
 
     print("Finishes plotting\n")
 

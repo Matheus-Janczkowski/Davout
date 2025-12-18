@@ -684,6 +684,12 @@ def initialize_pressureAtPointSaving(data, direct_codeData, submesh_flag):
 
     file_name = data[1]
 
+    n_digits = 3
+
+    if len(data)==6:
+
+        n_digits = data[5]
+
     # Gets the polynomial degree of the interpolation function
 
     polynomial_degree = data[2]
@@ -723,10 +729,6 @@ def initialize_pressureAtPointSaving(data, direct_codeData, submesh_flag):
 
         W = FunctionSpace(mesh, "CG", polynomial_degree)
 
-    # Gets the name of the file with the path to it
-
-    file_name = path_tools.verify_path(parent_path, file_name)
-
     # Verifies if an extension has been added to the file name
 
     if len(file_name)>4:
@@ -745,8 +747,8 @@ def initialize_pressureAtPointSaving(data, direct_codeData, submesh_flag):
 
     class OutputObject:
 
-        def __init__(self, file_name, W, constitutive_model, dx, 
-        physical_groupsList, physical_groupsNamesToTags, 
+        def __init__(self, file_name, parent_path, W, constitutive_model, 
+        dx, physical_groupsList, physical_groupsNamesToTags, n_digits,
         parent_toChildMeshResult, point_coordinates, pressure_list,
         flag_plotting):
 
@@ -758,6 +760,8 @@ def initialize_pressureAtPointSaving(data, direct_codeData, submesh_flag):
 
             self.file_name = file_name
 
+            self.parent_path = parent_path
+
             self.physical_groupsList = physical_groupsList 
 
             self.physical_groupsNamesToTags = physical_groupsNamesToTags
@@ -768,15 +772,18 @@ def initialize_pressureAtPointSaving(data, direct_codeData, submesh_flag):
 
             self.flag_plotting = flag_plotting
 
+            self.digits = n_digits
+
             # Gets the names of the fields that are actually necessary
             # to the evaluation of stress
 
             self.required_fieldsNames = constitutive_tools.get_constitutiveModelFields(
             self.constitutive_model)
 
-    output_object = OutputObject(file_name, W, constitutive_model, dx, 
-    physical_groupsList, physical_groupsNamesToTags, 0.0, 
-    point_coordinates, pressure_list, flag_plotting)
+    output_object = OutputObject(file_name, parent_path, W, 
+    constitutive_model, dx, physical_groupsList, 
+    physical_groupsNamesToTags, n_digits, 0.0, point_coordinates, 
+    pressure_list, flag_plotting)
 
     return output_object
 
@@ -789,7 +796,8 @@ fields_namesDict):
     output_object.point_coordinates)+"\n")
     
     return constitutive_tools.save_pressureAtPoint(output_object, field, 
-    time, "cauchy", "cauchy_stress", fields_namesDict)
+    time, "cauchy", "cauchy_stress", fields_namesDict, digits=
+    output_object.digits)
 
 ########################################################################
 ########################################################################

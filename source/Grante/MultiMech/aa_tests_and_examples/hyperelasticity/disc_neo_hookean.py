@@ -31,9 +31,10 @@ post_processes = dict()
 post_processes["SaveField"] = {"directory path":results_path, 
 "file name":displacement_fileName, "intermediate saving flag": True}
 
-"""post_processes["SavePressureAtPoint"] = {"directory path":results_path, 
+post_processes["SavePressureAtPoint"] = {"directory path":results_path, 
 "file name":pressure_fileName, "polynomial degree": 1, "point coordina"+
-"tes": [0.0, 0.0, 0.0], "flag plotting": True}"""
+"tes": [0.0, 0.0, 0.0], "flag plotting": True, "number of digits for t"+
+"he plots": 4}
 
 post_processes["SaveReferentialTractionField"] = {"directory path":
 results_path, "file name": traction_fileName, "polynomial degree":1}
