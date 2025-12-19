@@ -52,7 +52,7 @@ bc, dirichlet_loads = functional_tools.construct_DirichletBCs({"bottom":
 external_work, neumann_loads = variational_tools.traction_work({"top": {
 "load case": "UniformReferentialTraction", "amplitude_tractionX": 0.0, 
 "amplitude_tractionY": 0.0, "amplitude_tractionZ": maximum_load, "para"+
-"metric_load_curve": "square root", "t": 0.0, "t_final": 1.0}}, "Displ"+
+"metric_load_curve": "square_root", "t": 0.0, "t_final": 1.0}}, "Displ"+
 "acement", functional_data_class, mesh_data_class, [])
 
 # Update the load class

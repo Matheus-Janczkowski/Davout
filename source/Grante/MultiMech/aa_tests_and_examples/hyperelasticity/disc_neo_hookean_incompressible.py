@@ -18,14 +18,20 @@ from .....Grante.MultiMech.physics import hyperelastic_incompressible_cauchy_con
 
 # Defines the path to the results directory 
 
-results_path = get_parent_path_of_file() #os.getcwd()+"//aa_tests//hyperelasticity//results"
+results_path = get_parent_path_of_file()
 
 displacement_fileName = "displacement.xdmf"
 
-post_processes = dict()
+post_processes = [["Displacement", dict()], ["Pressure", dict()]]
 
-post_processes["SaveField"] = {"directory path":results_path, 
-"file name":displacement_fileName}
+post_processes[0][1]["SaveField"] = {"directory path": results_path, 
+"file name": "displacement.xdmf"}
+
+post_processes[0][1]["SaveMeshVolumeRatioToReferenceVolume"] = {"director"+
+"y path": results_path, "file name": "volume_ratio.txt"}
+
+post_processes[1][1]["SaveField"] = {"directory path": results_path, 
+"file name": "pressure.xdmf"}
 
 ########################################################################
 #                         Material properties                          #
@@ -58,9 +64,8 @@ constitutive_model = constitutive_models.NeoHookean(material_properties)
 # le termination, e.g. .msh or .xdmf; both options will be saved automa-
 # tically
 
-mesh_fileName = {"length x": 1.0, "length y": 1.5, "length z": 5.0, "n"+
-"umber of divisions in x": 3, "number of divisions in y": 5, "number o"+
-"f divisions in z": 10}#"tests//test_meshes//intervertebral_disc"
+mesh_fileName = (get_parent_path_of_file(path_bits_to_be_excluded=2)+
+"//test_meshes//intervertebral_disc_mesh")
 
 ########################################################################
 #                            Function space                            #
@@ -83,6 +88,18 @@ solver_parameters["newton_relative_tolerance"] = 1e-4
 solver_parameters["newton_absolute_tolerance"] = 1e-4
 
 solver_parameters["newton_maximum_iterations"] = 10
+
+solver_parameters["linear_solver"] = "gmres"
+
+solver_parameters["preconditioner"] = "hypre_amg"
+
+solver_parameters["krylov_absolute_tolerance"] = 1e-6
+
+solver_parameters["krylov_relative_tolerance"] = 1e-6
+
+solver_parameters["krylov_maximum_iterations"] = 15000
+
+solver_parameters["krylov_monitor_convergence"] = True
 
 # Sets the initial time
 
@@ -108,7 +125,7 @@ maximum_load = 2E4
 
 traction_boundary = {"load case": "UniformReferentialTraction", "ampli"+
 "tude_tractionX": 0.0, "amplitude_tractionY": 0.0, "amplitude_tractionZ": 
-maximum_load, "parametric_load_curve": "square root", "t": t, "t_final":
+maximum_load, "parametric_load_curve": "square_root", "t": t, "t_final":
 t_final}
 
 # Defines a dictionary of tractions

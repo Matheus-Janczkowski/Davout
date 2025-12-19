@@ -13,26 +13,19 @@ from ...PythonicUtilities import programming_tools
 #                     Parametric loading functions                     #
 ########################################################################
 
-# Defines a function to give different options of parametric loading 
-# curves using ufl functions (so that they can be used in the variatio-
-# nal ecosystem). These loading functions must spit out numbers between
-# 0 and 1
+# Defines a class with the loading curves
 
-@programming_tools.optional_argumentsInitializer({('additional_paramet'+
-'ers'): lambda: dict()})
+class LoadingCurves:
 
-def generate_loadingParametricCurves(curve_name, additional_parameters=
-None, verify_curveNameExistence=False):
+    def __init__(self, verify_curveNameExistence):
     
-    # The flag verify_curveNameExistence is True when the interest is 
-    # just to point out if the curve name is in the scope of the imple-
-    # mented functions 
+        self.verify_curveNameExistence = verify_curveNameExistence
 
-    # Tests if it is linear
+    # Defines a linear function
 
-    if curve_name=="linear":
-
-        if verify_curveNameExistence:
+    def linear(self, additional_parameters):
+        
+        if self.verify_curveNameExistence:
 
             return True
         
@@ -50,12 +43,12 @@ None, verify_curveNameExistence=False):
         default_parameters["starting_point"][1]))
 
         return lambda x: (a1*x)+a0
+    
+    # Defines a function for a load curve equal to the square root
 
-    # Tests if it is the square root
+    def square_root(self, additional_parameters):
 
-    elif curve_name=="square root":
-
-        if verify_curveNameExistence:
+        if self.verify_curveNameExistence:
 
             return True
         
@@ -69,6 +62,34 @@ None, verify_curveNameExistence=False):
 
         return lambda x: ufl.sqrt(x)
 
+# Defines a function to give different options of parametric loading 
+# curves using ufl functions (so that they can be used in the variatio-
+# nal ecosystem). These loading functions must spit out numbers between
+# 0 and 1
+
+@programming_tools.optional_argumentsInitializer({('additional_paramet'+
+'ers'): lambda: dict()})
+
+def generate_loadingParametricCurves(curve_name, additional_parameters=
+None, verify_curveNameExistence=False):
+    
+    # The flag verify_curveNameExistence is True when the interest is 
+    # just to point out if the curve name is in the scope of the imple-
+    # mented functions 
+
+    # Gets a dictionary of the methods of the class of loads
+
+    loads_class = LoadingCurves(verify_curveNameExistence)
+
+    loads_dictionary = programming_tools.get_attribute(loads_class, 
+    None, None, dictionary_of_methods=True, delete_init_key=True)
+
+    # Tests if the curve name is one of the available methods
+
+    if curve_name in loads_dictionary:
+
+        return loads_dictionary[curve_name](additional_parameters)
+
     else:
 
         if verify_curveNameExistence:
@@ -78,7 +99,8 @@ None, verify_curveNameExistence=False):
         else:
 
             raise NameError("The parametric load curve '"+str(curve_name
-            )+"' has not yet been implemented")
+            )+"' has not yet been implemented. Check out the available"+
+            " parametric load curves: "+str(list(loads_dictionary.keys())))
         
 # Defines a function to check additional parameters to each loading cur-
 # ve

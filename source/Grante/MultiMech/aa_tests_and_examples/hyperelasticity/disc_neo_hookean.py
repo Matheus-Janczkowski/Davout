@@ -134,22 +134,22 @@ maximum_load = 1E6
 #"""
 traction_boundary = {"load case": "UniformReferentialTraction", "ampli"+
 "tude_tractionX": 0.0, "amplitude_tractionY": 0.0, "amplitude_tractionZ": 
-maximum_load, "parametric_load_curve": "square root", "t": t, "t_final":
+maximum_load, "parametric_load_curve": "square_root", "t": t, "t_final":
 t_final}#"""
 
 """
 traction_boundary = {"load case": "NormalUniformFollowerTraction", "am"+
 "plitude_traction": 3.6*maximum_load, "parametric_load_curve": "square"+
-" root", "t": t, "t_final": t_final}"""
+"_root", "t": t, "t_final": t_final}"""
 
 """
 traction_boundary = {"load case": "NormalFollowerTorsion", "amplitude_"+
-"torsion": 0.0045*maximum_load, "parametric_load_curve": "square root", 
+"torsion": 0.0045*maximum_load, "parametric_load_curve": "square_root", 
 "t": t, "t_final": t_final, "influence_radius": 0.10}#"""
 
 """
 traction_boundary = {"load case": "NormalFollowerMoment", "amplitude_b"+
-"endingMoment": 0.015*maximum_load, "parametric_load_curve": "square r"+
+"endingMoment": 0.015*maximum_load, "parametric_load_curve": "square_r"+
 "oot", "t": t, "t_final": t_final, "influence_radius": 0.1, "bending"+
 "_axis": [1.0, 0.0, 0.0], "no_parasiticForcesCorrection": False}"""
 

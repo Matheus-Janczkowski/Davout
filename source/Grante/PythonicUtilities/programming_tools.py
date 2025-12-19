@@ -10,6 +10,8 @@ import subprocess
 
 from collections import OrderedDict
 
+from ..PythonicUtilities import dictionary_tools
+
 ########################################################################
 #               Handler and executioner of other scripts               #
 ########################################################################
@@ -344,13 +346,31 @@ def get_result(whole_result, variable_name):
 # Defines a function to verify whether a class has an attribute. If it
 # does, returns the attribute, otherwise gives an error message
 
-def get_attribute(class_object, attribute_name, error_message):
+def get_attribute(class_object, attribute_name, error_message, 
+dictionary_of_methods=False, delete_init_key=False):
 
     """
     Arguments: class_object, a class instance; attribute_name, a string 
     with the attribute name; error_message, a string with the error
     message in case the class does not have this attribute. This function
-    is meant to give meaningful error messages"""
+    is meant to give meaningful error messages
+    
+    If 'dictionary_of_methods' is True, a dictionary of methods (method
+    name - callable method function) of the instance of a class will be 
+    returned. If you want just a dictionary of methods. Put simply 'att
+    ribute_name' and 'error_message' as None"""
+
+    if dictionary_of_methods:
+
+        dictionary_of_methods = {name: member for name, member in 
+        inspect.getmembers(class_object, predicate=inspect.ismethod)}
+
+        if delete_init_key:
+
+            return dictionary_tools.delete_dictionary_keys(
+            dictionary_of_methods, "__init__")
+
+        return dictionary_of_methods
 
     # Verifies whether this class has this attribute
 

@@ -117,7 +117,7 @@ maximum_load = 3E5
 
 traction_boundary = {"load case": "UniformReferentialTraction", "ampli"+
 "tude_tractionX": 0.0, "amplitude_tractionY": 0.0, "amplitude_tractionZ": 
-maximum_load, "parametric_load_curve": "square root", "t": t, "t_final":
+maximum_load, "parametric_load_curve": "square_root", "t": t, "t_final":
 t_final}
 
 # Defines a dictionary of tractions

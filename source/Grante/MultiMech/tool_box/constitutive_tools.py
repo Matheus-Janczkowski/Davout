@@ -42,6 +42,11 @@ def check_materialDictionary(dictionary, required_keys):
     """
     Function to verify if a dictionary of material parameters has all 
     the required keys (strings with the names of the material parameters).
+    If the provided values are float, int, numpy ndarray, or list, this
+    function automatically converts the value to a dolfin Constant. If
+    a provided value is a dictionary, this function will automatically 
+    assume the dictionary has information to read the value from a xdmf
+    file.
     
     dictionary: dictionary with key-value pairs, where the keys are 
     strings with the names of material parameters, and the values are 
@@ -129,6 +134,16 @@ def check_materialDictionary(dictionary, required_keys):
         np.ndarray) or isinstance(corresponding_value, list)):
             
             dictionary[key] = Constant(corresponding_value)
+
+        # If the value is not a boolean, throws an error
+
+        elif not isinstance(corresponding_value, bool):
+
+            raise TypeError("The material property within key '"+str(key
+            )+"' is not a dictionary, nor a float, nor an int, nor a n"+
+            "umpy array, nor a list, nor a boolean (True or False). It"+
+            "s current value is: "+str(corresponding_value)+". Thus, i"+
+            "t cannot be used as parameter of a constitutive model")
 
     # Checks if there is any key in the dictionary that is not in the 
     # list of required keys
