@@ -20,8 +20,6 @@ from .....Grante.PythonicUtilities.interpolation_tools import spline_1D_interpol
 # lindrical coordinate system, and the y points are the property value at
 # those angles
 
-x_points = [4.]
-
 k_superior_parametric_curve = spline_1D_interpolation(x_points=[0.0, 
 0.25*np.pi, 0.5*np.pi, 0.75*np.pi, np.pi, 1.25*np.pi, 1.5*np.pi, (1.7*
 np.pi), 2*np.pi], y_points=[5.0, 5.5, 6.0, 6.5, 7.0, 6.5, 6.0, 5.5, 5.0])
@@ -247,4 +245,4 @@ k_material, {"k property": {"field type": "scalar", "interpolation fun"+
 # load back into a fenics function later
 
 write_field_to_xdmf(functional_data_class, directory_path=
-get_parent_path_of_file())
+get_parent_path_of_file(), visualization_copy=True)

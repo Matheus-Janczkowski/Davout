@@ -20,7 +20,7 @@ from .....Grante.MultiMech.physics import hyperelastic_cauchy_continuum as varia
 
 results_path = get_parent_path_of_file() #os.getcwd()+"//aa_tests//hyperelasticity//results"
 
-displacement_fileName = "displacement.xdmf"
+displacement_fileName = "displacement_young_modulus_field.xdmf"
 
 post_processes = dict()
 
@@ -52,7 +52,7 @@ material_properties["nu"] = poisson
 # Sets the material as a neo-hookean material using the corresponding
 # class
 
-constitutive_model = constitutive_models.Neo_Hookean(material_properties)
+constitutive_model = constitutive_models.NeoHookean(material_properties)
 
 ########################################################################
 #                                 Mesh                                 #

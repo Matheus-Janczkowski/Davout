@@ -23,7 +23,7 @@ class MeshData:
     def __init__(self, mesh, dx, ds, n, x, domain_meshCollection, 
     domain_meshFunction, boundary_meshCollection, boundary_meshFunction, 
     domain_physicalGroupsNameToTag, boundary_physicalGroupsNameToTag,
-    verbose):
+    verbose, mesh_file=None):
         
         # Saves the mesh parameters
 
@@ -50,6 +50,8 @@ class MeshData:
         self.boundary_physicalGroupsNameToTag = boundary_physicalGroupsNameToTag
         
         self.verbose = verbose
+
+        self.mesh_file = mesh_file
 
 ########################################################################
 #                              Mesh files                              #
@@ -578,7 +580,7 @@ False):
     return MeshData(mesh, dx, ds, n, x_position, domain_meshCollection, 
     domain_meshFunction, boundary_meshCollection, boundary_meshFunction, 
     domain_physicalGroupsNameToTag, boundary_physicalGroupsNameToTag,
-    verbose)
+    verbose, mesh_file=file_name)
 
 ########################################################################
 #                              Submeshing                              #

@@ -647,7 +647,7 @@ class FunctionalData:
 
     def __init__(self, monolithic_functionSpace, monolithic_solution, 
     fields_names, solution_fields, variation_fields, trial_functions, 
-    fields_namesDict, mixed_element):
+    fields_namesDict, mixed_element, mesh_file=None):
         
         # Saves the parameters of finite elements and function spaces
 
@@ -666,6 +666,8 @@ class FunctionalData:
         self.fields_names_dict = fields_namesDict
         
         self.mixed_element = mixed_element
+
+        self.mesh_file = mesh_file
 
 # Defines a function to select a field from a list of fields
 
@@ -806,7 +808,7 @@ all_data_must_be_provided=False):
 
     return FunctionalData(monolithic_functionSpace, monolithic_solution, 
     fields_names, solution_fields, variation_fields, trial_functions, 
-    fields_namesDict, mixed_element)
+    fields_namesDict, mixed_element, mesh_file=mesh_dataClass.mesh_file)
 
 # Defines a function to construct a dictionary of elements from a dic-
 # tionary of finite elements' instructions
