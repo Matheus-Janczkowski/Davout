@@ -49,7 +49,7 @@ post_processes["SaveCauchyStressField"] = {"directory path":results_path,
 
 material_properties1 = dict()
 
-# Shearing modulus
+# Half shearing modulus
 
 material_properties1["c"] = 10E6
 
@@ -88,9 +88,11 @@ material_properties2["nu"] = 0.4
 
 material_properties3 = dict()
 
-material_properties3["E"] = 1E8
+material_properties3["c1"] = 1E6
 
-material_properties3["nu"] = 0.35
+material_properties3["c2"] = 2E6
+
+material_properties3["bulk modulus"] = 3E6
 
 # Sets the material as a HGO material
 
@@ -102,7 +104,7 @@ material_properties1)
 constitutive_model["volume 2"] = isotropic_constitutiveModels.NeoHookean(
 material_properties2)
 
-constitutive_model["volume 3"] = isotropic_constitutiveModels.NeoHookean(
+constitutive_model["volume 3"] = isotropic_constitutiveModels.MooneyRivlin(
 material_properties3)
 
 ########################################################################
@@ -171,7 +173,7 @@ maximum_loadingSteps = 5
 
 # Defines a load expression
 
-maximum_load = 5E5
+maximum_load = 9E5
 
 # Assemble the traction vector using this load expression
 

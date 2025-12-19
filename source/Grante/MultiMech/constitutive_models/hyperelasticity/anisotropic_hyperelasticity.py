@@ -54,6 +54,28 @@ class HyperelasticMaterialModel(ABC):
 
 class HolzapfelGasserOgdenUnconstrained(HyperelasticMaterialModel):
 
+    """
+    Holzapfer-Gasser-Ogden unconstrained model
+    
+    c: term of the Neo-Hookean matrix, i.e. half of the shearing modulus
+    
+    k1: fiber modulus
+    
+    k2: fiber exponential coefficient
+    
+    gamma: fiber mean orientation angle (degrees)
+    
+    kappa: fiber dispersion parameter [0, 1/3]
+    
+    k: bulk modulus
+    
+    local system of coordinates: a direction: direction in the plane of
+    the fibers where the angle is 0
+    
+    local system of coordinates: d direction: direction in the plane of
+    the fibers where the angle is 90 degrees with respect to a direction
+    """
+
     # Initializes the properties
 
     def __init__(self, material_properties):

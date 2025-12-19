@@ -34,6 +34,12 @@ class HeatMaterialModel(ABC):
 
 class Fourier(HeatMaterialModel):
 
+    """
+    Fourier isotropic constitutve model for the heat flux
+    
+    k: material conductivity coefficient
+    """
+
     def __init__(self, material_properties):
 
         # Sets the names of the fields that are necessary to compute 
