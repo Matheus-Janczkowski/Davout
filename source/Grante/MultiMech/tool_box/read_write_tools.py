@@ -266,7 +266,17 @@ directory_path=None, code_given_field_name=None):
 
     # Reads the mesh
 
-    mesh_data_class = read_mshMesh(mesh_file)
+    mesh_data_class = None
+
+    try:
+
+        mesh_data_class = read_mshMesh(mesh_file)
+
+    except Exception as e:
+
+        raise ValueError("An error occurred while reading the mesh fil"+
+        "e '"+str(mesh_file)+"' that is used to read the field in file"+
+        " '"+str(field_file)+"'")
 
     # Verifies if function space info is a dictionary
 
