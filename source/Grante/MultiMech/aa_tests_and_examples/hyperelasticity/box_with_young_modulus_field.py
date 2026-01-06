@@ -24,6 +24,12 @@ displacement_fileName = "displacement_young_modulus_field.xdmf"
 
 post_processes = dict()
 
+# The flag "readable xdmf file" makes the file able to be read into a 
+# function afterwards. The flag "visualization copy for readable xdmf"
+# makes another copy of the readable xdmf but with the traditional me-
+# thod of saving. The readable file can sometimes feature null values in
+# ParaView
+
 post_processes["SaveField"] = {"directory path":results_path, 
 "file name": displacement_fileName, "readable xdmf file": True, "visua"+
 "lization copy for readable xdmf": True}

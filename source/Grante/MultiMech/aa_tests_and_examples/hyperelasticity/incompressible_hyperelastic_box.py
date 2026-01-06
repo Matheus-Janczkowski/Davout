@@ -29,6 +29,9 @@ results_path = get_parent_path_of_file()
 
 post_processes = [["Displacement", dict()], ["Pressure", dict()]]
 
+# The flag "readable xdmf file" makes the file able to be read into a 
+# function afterwards
+
 post_processes[0][1]["SaveField"] = {"directory path": results_path, 
 "file name": "displacement.xdmf", "readable xdmf file": True}
 
