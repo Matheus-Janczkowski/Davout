@@ -30,13 +30,13 @@ results_path = get_parent_path_of_file()
 post_processes = [["Displacement", dict()], ["Pressure", dict()]]
 
 post_processes[0][1]["SaveField"] = {"directory path": results_path, 
-"file name": "displacement.xdmf"}
+"file name": "displacement.xdmf", "readable xdmf file": True}
 
 post_processes[0][1]["SaveMeshVolumeRatioToReferenceVolume"] = {"director"+
 "y path": results_path, "file name": "volume_ratio.txt"}
 
 post_processes[1][1]["SaveField"] = {"directory path": results_path, 
-"file name": "pressure.xdmf"}
+"file name": "pressure.xdmf", "readable xdmf file": True}
 
 ########################################################################
 #                         Material properties                          #

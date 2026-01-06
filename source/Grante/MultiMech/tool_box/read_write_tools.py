@@ -90,16 +90,6 @@ None, visualization_copy_file=None, time_step=0, explicit_file_name=None):
 
         mesh_file = functional_data_class.mesh_file
 
-    elif isinstance(functional_data_class, dict):
-
-        fields_names_dict = functional_data_class["dictionary of field"+
-        " names"]
-
-        monolithic_solution = functional_data_class["monolithic soluti"+
-        "on"]
-
-        mesh_file = functional_data_class["mesh file"]
-
     else:
 
         raise TypeError("'functional_data_class' is not an instance of"+
@@ -157,9 +147,9 @@ None, visualization_copy_file=None, time_step=0, explicit_file_name=None):
                     file = XDMFFile(individual_field.function_space(
                     ).mesh().mpi_comm(), explicit_file_name)
 
-                    # If the file was not provided, the append flag
-                    # must be false to not append a new checkpoint
-                    # if no previous structure had been saved
+                    # If the file was not provided, the append flag must
+                    # must be false to not append a new checkpoint if no
+                    # previous structure had been saved
 
                     append_flag = False
 
@@ -176,17 +166,16 @@ None, visualization_copy_file=None, time_step=0, explicit_file_name=None):
 
             else:
 
-                raise NameError("'field_name' is '"+str(field_name)+
-                "', but it is not a name of proper field. See the "+
-                "available fields' names: "+str(
-                list(fields_names_dict.keys())))
+                raise NameError("'field_name' is '"+str(field_name)+"'"+
+                ", but it is not a name of proper field. See the avail"+
+                "able fields' names: "+str(list(fields_names_dict.keys()
+                )))
             
         # Otherwise, writes all fields
 
         else:
 
-            for field_name, field_number in fields_names_dict.items(
-            ):
+            for field_name in fields_names_dict.keys():
 
                 # Gets the automatic file name
 
@@ -361,43 +350,56 @@ None, visualization_copy_file=None, time_step=0, explicit_file_name=None):
     # Verifies if a visualization copy must be made
 
     if visualization_copy:
+        
+        visualization_copy_file = write_visualization_copy(
+        functional_data_class, explicit_file_name, mesh_file, time=time, 
+        time_step=time_step, visualization_copy_file=
+        visualization_copy_file, close_file=close_file)
 
-        # Reads the file back
-
-        read_function = read_field_from_xdmf(explicit_file_name, 
-        mesh_file, functional_data_class, time_step=time_step)
-
-        # Writes it using simple write
-
-        copy_file_name = (take_outFileNameTermination(explicit_file_name
-        )+"_visualization_copy.xdmf")
-
-        print("Saves the visualization copy at file '"+str(
-        copy_file_name)+"'\n")
-
-        # Verifies if this file has already been created. If not, creates
-        # t
-
-        if not isinstance(visualization_copy_file, XDMFFile):
-
-            print("Creates a new XDMFFile instance for the visualizati"+
-            "on copy file")
-
-            visualization_copy_file = XDMFFile(
-            individual_field.function_space().mesh().mpi_comm(), 
-            copy_file_name)
-
-        visualization_copy_file.write(read_function, time)
-
-        # Closes the file
-
-        if close_file:
-
-            file.close()
+        return file, visualization_copy_file
 
     # Returns the file
 
     return file
+
+# Defines a function to write a visualization copy using the conventi-
+# onal write method
+
+def write_visualization_copy(functional_data_class, file_name, mesh_file,
+time=0.0, time_step=0, visualization_copy_file=None, close_file=True):
+
+    # Reads the file back
+
+    read_function = read_field_from_xdmf(file_name, mesh_file,
+    functional_data_class, time_step=time_step)
+
+    # Writes it using simple write
+
+    copy_file_name = (take_outFileNameTermination(file_name)+"_visuali"+
+    "zation_copy.xdmf")
+
+    print("Saves the visualization copy at file '"+str(copy_file_name)+
+    "'\n")
+
+    # Verifies if this file has already been created. If not, creates it
+
+    if not isinstance(visualization_copy_file, XDMFFile):
+
+        print("Creates a new XDMFFile instance for the visualization c"+
+        "opy file")
+
+        visualization_copy_file = XDMFFile(read_function.function_space(
+        ).mesh().mpi_comm(), copy_file_name)
+
+    visualization_copy_file.write(read_function, time)
+
+    # Closes the file
+
+    if close_file:
+
+        visualization_copy_file.close()
+
+    return visualization_copy_file
 
 ########################################################################
 ########################################################################

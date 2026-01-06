@@ -45,6 +45,12 @@ def initialize_fieldSaving(data, direct_codeData, submesh_flag):
 
     readable_xdmf_flag = data[3]
 
+    visualization_copy = data[4]
+
+    # Gets the functional data class
+
+    functional_data_class = direct_codeData[0]
+
     # Takes out the termination of the file name
 
     file_name = path_tools.take_outFileNameTermination(
@@ -84,10 +90,20 @@ def initialize_fieldSaving(data, direct_codeData, submesh_flag):
 
                 self.result = None 
 
-                # Creates a dictionary of field information
+                # Creates an instance of the FunctionalData class to 
+                # store solution and function spaces
 
-                self.functional_data_dict = {"dictionary of field names":
-                None, "monolithic solution": None, "mesh file": None}
+                self.functional_data_dict = functional_data_class
+
+                self.file_name = file_name
+
+                # Sets the information for visualization copies, since
+                # the readable xdmf files might not appear in some com-
+                # puters
+
+                self.visualization_copy = visualization_copy
+
+                self.visualization_copy_file = None
 
             else:
             
@@ -119,6 +135,10 @@ fields_namesDict):
     
     print("Updates the saving of the "+str(field_number)+" field\n")
 
+    # Gets the name of the field
+
+    field_name = get_first_key_from_value(fields_namesDict, field_number)
+
     # Verifies if each load step must be saved in a separate file to al-
     # low visualization during simulation
 
@@ -139,14 +159,35 @@ fields_namesDict):
 
         if field_number==-1:
 
-            # Verifies if the a readable xdmf is to be used
+            # Verifies if a readable xdmf is to be used
 
             if output_object.readable_xdmf_flag:
 
-                # Writes the field to the main file using
+                # Writes the field to the main file using the proper me-
+                # thod for writing a readable xdmf
 
-                output_object.result = read_write_tools.write_field_to_xdmf(
-                output_object.functional_data_dict, time=time,)
+                writing_result = read_write_tools.write_field_to_xdmf(
+                output_object.functional_data_dict, time=time, 
+                field_name=field_name, visualization_copy=
+                output_object.visualization_copy, close_file=False,
+                file=output_object.result, time_step=
+                output_object.solution_steps-1, explicit_file_name=
+                output_object.file_name, visualization_copy_file=
+                output_object.visualization_copy_file)
+
+                # Separates the readable file off the visualization copy
+                # file, if there is any
+
+                if output_object.visualization_copy:
+
+                    output_object.result = writing_result[0]
+
+                    output_object.visualization_copy_file = (
+                    writing_result[1])
+
+                else:
+
+                    output_object.result = writing_result
 
             else:
 
@@ -162,9 +203,39 @@ fields_namesDict):
 
         else:
 
-            # Writes the field to the file
+            # Verifies if a readable xdmf is to be used
 
-            output_object.result.write(field[field_number], time)
+            if output_object.readable_xdmf_flag:
+
+                # Writes the field to the main file using the proper me-
+                # thod for writing a readable xdmf
+
+                writing_result = read_write_tools.write_field_to_xdmf(
+                output_object.functional_data_dict, time=time, 
+                field_name=field_name, visualization_copy=
+                output_object.visualization_copy, close_file=False,
+                file=output_object.result, time_step=
+                output_object.solution_steps-1, explicit_file_name=
+                output_object.file_name, visualization_copy_file=
+                output_object.visualization_copy_file)
+
+                # Separates the readable file off the visualization copy
+                # file, if there is any
+
+                if output_object.visualization_copy:
+
+                    output_object.result = writing_result[0]
+
+                    output_object.visualization_copy_file = (
+                    writing_result[1])
+
+                else:
+
+                    output_object.result = writing_result
+
+            else:
+                
+                output_object.result.write(field[field_number], time)
 
             # Writes the field to the extra file
 
@@ -182,9 +253,39 @@ fields_namesDict):
 
         if field_number==-1:
 
-            # Writes the field to the file
+            # Verifies if a readable xdmf is to be used
 
-            output_object.result.write(field, time)
+            if output_object.readable_xdmf_flag:
+
+                # Writes the field to the main file using the proper me-
+                # thod for writing a readable xdmf
+
+                writing_result = read_write_tools.write_field_to_xdmf(
+                output_object.functional_data_dict, time=time, 
+                field_name=field_name, visualization_copy=
+                output_object.visualization_copy, close_file=False,
+                file=output_object.result, time_step=
+                output_object.solution_steps-1, explicit_file_name=
+                output_object.file_name, visualization_copy_file=
+                output_object.visualization_copy_file)
+
+                # Separates the readable file off the visualization copy
+                # file, if there is any
+
+                if output_object.visualization_copy:
+
+                    output_object.result = writing_result[0]
+
+                    output_object.visualization_copy_file = (
+                    writing_result[1])
+
+                else:
+
+                    output_object.result = writing_result
+
+            else:
+                
+                output_object.result.write(field, time)
 
             return output_object
         
@@ -192,9 +293,39 @@ fields_namesDict):
 
         else:
 
-            # Writes the field to the file
+            # Verifies if a readable xdmf is to be used
 
-            output_object.result.write(field[field_number], time)
+            if output_object.readable_xdmf_flag:
+
+                # Writes the field to the main file using the proper me-
+                # thod for writing a readable xdmf
+
+                writing_result = read_write_tools.write_field_to_xdmf(
+                output_object.functional_data_dict, time=time, 
+                field_name=field_name, visualization_copy=
+                output_object.visualization_copy, close_file=False,
+                file=output_object.result, time_step=
+                output_object.solution_steps-1, explicit_file_name=
+                output_object.file_name, visualization_copy_file=
+                output_object.visualization_copy_file)
+
+                # Separates the readable file off the visualization copy
+                # file, if there is any
+
+                if output_object.visualization_copy:
+
+                    output_object.result = writing_result[0]
+
+                    output_object.visualization_copy_file = (
+                    writing_result[1])
+
+                else:
+
+                    output_object.result = writing_result
+
+            else:
+                
+                output_object.result.write(field[field_number], time)
 
             return output_object
 

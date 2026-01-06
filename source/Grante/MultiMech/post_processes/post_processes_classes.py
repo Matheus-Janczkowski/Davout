@@ -17,7 +17,7 @@ class PostProcessContext:
 
     def __init__(self, mesh, constitutive_model, dx, position_vector,
     domain_physGroupsNamesToTags, ds, boundary_physGroupsNamesToTags,
-    referential_normal):
+    referential_normal, functional_data_class):
 
         self.mesh = mesh
 
@@ -34,6 +34,8 @@ class PostProcessContext:
         self.boundary_physGroupsNamesToTags = boundary_physGroupsNamesToTags
 
         self.referential_normal = referential_normal
+
+        self.functional_data_class = functional_data_class
 
         # Gets the physical groups from the integration measure inside a
         # try-except box because submeshes do not have physical groups
@@ -100,7 +102,8 @@ class SaveField(PostProcessMethod):
         super().__init__(post_functions.initialize_fieldSaving, 
         post_functions.update_fieldSaving, ["directory path", 
         "file name", ["intermediate saving flag", False], ["readable x"+
-        "dmf file", False]], [])
+        "dmf file", False], ["visualization copy for readable xdmf",
+        False]], [context.functional_data_class])
 
 # Sets a class for the method to save the Cauchy stress field
 

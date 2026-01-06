@@ -93,7 +93,8 @@ None, field_correction=None):
     solution_field.function_space().mesh(), 
     constitutive_model, mesh_dataClass.dx, mesh_dataClass.x,
     mesh_dataClass.domain_physicalGroupsNameToTag, mesh_dataClass.ds,
-    mesh_dataClass.boundary_physicalGroupsNameToTag, mesh_dataClass.n)
+    mesh_dataClass.boundary_physicalGroupsNameToTag, mesh_dataClass.n,
+    functional_data_class)
 
     # Transforms the dictionary of post-processing methods instructions
     # into a live-wire dictionary with the proper methods and needed in-
@@ -140,7 +141,7 @@ None, field_correction=None):
         constitutive_model, dx_submesh, x_submesh, 
         mesh_dataClass.domain_physicalGroupsNameToTag, mesh_dataClass.ds,
         mesh_dataClass.boundary_physicalGroupsNameToTag, 
-        mesh_dataClass.n)
+        mesh_dataClass.n, None)
 
         # Initializes the post process for the submesh if there's any
 
@@ -630,7 +631,8 @@ None, fields_corrections=None):
     solution_field.function_space().mesh(), constitutive_model, 
     mesh_dataClass.dx, mesh_dataClass.x, 
     mesh_dataClass.domain_physicalGroupsNameToTag, mesh_dataClass.ds, 
-    mesh_dataClass.boundary_physicalGroupsNameToTag, mesh_dataClass.n)
+    mesh_dataClass.boundary_physicalGroupsNameToTag, mesh_dataClass.n,
+    functional_data_class)
 
     # Verifies if the post processes is a list
 
@@ -692,7 +694,7 @@ None, fields_corrections=None):
         constitutive_model, dx_submesh, x_submesh,
         mesh_dataClass.domain_physicalGroupsNameToTag, mesh_dataClass.ds,
         mesh_dataClass.boundary_physicalGroupsNameToTag, 
-        mesh_dataClass.n)
+        mesh_dataClass.n, None)
 
         # Initializes the post process for the submesh if there's any
 
