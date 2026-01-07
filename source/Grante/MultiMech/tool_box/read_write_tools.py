@@ -99,17 +99,23 @@ None, visualization_copy_file=None, time_step=0, explicit_file_name=None):
 
         # Verifies if all keys are available
 
-        if not ("dictionary of field names" in functional_data_class):
-
-            raise ValueError("'functional_data_class' in 'write_field_"+
-            "to_xdmf' is a dictionary but it does not have the key 'di"+
-            "ctionary_of_field_names'")
-
         if not ("monolithic solution" in functional_data_class):
 
             raise ValueError("'functional_data_class' in 'write_field_"+
             "to_xdmf' is a dictionary but it does not have the key 'mo"+
             "nolithic solution'")
+
+        if not ("dictionary of field names" in functional_data_class):
+
+            # Automatically creates a dictionary using the own name of
+            # the function
+
+            functional_data_class["dictionary of field names"] = {
+            functional_data_class["monolithic solution"].name(): 0}
+
+            """raise ValueError("'functional_data_class' in 'write_field_"+
+            "to_xdmf' is a dictionary but it does not have the key 'di"+
+            "ctionary of field_names'")"""
 
         if not ("mesh file" in functional_data_class):
 
@@ -118,9 +124,17 @@ None, visualization_copy_file=None, time_step=0, explicit_file_name=None):
             "sh file'")
         
         # Retrieves the data from the given dictionary
-        
-        fields_names_dict = functional_data_class["dictionary of field"+
-        " names"]
+
+        if isinstance(functional_data_class["dictionary of field names"], 
+        str):
+
+            fields_names_dict = {functional_data_class["dictionary of "+
+            "field names"]: 0}
+
+        else:
+
+            fields_names_dict = functional_data_class["dictionary of f"+
+            "ield names"]
 
         monolithic_solution = functional_data_class["monolithic soluti"+
         "on"]
