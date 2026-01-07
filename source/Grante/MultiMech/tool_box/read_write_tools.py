@@ -24,7 +24,9 @@ None, visualization_copy_file=None, time_step=0, explicit_file_name=None):
     Function for writing a FEniCS function to xdmf files.
     
     functional_data_class: Instance of the FunctionalData class, it 
-    constains function spaces, finite elements, and so forth
+    constains function spaces, finite elements, and so forth. It can also 
+    be a dictionary with keys 'dictionary of field names', 
+    'monolithic solution', and 'mesh file'
     
     time: time value, when the function was evaluated
     
