@@ -90,6 +90,48 @@ None, visualization_copy_file=None, time_step=0, explicit_file_name=None):
 
         mesh_file = functional_data_class.mesh_file
 
+    elif isinstance(functional_data_class, dict):
+
+        # if the functional data class is a dictionary, creates the 
+        # functional data class automatically
+
+        # Verifies if all keys are available
+
+        if not ("dictionary of field names" in functional_data_class):
+
+            raise ValueError("'functional_data_class' in 'write_field_"+
+            "to_xdmf' is a dictionary but it does not have the key 'di"+
+            "ctionary_of_field_names'")
+
+        if not ("monolithic solution" in functional_data_class):
+
+            raise ValueError("'functional_data_class' in 'write_field_"+
+            "to_xdmf' is a dictionary but it does not have the key 'mo"+
+            "nolithic solution'")
+
+        if not ("mesh file" in functional_data_class):
+
+            raise ValueError("'functional_data_class' in 'write_field_"+
+            "to_xdmf' is a dictionary but it does not have the key 'me"+
+            "sh file'")
+        
+        # Retrieves the data from the given dictionary
+        
+        fields_names_dict = functional_data_class["dictionary of field"+
+        " names"]
+
+        monolithic_solution = functional_data_class["monolithic soluti"+
+        "on"]
+
+        mesh_file = functional_data_class["mesh file"]
+
+        # Converts the functional data class to a true instance of the
+        # FunctionalData class
+
+        functional_data_class = FunctionalData(None, monolithic_solution,
+        None, None, None, None, fields_names_dict, None, mesh_file=
+        mesh_file)
+
     else:
 
         raise TypeError("'functional_data_class' is not an instance of"+

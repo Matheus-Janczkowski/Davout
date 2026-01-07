@@ -7,28 +7,29 @@ import tensorflow as tf
 
 class NeoHookean:
 
-    def __init__(self, material_parameters):
+    def __init__(self, material_properties, dtype=tf.float32):
         
         # Gets the material parameters
 
-        E = self.material_properties["E"]
+        E = material_properties["E"]
 
-        nu = self.material_properties["nu"]
+        nu = material_properties["nu"]
 
         # Evaluates the Lamé parameters
 
-        self.mu = E/(2*(1+nu))
+        self.mu = tf.constant(E/(2*(1+nu)), dtype=dtype)
 
-        self.lmbda = (nu*E)/((1+nu)*(1-2*nu))
+        self.lmbda = tf.constant((nu*E)/((1+nu)*(1-2*nu)), dtype=dtype)
 
     # Defines a function to evaluate the free energy density
 
     @tf.function
-    def psi_neo_hookean(self, F):
+    def strain_energy(self, F):
 
         # Evaluates the right Cauchy-Green strain tensor
 
-        C = tf.einsum('...iK,...jK->...ij', F, F)
+        #C = tf.einsum('...iK,...jK->...ij', F, F)
+        C = tf.matmul(F, F, transpose_a=True)
 
         # Evaluates its invariants
 
