@@ -51,6 +51,8 @@ def initialize_fieldSaving(data, direct_codeData, submesh_flag):
 
     functional_data_class = direct_codeData[0]
 
+    mesh_data_class = direct_codeData[1]
+
     # Takes out the termination of the file name
 
     file_name = path_tools.take_outFileNameTermination(
@@ -95,6 +97,8 @@ def initialize_fieldSaving(data, direct_codeData, submesh_flag):
 
                 self.functional_data_dict = functional_data_class
 
+                self.mesh_data_class = mesh_data_class
+
                 self.file_name = file_name
 
                 # Sets the information for visualization copies, since
@@ -112,6 +116,8 @@ def initialize_fieldSaving(data, direct_codeData, submesh_flag):
                 # Createa a dummy functional data class
 
                 self.functional_data_dict = None
+
+                self.mesh_data_class = None
 
             # Sets the result. It can be either a single file or a set 
             # of files when the solution is to be independently saved
@@ -173,7 +179,8 @@ fields_namesDict):
                 file=output_object.result, time_step=
                 output_object.solution_steps-1, explicit_file_name=
                 output_object.file_name, visualization_copy_file=
-                output_object.visualization_copy_file)
+                output_object.visualization_copy_file, 
+                code_given_mesh_data_class=output_object.mesh_data_class)
 
                 # Separates the readable file off the visualization copy
                 # file, if there is any
@@ -217,7 +224,8 @@ fields_namesDict):
                 file=output_object.result, time_step=
                 output_object.solution_steps-1, explicit_file_name=
                 output_object.file_name, visualization_copy_file=
-                output_object.visualization_copy_file)
+                output_object.visualization_copy_file, 
+                code_given_mesh_data_class=output_object.mesh_data_class)
 
                 # Separates the readable file off the visualization copy
                 # file, if there is any
@@ -267,7 +275,8 @@ fields_namesDict):
                 file=output_object.result, time_step=
                 output_object.solution_steps-1, explicit_file_name=
                 output_object.file_name, visualization_copy_file=
-                output_object.visualization_copy_file)
+                output_object.visualization_copy_file, 
+                code_given_mesh_data_class=output_object.mesh_data_class)
 
                 # Separates the readable file off the visualization copy
                 # file, if there is any
@@ -307,7 +316,8 @@ fields_namesDict):
                 file=output_object.result, time_step=
                 output_object.solution_steps-1, explicit_file_name=
                 output_object.file_name, visualization_copy_file=
-                output_object.visualization_copy_file)
+                output_object.visualization_copy_file, 
+                code_given_mesh_data_class=output_object.mesh_data_class)
 
                 # Separates the readable file off the visualization copy
                 # file, if there is any

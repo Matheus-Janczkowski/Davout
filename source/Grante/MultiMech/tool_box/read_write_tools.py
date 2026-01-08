@@ -18,7 +18,8 @@ from ...PythonicUtilities.path_tools import get_parent_path_of_file, decapitaliz
 
 def write_field_to_xdmf(functional_data_class, time=0.0, field_name=None,
 directory_path=None, visualization_copy=False, close_file=True, file=
-None, visualization_copy_file=None, time_step=0, explicit_file_name=None):
+None, visualization_copy_file=None, time_step=0, explicit_file_name=None,
+code_given_mesh_data_class=None):
     
     """
     Function for writing a FEniCS function to xdmf files.
@@ -408,11 +409,14 @@ None, visualization_copy_file=None, time_step=0, explicit_file_name=None):
     # Verifies if a visualization copy must be made
 
     if visualization_copy:
+
+        # Calls the function to create the visualization copy
         
         visualization_copy_file = write_visualization_copy(
         functional_data_class, explicit_file_name, mesh_file, time=time, 
         time_step=time_step, visualization_copy_file=
-        visualization_copy_file, close_file=close_file)
+        visualization_copy_file, close_file=close_file, 
+        code_given_mesh_data_class=code_given_mesh_data_class)
 
         return file, visualization_copy_file
 
@@ -424,12 +428,13 @@ None, visualization_copy_file=None, time_step=0, explicit_file_name=None):
 # onal write method
 
 def write_visualization_copy(functional_data_class, file_name, mesh_file,
-time=0.0, time_step=0, visualization_copy_file=None, close_file=True):
+time=0.0, time_step=0, visualization_copy_file=None, close_file=True,
+code_given_mesh_data_class=None):
 
     # Reads the file back
 
     read_function = read_field_from_xdmf(file_name, mesh_file,
-    functional_data_class, time_step=time_step)
+    functional_data_class, time_step=time_step, )
 
     # Writes it using simple write
 

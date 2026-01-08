@@ -590,7 +590,8 @@ False):
 
 def create_submesh(domain_meshCollection, domain_meshFunction,
 volume_physGroupsTags, parent_functionSpace, 
-domain_physicalGroupsNameToTag=None):
+domain_physicalGroupsNameToTag=None, boundary_meshCollection=None, 
+boundary_meshFunction=None, boundary_physicalGroupsNameToTag=None):
     
     # Verifies if the volume physical groups are a list of strings
 
@@ -793,11 +794,18 @@ domain_physicalGroupsNameToTag=None):
     x_submesh.interpolate(Expression(("x[0]", "x[1]", "x[2]"), element=
     V_positionVector.ufl_element()))
 
+    # Creates an instance of the class mesh data
+
+    submesh_data_class = MeshData(sub_mesh, dx_submesh, None, None,
+    x_submesh, domain_meshCollection, submesh_meshFunction, 
+    boundary_meshCollection, boundary_meshFunction, 
+    domain_physicalGroupsNameToTag, boundary_physicalGroupsNameToTag, 
+    False)
+
     # Returns the submesh, the updated cell markers, and the DOF mappings
 
-    return (sub_mesh, submesh_meshFunction, submesh_functionSpace, 
-    sub_meshMapping, parent_meshMapping, submesh_function, 
-    sub_toParentCellMap, dx_submesh, x_submesh)
+    return (submesh_data_class, submesh_functionSpace, sub_meshMapping, 
+    parent_meshMapping, submesh_function, sub_toParentCellMap)
 
 # Defines a function to update the field parameters vector of a submesh 
 # given the corresponding vector at the parent mesh

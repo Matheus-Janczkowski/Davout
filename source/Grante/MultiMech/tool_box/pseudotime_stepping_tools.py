@@ -89,12 +89,10 @@ None, field_correction=None):
     # Constructs the class of code-provided information for the post-
     # processes
 
-    context_class = post_classes.PostProcessContext(
-    solution_field.function_space().mesh(), 
-    constitutive_model, mesh_dataClass.dx, mesh_dataClass.x,
-    mesh_dataClass.domain_physicalGroupsNameToTag, mesh_dataClass.ds,
-    mesh_dataClass.boundary_physicalGroupsNameToTag, mesh_dataClass.n,
-    functional_data_class)
+    #solution_field.function_space().mesh()
+
+    context_class = post_classes.PostProcessContext(mesh_dataClass, 
+    constitutive_model, functional_data_class)
 
     # Transforms the dictionary of post-processing methods instructions
     # into a live-wire dictionary with the proper methods and needed in-
@@ -126,22 +124,23 @@ None, field_correction=None):
 
         function_space = solution_field.function_space()
 
-        (RVE_submesh, domain_meshFunction, function_spaceSubmesh,
-        RVE_meshMapping, parent_meshMapping, solution_submesh, 
-        RVE_toParentCellMap, dx_submesh, x_submesh) = mesh_tools.create_submesh(
+        (submesh_data_class, function_spaceSubmesh, RVE_meshMapping, 
+        parent_meshMapping, solution_submesh, RVE_toParentCellMap
+        ) = mesh_tools.create_submesh(
         mesh_dataClass.domain_meshCollection, 
         mesh_dataClass.domain_meshFunction, volume_physGroupsSubmesh, 
         function_space, domain_physicalGroupsNameToTag=
-        mesh_dataClass.domain_physicalGroupsNameToTag)
+        mesh_dataClass.domain_physicalGroupsNameToTag,
+        boundary_meshCollection=mesh_dataClass.boundary_meshCollection,
+        boundary_meshFunction=mesh_dataClass.boundary_meshFunction,
+        boundary_physicalGroupsNameToTag=
+        mesh_dataClass.boundary_physicalGroupsNameToTag)
 
         # Constructs the class of code-provided information for the post-
         # processes
 
-        context_classRVE = post_classes.PostProcessContext(RVE_submesh, 
-        constitutive_model, dx_submesh, x_submesh, 
-        mesh_dataClass.domain_physicalGroupsNameToTag, mesh_dataClass.ds,
-        mesh_dataClass.boundary_physicalGroupsNameToTag, 
-        mesh_dataClass.n, None)
+        context_classRVE = post_classes.PostProcessContext(
+        submesh_data_class, constitutive_model, None)
 
         # Initializes the post process for the submesh if there's any
 
@@ -382,14 +381,14 @@ None, field_correction=None):
             if intermediate_field is None:
 
                 solution_submesh = mesh_tools.field_parentToSubmesh(
-                RVE_submesh, solution_field, RVE_toParentCellMap, 
+                submesh_data_class.mesh, solution_field, RVE_toParentCellMap, 
                 sub_meshMapping=RVE_meshMapping, parent_meshMapping=
                 parent_meshMapping, field_submesh=solution_submesh)
 
             else:
 
                 solution_submesh = mesh_tools.field_parentToSubmesh(
-                RVE_submesh, intermediate_field, RVE_toParentCellMap, 
+                submesh_data_class.mesh, intermediate_field, RVE_toParentCellMap, 
                 sub_meshMapping=RVE_meshMapping, parent_meshMapping=
                 parent_meshMapping, field_submesh=solution_submesh)
 
@@ -421,7 +420,7 @@ None, field_correction=None):
 
                         post_processingObjectsSubmesh[post_processName
                         ].parent_toChildMeshResult = mesh_tools.field_parentToSubmesh(
-                        RVE_submesh, post_processingObjects[
+                        submesh_data_class.mesh, post_processingObjects[
                         post_processName].parent_toChildMeshResult, 
                         RVE_toParentCellMap)
 
@@ -627,12 +626,10 @@ None, fields_corrections=None):
     # Constructs the class of code-provided information for the post-
     # processes
 
-    context_class = post_classes.PostProcessContext(
-    solution_field.function_space().mesh(), constitutive_model, 
-    mesh_dataClass.dx, mesh_dataClass.x, 
-    mesh_dataClass.domain_physicalGroupsNameToTag, mesh_dataClass.ds, 
-    mesh_dataClass.boundary_physicalGroupsNameToTag, mesh_dataClass.n,
-    functional_data_class)
+    #solution_field.function_space().mesh()
+
+    context_class = post_classes.PostProcessContext(mesh_dataClass, 
+    constitutive_model, functional_data_class)
 
     # Verifies if the post processes is a list
 
@@ -679,22 +676,23 @@ None, fields_corrections=None):
 
         function_space = solution_field.function_space()
 
-        (RVE_submesh, domain_meshFunction, function_spaceSubmesh, 
-        RVE_meshMapping, parent_meshMapping, solution_submesh, 
-        RVE_toParentCellMap, dx_submesh, x_submesh) = mesh_tools.create_submesh(
+        (submesh_data_class, function_spaceSubmesh, RVE_meshMapping, 
+        parent_meshMapping, solution_submesh, RVE_toParentCellMap
+        ) = mesh_tools.create_submesh(
         mesh_dataClass.domain_meshCollection, 
         mesh_dataClass.domain_meshFunction, volume_physGroupsSubmesh, 
         function_space, domain_physicalGroupsNameToTag=
-        mesh_dataClass.domain_physicalGroupsNameToTag)
+        mesh_dataClass.domain_physicalGroupsNameToTag,
+        boundary_meshCollection=mesh_dataClass.boundary_meshCollection,
+        boundary_meshFunction=mesh_dataClass.boundary_meshFunction,
+        boundary_physicalGroupsNameToTag=
+        mesh_dataClass.boundary_physicalGroupsNameToTag)
 
         # Constructs the class of code-provided information for the post-
         # processes
 
-        context_classRVE = post_classes.PostProcessContext(RVE_submesh, 
-        constitutive_model, dx_submesh, x_submesh,
-        mesh_dataClass.domain_physicalGroupsNameToTag, mesh_dataClass.ds,
-        mesh_dataClass.boundary_physicalGroupsNameToTag, 
-        mesh_dataClass.n, None)
+        context_classRVE = post_classes.PostProcessContext(
+        submesh_data_class, constitutive_model, None)
 
         # Initializes the post process for the submesh if there's any
 
@@ -936,7 +934,7 @@ None, fields_corrections=None):
         )>0):
 
             solution_submesh = mesh_tools.field_parentToSubmesh(
-            RVE_submesh, solution_field, RVE_toParentCellMap, 
+            submesh_data_class.mesh, solution_field, RVE_toParentCellMap, 
             sub_meshMapping=RVE_meshMapping, parent_meshMapping=
             parent_meshMapping, field_submesh=solution_submesh)
 
@@ -1009,7 +1007,7 @@ None, fields_corrections=None):
                                 post_processingObjectsSubmesh[i][
                                 post_processName
                                 ].parent_toChildMeshResult = mesh_tools.field_parentToSubmesh(
-                                RVE_submesh, post_processingObjects[
+                                submesh_data_class.mesh, post_processingObjects[
                                 process_index][post_processName
                                 ].parent_toChildMeshResult, 
                                 RVE_toParentCellMap)
