@@ -47,6 +47,8 @@ def initialize_fieldSaving(data, direct_codeData, submesh_flag):
 
     visualization_copy = data[4]
 
+    field_name = data[5]
+
     # Gets the functional data class
 
     functional_data_class = direct_codeData[0]
@@ -108,6 +110,18 @@ def initialize_fieldSaving(data, direct_codeData, submesh_flag):
                 self.visualization_copy = visualization_copy
 
                 self.visualization_copy_file = None
+
+                # Saves into the class the information to build the mock
+                # functional data class for the visualization copy
+
+                self.field_type = functional_data_class.elements_dictionary_copy[
+                field_name]["field type"]
+
+                self.interpolation_function = functional_data_class.elements_dictionary_copy[
+                field_name]["interpolation function"]
+
+                self.polynomial_degree = functional_data_class.elements_dictionary_copy[
+                field_name]["polynomial degree"]
 
             else:
             
@@ -180,7 +194,10 @@ fields_namesDict):
                 output_object.solution_steps-1, explicit_file_name=
                 output_object.file_name, visualization_copy_file=
                 output_object.visualization_copy_file, 
-                code_given_mesh_data_class=output_object.mesh_data_class)
+                code_given_mesh_data_class=output_object.mesh_data_class,
+                field_type=output_object.field_type, interpolation_function=
+                output_object.interpolation_function, polynomial_degree=
+                output_object.polynomial_degree)
 
                 # Separates the readable file off the visualization copy
                 # file, if there is any
@@ -225,7 +242,10 @@ fields_namesDict):
                 output_object.solution_steps-1, explicit_file_name=
                 output_object.file_name, visualization_copy_file=
                 output_object.visualization_copy_file, 
-                code_given_mesh_data_class=output_object.mesh_data_class)
+                code_given_mesh_data_class=output_object.mesh_data_class,
+                field_type=output_object.field_type, interpolation_function=
+                output_object.interpolation_function, polynomial_degree=
+                output_object.polynomial_degree)
 
                 # Separates the readable file off the visualization copy
                 # file, if there is any
@@ -276,7 +296,10 @@ fields_namesDict):
                 output_object.solution_steps-1, explicit_file_name=
                 output_object.file_name, visualization_copy_file=
                 output_object.visualization_copy_file, 
-                code_given_mesh_data_class=output_object.mesh_data_class)
+                code_given_mesh_data_class=output_object.mesh_data_class,
+                field_type=output_object.field_type, interpolation_function=
+                output_object.interpolation_function, polynomial_degree=
+                output_object.polynomial_degree)
 
                 # Separates the readable file off the visualization copy
                 # file, if there is any
@@ -317,7 +340,10 @@ fields_namesDict):
                 output_object.solution_steps-1, explicit_file_name=
                 output_object.file_name, visualization_copy_file=
                 output_object.visualization_copy_file, 
-                code_given_mesh_data_class=output_object.mesh_data_class)
+                code_given_mesh_data_class=output_object.mesh_data_class,
+                field_type=output_object.field_type, interpolation_function=
+                output_object.interpolation_function, polynomial_degree=
+                output_object.polynomial_degree)
 
                 # Separates the readable file off the visualization copy
                 # file, if there is any

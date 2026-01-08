@@ -20,8 +20,6 @@ from .....Grante.MultiMech.physics import hyperelastic_incompressible_cauchy_con
 
 results_path = get_parent_path_of_file()
 
-displacement_fileName = "displacement.xdmf"
-
 post_processes = [["Displacement", dict()], ["Pressure", dict()]]
 
 post_processes[0][1]["SaveField"] = {"directory path": results_path, 

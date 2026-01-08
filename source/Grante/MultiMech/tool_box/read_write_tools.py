@@ -2,6 +2,8 @@
 
 from dolfin import *
 
+from copy import deepcopy
+
 from ...MultiMech.tool_box.functional_tools import FunctionalData, construct_monolithicFunctionSpace
 
 from ...MultiMech.tool_box.mesh_handling_tools import read_mshMesh
@@ -19,7 +21,8 @@ from ...PythonicUtilities.path_tools import get_parent_path_of_file, decapitaliz
 def write_field_to_xdmf(functional_data_class, time=0.0, field_name=None,
 directory_path=None, visualization_copy=False, close_file=True, file=
 None, visualization_copy_file=None, time_step=0, explicit_file_name=None,
-code_given_mesh_data_class=None):
+code_given_mesh_data_class=None, field_type=None, interpolation_function=
+None, polynomial_degree=None):
     
     """
     Function for writing a FEniCS function to xdmf files.
@@ -201,7 +204,7 @@ code_given_mesh_data_class=None):
 
                 if not isinstance(file, XDMFFile):
 
-                    print("Creates a new XDMFFile instance")
+                    print("Creates a new XDMFFile instance\n")
 
                     file = XDMFFile(individual_field.function_space(
                     ).mesh().mpi_comm(), explicit_file_name)
@@ -263,7 +266,7 @@ code_given_mesh_data_class=None):
 
                 if not isinstance(file, XDMFFile):
 
-                    print("Creates a new XDMFFile instance")
+                    print("Creates a new XDMFFile instance\n")
 
                     file = XDMFFile(individual_field.function_space(
                     ).mesh().mpi_comm(), explicit_file_name)
@@ -321,7 +324,7 @@ code_given_mesh_data_class=None):
 
                 if not isinstance(file, XDMFFile):
 
-                    print("Creates a new XDMFFile instance")
+                    print("Creates a new XDMFFile instance\n")
 
                     file = XDMFFile(individual_field.function_space(
                     ).mesh().mpi_comm(), explicit_file_name)
@@ -384,7 +387,7 @@ code_given_mesh_data_class=None):
 
             if not isinstance(file, XDMFFile):
 
-                print("Creates a new XDMFFile instance")
+                print("Creates a new XDMFFile instance\n")
 
                 file = XDMFFile(individual_field.function_space(
                 ).mesh().mpi_comm(), explicit_file_name)
@@ -410,13 +413,51 @@ code_given_mesh_data_class=None):
 
     if visualization_copy:
 
+        # Creates a dictionary with instructions to build the functional
+        # data class for the read of the visualization copy. This new 
+        # instance is created to not affect the old instance
+
+        functional_data_dictionary = dict()
+
+        if field_type is None:
+
+            raise ValueError("'visualization_copy' in 'write_field_to_"+
+            "xdmf' is True, but 'field_type' was not given. It must be"+
+            " 'scalar', or 'vector', or 'tensor'")
+        
+        else:
+
+            functional_data_dictionary["field type"] = field_type
+
+        if interpolation_function is None:
+
+            raise ValueError("'visualization_copy' in 'write_field_to_"+
+            "xdmf' is True, but 'interpolation_function' was not given"+
+            ". It must be 'CG', or 'Lagrange', or 'DG'")
+        
+        else:
+
+            functional_data_dictionary["interpolation function"] = (
+            interpolation_function)
+
+        if polynomial_degree is None:
+
+            raise ValueError("'visualization_copy' in 'write_field_to_"+
+            "xdmf' is True, but 'polynomial_degree' was not given. It "+
+            "must be an 1, 2, 3...'")
+        
+        else:
+
+            functional_data_dictionary["polynomial degree"] = (
+            polynomial_degree)
+
         # Calls the function to create the visualization copy
         
         visualization_copy_file = write_visualization_copy(
-        functional_data_class, explicit_file_name, mesh_file, time=time, 
-        time_step=time_step, visualization_copy_file=
-        visualization_copy_file, close_file=close_file, 
-        code_given_mesh_data_class=code_given_mesh_data_class)
+        functional_data_dictionary, explicit_file_name, mesh_file, 
+        field_name, time=time, time_step=time_step, 
+        visualization_copy_file=visualization_copy_file, close_file=
+        close_file, code_given_mesh_data_class=code_given_mesh_data_class)
 
         return file, visualization_copy_file
 
@@ -427,14 +468,17 @@ code_given_mesh_data_class=None):
 # Defines a function to write a visualization copy using the conventi-
 # onal write method
 
-def write_visualization_copy(functional_data_class, file_name, mesh_file,
-time=0.0, time_step=0, visualization_copy_file=None, close_file=True,
+def write_visualization_copy(functional_data_dictionary, file_name, 
+mesh_file, code_given_field_name, time=0.0, time_step=0, 
+visualization_copy_file=None, close_file=True, 
 code_given_mesh_data_class=None):
 
     # Reads the file back
 
     read_function = read_field_from_xdmf(file_name, mesh_file,
-    functional_data_class, time_step=time_step, )
+    functional_data_dictionary, time_step=time_step, rename_function=
+    True, code_given_mesh_data_class=code_given_mesh_data_class,
+    code_given_field_name=code_given_field_name)
 
     # Writes it using simple write
 
@@ -449,7 +493,7 @@ code_given_mesh_data_class=None):
     if not isinstance(visualization_copy_file, XDMFFile):
 
         print("Creates a new XDMFFile instance for the visualization c"+
-        "opy file")
+        "opy file\n")
 
         visualization_copy_file = XDMFFile(read_function.function_space(
         ).mesh().mpi_comm(), copy_file_name)
@@ -475,7 +519,7 @@ code_given_mesh_data_class=None):
 
 def read_field_from_xdmf(field_file, mesh_file, function_space_info,
 directory_path=None, code_given_field_name=None, 
-code_given_mesh_data_class=None, time_step=0):
+code_given_mesh_data_class=None, time_step=0, rename_function=True):
     
     # If the directory path is given, joins them
 
@@ -637,10 +681,20 @@ code_given_mesh_data_class=None, time_step=0):
 
     # Renames the function
 
-    field_name = list(function_space_info.fields_names_dict.keys()
-    )[0]
+    field_name = None
 
-    function_space_info.monolithic_solution.rename(field_name, "DNS")
+    if code_given_field_name is None:
+
+        field_name = list(function_space_info.fields_names_dict.keys()
+        )[0]
+
+    else:
+
+        field_name = str(code_given_field_name)
+
+    if rename_function:
+
+        function_space_info.monolithic_solution.rename(field_name, "DNS")
 
     # Finally reads the xdmf file with the field
 

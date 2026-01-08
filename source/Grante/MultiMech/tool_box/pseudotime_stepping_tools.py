@@ -99,7 +99,7 @@ None, field_correction=None):
     # formation
     
     post_processes = post_processing_tools.post_processingSelectionSingleField(
-    post_processesDict, context_class) 
+    post_processesDict, context_class, list(fields_namesDict.keys())[0]) 
     
     # Initializes the dictionary of submesh post processes
 
@@ -145,7 +145,8 @@ None, field_correction=None):
         # Initializes the post process for the submesh if there's any
 
         post_processesSubmesh = post_processing_tools.post_processingSelectionSingleField(
-        post_processesSubmeshDict, context_classRVE) 
+        post_processesSubmeshDict, context_classRVE, list(
+        fields_namesDict.keys())[0]) 
     
     # Initializes a dictionary of post processes objects, files for e-
     # xample

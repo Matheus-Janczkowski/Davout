@@ -5,6 +5,8 @@ from dolfin import *
 
 import numpy as np
 
+from copy import deepcopy
+
 from abc import ABC, abstractmethod
 
 from petsc4py import PETSc
@@ -648,7 +650,7 @@ class FunctionalData:
     def __init__(self, monolithic_functionSpace, monolithic_solution, 
     fields_names, solution_fields, variation_fields, trial_functions, 
     fields_namesDict, mixed_element, mesh_file=None, mesh_data_class=
-    None):
+    None, elements_dictionary_copy=None):
         
         # Saves the parameters of finite elements and function spaces
 
@@ -671,6 +673,8 @@ class FunctionalData:
         self.mesh_file = mesh_file
 
         self.mesh_data_class = mesh_data_class
+
+        self.elements_dictionary_copy = elements_dictionary_copy
 
 # Defines a function to select a field from a list of fields
 
@@ -720,6 +724,10 @@ fields_namesDict):
 def construct_monolithicFunctionSpace(elements_dictionary, 
 mesh_dataClass, verbose=False, function_only=False, 
 all_data_must_be_provided=False):
+    
+    # Makes a copy of the dictionary of elements
+
+    elements_dictionary_copy = deepcopy(elements_dictionary)
     
     # Transforms the dictionary of instructions into real finite elements
     # and get the names of the fields
@@ -811,7 +819,8 @@ all_data_must_be_provided=False):
 
     return FunctionalData(monolithic_functionSpace, monolithic_solution, 
     fields_names, solution_fields, variation_fields, trial_functions, 
-    fields_namesDict, mixed_element, mesh_file=mesh_dataClass.mesh_file)
+    fields_namesDict, mixed_element, mesh_file=mesh_dataClass.mesh_file,
+    elements_dictionary_copy=elements_dictionary_copy)
 
 # Defines a function to construct a dictionary of elements from a dic-
 # tionary of finite elements' instructions
@@ -902,30 +911,14 @@ all_data_must_be_provided=False):
                         str(interpolation_function)+"' is not one of t"+
                         "he admissible functions. Check the list ahead"+
                         ": "+str(allowed_interpolationFunction))
-                    
-                elif "shape function" in element_dictionary:
-
-                    interpolation_function = element_dictionary["shape"+
-                    " function"]
-
-                    # Verifies if this interpolation function is one of 
-                    # the admissible ones
-
-                    if not (interpolation_function in (
-                    allowed_interpolationFunction)):
-                        
-                        raise NameError("The interpolation function '"+
-                        str(interpolation_function)+"' is not one of t"+
-                        "he admissible functions. Check the list ahead"+
-                        ": "+str(allowed_interpolationFunction))
 
                 elif all_data_must_be_provided:
 
                     raise KeyError("The dictionary to construct a func"+
                     "tion space does not have the key 'interpolation f"+
-                    "unction' or 'shape function', but this informatio"+
-                    "n is obligatory. Check out the provided dictionar"+
-                    "y: "+str(element_dictionary))
+                    "unction', but this information is obligatory. Che"+
+                    "ck out the provided dictionary: "+str(
+                    element_dictionary))
                     
                 else:
 

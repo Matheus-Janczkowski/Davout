@@ -17,7 +17,8 @@ from ...PythonicUtilities import programming_tools
 # The dictionary of additional information has the name of each additio-
 # nal information as keys and the informations themselves as values
 
-def post_processingSelectionSingleField(post_processes, context_class):
+def post_processingSelectionSingleField(post_processes, context_class,
+field_name):
 
     # Constructs a dictionary of post processess that are implemented. 
     # If you implement any new post-processing tool, the code will auto-
@@ -116,6 +117,16 @@ def post_processingSelectionSingleField(post_processes, context_class):
                         " the class of the process '"+str(process_name)+
                         "'")
                     
+                    # Verifies if it is the file name
+
+                    elif available_processes[process_name
+                    ].additional_information[i][0]=="field name":
+                        
+                        available_processes[process_name
+                        ].additional_information[i] = copy.deepcopy(
+                        field_name)
+
+                    
                     else:
 
                         available_processes[process_name
@@ -188,7 +199,8 @@ context_class, fields_names):
         # th proper methods and stuff
 
         post_processesUnifield[i] = post_processingSelectionSingleField(
-        post_processesUnifield[i][1], context_class)
+        post_processesUnifield[i][1], context_class, 
+        post_processesUnifield[i][0])
 
         # Gets the names of the processes for this field
 
