@@ -237,6 +237,22 @@ def rotation_tensorEulerRodrigues(phi, return_numpy_array=False):
 
 def get_axle_from_rotation_tensor(R, return_numpy_array=False):
 
+    # Verifies if a list
+
+    if isinstance(R, list):
+
+        # Converts to a numpy array
+
+        R = np.array(R)
+
+    # Verifies if it is not a numpy array
+
+    elif not isinstance(R, np.ndarray):
+
+        raise TypeError("The axle vector of a rotation tensor was aske"+
+        "d, but it is not a list nor a numpy array. The given rotation"+
+        " tensor is: "+str(R))
+
     # As the rotation tensor is the exponential of a skew-symmetric ten-
     # sor whose axial vector is the rotation axle, we take the logarithm
 
