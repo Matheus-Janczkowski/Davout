@@ -106,7 +106,7 @@ solver_parameters["newton_relative_tolerance"] = 1e-4
 
 solver_parameters["newton_absolute_tolerance"] = 1e-4
 
-solver_parameters["newton_maximum_iterations"] = 15
+solver_parameters["newton_maximum_iteration"] = 15
 
 """
 solver_parameters["linear_solver"] = "gmres"

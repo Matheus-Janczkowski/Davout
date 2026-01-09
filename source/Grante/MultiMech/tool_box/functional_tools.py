@@ -528,7 +528,11 @@ def set_solverParameters(solver, solver_parameters):
             raise NameError("The key "+str(key)+" is not an admissible"+
             " key to set solver parameters. Check the admissible keys:"+
             "\n"+str(admissible_keys)+"\nand the parameters for the cu"+
-            "stom solver:\n"+str(give_customSolverParametersKeys()))
+            "stom solver:\n"+str(give_customSolverParametersKeys())+
+            "\n\nCheck options from fenics for Newton solver:\n"+str(
+            solver.parameters["newton_solver"].keys())+"\n\nCheck opti"+
+            "ons from fenics for SNES solver:\n"+str(
+            solver.parameters["snes_solver"].keys()))
         
     # Sets the solver parameters
 
