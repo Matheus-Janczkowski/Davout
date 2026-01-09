@@ -44,7 +44,6 @@ get_parent_path_of_file(), visualization_copy=True, field_type="scalar",
 interpolation_function="CG", polynomial_degree=1)
 
 write_field_to_xdmf({"monolithic solution": E_field, "mesh file":
-mesh_data_class.mesh_file}, directory_path=
-get_parent_path_of_file(), visualization_copy=True, explicit_file_name=
-"E_from_dict", field_type="scalar", interpolation_function="CG",
-polynomial_degree=1)
+mesh_data_class.mesh_file}, visualization_copy=True, explicit_file_name=
+get_parent_path_of_file()+"//E_from_dict", field_type="scalar", 
+interpolation_function="CG", polynomial_degree=1)

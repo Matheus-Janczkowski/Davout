@@ -220,6 +220,10 @@ None, field_correction=None):
 
         time_keys = np.linspace(t, t_final, maximum_loadingSteps)
 
+    # Initializes a counter for the whole simulation time
+
+    start_time_simulation = time.time()
+
     # Iterates through the pseudotime stepping
 
     for t in time_keys:
@@ -459,6 +463,13 @@ None, field_correction=None):
 
         print("\n\nThe post-processing phase took "+str(
         end_postProcessingTime-end_time)+" seconds\n\n")
+
+    final_time_simulation = time.time()
+
+    print("\n#########################################################"+
+    "###############\nThe whole simulation took: "+str(
+    final_time_simulation-start_time_simulation)+" seconds\n##########"+
+    "##############################################################\n")
 
 # Defines a function to iterate through a Newton-Raphson loop of a vari-
 # ational problem of multiple fields
@@ -785,6 +796,10 @@ None, fields_corrections=None):
 
         time_keys = np.linspace(t, t_final, maximum_loadingSteps)
 
+    # Initializes a counter of time for the whole simulation
+
+    start_time_simulation = time.time()
+
     # Iterates through the pseudotime stepping
 
     for t in time_keys:
@@ -1043,6 +1058,13 @@ None, fields_corrections=None):
 
         print("\n\nThe post-processing phase took "+str(
         end_postProcessingTime-end_time)+" seconds\n\n")
+
+    final_time_simulation = time.time()
+
+    print("\n#########################################################"+
+    "###############\nThe whole simulation took: "+str(
+    final_time_simulation-start_time_simulation)+" seconds\n##########"+
+    "##############################################################\n")
 
 ########################################################################
 #                              Utilities                               #
