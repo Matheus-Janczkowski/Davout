@@ -4,6 +4,8 @@ from dolfin import *
 
 from copy import deepcopy
 
+from ...MultiMech.tool_box.parallelization_tools import mpi_xdmf_file
+
 from ...MultiMech.tool_box.functional_tools import FunctionalData, construct_monolithicFunctionSpace
 
 from ...MultiMech.tool_box.mesh_handling_tools import read_mshMesh

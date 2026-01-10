@@ -16,6 +16,8 @@ from ...CuboidGmsh.tool_box import meshing_tools as tools_gmsh
 
 from ...CuboidGmsh.solids import cuboid_prisms as prism_gmsh
 
+from .parallelization_tools import mpi_print
+
 # Defines a class for the mesh data
 
 class MeshData:
@@ -23,7 +25,7 @@ class MeshData:
     def __init__(self, mesh, dx, ds, n, x, domain_meshCollection, 
     domain_meshFunction, boundary_meshCollection, boundary_meshFunction, 
     domain_physicalGroupsNameToTag, boundary_physicalGroupsNameToTag,
-    verbose, mesh_file=None):
+    verbose, mesh_file=None, comm=None):
         
         # Saves the mesh parameters
 
@@ -53,6 +55,18 @@ class MeshData:
 
         self.mesh_file = mesh_file
 
+        # Stores the parallel communicator and the rank number of pro-
+        # cessors only if it was really created. Since dumb instances of
+        # this class can be created. If a dumb instance is created and a
+        # method eventually requires the comm object, the attribute will
+        # be non-existant and an error will be thrown
+
+        self.comm = comm
+
+        if comm is not None:
+
+            self.rank = MPI.rank(comm)
+
 ########################################################################
 #                              Mesh files                              #
 ########################################################################
@@ -61,7 +75,7 @@ class MeshData:
 
 def create_box_mesh(length_x, length_y, length_z, n_divisions_x,
 n_divisions_y, n_divisions_z, verbose=False, file_name="box_mesh",
-file_directory=None, n_subdomains_z=1):
+file_directory=None, n_subdomains_z=1, comm=None):
     
     # Defines the names of the surface physical groups
 
@@ -123,7 +137,7 @@ file_directory=None, n_subdomains_z=1):
     tools_gmsh.gmsh_finalize(geometric_data=geometric_data, file_name=
     file_name, verbose=verbose, file_directory=file_directory)
 
-    return read_mshMesh(file_directory+"//"+file_name)
+    return read_mshMesh(file_directory+"//"+file_name, comm=comm)
 
 # Defines a function to read a mesh from a msh file
 
@@ -132,7 +146,14 @@ lambda: ['tetra', 'triangle'], 'data_sets': lambda: ["domain", ("bound"+
 "ary")]})
 
 def read_mshMesh(file_name, desired_elements=None, data_sets=None, 
-quadrature_degree=2, verbose=False):
+quadrature_degree=2, verbose=False, comm=None, automatic_comm_generation=
+False):
+    
+    # If a comm object is to be automatically generated
+
+    if automatic_comm_generation and (comm is None):
+
+        comm = MPI.comm_world
 
     # Tests if the file name is a dictionary, which means the mesh is to
     # be created using FEniCS built-in meshes
@@ -266,7 +287,7 @@ quadrature_degree=2, verbose=False):
         return create_box_mesh(length_x, length_y, length_z, 
         n_divisions_x, n_divisions_y, n_divisions_z, verbose=
         verbose_gmsh, file_name=mesh_file_name, file_directory=
-        mesh_directory, n_subdomains_z=n_subdomains_z)
+        mesh_directory, n_subdomains_z=n_subdomains_z, comm=comm)
 
     # Reads the saved gmsh mesh using meshio
 
@@ -380,59 +401,59 @@ quadrature_degree=2, verbose=False):
                     physical_groupsElements[physical_groupName] = str(
                     n_elements)+" "+str(element)+" elements" 
 
-    print("###########################################################"+
+    mpi_print(comm, "###########################################################"+
     "#############\n#                        Mesh - physical groups   "+
     "                     #\n#########################################"+
     "###############################\n")
 
-    print("Finds the following domain physical groups with their respe"+
+    mpi_print(comm, "Finds the following domain physical groups with their respe"+
     "ctive tags:")
 
     for physical_group, tag in domain_physicalGroupsNameToTag.items():
 
-        print(physical_group, "-", tag)
+        mpi_print(comm, physical_group, "-", tag)
 
         try: 
 
-            print("      - "+physical_groupsElements[physical_group])
+            mpi_print(comm, "      - "+physical_groupsElements[physical_group])
 
         except:
 
             raise ValueError("The physical group "+str(physical_group)+
             " does not have any elements in it.")
         
-        print("")
+        mpi_print(comm, "")
 
-    print("\n\nFinds the following boundary physical groups with their r"+
+    mpi_print(comm, "\n\nFinds the following boundary physical groups with their r"+
     "espective tags:")
 
     for physical_group, tag in boundary_physicalGroupsNameToTag.items():
 
-        print(physical_group, "-", tag)
+        mpi_print(comm, physical_group, "-", tag)
 
         try: 
 
-            print("      - "+physical_groupsElements[physical_group])
+            mpi_print(comm, "      - "+physical_groupsElements[physical_group])
 
         except:
 
             raise ValueError("The physical group "+str(physical_group)+
             " does not have any elements in it.")
         
-        print("")
+        mpi_print(comm, "")
 
-    print("\n")
+    mpi_print(comm, "\n")
 
     # Gets the cells which consist of the desired element
 
     for i in range(len(desired_elements)):
 
-        print("Saves the mesh of", data_sets[i], "dataset\n")
+        mpi_print(comm, "Saves the mesh of", data_sets[i], "dataset\n")
 
         cells_dictionary[desired_elements[i]] = (
         mesh_reading.get_cells_type(desired_elements[i]))
 
-        print("There are "+str(len(cells_dictionary[desired_elements[i]]
+        mpi_print(comm, "There are "+str(len(cells_dictionary[desired_elements[i]]
         ))+" "+str(desired_elements[i])+" elements in the mesh.\n")
 
         # Gets the physical cell data for this element
@@ -465,7 +486,7 @@ quadrature_degree=2, verbose=False):
 
     meshio.write(file_name+".xdmf", whole_mesh)
 
-    print("###########################################################"+
+    mpi_print(comm, "###########################################################"+
     "#############\n#                    Mesh reading has been finaliz"+
     "ed                   #\n#########################################"+
     "###############################\n")
@@ -475,7 +496,7 @@ quadrature_degree=2, verbose=False):
     return read_xdmfMesh(file_name, domain_physicalGroupsNameToTag=
     domain_physicalGroupsNameToTag, boundary_physicalGroupsNameToTag=
     boundary_physicalGroupsNameToTag, quadrature_degree=
-    quadrature_degree, verbose=verbose)
+    quadrature_degree, verbose=verbose, comm=comm)
 
 # Defines a function to read a mesh from a xdmf file
 
@@ -485,7 +506,7 @@ lambda: dict()})
 
 def read_xdmfMesh(file_name, domain_physicalGroupsNameToTag=None, 
 boundary_physicalGroupsNameToTag=None, quadrature_degree=2, verbose=
-False):
+False, comm=None):
     
     # Sets the compiler parameters
 
@@ -502,7 +523,7 @@ False):
     if len(domain_physicalGroupsNameToTag.keys())==0 or (len(
     boundary_physicalGroupsNameToTag.keys())==0):
         
-        print("WARNING: the dictionaries of physical groups' names to "+
+        mpi_print(comm, "WARNING: the dictionaries of physical groups' names to "+
         "tags are empty, thus, it won't be possible to use the names i"+
         "n the variational forms. Use a .msh mesh file directly instea"+
         "d.")
@@ -517,7 +538,15 @@ False):
 
     # Initializes the mesh object and reads the xdmf file
 
-    mesh = Mesh()
+    mesh = None 
+
+    if comm is None:
+
+        mesh = Mesh()
+
+    else:
+
+        mesh = Mesh(comm)
 
     # Initializes a mesh value collection to store mesh data of the do-
     # main
@@ -527,11 +556,21 @@ False):
 
     # Reads the mesh with domain physical groups
 
-    with XDMFFile(file_name+"_domain.xdmf") as infile:
+    if comm is None:
 
-        infile.read(mesh)
+        with XDMFFile(file_name+"_domain.xdmf") as infile:
 
-        infile.read(domain_meshCollection, "domain")
+            infile.read(mesh)
+
+            infile.read(domain_meshCollection, "domain")
+
+    else:
+
+        with XDMFFile(comm, file_name+"_domain.xdmf") as infile:
+
+            infile.read(mesh)
+
+            infile.read(domain_meshCollection, "domain")
 
     # Converts the mesh value collection to mesh function, for mesh va-
     # lue collections are low level and cannot be used for FEM integra-
@@ -547,9 +586,17 @@ False):
 
     # Reads the mesh with surface physical groups
 
-    with XDMFFile(file_name+"_boundary.xdmf") as infile:
-    
-        infile.read(boundary_meshCollection, "boundary")
+    if comm is None:
+
+        with XDMFFile(file_name+"_boundary.xdmf") as infile:
+        
+            infile.read(boundary_meshCollection, "boundary")
+
+    else:
+
+        with XDMFFile(comm, file_name+"_boundary.xdmf") as infile:
+        
+            infile.read(boundary_meshCollection, "boundary")
 
     # Converts the mesh value collection to mesh function
 
@@ -572,7 +619,7 @@ False):
 
     x_position = SpatialCoordinate(mesh)
 
-    print("Finishes creating the mesh functions, measures, and tags di"+
+    mpi_print(comm, "Finishes creating the mesh functions, measures, and tags di"+
     "ctionaries.\n")
 
     # Stores these objects inside a class and returns it
@@ -580,7 +627,7 @@ False):
     return MeshData(mesh, dx, ds, n, x_position, domain_meshCollection, 
     domain_meshFunction, boundary_meshCollection, boundary_meshFunction, 
     domain_physicalGroupsNameToTag, boundary_physicalGroupsNameToTag,
-    verbose, mesh_file=file_name)
+    verbose, mesh_file=file_name, comm=comm)
 
 ########################################################################
 #                              Submeshing                              #

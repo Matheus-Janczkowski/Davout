@@ -31,7 +31,7 @@ solver_parameters, neumann_loads=None, dirichlet_loads=None,
 polynomial_degree_displacement=2, polynomial_degree_pressure=1, t=0.0, 
 volume_physGroupsSubmesh=None, post_processesSubmesh=None, solution_name=
 None, dirichlet_boundaryConditions=None, body_forcesDict=None, verbose=
-False):
+False, run_in_parallel=False, comm=None):
 
     ####################################################################
     #                               Mesh                               #
@@ -41,7 +41,7 @@ False):
     # file
     
     mesh_data_class = mesh_tools.read_mshMesh(mesh_fileName, verbose=
-    verbose)
+    verbose, automatic_comm_generation=run_in_parallel, comm=comm)
 
     ####################################################################
     #                          Function space                          #

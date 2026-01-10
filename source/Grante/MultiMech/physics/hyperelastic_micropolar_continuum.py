@@ -31,7 +31,7 @@ polynomial_degreeDisplacement=2, polynomial_degreeMicrorotation=2,
 t=0.0, neumann_loads=None, dirichlet_loads=None, solution_name=None,
 volume_physGroupsSubmesh=None, post_processesSubmesh=None, 
 dirichlet_boundaryConditions=None, verbose=False, body_forcesDict=None,
-body_momentsDict=None):
+body_momentsDict=None, run_in_parallel=False, comm=None):
 
     ####################################################################
     #                               Mesh                               #
@@ -41,7 +41,7 @@ body_momentsDict=None):
     # file
     
     mesh_dataClass = mesh_tools.read_mshMesh(mesh_fileName, verbose=
-    verbose)
+    verbose, automatic_comm_generation=run_in_parallel, comm=comm)
 
     ####################################################################
     #                          Function space                          #

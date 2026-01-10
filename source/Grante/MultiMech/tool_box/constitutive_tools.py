@@ -16,6 +16,8 @@ from ..tool_box import functional_tools
 
 from ..tool_box import variational_tools
 
+from ..tool_box.parallelization_tools import mpi_execute_function, mpi_evaluate_field_at_point
+
 from ..tool_box.read_write_tools import read_field_from_xdmf
 
 from ...PythonicUtilities import file_handling_tools as file_tools
@@ -610,7 +612,7 @@ stress_solutionPlotNames, stress_name, stress_method, fields_namesDict):
 # pressure from it at a point
 
 def save_pressureAtPoint(output_object, field, time, stress_name, 
-stress_method, fields_namesDict, digits=3):
+stress_method, fields_namesDict, comm, digits=3):
     
     # Verifies if the output object has the attribute with the names of 
     # the required fields
@@ -741,14 +743,16 @@ stress_method, fields_namesDict, digits=3):
 
     # Saves the pressure at a point to a txt file
 
-    file_tools.list_toTxt(output_object.result, output_object.file_name, 
-    add_extension=True, parent_path=output_object.parent_path)
+    mpi_execute_function(comm, file_tools.list_toTxt, 
+    output_object.result, output_object.file_name, add_extension=True, 
+    arent_path=output_object.parent_path)
 
     # If it is to plot the data
 
     if output_object.flag_plotting:
 
-        plotting_tools.plane_plot(output_object.file_name+".pdf", data=
+        mpi_execute_function(comm, plotting_tools.plane_plot,
+        output_object.file_name+".pdf", data=
         output_object.result,  x_label=r"$t$", y_label=r"$p$", title=
         r"pressure at $x="+str(round(output_object.point_coordinates[0],
         digits))+",\;y="+str(round(output_object.point_coordinates[1],
@@ -904,7 +908,7 @@ stress_method, fields_namesDict):
 # Defines a function to save the first elasticity tensor (dP/dF)
 
 def save_elasticityTensor(output_object, field, time, tensor_method,
-tensor_name, fields_namesDict):
+tensor_name, fields_namesDict, comm):
     
     # Verifies if the output object has the attribute with the names of 
     # the required fields
@@ -1071,8 +1075,9 @@ tensor_name, fields_namesDict):
 
                 # Stores the component
 
-                tensor_voigt[i][j] = elasticity_tensorFunction(Point(
-                output_object.point_coordinates))#"""
+                tensor_voigt[i][j] = mpi_evaluate_field_at_point(
+                output_object.comm_object, elasticity_tensorFunction,
+                Point(output_object.point_coordinates))#"""
         
         """for i in range(3):
 
@@ -1094,7 +1099,8 @@ tensor_name, fields_namesDict):
 
     # Saves the elasticity tensor at a point to a txt file
 
-    file_tools.list_toTxt(output_object.result, output_object.file_name, 
+    mpi_execute_function(output_object.comm_object, 
+    file_tools.list_toTxt, output_object.result, output_object.file_name, 
     add_extension=True)
 
     # If it is to plot the data
@@ -1169,7 +1175,8 @@ tensor_name, fields_namesDict):
 
         # Plots the elasticity tensor
 
-        plotting_tools.plot_matrix(deepcopy(output_object.result), 
+        mpi_execute_function(output_object.comm_object, 
+        plotting_tools.plot_matrix, deepcopy(output_object.result), 
         output_object.parent_path, base_file_name, include_time=True, 
         scaling_function=scaling_function, color_map=color_map, title=
         title, flag_scientificNotation=flag_scientificNotation, 

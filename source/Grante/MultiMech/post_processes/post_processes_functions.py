@@ -15,6 +15,8 @@ from ..tool_box import numerical_tools
 
 from ..tool_box import read_write_tools
 
+from ..tool_box.parallelization_tools import mpi_xdmf_file, mpi_print, mpi_execute_function
+
 from ...PythonicUtilities import path_tools
 
 from ...PythonicUtilities import file_handling_tools as file_tools
@@ -55,6 +57,8 @@ def initialize_fieldSaving(data, direct_codeData, submesh_flag):
 
     mesh_data_class = direct_codeData[1]
 
+    comm_object = mesh_data_class.comm
+
     # Takes out the termination of the file name
 
     file_name = path_tools.take_outFileNameTermination(
@@ -70,6 +74,10 @@ def initialize_fieldSaving(data, direct_codeData, submesh_flag):
     class OutputObject:
 
         def __init__(self, file_name):
+
+            # Saves the comm object
+
+            self.comm_object = comm_object
 
             # Defines a flag for intermediate saving to allow visualiza-
             # tion during solution
@@ -125,7 +133,7 @@ def initialize_fieldSaving(data, direct_codeData, submesh_flag):
 
             else:
             
-                self.result = XDMFFile(file_name+".xdmf")
+                self.result = mpi_xdmf_file(comm_object, file_name+".xdmf")
 
                 # Createa a dummy functional data class
 
@@ -153,7 +161,8 @@ def initialize_fieldSaving(data, direct_codeData, submesh_flag):
 def update_fieldSaving(output_object, field, field_number, time, 
 fields_namesDict):
     
-    print("Updates the saving of the "+str(field_number)+" field\n")
+    mpi_print(output_object.comm_object, "Updates the saving of the "+
+    str(field_number)+" field\n")
 
     # Gets the name of the field
 
@@ -173,7 +182,8 @@ fields_namesDict):
         file_name = output_object.base_fileName+"_"+str(
         output_object.solution_steps)+".xdmf"
 
-        current_result = XDMFFile(file_name)
+        current_result = mpi_xdmf_file(output_object.comm_object, 
+        file_name)
 
         # If the problem has a single field
 
@@ -396,6 +406,8 @@ def initialize_cauchyStressSaving(data, direct_codeData, submesh_flag):
     
     physical_groupsNamesToTags = direct_codeData[4]
 
+    comm_object = direct_codeData[5]
+
     # Creates the function space for the stress as a tensor
 
     W = 0.0
@@ -414,7 +426,7 @@ def initialize_cauchyStressSaving(data, direct_codeData, submesh_flag):
 
     # Initializes the file
 
-    file = XDMFFile(file_name)
+    file = mpi_xdmf_file(comm_object, file_name)
 
     # Assembles the file and the function space into a class. This post-
     # process does have a variable that can be shared with a submesh, 
@@ -425,6 +437,10 @@ def initialize_cauchyStressSaving(data, direct_codeData, submesh_flag):
         def __init__(self, file, W, constitutive_model, dx, 
         physical_groupsList, physical_groupsNamesToTags, 
         parent_toChildMeshResult):
+
+            # Saves the comm object
+
+            self.comm_object = comm_object
             
             self.result = file 
 
@@ -459,7 +475,8 @@ def initialize_cauchyStressSaving(data, direct_codeData, submesh_flag):
 def update_cauchyStressSaving(output_object, field, field_number, time, 
 fields_namesDict, flag_parentMeshReuse=False):
     
-    print("Updates the saving of the Cauchy stress field\n")
+    mpi_print(output_object.comm_object, "Updates the saving of the Ca"+
+    "uchy stress field\n")
     
     return constitutive_tools.save_stressField(output_object, field, 
     time, flag_parentMeshReuse, ["Cauchy stress", "stress"], "cauchy", 
@@ -497,6 +514,8 @@ submesh_flag):
     
     physical_groupsNamesToTags = direct_codeData[4]
 
+    comm_object = direct_codeData[5]
+
     # Creates the function space for the stress as a tensor
 
     W = 0.0
@@ -515,7 +534,7 @@ submesh_flag):
 
     # Initializes the file
 
-    file = XDMFFile(file_name)
+    file = mpi_xdmf_file(comm_object, file_name)
 
     # Assembles the file and the function space into a class. This post-
     # process does have a variable that can be shared with a submesh, 
@@ -526,6 +545,10 @@ submesh_flag):
         def __init__(self, file, W, constitutive_model, dx, 
         physical_groupsList, physical_groupsNamesToTags,
         parent_toChildMeshResult):
+
+            # Saves the comm object
+
+            self.comm_object = comm_object
             
             self.result = file 
 
@@ -560,7 +583,8 @@ submesh_flag):
 def update_coupleCauchyStressSaving(output_object, field, field_number, 
 time, fields_namesDict, flag_parentMeshReuse=False):
     
-    print("Updates the saving of the couple Cauchy stress field\n")
+    mpi_print(output_object.comm_object, "Updates the saving of the co"+
+    "uple Cauchy stress field\n")
 
     return constitutive_tools.save_stressField(output_object, field, 
     time, flag_parentMeshReuse, ["Couple Cauchy stress", "stress"], "c"+
@@ -599,6 +623,8 @@ submesh_flag):
     
     physical_groupsNamesToTags = direct_codeData[4]
 
+    comm_object = direct_codeData[5]
+
     # Creates the function space for the stress as a tensor
 
     W = 0.0
@@ -617,7 +643,7 @@ submesh_flag):
 
     # Initializes the file
 
-    file = XDMFFile(file_name)
+    file = mpi_xdmf_file(comm_object, file_name)
 
     # Assembles the file and the function space into a class. This post-
     # process does have a variable that can be shared with a submesh, 
@@ -628,6 +654,10 @@ submesh_flag):
         def __init__(self, file, W, constitutive_model, dx, 
         physical_groupsList, physical_groupsNamesToTags, 
         parent_toChildMeshResult):
+
+            # Saves the comm object
+
+            self.comm_object = comm_object
             
             self.result = file 
 
@@ -662,8 +692,8 @@ submesh_flag):
 def update_firstPiolaStressSaving(output_object, field, field_number, 
 time, fields_namesDict, flag_parentMeshReuse=False):
     
-    print("Updates the saving of the first Piola-Kirchhoff stress fiel"+
-    "d\n")
+    mpi_print(output_object.comm_object, "Updates the saving of the fi"+
+    "rst Piola-Kirchhoff stress field\n")
     
     return constitutive_tools.save_stressField(output_object, field, 
     time, flag_parentMeshReuse, ["First Piola-Kirchhoff stress", "stre"+
@@ -703,6 +733,8 @@ submesh_flag):
     
     physical_groupsNamesToTags = direct_codeData[4]
 
+    comm_object = direct_codeData[5]
+
     # Creates the function space for the stress as a tensor
 
     W = 0.0
@@ -721,7 +753,7 @@ submesh_flag):
 
     # Initializes the file
 
-    file = XDMFFile(file_name)
+    file = mpi_xdmf_file(comm_object, file_name)
 
     # Assembles the file and the function space into a class. This post-
     # process does have a variable that can be shared with a submesh, 
@@ -732,6 +764,10 @@ submesh_flag):
         def __init__(self, file, W, constitutive_model, dx, 
         physical_groupsList, physical_groupsNamesToTags, 
         parent_toChildMeshResult):
+
+            # Saves the comm object
+
+            self.comm_object = comm_object
             
             self.result = file 
 
@@ -767,8 +803,8 @@ submesh_flag):
 def update_coupleFirstPiolaStressSaving(output_object, field, 
 field_number, time, fields_namesDict, flag_parentMeshReuse=False):
     
-    print("Updates the saving of the couple first Piola-Kirchhoff stre"+
-    "ss field\n")
+    mpi_print(output_object.comm_object, "Updates the saving of the co"+
+    "uple first Piola-Kirchhoff stress field\n")
     
     return constitutive_tools.save_stressField(output_object, field, 
     time, flag_parentMeshReuse, ["Couple first Piola-Kirchhoff stress", 
@@ -808,6 +844,8 @@ def initialize_tractionSaving(data, direct_codeData, submesh_flag):
 
     referential_normal = direct_codeData[5]
 
+    comm_object = direct_codeData[6]
+
     # Creates the function space for the traction as a vector function 
     # space
 
@@ -827,7 +865,7 @@ def initialize_tractionSaving(data, direct_codeData, submesh_flag):
 
     # Initializes the file
 
-    file = XDMFFile(file_name)
+    file = mpi_xdmf_file(comm_object, file_name)
 
     # Assembles the file and the function space into a class. This post-
     # process does have a variable that can be shared with a submesh, 
@@ -838,6 +876,10 @@ def initialize_tractionSaving(data, direct_codeData, submesh_flag):
         def __init__(self, file, W, constitutive_model, ds, 
         physical_groupsList, physical_groupsNamesToTags, 
         referential_normal):
+
+            # Saves the comm object
+
+            self.comm_object = comm_object
 
             self.W = W 
 
@@ -869,7 +911,8 @@ def initialize_tractionSaving(data, direct_codeData, submesh_flag):
 def update_referentialTractionSaving(output_object, field, field_number, 
 time, fields_namesDict):
     
-    print("Updates the saving of referential traction field\n")
+    mpi_print(output_object.comm_object, "Updates the saving of refere"+
+    "ntial traction field\n")
     
     return constitutive_tools.save_referentialTraction(output_object, 
     field, time, "first_piola_kirchhoff", "first_piolaStress", 
@@ -913,6 +956,8 @@ def initialize_pressureAtPointSaving(data, direct_codeData, submesh_flag):
     physical_groupsList = direct_codeData[3] 
     
     physical_groupsNamesToTags = direct_codeData[4]
+
+    comm_object = direct_codeData[5]
 
     # Gets the coordinates of the point and already finds the closest 
     # node to it
@@ -959,6 +1004,10 @@ def initialize_pressureAtPointSaving(data, direct_codeData, submesh_flag):
         parent_toChildMeshResult, point_coordinates, pressure_list,
         flag_plotting):
 
+            # Saves the comm object
+
+            self.comm_object = comm_object
+
             self.W = W 
 
             self.constitutive_model = constitutive_model
@@ -999,12 +1048,12 @@ def initialize_pressureAtPointSaving(data, direct_codeData, submesh_flag):
 def update_pressureAtPointSaving(output_object, field, field_number, time, 
 fields_namesDict):
     
-    print("Updates the saving of the pressure at point "+str(
-    output_object.point_coordinates)+"\n")
+    mpi_print(output_object.comm_object, "Updates the saving of the pr"+
+    "essure at point "+str(output_object.point_coordinates)+"\n")
     
     return constitutive_tools.save_pressureAtPoint(output_object, field, 
-    time, "cauchy", "cauchy_stress", fields_namesDict, digits=
-    output_object.digits)
+    time, "cauchy", "cauchy_stress", fields_namesDict, 
+    output_object.comm_object, digits=output_object.digits)
 
 ########################################################################
 ########################################################################
@@ -1027,6 +1076,8 @@ def initialize_mesh_volume(data, direct_codeData, submesh_flag):
     # code
 
     dx = direct_codeData[0]
+
+    comm_object = direct_codeData[1]
 
     # Gets the initial volume
 
@@ -1056,6 +1107,10 @@ def initialize_mesh_volume(data, direct_codeData, submesh_flag):
         def __init__(self, file_name, dx, volume_ratio_list, 
         initial_volume):
 
+            # Saves the comm object
+
+            self.comm_object = comm_object
+
             self.dx = dx 
 
             self.file_name = file_name
@@ -1084,8 +1139,8 @@ fields_namesDict):
         "the field required to evaluate the 'SaveMeshVolumeRatioToRefe"+
         "renceVolume' post-process must be 'Displacement'")
     
-    print("Updates the saving of the ratio of the meshe's volume to th"+
-    "e initial volume of the mesh\n")
+    mpi_print(output_object.comm_object, "Updates the saving of the ra"+
+    "tio of the meshe's volume to the initial volume of the mesh\n")
 
     # Gets the jacobian
 
@@ -1109,7 +1164,8 @@ fields_namesDict):
 
     # Saves the list of volume ratios in a txt file
 
-    file_tools.list_toTxt(output_object.result, output_object.file_name, 
+    mpi_execute_function(output_object.comm_object, 
+    file_tools.list_toTxt, output_object.result, output_object.file_name, 
     add_extension=True)
     
     return output_object
@@ -1139,6 +1195,8 @@ def initialize_fieldHomogenization(data, direct_codeData, submesh_flag):
     physical_groupsList = direct_codeData[1] 
     
     physical_groupsNamesToTags = direct_codeData[2]
+
+    comm_object = direct_codeData[3]
 
     # Evaluates the volume of the domain
 
@@ -1216,6 +1274,10 @@ def initialize_fieldHomogenization(data, direct_codeData, submesh_flag):
 
         def __init__(self, homogenized_fieldList, inverse_volume, dx, 
         subdomain, file_name):
+
+            # Saves the comm object
+
+            self.comm_object = comm_object
             
             self.result = homogenized_fieldList
 
@@ -1237,8 +1299,8 @@ def initialize_fieldHomogenization(data, direct_codeData, submesh_flag):
 def update_fieldHomogenization(output_object, field, field_number, time,
 fields_namesDict):
     
-    print("Updates the homogenization of the "+str(field_number)+" fie"+
-    "ld\n")
+    mpi_print(output_object.comm_object, "Updates the homogenization o"+
+    "f the "+str(field_number)+" field\n")
 
     # If the problem has a single field
 
@@ -1250,7 +1312,7 @@ fields_namesDict):
         output_object.result = homogenization_tools.homogenize_genericField(
         field, output_object.result, time, output_object.inverse_volume, 
         output_object.dx, output_object.subdomain, 
-        output_object.file_name)
+        output_object.file_name, output_object.comm_object)
 
         return output_object
 
@@ -1264,7 +1326,8 @@ fields_namesDict):
         output_object.result = homogenization_tools.homogenize_genericField(
         field[field_number], output_object.result, time, 
         output_object.inverse_volume, output_object.dx, 
-        output_object.subdomain, output_object.file_name)
+        output_object.subdomain, output_object.file_name, 
+        output_object.comm_object)
 
         return output_object
 
@@ -1285,8 +1348,8 @@ submesh_flag):
 def update_gradientFieldHomogenization(output_object, field, 
 field_number, time, fields_namesDict):
     
-    print("Updates the homogenization of the gradient of the "+str(
-    field_number)+" field\n")
+    mpi_print(output_object.comm_object, "Updates the homogenization o"+
+    "f the gradient of the "+str(field_number)+" field\n")
 
     # Gets the gradient of the field
 
@@ -1337,6 +1400,8 @@ submesh_flag):
     physical_groupsNamesToTags = direct_codeData[2]
 
     constitutive_model = direct_codeData[3]
+
+    comm_object = direct_codeData[4]
 
     # Evaluates the volume of the domain
 
@@ -1409,6 +1474,10 @@ submesh_flag):
         def __init__(self, homogenized_firstPiolaList, inverse_volume, dx, 
         subdomain, file_name, constitutive_model, physical_groupsList,
         physical_groupsNamesToTags):
+
+            # Saves the comm object
+
+            self.comm_object = comm_object
             
             self.result = homogenized_firstPiolaList
 
@@ -1444,8 +1513,8 @@ submesh_flag):
 def update_firstPiolaHomogenization(output_object, field, field_number, 
 time, fields_namesDict):
     
-    print("Updates the homogenization of the first Piola-Kirchhoff str"+
-    "ess field\n")
+    mpi_print(output_object.comm_object, "Updates the homogenization o"+
+    "f the first Piola-Kirchhoff stress field\n")
 
     output_object.result = homogenization_tools.homogenize_stressTensor(
     field, output_object.constitutive_model, "first_piola_kirchhoff", 
@@ -1454,7 +1523,7 @@ time, fields_namesDict):
     output_object.subdomain,output_object.file_name, 
     output_object.physical_groupsList, 
     output_object.physical_groupsNamesToTags, fields_namesDict, 
-    output_object.required_fieldsNames)
+    output_object.required_fieldsNames, output_object.comm_object)
 
     return output_object
 
@@ -1485,6 +1554,8 @@ submesh_flag):
     constitutive_model = direct_codeData[3]
 
     position_vector = direct_codeData[4]
+
+    comm_object = direct_codeData[5]
 
     # Evaluates the volume of the domain
 
@@ -1557,6 +1628,10 @@ submesh_flag):
         def __init__(self, homogenized_firstPiolaList, inverse_volume, dx, 
         subdomain, file_name, constitutive_model, physical_groupsList,
         physical_groupsNamesToTags, position_vector):
+
+            # Saves the comm object
+
+            self.comm_object = comm_object
             
             self.result = homogenized_firstPiolaList
 
@@ -1594,8 +1669,8 @@ submesh_flag):
 def update_coupleFirstPiolaHomogenization(output_object, field, 
 field_number, time, fields_namesDict):
     
-    print("Updates the homogenization of the couple first Piola-Kirchh"+
-    "off stress field\n")
+    mpi_print(output_object.comm_object, "Updates the homogenization o"+
+    "f the couple first Piola-Kirchhoff stress field\n")
 
     """output_object.result = homogenization_tools.homogenize_stressTensor(
     field, output_object.constitutive_model, "couple_first_piola_kirch"+
@@ -1612,7 +1687,7 @@ field_number, time, fields_namesDict):
     output_object.dx, output_object.subdomain, output_object.file_name, 
     output_object.physical_groupsList, 
     output_object.physical_groupsNamesToTags, fields_namesDict, 
-    output_object.required_fieldsNames)
+    output_object.required_fieldsNames, output_object.comm_object)
 
     return output_object
 
@@ -1640,6 +1715,8 @@ def initialize_cauchyHomogenization(data, direct_codeData, submesh_flag):
     physical_groupsNamesToTags = direct_codeData[2]
 
     constitutive_model = direct_codeData[3]
+
+    comm_object = direct_codeData[4]
 
     # Evaluates the volume of the domain
 
@@ -1712,6 +1789,10 @@ def initialize_cauchyHomogenization(data, direct_codeData, submesh_flag):
         def __init__(self, homogenized_cauchyList, inverse_volume, dx, 
         subdomain, file_name, constitutive_model, physical_groupsList,
         physical_groupsNamesToTags):
+
+            # Saves the comm object
+
+            self.comm_object = comm_object
             
             self.result = homogenized_cauchyList
 
@@ -1747,7 +1828,8 @@ def initialize_cauchyHomogenization(data, direct_codeData, submesh_flag):
 def update_cauchyHomogenization(output_object, field, field_number, 
 time, fields_namesDict):
     
-    print("Updates the homogenization of the Cauchy stress field\n")
+    mpi_print(output_object.comm_object, "Updates the homogenization o"+
+    "f the Cauchy stress field\n")
 
     output_object.result = homogenization_tools.homogenize_stressTensor(
     field, output_object.constitutive_model, "cauchy", "cauchy_stress", 
@@ -1755,7 +1837,7 @@ time, fields_namesDict):
     output_object.dx, output_object.subdomain, output_object.file_name, 
     output_object.physical_groupsList, 
     output_object.physical_groupsNamesToTags, fields_namesDict, 
-    output_object.required_fieldsNames)
+    output_object.required_fieldsNames, output_object.comm_object)
 
     return output_object
 
@@ -1774,8 +1856,8 @@ submesh_flag):
 def update_coupleCauchyHomogenization(output_object, field, field_number, 
 time, fields_namesDict):
     
-    print("Updates the homogenization of the couple Cauchy stress fiel"
-    "d\n")
+    mpi_print(output_object.comm_object, "Updates the homogenization o"+
+    "f the couple Cauchy stress field\n")
 
     output_object.result = homogenization_tools.homogenize_stressTensor(
     field, output_object.constitutive_model, "couple_cauchy", "cauchy_"+
@@ -1783,7 +1865,7 @@ time, fields_namesDict):
     output_object.dx, output_object.subdomain, output_object.file_name, 
     output_object.physical_groupsList, 
     output_object.physical_groupsNamesToTags, fields_namesDict, 
-    output_object.required_fieldsNames)
+    output_object.required_fieldsNames, output_object.comm_object)
 
     return output_object
 
@@ -1818,6 +1900,8 @@ submesh_flag):
     physical_groupsList = direct_codeData[3] 
     
     physical_groupsNamesToTags = direct_codeData[4]
+
+    comm_object = direct_codeData[5]
 
     # Gets the coordinates of the point and already finds the closest 
     # node to it
@@ -1932,6 +2016,10 @@ submesh_flag):
         elasticity_tensorList, flag_plotting, voigt_notation, 
         parent_path, optional_arguments):
 
+            # Saves the comm object
+
+            self.comm_object = comm_object
+
             self.W = W 
 
             self.constitutive_model = constitutive_model
@@ -1975,7 +2063,8 @@ submesh_flag):
 def update_firstElasticityTensor(output_object, field, field_number, 
 time, fields_namesDict, flag_parentMeshReuse=False):
     
-    print("Updates the saving of the first elasticity tensor\n")
+    mpi_print(output_object.comm_object, "Updates the saving of the fi"+
+    "rst elasticity tensor\n")
 
     return constitutive_tools.save_elasticityTensor(output_object,
     field, time, "first_elasticityTensor", "first_elasticity_tensor",
@@ -1994,7 +2083,8 @@ submesh_flag):
 def update_secondElasticityTensor(output_object, field, field_number, 
 time, fields_namesDict, flag_parentMeshReuse=False):
     
-    print("Updates the saving of the second elasticity tensor\n")
+    mpi_print(output_object.comm_object, "Updates the saving of the se"+
+    "cond elasticity tensor\n")
 
     return constitutive_tools.save_elasticityTensor(output_object, 
     field, time, "second_elasticityTensor", "second_elasticity_tensor",
@@ -2013,7 +2103,8 @@ submesh_flag):
 def update_thirdElasticityTensor(output_object, field, field_number, 
 time, fields_namesDict, flag_parentMeshReuse=False):
     
-    print("Updates the saving of the third elasticity tensor\n")
+    mpi_print(output_object.comm_object, "Updates the saving of the th"+
+    "ird elasticity tensor\n")
 
     return constitutive_tools.save_elasticityTensor(output_object, 
     field, time, "third_elasticityTensor", "third_elasticity_tensor",

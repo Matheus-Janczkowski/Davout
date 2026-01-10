@@ -30,7 +30,7 @@ mesh_fileName, solver_parameters, neumann_loads=None, dirichlet_loads=
 None, polynomial_degree=2, quadrature_degree=2, t=0.0, 
 volume_physGroupsSubmesh=None, post_processesSubmesh=None, 
 solution_name=None, verbose=False, dirichlet_boundaryConditions=None,
-heat_generation_dict=None):
+heat_generation_dict=None, run_in_parallel=False, comm=None):
 
     ####################################################################
     #                               Mesh                               #
@@ -40,7 +40,8 @@ heat_generation_dict=None):
     # file
 
     mesh_dataClass = mesh_tools.read_mshMesh(mesh_fileName, 
-    quadrature_degree=quadrature_degree, verbose=verbose)
+    quadrature_degree=quadrature_degree, verbose=verbose, 
+    automatic_comm_generation=run_in_parallel, comm=comm)
 
     ####################################################################
     #                          Function space                          #

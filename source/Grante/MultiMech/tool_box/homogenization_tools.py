@@ -10,6 +10,8 @@ from ..tool_box import functional_tools
 
 from ..tool_box import tensor_tools
 
+from ..tool_box.parallelization_tools import mpi_execute_function
+
 from ...PythonicUtilities import file_handling_tools as file_tools
 
 from ...PythonicUtilities import programming_tools
@@ -19,7 +21,7 @@ from ...PythonicUtilities import recursion_tools
 # Defines a function to homogenize a generic field
 
 def homogenize_genericField(field, homogenized_fieldList, time, 
-inverse_volume, dx, subdomain, file_name):
+inverse_volume, dx, subdomain, file_name, comm):
     
     # Gets the dimensionality of the field
 
@@ -107,8 +109,8 @@ inverse_volume, dx, subdomain, file_name):
 
     # Saves the homogenized field to a txt file
 
-    file_tools.list_toTxt(homogenized_fieldList, file_name, 
-    add_extension=False)
+    mpi_execute_function(comm, file_tools.list_toTxt, 
+    homogenized_fieldList, file_name, add_extension=False)
 
     return homogenized_fieldList
 
@@ -122,7 +124,8 @@ inverse_volume, dx, subdomain, file_name):
 def homogenize_stressTensor(field, constitutive_model, stress_name,
 stress_method, homogenized_tensorList, time, inverse_volume, dx, 
 homogenization_subdomain, file_name, physical_groupsList, 
-physical_groupsNamesToTags, fields_namesDict, required_fieldsNames):
+physical_groupsNamesToTags, fields_namesDict, required_fieldsNames,
+comm):
     
     # Converts the homogenization subdomain to the physical groups tags
 
@@ -286,8 +289,8 @@ physical_groupsNamesToTags, fields_namesDict, required_fieldsNames):
 
     # Saves the homogenized field to a txt file
 
-    file_tools.list_toTxt(homogenized_tensorList, file_name, 
-    add_extension=False)
+    mpi_execute_function(comm, file_tools.list_toTxt, 
+    homogenized_tensorList, file_name, add_extension=False)
 
     return homogenized_tensorList
 
@@ -297,7 +300,7 @@ physical_groupsNamesToTags, fields_namesDict, required_fieldsNames):
 def homogenize_coupleFirstPiola(field, constitutive_model, 
 homogenized_tensorList, time, position_vector, inverse_volume, dx, 
 homogenization_subdomain, file_name, physical_groupsList, 
-physical_groupsNamesToTags, fields_namesDict, required_fieldsNames):
+physical_groupsNamesToTags, fields_namesDict, required_fieldsNames, comm):
     
     # Converts the homogenization subdomain to the physical groups tags
 
@@ -483,8 +486,8 @@ physical_groupsNamesToTags, fields_namesDict, required_fieldsNames):
 
     # Saves the homogenized field to a txt file
 
-    file_tools.list_toTxt(homogenized_tensorList, file_name, 
-    add_extension=False)
+    mpi_execute_function(comm, file_tools.list_toTxt, 
+    homogenized_tensorList, file_name, add_extension=False)
 
     return homogenized_tensorList
 

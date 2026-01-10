@@ -112,7 +112,8 @@ class SaveCauchyStressField(PostProcessMethod):
         "file name", "polynomial degree"], [context.mesh_data_class.mesh, 
         context.constitutive_model, context.mesh_data_class.dx, 
         context.physical_groupsList, 
-        context.mesh_data_class.domain_physicalGroupsNameToTag])
+        context.mesh_data_class.domain_physicalGroupsNameToTag,
+        context.mesh_data_class.comm])
 
 # Sets a class for the method to save the couple Cauchy stress field
 
@@ -130,7 +131,9 @@ class SaveCoupleCauchyStressField(PostProcessMethod):
         post_functions.update_coupleCauchyStressSaving, ["directory pa"+
         "th", "file name", "polynomial degree"], [context.mesh_data_class.mesh, 
         context.constitutive_model, context.mesh_data_class.dx, 
-        context.physical_groupsList, context.mesh_data_class.domain_physicalGroupsNameToTag])
+        context.physical_groupsList, 
+        context.mesh_data_class.domain_physicalGroupsNameToTag,
+        context.mesh_data_class.comm])
 
 # Sets a class for the method to save the first Piola-Kirchhoff stress 
 # field
@@ -149,7 +152,9 @@ class SaveFirstPiolaStressField(PostProcessMethod):
         post_functions.update_firstPiolaStressSaving, ["directory path", 
         "file name", "polynomial degree"], [context.mesh_data_class.mesh, 
         context.constitutive_model, context.mesh_data_class.dx, 
-        context.physical_groupsList, context.mesh_data_class.domain_physicalGroupsNameToTag])
+        context.physical_groupsList, 
+        context.mesh_data_class.domain_physicalGroupsNameToTag,
+        context.mesh_data_class.comm])
 
 # Sets a class for the method to save the couple first Piola-Kirchhoff
 # stress field
@@ -168,7 +173,9 @@ class SaveCoupleFirstPiolaStressField(PostProcessMethod):
         post_functions.update_coupleFirstPiolaStressSaving, ["director"+
         "y path", "file name", "polynomial degree"], [context.mesh_data_class.mesh, 
         context.constitutive_model, context.mesh_data_class.dx, 
-        context.physical_groupsList, context.mesh_data_class.domain_physicalGroupsNameToTag])
+        context.physical_groupsList, 
+        context.mesh_data_class.domain_physicalGroupsNameToTag,
+        context.mesh_data_class.comm])
 
 # Sets a class for the method to save the traction field at the referen-
 # tial configuration
@@ -187,8 +194,9 @@ class SaveReferentialTractionField(PostProcessMethod):
         post_functions.update_referentialTractionSaving, ["directory p"+
         "ath", "file name", "polynomial degree"], [context.mesh_data_class.mesh, 
         context.constitutive_model, context.mesh_data_class.ds, 
-        context.physical_groupsList, context.mesh_data_class.domain_physicalGroupsNameToTag,
-        context.mesh_data_class.n])
+        context.physical_groupsList, 
+        context.mesh_data_class.domain_physicalGroupsNameToTag,
+        context.mesh_data_class.n, context.mesh_data_class.comm])
 
 # Sets a class for the method to save the pressure field in a point
 
@@ -208,7 +216,8 @@ class SavePressureAtPoint(PostProcessMethod):
         "plotting", False], ["number of digits for the plots", 4]], [
         context.mesh_data_class.mesh, context.constitutive_model, 
         context.mesh_data_class.dx, context.physical_groupsList, 
-        context.mesh_data_class.domain_physicalGroupsNameToTag])
+        context.mesh_data_class.domain_physicalGroupsNameToTag,
+        context.mesh_data_class.comm])
 
 # Sets a class for the method to save the ratio of the mesh's volume to
 # the reference volume along the iterations
@@ -225,7 +234,8 @@ class SaveMeshVolumeRatioToReferenceVolume(PostProcessMethod):
 
         super().__init__(post_functions.initialize_mesh_volume, 
         post_functions.update_mesh_volume, ["directory path", 
-        "file name"], [context.mesh_data_class.dx])
+        "file name"], [context.mesh_data_class.dx, 
+        context.mesh_data_class.comm])
 
 # Sets a class for the method to homogenize a field
 
@@ -242,7 +252,9 @@ class HomogenizeField(PostProcessMethod):
         super().__init__(post_functions.initialize_fieldHomogenization, 
         post_functions.update_fieldHomogenization, ["directory path", 
         "file name", "subdomain"], [context.mesh_data_class.dx, 
-        context.physical_groupsList, context.mesh_data_class.domain_physicalGroupsNameToTag])
+        context.physical_groupsList, 
+        context.mesh_data_class.domain_physicalGroupsNameToTag,
+        context.mesh_data_class.comm])
 
 # Sets a class for the method to homogenize the gradient of a field
 
@@ -259,7 +271,9 @@ class HomogenizeFieldsGradient(PostProcessMethod):
         super().__init__(post_functions.initialize_gradientFieldHomogenization, 
         post_functions.update_gradientFieldHomogenization, ["directory"+
         " path", "file name", "subdomain"], [context.mesh_data_class.dx, 
-        context.physical_groupsList, context.mesh_data_class.domain_physicalGroupsNameToTag])
+        context.physical_groupsList, 
+        context.mesh_data_class.domain_physicalGroupsNameToTag,
+        context.mesh_data_class.comm])
 
 # Sets a class for the method to homogenize the first Piola-Kirchhoff
 # stress tensor
@@ -278,7 +292,9 @@ class HomogenizeFirstPiola(PostProcessMethod):
         post_functions.update_firstPiolaHomogenization, ["directory pa"+
         "th", "file name", "subdomain"], [context.mesh_data_class.dx, 
         context.physical_groupsList, 
-        context.mesh_data_class.domain_physicalGroupsNameToTag, context.constitutive_model])
+        context.mesh_data_class.domain_physicalGroupsNameToTag, 
+        context.constitutive_model,
+        context.mesh_data_class.comm])
 
 # Sets a class for the method to homogenize the couple first Piola-
 # Kirchhoff stress tensor
@@ -297,8 +313,9 @@ class HomogenizeCoupleFirstPiola(PostProcessMethod):
         post_functions.update_coupleFirstPiolaHomogenization, ["direct"+
         "ory path", "file name", "subdomain"], [context.mesh_data_class.dx, 
         context.physical_groupsList, 
-        context.mesh_data_class.domain_physicalGroupsNameToTag, context.constitutive_model,
-        context.mesh_data_class.x])
+        context.mesh_data_class.domain_physicalGroupsNameToTag, 
+        context.constitutive_model, context.mesh_data_class.x,
+        context.mesh_data_class.comm])
 
 # Sets a class for the method to homogenize the Cauchy stress tensor
 
@@ -316,7 +333,8 @@ class HomogenizeCauchy(PostProcessMethod):
         post_functions.update_cauchyHomogenization, ["directory path",
         "file name", "subdomain"], [context.mesh_data_class.dx, 
         context.physical_groupsList, 
-        context.mesh_data_class.domain_physicalGroupsNameToTag, context.constitutive_model])
+        context.mesh_data_class.domain_physicalGroupsNameToTag, 
+        context.constitutive_model, context.mesh_data_class.comm])
 
 # Sets a class for the method to homogenize the couple Cauchy stress
 
@@ -334,7 +352,8 @@ class HomogenizeCoupleCauchy(PostProcessMethod):
         post_functions.update_coupleCauchyHomogenization, ["directory "+
         "path", "file name", "subdomain"], [context.mesh_data_class.dx, 
         context.physical_groupsList, 
-        context.mesh_data_class.domain_physicalGroupsNameToTag, context.constitutive_model])
+        context.mesh_data_class.domain_physicalGroupsNameToTag, 
+        context.constitutive_model, context.mesh_data_class.comm])
 
 # Sets a class for the method to get the first elasticity tensor (dP/dF)
 
@@ -351,10 +370,11 @@ class FirstElasticityTensorAtPoint(PostProcessMethod):
         super().__init__(post_functions.initialize_firstElasticityTensor, 
         post_functions.update_firstElasticityTensor, ["directory path", 
         "file name", "polynomial degree", "point coordinates", "flag p"+
-        "lotting", "voigt notation", "plotting arguments"], [context.mesh_data_class.mesh, 
-        context.constitutive_model, 
+        "lotting", "voigt notation", "plotting arguments"], [
+        context.mesh_data_class.mesh, context.constitutive_model, 
         context.mesh_data_class.dx, context.physical_groupsList, 
-        context.mesh_data_class.domain_physicalGroupsNameToTag])
+        context.mesh_data_class.domain_physicalGroupsNameToTag,
+        context.mesh_data_class.comm])
 
 # Sets a class for the method to get the second elasticity tensor (dS/dC)
 
@@ -371,10 +391,11 @@ class SecondElasticityTensorAtPoint(PostProcessMethod):
         super().__init__(post_functions.initialize_secondElasticityTensor, 
         post_functions.update_secondElasticityTensor, ["directory path", 
         "file name", "polynomial degree", "point coordinates", "flag p"+
-        "lotting", "voigt notation", "plotting arguments"], [context.mesh_data_class.mesh, 
-        context.constitutive_model, 
+        "lotting", "voigt notation", "plotting arguments"], [
+        context.mesh_data_class.mesh, context.constitutive_model, 
         context.mesh_data_class.dx, context.physical_groupsList, 
-        context.mesh_data_class.domain_physicalGroupsNameToTag])
+        context.mesh_data_class.domain_physicalGroupsNameToTag,
+        context.mesh_data_class.comm])
 
 # Sets a class for the method to get the third elasticity tensor 
 # (dsigma/db)
@@ -392,7 +413,8 @@ class ThirdElasticityTensorAtPoint(PostProcessMethod):
         super().__init__(post_functions.initialize_thirdElasticityTensor, 
         post_functions.update_thirdElasticityTensor, ["directory path", 
         "file name", "polynomial degree", "point coordinates", "flag p"+
-        "lotting", "voigt notation", "plotting arguments"], [context.mesh_data_class.mesh, 
-        context.constitutive_model, context.mesh_data_class.dx, 
-        context.physical_groupsList, 
-        context.mesh_data_class.domain_physicalGroupsNameToTag])
+        "lotting", "voigt notation", "plotting arguments"], [
+        context.mesh_data_class.mesh, context.constitutive_model, 
+        context.mesh_data_class.dx, context.physical_groupsList, 
+        context.mesh_data_class.domain_physicalGroupsNameToTag,
+        context.mesh_data_class.comm])
