@@ -183,7 +183,7 @@ fields_namesDict):
         output_object.solution_steps)+".xdmf"
 
         current_result = mpi_xdmf_file(output_object.comm_object, 
-        file_name)
+        file_name, add_termination=True)
 
         # If the problem has a single field
 
@@ -207,7 +207,8 @@ fields_namesDict):
                 code_given_mesh_data_class=output_object.mesh_data_class,
                 field_type=output_object.field_type, interpolation_function=
                 output_object.interpolation_function, polynomial_degree=
-                output_object.polynomial_degree)
+                output_object.polynomial_degree, comm_object=
+                output_object.comm_object)
 
                 # Separates the readable file off the visualization copy
                 # file, if there is any
@@ -255,7 +256,8 @@ fields_namesDict):
                 code_given_mesh_data_class=output_object.mesh_data_class,
                 field_type=output_object.field_type, interpolation_function=
                 output_object.interpolation_function, polynomial_degree=
-                output_object.polynomial_degree)
+                output_object.polynomial_degree, comm_object=
+                output_object.comm_object)
 
                 # Separates the readable file off the visualization copy
                 # file, if there is any
@@ -309,7 +311,8 @@ fields_namesDict):
                 code_given_mesh_data_class=output_object.mesh_data_class,
                 field_type=output_object.field_type, interpolation_function=
                 output_object.interpolation_function, polynomial_degree=
-                output_object.polynomial_degree)
+                output_object.polynomial_degree, comm_object=
+                output_object.comm_object)
 
                 # Separates the readable file off the visualization copy
                 # file, if there is any
@@ -353,7 +356,8 @@ fields_namesDict):
                 code_given_mesh_data_class=output_object.mesh_data_class,
                 field_type=output_object.field_type, interpolation_function=
                 output_object.interpolation_function, polynomial_degree=
-                output_object.polynomial_degree)
+                output_object.polynomial_degree, comm_object=
+                output_object.comm_object)
 
                 # Separates the readable file off the visualization copy
                 # file, if there is any
@@ -419,6 +423,11 @@ def initialize_cauchyStressSaving(data, direct_codeData, submesh_flag):
     else:
 
         W = TensorFunctionSpace(mesh, "CG", polynomial_degree)
+        
+    # Takes out the termination of the file name
+
+    file_name = path_tools.take_outFileNameTermination(
+    file_name)
 
     # Gets the name of the file with the path to it
 
@@ -426,7 +435,7 @@ def initialize_cauchyStressSaving(data, direct_codeData, submesh_flag):
 
     # Initializes the file
 
-    file = mpi_xdmf_file(comm_object, file_name)
+    file = mpi_xdmf_file(comm_object, file_name, add_termination=True)
 
     # Assembles the file and the function space into a class. This post-
     # process does have a variable that can be shared with a submesh, 
@@ -527,6 +536,11 @@ submesh_flag):
     else:
 
         W = TensorFunctionSpace(mesh, "CG", polynomial_degree)
+        
+    # Takes out the termination of the file name
+
+    file_name = path_tools.take_outFileNameTermination(
+    file_name)
 
     # Gets the name of the file with the path to it
 
@@ -534,7 +548,7 @@ submesh_flag):
 
     # Initializes the file
 
-    file = mpi_xdmf_file(comm_object, file_name)
+    file = mpi_xdmf_file(comm_object, file_name, add_termination=True)
 
     # Assembles the file and the function space into a class. This post-
     # process does have a variable that can be shared with a submesh, 
@@ -636,6 +650,11 @@ submesh_flag):
     else:
 
         W = TensorFunctionSpace(mesh, "CG", polynomial_degree)
+        
+    # Takes out the termination of the file name
+
+    file_name = path_tools.take_outFileNameTermination(
+    file_name)
 
     # Gets the name of the file with the path to it
 
@@ -643,7 +662,7 @@ submesh_flag):
 
     # Initializes the file
 
-    file = mpi_xdmf_file(comm_object, file_name)
+    file = mpi_xdmf_file(comm_object, file_name, add_termination=True)
 
     # Assembles the file and the function space into a class. This post-
     # process does have a variable that can be shared with a submesh, 
@@ -746,6 +765,11 @@ submesh_flag):
     else:
 
         W = TensorFunctionSpace(mesh, "CG", polynomial_degree)
+        
+    # Takes out the termination of the file name
+
+    file_name = path_tools.take_outFileNameTermination(
+    file_name)
 
     # Gets the name of the file with the path to it
 
@@ -753,7 +777,7 @@ submesh_flag):
 
     # Initializes the file
 
-    file = mpi_xdmf_file(comm_object, file_name)
+    file = mpi_xdmf_file(comm_object, file_name, add_termination=True)
 
     # Assembles the file and the function space into a class. This post-
     # process does have a variable that can be shared with a submesh, 
@@ -858,6 +882,11 @@ def initialize_tractionSaving(data, direct_codeData, submesh_flag):
     else:
 
         W = VectorFunctionSpace(mesh, "CG", polynomial_degree)
+        
+    # Takes out the termination of the file name
+
+    file_name = path_tools.take_outFileNameTermination(
+    file_name)
 
     # Gets the name of the file with the path to it
 
@@ -865,7 +894,7 @@ def initialize_tractionSaving(data, direct_codeData, submesh_flag):
 
     # Initializes the file
 
-    file = mpi_xdmf_file(comm_object, file_name)
+    file = mpi_xdmf_file(comm_object, file_name, add_termination=True)
 
     # Assembles the file and the function space into a class. This post-
     # process does have a variable that can be shared with a submesh, 
@@ -1282,6 +1311,11 @@ def initialize_fieldHomogenization(data, direct_codeData, submesh_flag):
     # Initializes the homogenized field list
 
     homogenized_fieldList = []
+        
+    # Takes out the termination of the file name
+
+    file_name = path_tools.take_outFileNameTermination(
+    file_name)
 
     # Gets the name of the file with the path to it
 
@@ -1481,6 +1515,11 @@ submesh_flag):
     # Initializes the homogenized field list
 
     homogenized_firstPiolaList = []
+        
+    # Takes out the termination of the file name
+
+    file_name = path_tools.take_outFileNameTermination(
+    file_name)
 
     # Gets the name of the file with the path to it
 
@@ -1635,6 +1674,11 @@ submesh_flag):
     # Initializes the homogenized field list
 
     homogenized_firstPiolaList = []
+        
+    # Takes out the termination of the file name
+
+    file_name = path_tools.take_outFileNameTermination(
+    file_name)
 
     # Gets the name of the file with the path to it
 
@@ -1796,6 +1840,11 @@ def initialize_cauchyHomogenization(data, direct_codeData, submesh_flag):
     # Initializes the homogenized field list
 
     homogenized_cauchyList = []
+        
+    # Takes out the termination of the file name
+
+    file_name = path_tools.take_outFileNameTermination(
+    file_name)
 
     # Gets the name of the file with the path to it
 

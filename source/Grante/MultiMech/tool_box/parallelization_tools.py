@@ -37,7 +37,7 @@ def mpi_barrier(comm):
 
 def mpi_print(comm, *args, **kwargs):
 
-    if comm is None or (MPI.rank(comm)==0):
+    if (comm is None) or (MPI.rank(comm)==0):
 
         print(*args, **kwargs, flush=True)
 
@@ -48,7 +48,13 @@ def mpi_print(comm, *args, **kwargs):
 # Defines a function to create a xdmf file with or without the communi-
 # cator object
 
-def mpi_xdmf_file(comm, filename):
+def mpi_xdmf_file(comm, filename, add_termination=False):
+
+    # Adds the termination
+
+    if add_termination:
+
+        filename += ".xdmf"
 
     if comm is None:
 

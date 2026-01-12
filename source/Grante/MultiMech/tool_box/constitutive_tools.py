@@ -590,7 +590,7 @@ stress_solutionPlotNames, stress_name, stress_method, fields_namesDict):
         stress_method, "The constitutive model\n"+str(
         output_object.constitutive_model)+"\ndoes not have the attribu"+
         "te '"+str(stress_method)+"', thus the stress field cannot be "+
-        "updated")(field), stress_name)
+        "updated")(retrieved_fields), stress_name)
 
         # Projects the stress into a function
 
