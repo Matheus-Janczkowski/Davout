@@ -110,3 +110,8 @@ write_field_to_xdmf(functional_data_class, directory_path=
 get_parent_path_of_file(), visualization_copy=True, field_type="scalar",
 interpolation_function="CG", polynomial_degree=1, explicit_file_name=
 get_parent_path_of_file()+"//E_with_volume_1_dofs")
+
+# Prints on the screen the values of the requisite DOFs from the vector 
+# of parameters
+
+print(E_field.vector()[DOFs_volume_1])
