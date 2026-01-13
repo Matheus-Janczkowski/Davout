@@ -548,7 +548,8 @@ None):
 
 def read_field_from_xdmf(field_file, mesh_file, function_space_info,
 directory_path=None, code_given_field_name=None, comm_object=None,
-code_given_mesh_data_class=None, time_step=0, rename_function=True):
+code_given_mesh_data_class=None, time_step=0, rename_function=True,
+return_functional_data_class=False):
     
     # If the directory path is given, joins them
 
@@ -756,7 +757,15 @@ code_given_mesh_data_class=None, time_step=0, rename_function=True):
         "se now is, '"+str(field_name)+"', and it may not be the same "+
         "as the one used when the function was saved.\n\nThe original "+
         "error message is: "+str(e))
+    
+    # If the functional data class is to be spit out too
+
+    if return_functional_data_class:
+
+        return function_space_info.monolithic_solution, function_space_info
 
     # Returns the function
 
-    return function_space_info.monolithic_solution
+    else:
+
+        return function_space_info.monolithic_solution
