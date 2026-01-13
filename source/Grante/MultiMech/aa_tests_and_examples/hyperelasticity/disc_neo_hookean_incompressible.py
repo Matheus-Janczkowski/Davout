@@ -25,16 +25,18 @@ results_path = get_parent_path_of_file()
 
 post_processes = [["Displacement", dict()], ["Pressure", dict()]]
 
-post_processes[0][1]["SaveField"] = {"directory path": results_path, 
-"file name": "displacement.xdmf", "readable xdmf file": False, "visuali"+
-"zation copy for readable xdmf": False}
+n_process = 3
 
-post_processes[0][1]["SaveMeshVolumeRatioToReferenceVolume"] = {"director"+
-"y path": results_path, "file name": "volume_ratio.txt"}
+post_processes[0][1]["SaveField"] = {"directory path": results_path, 
+"file name": "displacement_"+str(n_process)+".xdmf", "readable xdmf fi"+
+"le": False, "visualization copy for readable xdmf": False}
+
+post_processes[0][1]["SaveMeshVolumeRatioToReferenceVolume"] = {"direc"+
+"tory path": results_path, "file name": "volume_ratio.txt"}
 
 post_processes[1][1]["SaveField"] = {"directory path": results_path, 
-"file name": "pressure.xdmf", "visualization copy for readable xdmf": 
-False}
+"file name": "pressure_"+str(n_process)+".xdmf", "visualization copy f"+
+"or readable xdmf": False}
 
 ########################################################################
 #                         Material properties                          #
