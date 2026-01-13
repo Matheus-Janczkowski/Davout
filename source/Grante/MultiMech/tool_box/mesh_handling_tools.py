@@ -1071,6 +1071,163 @@ node_number, node_coordinates, set_ofNodes=None):
 
         return node_number, node_coordinates
     
+# Defines a function to find a set of degrees of freedom (DOFs) in a re-
+# gion of the domain. A physical group can be given or a function that
+# returns True or False for the coordinates
+
+def find_dofs_in_volume(mesh_data_class, functional_data_class,
+physical_group_name=None, region_function=None, field_name=None):
+
+    # Gets the map of DOFs
+
+    monolithic_dofmap = None 
+
+    # Verifies if a field name is asked
+
+    if field_name is not None:
+
+        # Verifies if this field name belongs to the dictionary of fields
+        # names
+
+        if not (field_name in functional_data_class.fields_names_dict):
+
+            raise ValueError("The field '"+str(field_name)+"' does not"+
+            " belong to the dictionary of fields of this problem. See "+
+            "the available fields:\n"+str(list(
+            functional_data_class.fields_names_dict.keys())))
+        
+        # Verifies if this problem has more than one field
+
+        if len(functional_data_class.fields_names_dict.keys())>1:
+
+            # Gets the map of DOFs for the selected field only
+
+            monolithic_dofmap = functional_data_class.monolithic_function_space.sub(
+            functional_data_class.fields_names_dict[field_name]).dofmap()
+
+    # If the map of DOFs was not created, the field name was not provided
+    # or the problem has only one field 
+
+    if monolithic_dofmap is None:
+
+        monolithic_dofmap = functional_data_class.monolithic_function_space.dofmap()
+
+    # If a physical group and a region function are given
+
+    if (physical_group_name is not None) and (region_function is not None):
+
+        # Initializes a set of DOFs
+
+        DOFs_set = set()
+
+        # Iterates through the elements of the mesh
+
+        for element in cells(mesh_data_class.mesh):
+
+            # Verifies if this element belongs to this physical group
+
+            if mesh_data_class.domain_meshFunction[element.index()]==(
+            mesh_data_class.domain_physicalGroupsNameToTag[
+            physical_group_name]):
+                
+                # Gets the centroid of this element
+
+                element_centroid = element.midpoint().array()
+
+                # If the centroid is within the region
+
+                if region_function(*element_centroid):
+                
+                    # Updates the DOFs of this element using the map of 
+                    # DOFs
+
+                    DOFs_set.update(monolithic_dofmap.cell_dofs(
+                    element.index()))
+
+        # Sorts the list of DOFs
+
+        DOFs_set = sorted(DOFs_set)
+
+        # Returns the map of DOFs as a list
+
+        return list(DOFs_set)
+
+    # If a physical group is given
+
+    elif physical_group_name is not None:
+
+        # Initializes a set of DOFs
+
+        DOFs_set = set()
+
+        # Iterates through the elements of the mesh
+
+        for element in cells(mesh_data_class.mesh):
+
+            # Verifies if this element belongs to this physical group
+
+            if mesh_data_class.domain_meshFunction[element.index()]==(
+            mesh_data_class.domain_physicalGroupsNameToTag[
+            physical_group_name]):
+                
+                # Updates the DOFs of this element using the map of DOFs
+
+                DOFs_set.update(monolithic_dofmap.cell_dofs(
+                element.index()))
+
+        # Sorts the list of DOFs
+
+        DOFs_set = sorted(DOFs_set)
+
+        # Returns the map of DOFs as a list
+
+        return list(DOFs_set)
+    
+    # If a function to find a region is given
+
+    elif region_function is not None:
+
+        # Initializes a set of DOFs
+
+        DOFs_set = set()
+
+        # Iterates through the elements of the mesh
+
+        for element in cells(mesh_data_class.mesh):
+
+            # Evaluates the centroid of the element
+
+            element_centroid = element.midpoint().array()
+
+            # Verifies if the centroid of the element is in the region
+
+            if region_function(*element_centroid):
+                
+                # Updates the DOFs of this element using the map of DOFs
+
+                DOFs_set.update(monolithic_dofmap.cell_dofs(
+                element.index()))
+
+        # Sorts the list of DOFs
+
+        DOFs_set = sorted(DOFs_set)
+
+        # Returns the map of DOFs as a list
+
+        return list(DOFs_set)
+    
+    # Otherwise throws an error
+
+    else:
+
+        raise TypeError("It is not possible to find the DOFs in a volu"+
+        "me using 'find_dofs_in_volume', because 'physical_group_name'"+
+        " and 'region_function' are None. 'physical_group_name' is mea"+
+        "nt to be the name of a desired physical group; whereas 'regio"+
+        "n_function' is a function that receives the x, y, and z coord"+
+        "inates of a point and spits out True or False, according to i"+
+        "f the point is in a volumetric region or not")
+    
 # Defines a function to create a list of nodes indexes that lie on a
 # surface
 
