@@ -1341,7 +1341,7 @@ submesh_flag):
 
         def __init__(self, file_name, mesh_data_class, 
         constitutive_model, forces_moments_list, new_ds, 
-        new_boundary_phyical_groups_dict, surface_physical_group,
+        new_boundary_physical_groups_dict, surface_physical_group,
         surface_position_vector):
 
             # Saves the comm object
@@ -1358,7 +1358,7 @@ submesh_flag):
 
             self.new_ds = new_ds
 
-            self.new_boundary_phyical_groups_dict = new_boundary_phyical_groups_dict
+            self.new_boundary_physical_groups_dict = new_boundary_physical_groups_dict
 
             self.surface_physical_group = surface_physical_group
 
@@ -1449,7 +1449,7 @@ time, fields_namesDict):
 
     # Gets the volumetric physical groups attached to the surface
 
-    physical_groups_attached = output_object.new_boundary_phyical_groups_dict[
+    physical_groups_attached = output_object.new_boundary_physical_groups_dict[
     output_object.surface_physical_group]
     
     # Verifies if the constitutive model is a dictionary
@@ -1508,9 +1508,10 @@ time, fields_namesDict):
                         # Gets the resulting moment
 
                         surface_moment = cross(
-                        output_object.surface_position_vector, 
+                        output_object.surface_position_vector, (
                         local_constitutive_model.first_piolaStress(
-                        u_field)*output_object.mesh_data_class.n)
+                        u_field)+pressure_correction)*
+                        output_object.mesh_data_class.n)
 
                         # Assembles the three components
 
@@ -1569,9 +1570,10 @@ time, fields_namesDict):
                     # Gets the resulting moment
 
                     surface_moment = cross(
-                    output_object.surface_position_vector, 
+                    output_object.surface_position_vector, (
                     local_constitutive_model.first_piolaStress(
-                    u_field)*output_object.mesh_data_class.n)
+                    u_field)+pressure_correction)
+                    *output_object.mesh_data_class.n)
 
                     # Assembles the three components
 
@@ -1596,6 +1598,12 @@ time, fields_namesDict):
         surface_force = ((output_object.constitutive_model.first_piolaStress(
         u_field)+pressure_correction)*output_object.mesh_data_class.n)
 
+        # Gets the resulting moment
+
+        surface_moment = cross(output_object.surface_position_vector, (
+        output_object.constitutive_model.first_piolaStress(u_field)+
+        pressure_correction)*output_object.mesh_data_class.n)
+
         # Iterates through the physical groups attached to this surface
 
         for integration_tag in physical_groups_attached.values():
@@ -1611,21 +1619,15 @@ time, fields_namesDict):
             forces[2] += assemble(surface_force[2]*output_object.new_ds(
             integration_tag))
 
-            # Gets the resulting moment
-
-            surface_moment = cross(output_object.surface_position_vector, 
-            output_object.constitutive_model.first_piolaStress(u_field)*
-            output_object.mesh_data_class.n)
-
             # Assembles the three components
 
             moments[0] += assemble(surface_moment[0]*output_object.new_ds(
             integration_tag))
 
-            moments[1] += assemble(surface_moment[0]*output_object.new_ds(
+            moments[1] += assemble(surface_moment[1]*output_object.new_ds(
             integration_tag))
 
-            moments[2] += assemble(surface_moment[0]*output_object.new_ds(
+            moments[2] += assemble(surface_moment[2]*output_object.new_ds(
             integration_tag))
 
     # Appends this result to the output class
