@@ -782,6 +782,12 @@ stress_method, fields_namesDict):
 
     if isinstance(output_object.constitutive_model, dict):
 
+        raise NotImplementedError("Saving the referential traction for"+
+        " constitutive models as dictionaries has not been implemented"+
+        " yet. Use function 'break_boundary_physical_groups' from mesh"+
+        "_handling_tools to separate boundary physical groups that enc"+
+        "ompass multiple volumetric physical groups")
+
         # Initializes a list of pairs of constitutive models and inte-
         # gration domain
 

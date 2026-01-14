@@ -254,6 +254,23 @@ class SaveStrainEnergy(PostProcessMethod):
         "file name"], [context.mesh_data_class, 
         context.constitutive_model])
 
+# Sets a class for the method to save forces and moments on a surface
+
+class SaveForcesAndMomentsOnSurface(PostProcessMethod):
+
+    def __init__(self, context: PostProcessContext):
+
+        # Initializes the parent template class and already passes to it
+        # the initialization function, the update function, the additio-
+        # nal data names, and the code-provided information. The additi-
+        # onal data names as lists are optional arguments, the first va-
+        # lue is the name, and the second one is the default value
+
+        super().__init__(post_functions.initialize_forces_moments_on_surface, 
+        post_functions.update_forces_moments_on_surface, ["directory p"+
+        "ath", "file name", "surface physical group name"], [
+        context.mesh_data_class, context.constitutive_model])
+
 # Sets a class for the method to homogenize a field
 
 class HomogenizeField(PostProcessMethod):

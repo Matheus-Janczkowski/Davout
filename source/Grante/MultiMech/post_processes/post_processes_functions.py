@@ -1275,6 +1275,343 @@ fields_namesDict):
     
     return output_object
 
+# Defines a function to initialize the file to store forces and moments 
+# on a surface
+
+def initialize_forces_moments_on_surface(data, direct_codeData, 
+submesh_flag):
+
+    # Gets the directory and the name of the file
+
+    parent_path = data[0]
+
+    file_name = data[1]
+
+    surface_physical_group = data[2]
+
+    # Gets the mesh data class and the constitutive model
+
+    mesh_data_class = direct_codeData[0]
+
+    constitutive_model = direct_codeData[1]
+        
+    # Takes out the termination of the file name
+
+    file_name = path_tools.take_outFileNameTermination(
+    file_name)
+
+    # Gets the name of the file with the path to it
+
+    file_name = path_tools.verify_path(parent_path, file_name)
+
+    # Initializes the list of values of the forces and moments in the 
+    # following order: fx, fy, fz, mx, my, mz
+
+    forces_moments_list = []
+
+    # As a boundary physical group can encompass multiple volumetric 
+    # physical groups, a new mesh function must be created to break the-
+    # se physical groups down. A new ds measure must also be created
+
+    new_boundary_mesh_function, new_boundary_dict = mesh_tools.break_boundary_physical_groups(
+    mesh_data_class)
+
+    # Creates the new ds measure
+
+    new_ds = Measure("ds", domain=mesh_data_class.mesh, subdomain_data=
+    new_boundary_mesh_function)
+
+    # Calculates the centroid of the surface
+
+    surface_centroid, area_inverse = mesh_tools.evaluate_centroidSurface(
+    surface_physical_group, mesh_data_class)
+
+    # Transforms the centroid into a constant
+
+    surface_centroid = Constant(surface_centroid)
+
+    # Gets the surface position vector by translating the mesh position
+    # vector by the surface centroid
+
+    surface_position_vector = mesh_data_class.x-surface_centroid
+
+    # Assembles the file and the function space into a class
+
+    class OutputObject:
+
+        def __init__(self, file_name, mesh_data_class, 
+        constitutive_model, forces_moments_list, new_ds, 
+        new_boundary_phyical_groups_dict, surface_physical_group,
+        surface_position_vector):
+
+            # Saves the comm object
+
+            self.comm_object = mesh_data_class.comm
+
+            self.mesh_data_class = mesh_data_class
+
+            self.file_name = file_name
+
+            self.result = forces_moments_list
+
+            self.constitutive_model = constitutive_model
+
+            self.new_ds = new_ds
+
+            self.new_boundary_phyical_groups_dict = new_boundary_phyical_groups_dict
+
+            self.surface_physical_group = surface_physical_group
+
+            self.surface_position_vector = surface_position_vector
+
+    output_object = OutputObject(file_name, mesh_data_class, 
+    constitutive_model, forces_moments_list, new_ds, new_boundary_dict,
+    surface_physical_group, surface_position_vector)
+
+    return output_object
+
+# Defines a function to update the forces and moments on a surface
+
+def update_forces_moments_on_surface(output_object, field, field_number, 
+time, fields_namesDict):
+    
+    # Verifies if the field is the displacement field. Uses the max 
+    # function since in single field simulations, the field number is -1
+
+    field_name = get_first_key_from_value(fields_namesDict, max(
+    field_number, 0))
+
+    if field_name!="Displacement":
+
+        message = "Field name <-> Field number"
+
+        for key, value in fields_namesDict.items():
+
+            message += "\n"+str(key)+" <-> "+str(value)
+
+        raise NameError("The field name is '"+str(field_name)+"', but "+
+        "the field required to evaluate the 'SaveForcesMomentsOnSurfac"+
+        "e' post-process must be 'Displacement'. The dictionary of fie"+
+        "lds names has the following keys:\n"+message+"\n\nThe asked n"+
+        "umber was "+str(field_number))
+    
+    mpi_print(output_object.comm_object, "Updates the saving of the fo"+
+    "rces and moments on the surface'"+str(
+    output_object.surface_physical_group)+"\n")
+
+    # If there is a single field, field number will be -1
+
+    u_field = None
+
+    if field_number==-1:
+
+        u_field = field
+
+    else:
+
+        u_field = field[field_number]
+
+    # Initializes the forces and moments components
+
+    forces = []
+
+    moments = []
+
+    # Gets the volumetric physical groups attached to the surface
+
+    physical_groups_attached = output_object.new_boundary_phyical_groups_dict[
+    output_object.surface_physical_group]
+    
+    # Verifies if the constitutive model is a dictionary
+
+    if isinstance(output_object.constitutive_model, dict):
+        
+        # Iterates through the physical groups
+
+        for physical_group, local_constitutive_model in (
+        output_object.constitutive_model.items()):
+            
+            # If the physical group is a tuple
+
+            if isinstance(physical_group, tuple):
+
+                # Iterates through it
+
+                for local_physical_group in physical_group:
+
+                    # Verifies if this physical group is a true physical
+                    # group
+
+                    if not (local_physical_group in (
+                    output_object.mesh_data_class.domain_physicalGroupsNameToTag)):
+                        
+                        raise ValueError("The phyical group '"+str(
+                        local_physical_group)+"' is not a proper physi"+
+                        "cal group in the mesh. It was given at the di"+
+                        "ctionary of constitutive models. Check the pr"+
+                        "oper physical groups names:\n"+str(list(
+                        output_object.mesh_data_class.domain_physicalGroupsNameToTag.keys())))
+                    
+                    # Verifies if this group is attached to the surface
+
+                    if local_physical_group in physical_groups_attached:
+
+                        # Gets the resulting force
+
+                        surface_force = local_constitutive_model.first_piolaStress(
+                        u_field)*output_object.mesh_data_class.n
+
+                        # Assembles the three components
+
+                        forces[0] += assemble(surface_force[0]*
+                        output_object.new_ds(physical_groups_attached[
+                        local_physical_group]))
+
+                        forces[1] += assemble(surface_force[1]*
+                        output_object.new_ds(physical_groups_attached[
+                        local_physical_group]))
+
+                        forces[2] += assemble(surface_force[2]*
+                        output_object.new_ds(physical_groups_attached[
+                        local_physical_group]))
+
+                        # Gets the resulting moment
+
+                        surface_moment = cross(
+                        output_object.surface_position_vector, 
+                        local_constitutive_model.first_piolaStress(
+                        u_field)*output_object.mesh_data_class.n)
+
+                        # Assembles the three components
+
+                        moments[0] += assemble(surface_moment[0]*
+                        output_object.new_ds(physical_groups_attached[
+                        local_physical_group]))
+
+                        moments[1] += assemble(surface_moment[1]*
+                        output_object.new_ds(physical_groups_attached[
+                        local_physical_group]))
+
+                        moments[2] += assemble(surface_moment[2]*
+                        output_object.new_ds(physical_groups_attached[
+                        local_physical_group]))
+
+            # Otherwise
+
+            else:
+
+                # Verifies if this physical group is a true physical
+                # group
+
+                if not (physical_group in (
+                output_object.mesh_data_class.domain_physicalGroupsNameToTag)):
+                    
+                    raise ValueError("The phyical group '"+str(
+                    physical_group)+"' is not a proper physical group "+
+                    "in the mesh. It was given at the dictionary of co"+
+                    "nstitutive models. Check the proper physical grou"+
+                    "ps names:\n"+str(list(
+                    output_object.mesh_data_class.domain_physicalGroupsNameToTag.keys())))
+
+                # Verifies if this group is attached to the surface
+
+                if physical_group in physical_groups_attached:
+
+                    # Gets the resulting force
+
+                    surface_force = local_constitutive_model.first_piolaStress(
+                    u_field)*output_object.mesh_data_class.n
+
+                    # Assembles the three components
+
+                    forces[0] += assemble(surface_force[0]*
+                    output_object.new_ds(physical_groups_attached[
+                    physical_group]))
+
+                    forces[1] += assemble(surface_force[1]*
+                    output_object.new_ds(physical_groups_attached[
+                    physical_group]))
+
+                    forces[2] += assemble(surface_force[2]*
+                    output_object.new_ds(physical_groups_attached[
+                    physical_group]))
+
+                    # Gets the resulting moment
+
+                    surface_moment = cross(
+                    output_object.surface_position_vector, 
+                    local_constitutive_model.first_piolaStress(
+                    u_field)*output_object.mesh_data_class.n)
+
+                    # Assembles the three components
+
+                    moments[0] += assemble(surface_moment[0]*
+                    output_object.new_ds(physical_groups_attached[
+                    physical_group]))
+
+                    moments[1] += assemble(surface_moment[1]*
+                    output_object.new_ds(physical_groups_attached[
+                    physical_group]))
+
+                    moments[2] += assemble(surface_moment[2]*
+                    output_object.new_ds(physical_groups_attached[
+                    physical_group]))
+
+    # Otherwise, computes for the whole mesh at once
+
+    else:
+
+        # Gets the resulting force
+
+        surface_force = output_object.constitutive_model.first_piolaStress(
+        u_field)*output_object.mesh_data_class.n
+
+        # Gets the tag for the integration measure for this physical 
+        # group
+
+        integration_tag = physical_groups_attached.values()[0]
+
+        # Assembles the three components
+
+        forces[0] += assemble(surface_force[0]*output_object.new_ds(
+        integration_tag))
+
+        forces[1] += assemble(surface_force[1]*output_object.new_ds(
+        integration_tag))
+
+        forces[2] += assemble(surface_force[2]*output_object.new_ds(
+        integration_tag))
+
+        # Gets the resulting moment
+
+        surface_moment = cross(output_object.surface_position_vector, 
+        output_object.constitutive_model.first_piolaStress(u_field)*
+        output_object.mesh_data_class.n)
+
+        # Assembles the three components
+
+        moments[0] += assemble(surface_moment[0]*output_object.new_ds(
+        integration_tag))
+
+        moments[1] += assemble(surface_moment[0]*output_object.new_ds(
+        integration_tag))
+
+        moments[2] += assemble(surface_moment[0]*output_object.new_ds(
+        integration_tag))
+
+    # Appends this result to the output class
+
+    output_object.result.append([time, [forces[0], forces[1], forces[2],
+    moments[0], moments[1], moments[2]]])
+
+    # Saves the list of volume ratios in a txt file
+
+    mpi_execute_function(output_object.comm_object, 
+    file_tools.list_toTxt, output_object.result, output_object.file_name, 
+    add_extension=True)
+    
+    return output_object
+
 ########################################################################
 ########################################################################
 ##                          Mesh properties                           ##

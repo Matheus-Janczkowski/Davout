@@ -109,3 +109,9 @@ def delete_dictionary_keys(dictionary, keys):
         dictionary.pop(keys, None)
 
     return dictionary
+
+# Defines a function to sort a dictionary using its values
+
+def sort_dictionary_by_values(dictionary):
+
+    return dict(sorted(dictionary.items(), key=lambda item: item[1]))

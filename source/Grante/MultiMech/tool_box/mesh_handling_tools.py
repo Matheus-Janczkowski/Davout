@@ -12,6 +12,8 @@ from scipy.spatial import KDTree
 
 from ...PythonicUtilities import programming_tools
 
+from ...PythonicUtilities.dictionary_tools import sort_dictionary_by_values, get_first_key_from_value
+
 from ...CuboidGmsh.tool_box import meshing_tools as tools_gmsh
 
 from ...CuboidGmsh.solids import cuboid_prisms as prism_gmsh
@@ -1684,6 +1686,112 @@ def convert_physicalGroup(physical_group, mesh_dataClass, region):
         "umerical counterpart")
 
     return physical_group, original_physicalGroup
+
+########################################################################
+#                             Surface tools                            #
+########################################################################
+
+# Defines a function to create a new boundary mesh function breaking
+# boundary physical groups that envelop multiple volumetric physical
+# groups
+
+def break_boundary_physical_groups(mesh_data_class): 
+
+    # Retrieves some properties of the mesh data class
+
+    mesh_object = mesh_data_class.mesh 
+
+    boundary_dictionary = mesh_data_class.boundary_physicalGroupsNameToTag
+
+    domain_dictionary = mesh_data_class.domain_physicalGroupsNameToTag
+
+    domain_mesh_function = mesh_data_class.domain_meshFunction
+
+    original_boundary_mesh_function = mesh_data_class.boundary_meshFunction
+
+    # Creates a new boundary mesh function, and set all indices as zero
+
+    boundary_mesh_function = MeshFunction("size_t", mesh_object, 
+    mesh_object.topology().dim()-1)
+
+    boundary_mesh_function.set_all(0)
+
+    # Gets the initial number of boundary physical groups
+
+    new_boundary_number = 0
+
+    # Initializes a new dictionary of boundary physical groups
+
+    new_boundary_dict = dict()
+
+    # Sorts the dictionary of boundary physical groups by its values
+
+    boundary_dictionary = sort_dictionary_by_values(boundary_dictionary)
+
+    # Iterates through the original boundary physical groups
+
+    for boundary_physical_group, boundary_tag in boundary_dictionary.items():
+
+        # Adds the key and a corresponding value as another dictionary. 
+        # The keys of the second dictionary represent the volumetric phy-
+        # sical groups attached to this original boundary physical group.
+        # Whereas the values represent the new boundayr physical groups
+        # enumeration
+
+        new_boundary_dict[boundary_physical_group] = dict()
+
+        # Iterates through the facet elements
+
+        for facet in facets(mesh_object):
+
+            # Verifies if this facet lies in the boundary
+
+            original_tag = original_boundary_mesh_function[facet.index()]
+
+            # If it is in the current physical group
+
+            if original_tag==boundary_tag:
+
+                # Gets the indices of the elements attached to this facet
+
+                element_indices = facet.entities(mesh_object.topology(
+                ).dim())
+
+                # Retrieves the physical group tag of the attached volu-
+                # metric element. Use the 0 index, for there is only a 
+                # single volumetric element attached to a facet
+
+                physical_group_tag = domain_mesh_function[
+                element_indices[0]]
+
+                physical_group = get_first_key_from_value(
+                domain_dictionary, physical_group_tag)
+
+                # Verifies if this physical group is already registered
+                # in the dictionary of volumetric physical groups atta-
+                # ched to this boundary physical group. If not, updates
+                # the dictionary and the counter of new boundary physical
+                # groups
+
+                if not (physical_group in new_boundary_dict[
+                boundary_physical_group]):
+
+                    new_boundary_number += 1
+
+                    # Adds this key
+
+                    new_boundary_dict[boundary_physical_group][
+                    physical_group] = new_boundary_number
+                    
+                # Updates the boundary mesh function 
+
+                boundary_mesh_function[facet.index()] = new_boundary_dict[
+                boundary_physical_group][physical_group]
+
+    # Returns the new boundary mesh function and the dictionary of phy-
+    # sical groups
+
+    return boundary_mesh_function, new_boundary_dict
 
 # Defines a function to evaluate the centroid of a surface region given
 # by an integer physical group
