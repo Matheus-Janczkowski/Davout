@@ -1158,13 +1158,13 @@ fields_namesDict):
             message += "\n"+str(key)+" <-> "+str(value)
 
         raise NameError("The field name is '"+str(field_name)+"', but "+
-        "the field required to evaluate the 'SaveMeshVolumeRatioToRefe"+
-        "renceVolume' post-process must be 'Displacement'. The diction"+
-        "ary of fields names has the following keys:\n"+message+"\n\nT"+
-        "he asked number was "+str(field_number))
+        "the field required to evaluate the 'SaveStrainEnergy' post-pr"+
+        "ocess must be 'Displacement'. The dictionary of fields names "+
+        "has the following keys:\n"+message+"\n\nThe asked number was "+
+        str(field_number))
     
-    mpi_print(output_object.comm_object, "Updates the saving of the ra"+
-    "tio of the meshe's volume to the initial volume of the mesh\n")
+    mpi_print(output_object.comm_object, "Updates the saving of the st"+
+    "rain energy over the whole mesh\n")
 
     # Gets the jacobian
 
@@ -1395,8 +1395,8 @@ time, fields_namesDict):
         "lds names has the following keys:\n"+message+"\n\nThe asked n"+
         "umber was "+str(field_number))
     
-    mpi_print(output_object.comm_object, "Updates the saving of the fo"+
-    "rces and moments on the surface'"+str(
+    mpi_print(output_object.mesh_data_class.comm, "Updates the saving "+
+    "of the forces and moments on the surface'"+str(
     output_object.surface_physical_group)+"\n")
 
     # If there is a single field, field number will be -1
@@ -1421,9 +1421,9 @@ time, fields_namesDict):
 
     if "Pressure" in fields_namesDict:
 
-        print("Adds the correction of the pressure to the saving of fo"+
-        "rces and moments on surface "+str(
-        output_object.surface_physical_group)+"\n")
+        mpi_print(output_object.mesh_data_class.comm, "Adds the correc"+
+        "tion of the pressure to the saving of forces and moments on s"+
+        "urface "+str(output_object.surface_physical_group)+"\n")
 
         # Gets the deformation gradient and the jacobian
 
