@@ -27,6 +27,9 @@ post_processes = dict()
 post_processes["SaveField"] = {"directory path":results_path, 
 "file name":displacement_fileName}
 
+post_processes["SaveStrainEnergy"] = {"directory path": results_path, 
+"file name": "strain_energy.txt"}
+
 ########################################################################
 #                         Material properties                          #
 ########################################################################

@@ -26,7 +26,7 @@ mesh_data_class = read_mshMesh({"length x": L, "length y": W, "length "+
 
 # Creates a python function for the field
 
-def E_function(position_vector):
+def E_function(position_vector, t=0.0):
 
     # Gets the coordinates
 
@@ -34,30 +34,75 @@ def E_function(position_vector):
 
     # Returns the value of the Young modulus linearly varying across z
 
-    return (1E6)+((y/W)*3E6)
+    return (1E6)+((y/W)*3E6*t)
+
+########################################################################
+#                                t = 0.0                               #
+########################################################################
 
 # Interpolates this field into a finite element space
 
-E_field, functional_data_class = interpolate_scalar_function(E_function, 
-{"E": {"field type": "scalar", "interpolation function": "CG", "polyno"+
-"mial degree":1}}, name="E", mesh_data_class=mesh_data_class)
+E_field, functional_data_class = interpolate_scalar_function(lambda x:
+E_function(x, t=0.0), {"E": {"field type": "scalar", "interpolation fu"+
+"nction": "CG", "polynomial degree":1}}, name="E", mesh_data_class=
+mesh_data_class)
 
 # Saves this field into a xdmf file
 
-write_field_to_xdmf(functional_data_class, directory_path=
-get_parent_path_of_file(), visualization_copy=True, field_type="scalar",
-interpolation_function="CG", polynomial_degree=1)
+xdmf_file, visualization_copy_file = write_field_to_xdmf(
+functional_data_class, directory_path=get_parent_path_of_file(), 
+visualization_copy=True, field_type="scalar", interpolation_function=
+"CG", polynomial_degree=1, time_step=0, time=0.0, 
+code_given_mesh_data_class=mesh_data_class, close_file=False)
+
+########################################################################
+#                                t = 0.5                               #
+########################################################################
+
+# Interpolates this field into a finite element space
+
+E_field, functional_data_class = interpolate_scalar_function(lambda x:
+E_function(x, t=0.5), {"E": {"field type": "scalar", "interpolation fu"+
+"nction": "CG", "polynomial degree":1}}, name="E", mesh_data_class=
+mesh_data_class)
+
+# Saves this field into a xdmf file
+
+xdmf_file, visualization_copy_file = write_field_to_xdmf(
+functional_data_class, visualization_copy=True, field_type="scalar", 
+interpolation_function="CG", polynomial_degree=1, time_step=1, time=0.5, 
+file=xdmf_file, code_given_mesh_data_class=mesh_data_class, close_file=
+False, visualization_copy_file=visualization_copy_file)
+
+########################################################################
+#                                t = 1.0                               #
+########################################################################
+
+# Interpolates this field into a finite element space
+
+E_field, functional_data_class = interpolate_scalar_function(lambda x:
+E_function(x, t=1.0), {"E": {"field type": "scalar", "interpolation fu"+
+"nction": "CG", "polynomial degree":1}}, name="E", mesh_data_class=
+mesh_data_class)
+
+# Saves this field into a xdmf file
+
+write_field_to_xdmf(functional_data_class, visualization_copy=True, 
+field_type="scalar", interpolation_function="CG", polynomial_degree=1, 
+time_step=2, time=1.0, file=xdmf_file, code_given_mesh_data_class=
+mesh_data_class, close_file=False, visualization_copy_file=
+visualization_copy_file)
+
+########################################################################
+#                          DOFs from physical                          #
+########################################################################
 
 # Reads the Young modulus field
 
 E_field, functional_data_class = read_field_from_xdmf("e.xdmf", "box_m"+
 "esh", {"E":{"field type": "scalar", "interpolation function": "CG", 
 "polynomial degree":1}}, directory_path=get_parent_path_of_file(),
-return_functional_data_class=True)
-
-########################################################################
-#                          DOFs from physical                          #
-########################################################################
+return_functional_data_class=True, time_step=2)
 
 # Gets the domain DOFs related to the physical group 
 
