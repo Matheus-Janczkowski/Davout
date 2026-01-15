@@ -6,7 +6,7 @@ import meshio
 
 import numpy as np
 
-from copy import copy
+from copy import copy, deepcopy
 
 from scipy.spatial import KDTree
 
@@ -77,7 +77,7 @@ class MeshData:
 
 def create_box_mesh(length_x, length_y, length_z, n_divisions_x,
 n_divisions_y, n_divisions_z, verbose=False, file_name="box_mesh",
-file_directory=None, n_subdomains_z=1):
+file_directory=None, n_subdomains_z=1, bias_x=1.0, bias_y=1.0, bias_z=1.0):
     
     # Defines the names of the surface physical groups
 
@@ -134,7 +134,8 @@ file_directory=None, n_subdomains_z=1):
         n_divisions_z], geometric_data=geometric_data, 
         explicit_volume_physical_group_name="volume "+str(i+1), 
         explicit_surface_physical_group_name=
-        explicit_surface_physical_group_name)
+        explicit_surface_physical_group_name, bias_directions={"x": 
+        bias_x, "y": bias_y, "z": bias_z})
 
     tools_gmsh.gmsh_finalize(geometric_data=geometric_data, file_name=
     file_name, verbose=verbose, file_directory=file_directory)
@@ -300,6 +301,26 @@ None, verbose=False, comm_object=None):
             raise KeyError("'file_name' is a dictionary, so a built-in"+
             " mesh is to be used, but no key 'mesh file directory' was"+
             " provided. The keys provided are: "+str(file_name.keys()))
+        
+        # Selects the biases
+
+        bias_x = 1.0
+
+        bias_y = 1.0
+
+        bias_z = 1.0
+
+        if "bias x" in file_name:
+
+            bias_x = file_name["bias x"]
+
+        if "bias y" in file_name:
+
+            bias_y = file_name["bias y"]
+
+        if "bias z" in file_name:
+
+            bias_z = file_name["bias z"]
 
         # Overwrites the file name to the file name dictionary
 
@@ -318,7 +339,8 @@ None, verbose=False, comm_object=None):
         create_box_mesh(length_x, length_y, length_z, 
         n_divisions_x, n_divisions_y, n_divisions_z, verbose=
         verbose_gmsh, file_name=file_name, file_directory=
-        mesh_directory, n_subdomains_z=n_subdomains_z)
+        mesh_directory, n_subdomains_z=n_subdomains_z, bias_x=bias_x,
+        bias_y=bias_y, bias_z=bias_z)
 
         file_name = mesh_directory+"//"+file_name
 
@@ -1695,7 +1717,8 @@ def convert_physicalGroup(physical_group, mesh_dataClass, region):
 # boundary physical groups that envelop multiple volumetric physical
 # groups
 
-def break_boundary_physical_groups(mesh_data_class): 
+def break_boundary_physical_groups(mesh_data_class, insert_domain_tags=
+False): 
 
     # Retrieves some properties of the mesh data class
 
@@ -1761,11 +1784,16 @@ def break_boundary_physical_groups(mesh_data_class):
                 # metric element. Use the 0 index, for there is only a 
                 # single volumetric element attached to a facet
 
-                physical_group_tag = domain_mesh_function[
+                physical_group = domain_mesh_function[
                 element_indices[0]]
 
-                physical_group = get_first_key_from_value(
-                domain_dictionary, physical_group_tag)
+                # If the physical group tags must be converted back into
+                # their names, for convenience
+
+                if not insert_domain_tags:
+
+                    physical_group = get_first_key_from_value(
+                    domain_dictionary, deepcopy(physical_group))
 
                 # Verifies if this physical group is already registered
                 # in the dictionary of volumetric physical groups atta-

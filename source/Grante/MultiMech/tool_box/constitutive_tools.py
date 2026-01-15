@@ -774,7 +774,7 @@ stress_method, fields_namesDict, comm, digits=3):
 # guration
 
 def save_referentialTraction(output_object, field, time, stress_name, 
-stress_method, fields_namesDict):
+stress_method, fields_namesDict, pressure_correction=None):
     
     # Verifies if the output object has the attribute with the names of 
     # the required fields
@@ -785,16 +785,17 @@ stress_method, fields_namesDict):
         "f saving the referential traction field at a point does not h"+
         "ave the attribute 'required_fieldsNames'. This class must hav"+
         "e it")
+    
+    # If the pressure correction is None, makes it a null tensor
+
+    if pressure_correction is None:
+
+        pressure_correction = Constant([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], 
+        [0.0, 0.0, 0.0]])
 
     # Verifies if the domain is homogeneous
 
     if isinstance(output_object.constitutive_model, dict):
-
-        raise NotImplementedError("Saving the referential traction for"+
-        " constitutive models as dictionaries has not been implemented"+
-        " yet. Use function 'break_boundary_physical_groups' from mesh"+
-        "_handling_tools to separate boundary physical groups that enc"+
-        "ompass multiple volumetric physical groups")
 
         # Initializes a list of pairs of constitutive models and inte-
         # gration domain
@@ -814,12 +815,13 @@ stress_method, fields_namesDict):
 
             # Gets the stress field
 
-            stress_field = programming_tools.get_result(
+            stress_field = (programming_tools.get_result(
             programming_tools.get_attribute(local_constitutiveModel, 
             stress_method, "The constitutive model\n"+str(
             local_constitutiveModel)+"\ndoes not have the attribute '"+
             str(stress_method)+"', thus the referential traction canno"+
-            "t be updated")(retrieved_fields), stress_name)
+            "t be updated")(retrieved_fields), stress_name)+
+            pressure_correction)
 
             # Verifies if more than one physical group is given for the
             # same constitutive model
@@ -837,17 +839,30 @@ stress_method, fields_namesDict):
                     output_object.physical_groupsNamesToTags,
                     throw_error=False)
 
-                    # Checks if this subdomain is in the domain physical
-                    # groups 
+                    # Iterates through the dictionary of newly created 
+                    # boundary physical groups (surface physical groups 
+                    # spanning more than one volumetric physical groups 
+                    # must be broken)
 
-                    if sub in output_object.physical_groupsList:
+                    for inner_dict in output_object.new_boundary_dict.values():
 
-                        # Adds this pair of constitutive model and inte-
-                        # gration domain to the list of such pairs. Gets
-                        # the trace divided by 3 to get the pressure
+                        # Iterates through the keys to identify the cor-'
+                        # res'ponding volumetric physical group
 
-                        integration_pairs.append([stress_field*
-                        output_object.referential_normal, sub])
+                        for volumetric_region, new_boundary_tag in inner_dict.items():
+                                
+                            # If the volumetric region matches the sub-
+                            # domain
+
+                            if sub==volumetric_region:
+
+                                # Adds this pair of constitutive model 
+                                # and integration domain to the list of 
+                                # such pairs. 
+
+                                integration_pairs.append([stress_field*
+                                output_object.referential_normal, 
+                                new_boundary_tag])
 
             else:
 
@@ -858,17 +873,29 @@ stress_method, fields_namesDict):
                 output_object.physical_groupsNamesToTags, throw_error=
                 False)
 
-                # Checks if this subdomain is in the domain physical
-                # groups 
+                # Iterates through the dictionary of newly created boun-
+                # dary physical groups (surface physical groups spanning 
+                # more than one volumetric physical groups must be bro-
+                # ken)
 
-                if subdomain in output_object.physical_groupsList:
+                for inner_dict in output_object.new_boundary_dict.values():
 
-                    # Adds this pair of constitutive model and integra-
-                    # tion domain to the list of such pairs. Gets the 
-                    # trace divided by 3 to get the pressure
+                    # Iterates through the keys to identify the corres-
+                    # ponding volumetric physical group
 
-                    integration_pairs.append([stress_field*
-                    output_object.referential_normal, subdomain])
+                    for volumetric_region, new_boundary_tag in inner_dict.items():
+                            
+                        # If the volumetric region matches the subdomain
+
+                        if subdomain==volumetric_region:
+
+                            # Adds this pair of constitutive model and
+                            # integration domain to the list of such
+                            # such pairs. 
+
+                            integration_pairs.append([stress_field*
+                            output_object.referential_normal, 
+                            new_boundary_tag])
 
         # Projects this piecewise continuous field of traction into a FE 
         # space
@@ -877,7 +904,7 @@ stress_method, fields_namesDict):
         integration_pairs, output_object.ds, output_object.W, 
         output_object.physical_groupsList, 
         output_object.physical_groupsNamesToTags, solution_names=["tra"+
-        "ction", "DNS"])
+        "ction", "DNS"], verify_physical_groups=False)
 
         # Writes the field to the file
 
@@ -892,12 +919,13 @@ stress_method, fields_namesDict):
 
         # Gets the stress field
 
-        stress_field = programming_tools.get_result(
+        stress_field = (programming_tools.get_result(
         programming_tools.get_attribute(output_object.constitutive_model, 
         stress_method, "The constitutive model\n"+str(
         output_object.constitutive_model)+"\ndoes not have the attribu"+
         "te '"+str(stress_method)+"', thus the referential traction ca"+
-        "nnot be updated")(retrieved_fields), stress_name)
+        "nnot be updated")(retrieved_fields), stress_name)+
+        pressure_correction)
 
         # Projects the stress into a function taking the trace to get 
         # the pressure
@@ -907,7 +935,7 @@ stress_method, fields_namesDict):
         output_object.ds, output_object.W, 
         output_object.physical_groupsList, 
         output_object.physical_groupsNamesToTags, solution_names=["tra"+
-        "ction", "DNS"])
+        "ction", "DNS"], verify_physical_groups=False)
 
         # Writes the field to the file
 

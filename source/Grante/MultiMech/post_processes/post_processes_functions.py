@@ -940,19 +940,17 @@ def initialize_tractionSaving(data, direct_codeData, submesh_flag):
     # Gets the mesh, the constitutive model, and the surface integrator
     # from the data directly provided by the code
 
-    mesh = direct_codeData[0]
+    mesh_data_class = direct_codeData[0]
 
     constitutive_model = direct_codeData[1]
 
-    ds = direct_codeData[2]
-
-    physical_groupsList = direct_codeData[3] 
+    physical_groupsList = direct_codeData[2] 
     
-    physical_groupsNamesToTags = direct_codeData[4]
+    physical_groupsNamesToTags = mesh_data_class.domain_physicalGroupsNameToTag
 
-    referential_normal = direct_codeData[5]
+    referential_normal = mesh_data_class.n
 
-    comm_object = direct_codeData[6]
+    comm_object = mesh_data_class.comm
 
     # Creates the function space for the traction as a vector function 
     # space
@@ -961,11 +959,12 @@ def initialize_tractionSaving(data, direct_codeData, submesh_flag):
 
     if polynomial_degree==0:
 
-        W = VectorFunctionSpace(mesh, "DG", 0)
+        W = VectorFunctionSpace(mesh_data_class.mesh, "DG", 0)
 
     else:
 
-        W = VectorFunctionSpace(mesh, "CG", polynomial_degree)
+        W = VectorFunctionSpace(mesh_data_class.mesh, "CG", 
+        polynomial_degree)
         
     # Takes out the termination of the file name
 
@@ -975,6 +974,18 @@ def initialize_tractionSaving(data, direct_codeData, submesh_flag):
     # Gets the name of the file with the path to it
 
     file_name = path_tools.verify_path(parent_path, file_name)
+
+    # As a boundary physical group can encompass multiple volumetric 
+    # physical groups, a new mesh function must be created to break the-
+    # se physical groups down. A new ds measure must also be created
+
+    new_boundary_mesh_function, new_boundary_dict = mesh_tools.break_boundary_physical_groups(
+    mesh_data_class, insert_domain_tags=True)
+
+    # Creates the new ds measure
+
+    new_ds = Measure("ds", domain=mesh_data_class.mesh, subdomain_data=
+    new_boundary_mesh_function)
 
     # Initializes the file
 
@@ -986,9 +997,9 @@ def initialize_tractionSaving(data, direct_codeData, submesh_flag):
 
     class OutputObject:
 
-        def __init__(self, file, W, constitutive_model, ds, 
+        def __init__(self, file, W, constitutive_model, new_ds, 
         physical_groupsList, physical_groupsNamesToTags, 
-        referential_normal):
+        referential_normal, new_boundary_dict):
 
             # Saves the comm object
 
@@ -998,7 +1009,7 @@ def initialize_tractionSaving(data, direct_codeData, submesh_flag):
 
             self.constitutive_model = constitutive_model
 
-            self.ds = ds 
+            self.ds = new_ds 
 
             self.result = file
 
@@ -1014,8 +1025,11 @@ def initialize_tractionSaving(data, direct_codeData, submesh_flag):
 
             self.referential_normal = referential_normal
 
-    output_object = OutputObject(file, W, constitutive_model, ds, 
-    physical_groupsList, physical_groupsNamesToTags, referential_normal)
+            self.new_boundary_dict = new_boundary_dict
+
+    output_object = OutputObject(file, W, constitutive_model, new_ds, 
+    physical_groupsList, physical_groupsNamesToTags, referential_normal,
+    new_boundary_dict)
 
     return output_object
 
@@ -1026,10 +1040,71 @@ time, fields_namesDict):
     
     mpi_print(output_object.comm_object, "Updates the saving of refere"+
     "ntial traction field\n")
+
+    # Verifies if the field is the displacement field. Uses the max 
+    # function since in single field simulations, the field number is -1
+
+    field_name = get_first_key_from_value(fields_namesDict, max(
+    field_number, 0))
+
+    if field_name!="Displacement":
+
+        message = "Field name <-> Field number"
+
+        for key, value in fields_namesDict.items():
+
+            message += "\n"+str(key)+" <-> "+str(value)
+
+        raise NameError("The field name is '"+str(field_name)+"', but "+
+        "the field required to evaluate the 'SaveReferentialTractionFi"+
+        "eld' post-process must be 'Displacement'. The dictionary of f"+
+        "elds names has the following keys:\n"+message+"\n\nThe asked "+
+        "number was "+str(field_number))
+
+    # If there is a single field, field number will be -1
+
+    u_field = None
+
+    if field_number==-1:
+
+        u_field = field
+
+    else:
+
+        u_field = field[field_number]
+    
+    # Verifies if there is a pressure field. A correction to the first
+    # Piola-Kirchhoff stress tensor must be added to this case, since 
+    # the constitutive model does not give the spherical part of the
+    # stress in incompressible hyperelasticity
+
+    pressure_correction = Constant([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [
+    0.0, 0.0, 0.0]])
+
+    if "Pressure" in fields_namesDict:
+
+        mpi_print(output_object.comm_object, "Adds the correction of t"+
+        "he pressure to the saving of the referential traction field\n")
+
+        # Gets the deformation gradient and the jacobian
+
+        I = Identity(3)
+
+        F = grad(u_field)+I
+
+        J = det(F)
+
+        # Gets the pressure field
+
+        p_field = field[fields_namesDict["Pressure"]]
+
+        # Updates the correction tensor
+
+        pressure_correction = p_field*J*inv(F.T)
     
     return constitutive_tools.save_referentialTraction(output_object, 
     field, time, "first_piola_kirchhoff", "first_piolaStress", 
-    fields_namesDict)
+    fields_namesDict, pressure_correction=pressure_correction)
 
 ########################################################################
 ########################################################################

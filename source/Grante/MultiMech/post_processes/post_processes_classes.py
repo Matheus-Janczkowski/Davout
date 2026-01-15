@@ -192,11 +192,9 @@ class SaveReferentialTractionField(PostProcessMethod):
 
         super().__init__(post_functions.initialize_tractionSaving, 
         post_functions.update_referentialTractionSaving, ["directory p"+
-        "ath", "file name", "polynomial degree"], [context.mesh_data_class.mesh, 
-        context.constitutive_model, context.mesh_data_class.ds, 
-        context.physical_groupsList, 
-        context.mesh_data_class.domain_physicalGroupsNameToTag,
-        context.mesh_data_class.n, context.mesh_data_class.comm])
+        "ath", "file name", ["polynomial degree", 1]], [
+        context.mesh_data_class, context.constitutive_model,
+        context.physical_groupsList])
 
 # Sets a class for the method to save the pressure field in a point
 

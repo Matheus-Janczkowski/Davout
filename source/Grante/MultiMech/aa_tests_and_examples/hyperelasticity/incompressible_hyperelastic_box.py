@@ -52,6 +52,9 @@ results_path, "file name": "first_piola_stress"}
 post_processes[0][1]["SaveCauchyStressField"] = {"directory path":
 results_path, "file name": "cauchy_stress"}
 
+post_processes[0][1]["SaveReferentialTractionField"] = {"directory path":
+results_path, "file name": "referential_traction"}
+
 post_processes[1][1]["SaveField"] = {"directory path": results_path, 
 "file name": "pressure.xdmf", "readable xdmf file": True, "visualizati"+
 "on copy for readable xdmf": True}
@@ -92,10 +95,10 @@ E_2, "nu": poisson_2})
 # tically
 
 mesh_fileName = {"length x": 0.3, "length y": 0.2, "length z": 1.0, "n"+
-"umber of divisions in x": 5, "number of divisions in y": 5, "number o"+
+"umber of divisions in x": 10, "number of divisions in y": 10, "number o"+
 "f divisions in z": 25, "verbose": False, "mesh file name": "box_mesh", 
 "mesh file directory": get_parent_path_of_file(), "number of subdomain"+
-"s in z direction": 2}
+"s in z direction": 2, "bias x": ["Bump", 0.2], "bias y": ["Bump", 0.2]}
 
 ########################################################################
 #                            Function space                            #
@@ -121,8 +124,9 @@ solver_parameters["newton_absolute_tolerance"] = 1e-4
 
 solver_parameters["newton_maximum_iterations"] = 15
 
+solver_parameters["linear_solver"] = "mumps"
+
 """
-solver_parameters["linear_solver"] = "gmres"
 
 solver_parameters["preconditioner"] = "hypre_amg"
 

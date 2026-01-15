@@ -1196,7 +1196,8 @@ physical_groupsNamesToTags, solution_names=None, verbose=True):
 # Defines a function to project a field defined on the boundary only
 
 def project_overBoundary(field_list, ds, V, physical_groupsList,
-physical_groupsNamesToTags, solution_names=None, verbose=True):
+physical_groupsNamesToTags, solution_names=None, verbose=True,
+verify_physical_groups=True):
     
     # Creates the projected field
 
@@ -1242,9 +1243,11 @@ physical_groupsNamesToTags, solution_names=None, verbose=True):
 
             # Checks the subdomain for strings
 
-            subdomain = verify_physicalGroups(subdomain,
-            physical_groupsList, physical_groupsNamesToTags=
-            physical_groupsNamesToTags)
+            if verify_physical_groups:
+
+                subdomain = verify_physicalGroups(subdomain,
+                physical_groupsList, physical_groupsNamesToTags=
+                physical_groupsNamesToTags)
 
             # Updates the linear form
 
