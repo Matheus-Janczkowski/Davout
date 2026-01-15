@@ -461,7 +461,8 @@ def micropolar_curvatureTensor(phi):
 # Defines a function to get, project and save a stress field
 
 def save_stressField(output_object, field, time, flag_parentMeshReuse,
-stress_solutionPlotNames, stress_name, stress_method, fields_namesDict):
+stress_solutionPlotNames, stress_name, stress_method, fields_namesDict,
+pressure_correction=None):
 
     # If the flag to reuse parent mesh information is true, just save 
     # the information given in the output object
@@ -475,6 +476,13 @@ stress_solutionPlotNames, stress_name, stress_method, fields_namesDict):
         output_object.parent_toChildMeshResult, time)
 
         return output_object
+    
+    # If the pressure correction is None, makes it a null tensor
+
+    if pressure_correction is None:
+
+        pressure_correction = Constant([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], 
+        [0.0, 0.0, 0.0]])
     
     # Verifies if the output object has the attribute with the names of 
     # the required fields
@@ -507,12 +515,12 @@ stress_solutionPlotNames, stress_name, stress_method, fields_namesDict):
 
             # Gets the stress field
 
-            stress_field = programming_tools.get_result(
+            stress_field = (programming_tools.get_result(
             programming_tools.get_attribute(local_constitutiveModel, 
             stress_method, "The constitutive model\n"+str(
             local_constitutiveModel)+"\ndoes not have the attribute '"+
             str(stress_method)+"', thus the stress field cannot be upd"+
-            "ated")(retrieved_fields), stress_name)
+            "ated")(retrieved_fields), stress_name)+pressure_correction)
 
             # Verifies if more than one physical group is given for the
             # same constitutive model
@@ -585,12 +593,12 @@ stress_solutionPlotNames, stress_name, stress_method, fields_namesDict):
 
         # Gets the stress field
 
-        stress_field = programming_tools.get_result(
+        stress_field = (programming_tools.get_result(
         programming_tools.get_attribute(output_object.constitutive_model, 
         stress_method, "The constitutive model\n"+str(
         output_object.constitutive_model)+"\ndoes not have the attribu"+
         "te '"+str(stress_method)+"', thus the stress field cannot be "+
-        "updated")(retrieved_fields), stress_name)
+        "updated")(retrieved_fields), stress_name)+pressure_correction)
 
         # Projects the stress into a function
 

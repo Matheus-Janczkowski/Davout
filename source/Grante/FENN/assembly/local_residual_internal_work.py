@@ -9,12 +9,13 @@ import tensorflow as tf
 
 class CompiledFirstPiolaKirchhoff:
 
-    def __init__(self, constitutive_models_dict, masks_dictionary):
+    def __init__(self, constitutive_models_dict, 
+    elements_in_region_dictionary):
         
         # Initializes the list of strain energy functions and the list
-        # of masks
+        # of elements owned to each region
 
-        self.mask_list = []
+        self.elements_assigned_to_models = []
 
         self.energy_functions_list = []
 
@@ -23,10 +24,13 @@ class CompiledFirstPiolaKirchhoff:
         for physical_group, constitutive_class in (
         constitutive_models_dict.items()):
 
-            # Adds the mask using the physical group as key in the dic-
-            # tionary of masks
+            # Adds a tensor with a tensor containing the indices of the
+            # elements that belong to this region. Uses the physical 
+            # group as key in the dictionary of elements assigned to each
+            # region
 
-            self.mask_list.append(masks_dictionary[physical_group])
+            self.elements_assigned_to_models.append(
+            elements_in_region_dictionary[physical_group])
 
             # Adds the energy function
 
@@ -42,8 +46,9 @@ class CompiledFirstPiolaKirchhoff:
     @tf.function
     def assemble_total_strain_energy(self, F):
 
-        return tf.add_n([self.mask_list[i]*self.energy_functions_list[i](
-        F) for i in range(self.n_materials)])
+        return tf.add_n([self.energy_functions_list[i](tf.gather(F, 
+        self.elements_assigned_to_models[i])) for i in range(
+        self.n_materials)])
     
     # Defines a function to compute the first Piola-Kichhoff stress ten-
     # sor

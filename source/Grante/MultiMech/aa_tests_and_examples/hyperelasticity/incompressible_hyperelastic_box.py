@@ -46,6 +46,12 @@ post_processes[0][1]["SaveForcesAndMomentsOnSurface"] = {"directory path":
 results_path, "file name": "forces_and_moments.txt", "surface physical"+
 " group name": "top"}
 
+post_processes[0][1]["SaveFirstPiolaStressField"] = {"directory path":
+results_path, "file name": "first_piola_stress"}
+
+post_processes[0][1]["SaveCauchyStressField"] = {"directory path":
+results_path, "file name": "cauchy_stress"}
+
 post_processes[1][1]["SaveField"] = {"directory path": results_path, 
 "file name": "pressure.xdmf", "readable xdmf file": True, "visualizati"+
 "on copy for readable xdmf": True}
@@ -60,7 +66,7 @@ E_1 = 1E6
 
 poisson_1 = 0.3
 
-E_2 = 5E6
+E_2 = 1E6
 
 poisson_2 = 0.3
 

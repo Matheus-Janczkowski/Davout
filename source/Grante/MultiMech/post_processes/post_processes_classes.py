@@ -109,9 +109,9 @@ class SaveCauchyStressField(PostProcessMethod):
 
         super().__init__(post_functions.initialize_cauchyStressSaving, 
         post_functions.update_cauchyStressSaving, ["directory path", 
-        "file name", "polynomial degree"], [context.mesh_data_class.mesh, 
-        context.constitutive_model, context.mesh_data_class.dx, 
-        context.physical_groupsList, 
+        "file name", ["polynomial degree", 1]], [
+        context.mesh_data_class.mesh, context.constitutive_model, 
+        context.mesh_data_class.dx, context.physical_groupsList, 
         context.mesh_data_class.domain_physicalGroupsNameToTag,
         context.mesh_data_class.comm])
 
@@ -150,9 +150,9 @@ class SaveFirstPiolaStressField(PostProcessMethod):
 
         super().__init__(post_functions.initialize_firstPiolaStressSaving, 
         post_functions.update_firstPiolaStressSaving, ["directory path", 
-        "file name", "polynomial degree"], [context.mesh_data_class.mesh, 
-        context.constitutive_model, context.mesh_data_class.dx, 
-        context.physical_groupsList, 
+        "file name", ["polynomial degree", 1]], [
+        context.mesh_data_class.mesh, context.constitutive_model, 
+        context.mesh_data_class.dx, context.physical_groupsList, 
         context.mesh_data_class.domain_physicalGroupsNameToTag,
         context.mesh_data_class.comm])
 

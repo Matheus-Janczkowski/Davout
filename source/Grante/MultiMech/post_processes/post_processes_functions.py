@@ -487,9 +487,31 @@ fields_namesDict, flag_parentMeshReuse=False):
     mpi_print(output_object.comm_object, "Updates the saving of the Ca"+
     "uchy stress field\n")
     
+    # Verifies if there is a pressure field. A correction to the Cauchy 
+    # stress tensor must be added to this case, since the constitutive 
+    # model does not give the spherical part of the stress in incompres-
+    # sible hyperelasticity
+
+    pressure_correction = Constant([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [
+    0.0, 0.0, 0.0]])
+
+    if "Pressure" in fields_namesDict:
+
+        mpi_print(output_object.comm_object, "Adds the correction of t"+
+        "he pressure to the saving of the Cauchy stress field\n")
+
+        # Gets the pressure field
+
+        p_field = field[fields_namesDict["Pressure"]]
+
+        # Updates the correction tensor in the spatial configuration
+
+        pressure_correction = p_field*Identity(3)
+    
     return constitutive_tools.save_stressField(output_object, field, 
     time, flag_parentMeshReuse, ["Cauchy stress", "stress"], "cauchy", 
-    "cauchy_stress", fields_namesDict)
+    "cauchy_stress", fields_namesDict, pressure_correction=
+    pressure_correction)
 
 ########################################################################
 #                      Couple Cauchy stress field                      #
@@ -714,10 +736,72 @@ time, fields_namesDict, flag_parentMeshReuse=False):
     mpi_print(output_object.comm_object, "Updates the saving of the fi"+
     "rst Piola-Kirchhoff stress field\n")
     
+    # Verifies if the field is the displacement field. Uses the max 
+    # function since in single field simulations, the field number is -1
+
+    field_name = get_first_key_from_value(fields_namesDict, max(
+    field_number, 0))
+
+    if field_name!="Displacement":
+
+        message = "Field name <-> Field number"
+
+        for key, value in fields_namesDict.items():
+
+            message += "\n"+str(key)+" <-> "+str(value)
+
+        raise NameError("The field name is '"+str(field_name)+"', but "+
+        "the field required to evaluate the 'SaveFirstPiolaStressField"+
+        "' post-process must be 'Displacement'. The dictionary of fiel"+
+        "ds names has the following keys:\n"+message+"\n\nThe asked nu"+
+        "mber was "+str(field_number))
+
+    # If there is a single field, field number will be -1
+
+    u_field = None
+
+    if field_number==-1:
+
+        u_field = field
+
+    else:
+
+        u_field = field[field_number]
+    
+    # Verifies if there is a pressure field. A correction to the first
+    # Piola-Kirchhoff stress tensor must be added to this case, since 
+    # the constitutive model does not give the spherical part of the
+    # stress in incompressible hyperelasticity
+
+    pressure_correction = Constant([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [
+    0.0, 0.0, 0.0]])
+
+    if "Pressure" in fields_namesDict:
+
+        mpi_print(output_object.comm_object, "Adds the correction of t"+
+        "he pressure to the saving of the first Piola-Kirchhoff stress"+
+        " field\n")
+
+        # Gets the deformation gradient and the jacobian
+
+        I = Identity(3)
+
+        F = grad(u_field)+I
+
+        J = det(F)
+
+        # Gets the pressure field
+
+        p_field = field[fields_namesDict["Pressure"]]
+
+        # Updates the correction tensor
+
+        pressure_correction = p_field*J*inv(F.T)
+    
     return constitutive_tools.save_stressField(output_object, field, 
     time, flag_parentMeshReuse, ["First Piola-Kirchhoff stress", "stre"+
     "ss"], "first_piola_kirchhoff", "first_piolaStress", 
-    fields_namesDict)
+    fields_namesDict, pressure_correction=pressure_correction)
 
 ########################################################################
 #              Couple first Piola-Kirchhoff stress field               #
@@ -1342,7 +1426,7 @@ submesh_flag):
         def __init__(self, file_name, mesh_data_class, 
         constitutive_model, forces_moments_list, new_ds, 
         new_boundary_physical_groups_dict, surface_physical_group,
-        surface_position_vector):
+        surface_position_vector, area_inverse):
 
             # Saves the comm object
 
@@ -1364,9 +1448,11 @@ submesh_flag):
 
             self.surface_position_vector = surface_position_vector
 
+            self.surface_area = 1/area_inverse
+
     output_object = OutputObject(file_name, mesh_data_class, 
     constitutive_model, forces_moments_list, new_ds, new_boundary_dict,
-    surface_physical_group, surface_position_vector)
+    surface_physical_group, surface_position_vector, area_inverse)
 
     return output_object
 
@@ -1397,7 +1483,8 @@ time, fields_namesDict):
     
     mpi_print(output_object.mesh_data_class.comm, "Updates the saving "+
     "of the forces and moments on the surface'"+str(
-    output_object.surface_physical_group)+"\n")
+    output_object.surface_physical_group)+"'. This surface has an area"+
+    " of "+str(output_object.surface_area)+"\n")
 
     # If there is a single field, field number will be -1
 
