@@ -3,6 +3,8 @@
 
 import tensorflow as tf
 
+from ..tool_box.math_tools import jacobian_3D_element
+
 # Defines a class to store the tetrahedron element with quadratic shape
 # functions and 10 nodes
 
@@ -114,62 +116,37 @@ class Tetrahedron:
         null_vector, dN5_dr, quadruple_u-dN6_ds, -dN5_ds, dN5_ds, -dN5_dr
         ], axis=-1)
 
+        # Compacts them into a single array
+
+        natural_derivatives_N = tf.stack([dN_dr, dN_ds, dN_dt], axis=-1)
+
         # Gets the x, y, and z coordinates of the nodes. Adds the new a-
         # xis in the middle to compatibilize it with the dimension of 
         # quadrature points. It is important to note that the nodes here
         # denote the midpoints too. Just like in the book The Finite El-
         # ement Method by Hughes
 
-        x = nodes_coordinates[..., 0][..., tf.newaxis, :]
+        x = nodes_coordinates[..., 0]
 
-        y = nodes_coordinates[..., 1][..., tf.newaxis, :]
+        y = nodes_coordinates[..., 1]
 
-        z = nodes_coordinates[..., 1][..., tf.newaxis, :]
+        z = nodes_coordinates[..., 2]
 
-        # Computes the jacobian of the transformation from the original
-        # coordinates to the natural ones. To compute the jacobian, a i-
-        # soparametric formulation is used. The function reduce_sum is
-        # used to sum over the shape functions
+        # Gets the jacobian determinant and its inverse
 
-        # J_11 = dx/dr
+        det_J, J_inv = jacobian_3D_element(natural_derivatives_N, x, y, 
+        z)
 
-        J_11 = tf.reduce_sum(dN_dr*x, axis=-1)
+        # The jacobian inverse is a tensor of [elements, quadrature 
+        # points, original coordinates, natural coordinates]. Whereas the
+        # natural derivatives are a tensor of [quadrature points, nodes,
+        # natural coordinates]. Thus, the derivatives of the shape func-
+        # tions in the original coordinates are a tensor of [elements,
+        # quadrature points, nodes, original coordinates]
 
-        # J_12 = dy/dr
+        shape_functions_derivatives = tf.einsum('eqxr,qnr->eqnx', J_inv, 
+        natural_derivatives_N)
 
-        J_12 = tf.reduce_sum(dN_dr*y, axis=-1)
+        # Gets the derivatives of the 
 
-        # J_13 = dz/dr
-
-        J_13 = tf.reduce_sum(dN_dr*z, axis=-1)
-
-        # J_21 = dx/ds
-
-        J_21 = tf.reduce_sum(dN_ds*x, axis=-1)
-
-        # J_22 = dy/ds
-
-        J_22 = tf.reduce_sum(dN_ds*y, axis=-1)
-
-        # J_23 = dz/ds
-
-        J_23 = tf.reduce_sum(dN_ds*z, axis=-1)
-
-        # J_31 = dx/dt
-
-        J_31 = tf.reduce_sum(dN_dt*x, axis=-1)
-
-        # J_32 = dy/dt
-
-        J_32 = tf.reduce_sum(dN_dt*y, axis=-1)
-
-        # J_33 = dz/dt
-
-        J_33 = tf.reduce_sum(dN_dt*z, axis=-1)
-
-        # Computes the determinant of the jacobian 
-
-        det_J = ((J_11*((J_22*J_33)-(J_23*J_32)))+(J_12*((J_23*J_31)-(
-        J_21*J_33)))+(J_13*((J_21*J_32)-(J_22*J_31))))
-
-        return shape_functions_tensor
+        return shape_functions_tensor, shape_functions_derivatives, det_J

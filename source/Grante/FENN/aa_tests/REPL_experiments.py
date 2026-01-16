@@ -49,6 +49,52 @@ def test_last_index():
     "rst index slot. The original tensor is:\n"+str(points)+"\n\nThe i"+
     "ndexed result is:\n"+str(points[...,2].numpy())+"\n")
 
+def get_tetra_coeffs():
+
+    row = lambda r, s, t: np.array([r**2, s**2, t**2, r*s, r*t, s*t, r, 
+    s, t, 1.0])
+
+    terms = ["r^2", "s^2", "t^2", "r*s", "r*t", "s*t", "r", "s", "t", ""]
+
+    nodes = [[1,0,0],[0,1,0],[0,0,1],[0,0,0],[0.5,0.5,0],[0,0.5,0.5],[
+    0,0,0.5],[0.5,0,0],[0.5,0,0.5],[0,0.5,0]]
+
+    A = np.zeros((10,10))
+
+    for i in range(10):
+
+        A[i,:] = row(*nodes[i])
+
+    for i in range(10):
+
+        b = np.zeros(10)
+
+        b[i] = 1.0
+
+        coeffs = np.linalg.solve(A, b)
+
+        shape_function = ""
+
+        for j in range(10):
+
+            if abs(coeffs[j])>1E-5:
+
+                shape_function += str(coeffs[j])+"*"+str(terms[j])+" + "
+
+        print("The "+str(i+1)+" shape function is:\n"+shape_function[0:-2
+        ]+"\n\n")
+
+    row = lambda r, s, t: np.array([(2*r*r)-r, (2*s*s)-s, (2*t*t)-t, (2*
+    ((r*r)+(s*s)+(t*t)))-(3*(r+s+t))+(4*((r*s)+(r*t)+(s*t)))+1.0, 4*r*s, 
+    4*s*t, -(4*t*t)-(4*r*t)-(4*s*t)+(4*t), -(4*r*r)-(4*r*s)-(4*r*t)+(4*r
+    ), 4*r*t, -(4*s*s)-(4*r*s)-(4*s*t)+(4*s)])
+
+    for i in range(10):
+
+        A[i,:] = row(*nodes[i])
+
+    print("The verification matrix is:\n"+str(A)+"\n\n")
+
 # Defines a function to test what newaxis does
 
 def test_shape_functions_in_natural_coordinates():
@@ -154,51 +200,71 @@ def test_shape_functions_in_natural_coordinates():
 
     print("pushfwd_shape_fn_grad:\n"+str(pushfwd_shape_fn_grad)+"\n")
 
-def get_tetra_coeffs():
+    # Computes the inverse of the jacobian
 
-    row = lambda r, s, t: np.array([r**2, s**2, t**2, r*s, r*t, s*t, r, 
-    s, t, 1.0])
+    J_inv_11 = j22/jacobian_det
 
-    terms = ["r^2", "s^2", "t^2", "r*s", "r*t", "s*t", "r", "s", "t", ""]
+    J_inv_12 = -j12/jacobian_det
 
-    nodes = [[1,0,0],[0,1,0],[0,0,1],[0,0,0],[0.5,0.5,0],[0,0.5,0.5],[
-    0,0,0.5],[0.5,0,0],[0.5,0,0.5],[0,0.5,0]]
+    J_inv_21 = -j21/jacobian_det
 
-    A = np.zeros((10,10))
+    J_inv_22 = j11/jacobian_det
 
-    for i in range(10):
+    J_row_1 = tf.stack([J_inv_11, J_inv_12], axis=-1)
 
-        A[i,:] = row(*nodes[i])
+    J_row_2 = tf.stack([J_inv_21, J_inv_22], axis=-1)
 
-    for i in range(10):
+    print("J_inv_row_1:\n"+str(J_row_1)+"\n\nJ_inv_row_2:\n"+str(J_row_2
+    )+"\n\n")
 
-        b = np.zeros(10)
+    J_inv = tf.stack([J_row_1, J_row_2], axis=-2)
 
-        b[i] = 1.0
+    print("J_inv:\n"+str(J_inv)+"\n\n")
 
-        coeffs = np.linalg.solve(A, b)
+def stack_versus_concat():
 
-        shape_function = ""
+    j11 = tf.constant([[1,2,3,4],[5,6,7,8]])
 
-        for j in range(10):
+    j12 = tf.constant([[9,10,11,12],[13,14,15,16]])
 
-            if abs(coeffs[j])>1E-5:
+    j21 = tf.constant([[17,18,19,20],[21,22,23,24]])
 
-                shape_function += str(coeffs[j])+"*"+str(terms[j])+" + "
+    j22 = tf.constant([[25,26,27,28],[29,30,31,32]])
 
-        print("The "+str(i+1)+" shape function is:\n"+shape_function[0:-2
-        ]+"\n\n")
+    jacobian_det = j11*j22 - j12*j21
 
-    row = lambda r, s, t: np.array([(2*r*r)-r, (2*s*s)-s, (2*t*t)-t, (2*
-    ((r*r)+(s*s)+(t*t)))-(3*(r+s+t))+(4*((r*s)+(r*t)+(s*t)))+1.0, 4*r*s, 
-    4*s*t, -(4*t*t)-(4*r*t)-(4*s*t)+(4*t), -(4*r*r)-(4*r*s)-(4*r*t)+(4*r
-    ), 4*r*t, -(4*s*s)-(4*r*s)-(4*s*t)+(4*s)])
+    J_inv_11 = j22/jacobian_det
 
-    for i in range(10):
+    J_inv_12 = -j12/jacobian_det
 
-        A[i,:] = row(*nodes[i])
+    J_inv_21 = -j21/jacobian_det
 
-    print("The verification matrix is:\n"+str(A)+"\n\n")
+    J_inv_22 = j11/jacobian_det
+
+    print("J_inv_11:\n"+str(J_inv_11)+"\n\nJ_inv_12:\n"+str(J_inv_12)+
+    "\n\nJ_inv_21:\n"+str(J_inv_21)+"\n\nJ_inv_22:\n"+str(J_inv_22)+"\n\n")
+
+    J_inv_row_1 = tf.stack([J_inv_11, J_inv_12], axis=-1)
+
+    J_inv_row_2 = tf.stack([J_inv_21, J_inv_22], axis=-1)
+
+    J_inv = tf.stack([J_inv_row_1, J_inv_row_2], axis=-2)
+
+    #print("J_inv_row_1:\n"+str(J_inv_row_1)+"\n\n")
+
+    print("J_inv:\n"+str(J_inv)+"\n\n")
+
+    dN_base = tf.constant([[1.,2.], [4.,5.], [7.,8.], [10.,11.]], dtype=
+    J_inv.dtype)
+
+    dN = tf.stack([dN_base, 2*dN_base, 3*dN_base], axis=-1)
+
+    print("dN:\n"+str(dN)+"\n\n")
+
+    dfdx = tf.einsum('eqij,qjk->eqik', J_inv, dN)
+
+    print("The derivatives in the original system of coordinates:\n"+str(
+    dfdx)+"\n\n")
 
 if __name__=="__main__":
 
@@ -210,4 +276,6 @@ if __name__=="__main__":
 
     test_shape_functions_in_natural_coordinates()
 
-    get_tetra_coeffs()
+    #get_tetra_coeffs()
+
+    stack_versus_concat()
