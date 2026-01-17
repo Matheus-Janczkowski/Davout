@@ -95,6 +95,70 @@ def get_tetra_coeffs():
 
     print("The verification matrix is:\n"+str(A)+"\n\n")
 
+def get_quadrature_points():
+
+    points = [-1/np.sqrt(3), 1/np.sqrt(3)]
+
+    weights = [1.0, 1.0]
+
+    n_points = 2
+
+    tetra_points = []
+
+    tetra_weights = []
+
+    string = ""
+
+    for i in range(n_points):
+
+        for j in range(n_points):
+
+            for k in range(n_points):
+
+                point_r = (0.5*(1.0+points[i]))
+
+                point_s = (0.25*(1.0-points[i])*(1.0+points[j]))
+
+                point_t = (0.125*(1.0+points[i])*(1.0-points[j])*(1.0+
+                points[k]))
+
+                weight = ((((1.0-points[j])*((1.0-points[i])**2))/64.0)*
+                weights[i]*weights[j]*weights[k])
+
+                tetra_weights.append(weight)
+
+                tetra_points.append([point_r, point_s, point_t])
+
+                string += "\nw="+str(tetra_weights[-1])+"; point="+str(
+                tetra_points[-1])
+
+    print("The Gauss points for a tetrahedron with "+str(n_points)+" p"+
+    "oints in each direction are:"+string)
+
+    def integral_test(integrand, points, weights):
+
+        result = 0.0
+
+        for weight, point in zip(weights, points):
+
+            result += (weight*integrand(*point))
+
+        return result 
+    
+    print("\nThe volume of the tetrahedron given this rule is "+str(
+    integral_test(lambda x, y, z: 1.0, tetra_points, tetra_weights))+
+    "; while 1/6="+str(1/6))
+
+    alpha = 2
+
+    beta = 1
+
+    gamma = 3
+
+    print("\nThe integration of (r**"+str(alpha)+")*(s**"+str(beta)+")"+
+    "*(t**"+str(gamma)+")="+str(integral_test(lambda r, s, t: (r**alpha
+    )*(s**beta)*(t**gamma), tetra_points, tetra_weights)))
+
 # Defines a function to test what newaxis does
 
 def test_shape_functions_in_natural_coordinates():
@@ -279,3 +343,5 @@ if __name__=="__main__":
     #get_tetra_coeffs()
 
     stack_versus_concat()
+
+    get_quadrature_points()

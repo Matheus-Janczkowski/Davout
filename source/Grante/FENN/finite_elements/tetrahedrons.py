@@ -10,13 +10,99 @@ from ..tool_box.math_tools import jacobian_3D_element
 
 class Tetrahedron:
 
-    def __init__(self):
+    def __init__(self, node_coordinates, polynomial_degree=2, 
+    quadrature_degree=2, dtype=tf.float32):
         
-        pass 
+        # Saves the numerical type
 
-    # Defines a function to return the 10 quadratic shape functions
+        self.dtype = dtype
+        
+        # Evaluates the Gauss points and their corresponding weights
 
-    def get_shape_functions(self, r, s, t, nodes_coordinates):
+        self.get_quadrature_points(quadrature_degree)
+
+        # Evaluates the u quantity
+
+        self.u = 1.0-self.r-self.s-self.t
+
+        # Precomputes the shape functions in the Gauss points
+
+        if polynomial_degree==2:
+
+            self.make_quadratic_shape_functions()
+
+        else:
+
+            raise ValueError("'polynomial_degree' was given as "+str(
+            polynomial_degree)+". However, only "+str(polynomial_degree
+            )+" is currently implemented")
+        
+        # Precomputes the shape functions and their first order deriva-
+        # tives in the original finite element coordinates. This is car-
+        # ried out for all elements
+
+        self.evaluate_shape_function_and_derivatives(node_coordinates)
+
+    # Defines a function to store the quadrature points and the corres-
+    # ponding weights with respect to the quadrature degree
+
+    def get_quadrature_points(self, quadrature_degree):
+
+        # Selects a quadrature degree of 1, thus, there is a single point
+
+        if quadrature_degree==1:
+
+            self.r = tf.constant([0.25], dtype=self.dtype)
+
+            self.s = tf.constant([0.25], dtype=self.dtype)
+
+            self.t = tf.constant([0.25], dtype=self.dtype)
+
+            self.weights = tf.constant([1.0/6.0], dtype=self.dtype)
+
+        # Selects a quadrature degree of 2, thus, there are four points
+
+        elif quadrature_degree==2:
+
+            self.r = tf.constant([0.1381966011250105, 0.5854101966249685, 
+            0.1381966011250105, 0.1381966011250105], dtype=self.dtype)
+
+            self.s = tf.constant([0.1381966011250105, 0.1381966011250105, 
+            0.5854101966249685, 0.1381966011250105], dtype=self.dtype)
+
+            self.t = tf.constant([0.1381966011250105, 0.1381966011250105, 
+            0.1381966011250105, 0.5854101966249685], dtype=self.dtype)
+
+            self.weights = tf.constant([1.0/24.0, 1.0/24.0, 1.0/24.0,
+            1.0/24.0], dtype=self.dtype)
+
+        # Selects a quadrature degree of 3, thus, there are five points
+
+        elif quadrature_degree==3:
+
+            self.r = tf.constant([0.25, 0.5, 1.0/6.0, 1.0/6.0, 1.0/6.0], 
+            dtype=self.dtype)
+
+            self.s = tf.constant([0.25, 1.0/6.0, 0.5, 1.0/6.0, 1.0/6.0], 
+            dtype=self.dtype)
+
+            self.t = tf.constant([0.25, 1.0/6.0, 1.0/6.0, 0.5, 1.0/6.0], 
+            dtype=self.dtype)
+
+            self.w = tf.constant([-2.0/15.0, 3.0/40.0, 3.0/40.0, 
+            3.0/40.0, 3.0/40.0], dtype=self.dtype)
+
+        else:
+
+            raise ValueError("A quadrature degree of "+str(
+            quadrature_degree)+" was asked to created tetrahedral fini"+
+            " elements. But the only available degrees are 1 (one poin"+
+            "t), 2 (four point), 3 (five points).")
+
+    # Defines a function to calculate quadratic shape functions for a 10-
+    # node tetrahedron
+
+    def make_quadratic_shape_functions(self):
 
         # All shape functions ahead will have added a new dimension to 
         # allow for concatenation and further 
@@ -27,52 +113,48 @@ class Tetrahedron:
 
         # First node: r = 1, s = 0, t = 0
 
-        N_1 = (r*((2*r)-1.0))[..., tf.newaxis]
+        N_1 = (self.r*((2*self.r)-1.0))[..., tf.newaxis]
 
         # Second node: r = 0, s = 1, t = 0
 
-        N_2 = (s*((2*s)-1.0))[..., tf.newaxis]
+        N_2 = (self.s*((2*self.s)-1.0))[..., tf.newaxis]
 
         # Third node: r = 0, s = 0, t = 1
 
-        N_3 = (t*((2*t)-1.0))[..., tf.newaxis]
-
-        # Evaluates the u quantity
-
-        u = 1.0-r-s-t
+        N_3 = (self.t*((2*self.t)-1.0))[..., tf.newaxis]
 
         # Fourth node: r = 0, s = 0, t = 0
 
-        N_4 = (u*((2*u)-1.0))[..., tf.newaxis]
+        N_4 = (self.u*((2*self.u)-1.0))[..., tf.newaxis]
 
         # Fifth node: r = 0.5, s = 0.5, t = 0
 
-        N_5 = (4*r*s)[..., tf.newaxis]
+        N_5 = (4*self.r*self.s)[..., tf.newaxis]
 
         # Sixth node: r = 0, s = 0.5, t = 0.5
 
-        N_6 = (4*s*t)[..., tf.newaxis]
+        N_6 = (4*self.s*self.t)[..., tf.newaxis]
 
         # Seventh node: r = 0, s = 0, t = 0.5
 
-        N_7 = (4*t*u)[..., tf.newaxis]
+        N_7 = (4*self.t*self.u)[..., tf.newaxis]
 
         # Eigth node: r = 0.5, s = 0, t = 0
 
-        N_8 = (4*r*u)[..., tf.newaxis]
+        N_8 = (4*self.r*self.u)[..., tf.newaxis]
 
         # Nineth node: r = 0.5, s = 0, t = 0.5
 
-        N_9 = (4*r*t)[..., tf.newaxis]
+        N_9 = (4*self.r*self.t)[..., tf.newaxis]
 
         # Tenth node: r = 0, s = 0.5, t = 0
 
-        N_10 = (4*s*u)[..., tf.newaxis]
+        N_10 = (4*self.s*self.u)[..., tf.newaxis]
 
         # Concatenates all shape function into a single tensor
 
-        shape_functions_tensor = tf.concat((N_1, N_2, N_3, N_4, N_5, N_6, 
-        N_7, N_8, N_9, N_10), axis=-1)
+        self.shape_functions_tensor = tf.concat((N_1, N_2, N_3, N_4, N_5, 
+        N_6, N_7, N_8, N_9, N_10), axis=-1)
         
         ################################################################
         #                  Shape functions derivatives                 #
@@ -82,21 +164,21 @@ class Tetrahedron:
         # derivatives of the shape function with respect to the natural
         # coordinates
 
-        dN1_dr = ((4*r)-1.0)[..., tf.newaxis]
+        dN1_dr = ((4*self.r)-1.0)[..., tf.newaxis]
 
-        dN2_ds = ((4*s)-1.0)[..., tf.newaxis]
+        dN2_ds = ((4*self.s)-1.0)[..., tf.newaxis]
 
-        dN3_dt = ((4*t)-1.0)[..., tf.newaxis]
+        dN3_dt = ((4*self.t)-1.0)[..., tf.newaxis]
 
-        dN4_dr = (1.0-(4*u))[..., tf.newaxis]
+        dN4_dr = (1.0-(4*self.u))[..., tf.newaxis]
 
-        dN5_dr = (4*s)[..., tf.newaxis]
+        dN5_dr = (4*self.s)[..., tf.newaxis]
 
-        dN5_ds = (4*r)[..., tf.newaxis]
+        dN5_ds = (4*self.r)[..., tf.newaxis]
 
-        dN6_ds = (4*t)[..., tf.newaxis]
+        dN6_ds = (4*self.t)[..., tf.newaxis]
 
-        quadruple_u = (4*u)[..., tf.newaxis]
+        quadruple_u = (4*self.u)[..., tf.newaxis]
 
         null_vector = tf.zeros_like(N_1)
 
@@ -118,7 +200,17 @@ class Tetrahedron:
 
         # Compacts them into a single array
 
-        natural_derivatives_N = tf.stack([dN_dr, dN_ds, dN_dt], axis=-1)
+        self.natural_derivatives_N = tf.stack([dN_dr, dN_ds, dN_dt], 
+        axis=-1)
+
+    # Defines a function to return the shape functions evaluated at the
+    # original coordinates of the finite element
+
+    def evaluate_shape_function_and_derivatives(self, nodes_coordinates):
+
+        """Computes the shape functions and their derivatives in the 
+        original system of coordinates of the finite elements. Computes
+        jacobians to perform the mapping of the derivatives"""
 
         # Gets the x, y, and z coordinates of the nodes. Adds the new a-
         # xis in the middle to compatibilize it with the dimension of 
@@ -134,8 +226,8 @@ class Tetrahedron:
 
         # Gets the jacobian determinant and its inverse
 
-        det_J, J_inv = jacobian_3D_element(natural_derivatives_N, x, y, 
-        z)
+        self.det_J, J_inv = jacobian_3D_element(
+        self.natural_derivatives_N, x, y, z)
 
         # The jacobian inverse is a tensor of [elements, quadrature 
         # points, original coordinates, natural coordinates]. Whereas the
@@ -144,9 +236,5 @@ class Tetrahedron:
         # tions in the original coordinates are a tensor of [elements,
         # quadrature points, nodes, original coordinates]
 
-        shape_functions_derivatives = tf.einsum('eqxr,qnr->eqnx', J_inv, 
-        natural_derivatives_N)
-
-        # Gets the derivatives of the 
-
-        return shape_functions_tensor, shape_functions_derivatives, det_J
+        self.shape_functions_derivatives = tf.einsum('eqxr,qnr->eqnx', 
+        J_inv, self.natural_derivatives_N)
