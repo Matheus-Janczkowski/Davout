@@ -238,3 +238,38 @@ class Tetrahedron:
 
         self.shape_functions_derivatives = tf.einsum('eqxr,qnr->eqnx', 
         J_inv, self.natural_derivatives_N)
+
+########################################################################
+#                              Test block                              #
+########################################################################
+
+if __name__=="__main__":
+
+    # Defines a simple mesh
+
+    W = 1.0
+
+    H = 1.0
+
+    L = 2.0
+
+    n_nodes_x = 2 
+
+    n_nodes_y = 2
+
+    n_nodes_z = 3
+
+    # Generates a list of nodes coordinates
+
+    nodes_list = []
+
+    for i in range(n_nodes_z):
+
+        for j in range(n_nodes_y):
+
+            for k in range(n_nodes_x):
+
+                nodes_list.append([(k/(n_nodes_x-1))*W, (j/(n_nodes_y-1)
+                )*H, (i/(n_nodes_z-1))*L])
+
+    # Generates a tensor of node coordinates per element
