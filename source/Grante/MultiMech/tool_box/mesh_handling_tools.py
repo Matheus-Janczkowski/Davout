@@ -77,7 +77,8 @@ class MeshData:
 
 def create_box_mesh(length_x, length_y, length_z, n_divisions_x,
 n_divisions_y, n_divisions_z, verbose=False, file_name="box_mesh",
-file_directory=None, n_subdomains_z=1, bias_x=1.0, bias_y=1.0, bias_z=1.0):
+file_directory=None, n_subdomains_z=1, bias_x=1.0, bias_y=1.0, bias_z=
+1.0, convert_to_xdmf=True):
     
     # Defines the names of the surface physical groups
 
@@ -138,7 +139,8 @@ file_directory=None, n_subdomains_z=1, bias_x=1.0, bias_y=1.0, bias_z=1.0):
         bias_x, "y": bias_y, "z": bias_z})
 
     tools_gmsh.gmsh_finalize(geometric_data=geometric_data, file_name=
-    file_name, verbose=verbose, file_directory=file_directory)
+    file_name, verbose=verbose, file_directory=file_directory, 
+    convert_to_xdmf=convert_to_xdmf)
 
 # Defines a function to read a gmsh mesh from a msh file. This function
 # handles parallelization aswell

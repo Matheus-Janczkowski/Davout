@@ -254,7 +254,7 @@ def gmsh_finalize(mesh_topologicalDimension=3, mesh_polynomialOrder=1,
 geometric_data=[0, [[],[],[],[]], [[],[],[],[]], [[],[],[]], dict(), [], 
 dict(), [], [], []], verbose=True, gmsh_version=2.2, file_name="mesh", 
 file_directory=None, volume_elementType='tetra', surface_elementType=
-'triangle', hexahedron_mesh=False):
+'triangle', hexahedron_mesh=False, convert_to_xdmf=True):
     
     # Checks if the mesh is made of hexahedrons
 
@@ -320,9 +320,13 @@ file_directory=None, volume_elementType='tetra', surface_elementType=
 
         gmsh.write(file_name+".msh")
 
-        # Reads the saved gmsh mesh using meshio
+        # Reads the saved gmsh mesh using 
+        
+        mesh_reading = None 
 
-        mesh_reading = meshio.read(file_name+".msh")
+        if convert_to_xdmf:
+
+            mesh_reading = meshio.read(file_name+".msh")
 
         # Verifies if the volume physical group is empty
 
@@ -347,15 +351,19 @@ file_directory=None, volume_elementType='tetra', surface_elementType=
 
             # Rewrites the mesh using the Mesh function from meshio
 
-            create_meshioMesh(mesh_reading, [volume_elementType], [
-            "domain"], file_name)
+            if convert_to_xdmf:
+
+                create_meshioMesh(mesh_reading, [volume_elementType], [
+                "domain"], file_name)
 
         else:
 
             # Rewrites the mesh using the Mesh function from meshio
 
-            create_meshioMesh(mesh_reading, [volume_elementType, 
-            surface_elementType], ["domain", "boundary"], file_name)
+            if convert_to_xdmf:
+
+                create_meshioMesh(mesh_reading, [volume_elementType, 
+                surface_elementType], ["domain", "boundary"], file_name)
 
         # If the verbose flag is True, shows the result mesh
 

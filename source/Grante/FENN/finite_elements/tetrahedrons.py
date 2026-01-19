@@ -3,6 +3,8 @@
 
 import tensorflow as tf
 
+from ..tool_box.tensorflow_utilities import convert_object_to_tensor
+
 from ..tool_box.math_tools import jacobian_3D_element
 
 # Defines a class to store the tetrahedron element with quadratic shape
@@ -16,6 +18,11 @@ class Tetrahedron:
         # Saves the numerical type
 
         self.dtype = dtype
+
+        # Ensures node coordinates is a tensor with the given type
+
+        node_coordinates = convert_object_to_tensor(node_coordinates,
+        self.dtype)
         
         # Evaluates the Gauss points and their corresponding weights
 
@@ -89,7 +96,7 @@ class Tetrahedron:
             self.t = tf.constant([0.25, 1.0/6.0, 1.0/6.0, 0.5, 1.0/6.0], 
             dtype=self.dtype)
 
-            self.w = tf.constant([-2.0/15.0, 3.0/40.0, 3.0/40.0, 
+            self.weights = tf.constant([-2.0/15.0, 3.0/40.0, 3.0/40.0, 
             3.0/40.0, 3.0/40.0], dtype=self.dtype)
 
         else:
@@ -238,38 +245,3 @@ class Tetrahedron:
 
         self.shape_functions_derivatives = tf.einsum('eqxr,qnr->eqnx', 
         J_inv, self.natural_derivatives_N)
-
-########################################################################
-#                              Test block                              #
-########################################################################
-
-if __name__=="__main__":
-
-    # Defines a simple mesh
-
-    W = 1.0
-
-    H = 1.0
-
-    L = 2.0
-
-    n_nodes_x = 2 
-
-    n_nodes_y = 2
-
-    n_nodes_z = 3
-
-    # Generates a list of nodes coordinates
-
-    nodes_list = []
-
-    for i in range(n_nodes_z):
-
-        for j in range(n_nodes_y):
-
-            for k in range(n_nodes_x):
-
-                nodes_list.append([(k/(n_nodes_x-1))*W, (j/(n_nodes_y-1)
-                )*H, (i/(n_nodes_z-1))*L])
-
-    # Generates a tensor of node coordinates per element
