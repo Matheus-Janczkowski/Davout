@@ -10,7 +10,7 @@ from ...finite_elements.tetrahedrons import Tetrahedron
 
 from ...tool_box import mesh_tools
 
-from ...finite_elements.finite_element_dispatcher import dispatch_volume_elements
+from ...finite_elements.finite_element_dispatcher import dispatch_domain_elements
 
 from ....MultiMech.tool_box.mesh_handling_tools import create_box_mesh
 
@@ -48,6 +48,23 @@ class TestANNTools(unittest.TestCase):
         nodes_coordinates[0], nodes_coordinates[2], nodes_coordinates[10],
         nodes_coordinates[4], nodes_coordinates[8], nodes_coordinates[11],
         nodes_coordinates[12], nodes_coordinates[5], nodes_coordinates[13]])
+
+    # Defines a function to test the instantiation of tetrahedron class
+
+    def test_quadratic_tetrahedron(self):
+
+        print("\n#####################################################"+
+        "###################\n#              Tests the second order te"+
+        "trahedral element              #\n###########################"+
+        "#############################################\n")
+
+        tetradron_mesh = Tetrahedron(self.nodes_coordinates_elements)
+
+        print("The determinant of the jacobian evaluated at all quadra"+
+        "ture points is:\n"+str(tetradron_mesh.det_J)+"\n")
+
+        #print("The derivatives of the shape functions at all quadratur"+
+        #"e point are:\n"+str(tetradron_mesh.shape_functions_derivatives))
 
     # Defines a function to test reading a mesh
 
@@ -105,27 +122,10 @@ class TestANNTools(unittest.TestCase):
 
         # Tests the finite element dispatcher
 
-        volume_elements = dispatch_volume_elements(mesh_data_class)
+        volume_elements = dispatch_domain_elements(mesh_data_class)
 
         print("The dictionary of elements per domain physical group is"+
         ":\n"+str(volume_elements.physical_groups_elements))
-
-    # Defines a function to test the instantiation of tetrahedron class
-
-    def test_quadratic_tetrahedron(self):
-
-        print("\n#####################################################"+
-        "###################\n#              Tests the second order te"+
-        "trahedral element              #\n###########################"+
-        "#############################################\n")
-
-        tetradron_mesh = Tetrahedron(self.nodes_coordinates_elements)
-
-        print("The determinant of the jacobian evaluated at all quadra"+
-        "ture points is:\n"+str(tetradron_mesh.det_J)+"\n")
-
-        print("The derivatives of the shape functions at all quadratur"+
-        "e point are:\n"+str(tetradron_mesh.shape_functions_derivatives))
 
 # Runs all tests
 
