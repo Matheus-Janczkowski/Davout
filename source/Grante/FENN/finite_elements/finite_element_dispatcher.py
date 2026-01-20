@@ -67,14 +67,13 @@ class DomainElements:
         self.elements_dictionaries = {field_name: {} for field_name in (
         self.element_per_field.keys())}
 
+        # Initializes a DOFs counter
+
+        self.dofs_counter = 0
+
     # Defines a function to instantiate the finite element class
 
     def dispatch_element(self, tag, connectivities, physical_group_tag):
-
-        # Initializes a dictionary of lists, each key is a field name,
-        # whereas each value is a list of DOFs per dimension per element
-
-        field_dofs_dictionary = dict()
 
         # Iterates through the fields to add an empty list with a sublist
         # for each dimension (each DOF in the node)
@@ -83,8 +82,12 @@ class DomainElements:
 
             # Gets the base list of degrees of freedom per element
 
-            base_dofs_list = [[] for n_dofs in range(info_dict["number"+
-            " of DOFs per node"])]
+            n_dofs_per_node = info_dict["number of DOFs per node"]
+
+            # Initializes a set of node indexes that are really used by
+            # this field
+
+            used_nodes_set = set()
 
             # Gets the type of the element required by the field
 
@@ -107,9 +110,9 @@ class DomainElements:
 
             element_info = self.get_element(required_element_type)
 
-            # And adds a list to this field
+            # And adds a list of nodes for each element
 
-            field_dofs_dictionary[field_name] = []
+            nodes_in_elements = []
 
             # Initializes a list of lists. Each sublist corresponds to a 
             # finite element. Each sublist contains n other sublists, 
@@ -127,17 +130,30 @@ class DomainElements:
 
                 element_nodes_coordinates.append([])
 
+                # Initializes a list of nodes per element
+
+                nodes_in_elements.append([])
+
                 # Verifies if the element has enough nodes
 
                 if len(connectivity)<len(element_info["indices of the "+
                 "gmsh connectivity"]):
+                    
+                    received_element_name = str(tag)
+
+                    if tag in self.finite_elements_classes:
+
+                        received_element_name = str(
+                        self.finite_elements_classes[tag]["name"])
                     
                     raise IndexError("The element recovered from the m"+
                     "esh has a connectivity of "+str(connectivity)+". "+
                     "This connectivity list has "+str(len(connectivity)
                     )+" nodes; but "+str(len(element_info["indices of "+
                     "the gmsh connectivity"]))+" nodes are required by"+
-                    " element type '"+str(element_info["name"]+"'"))
+                    " element type '"+str(element_info["name"])+"'. Th"+
+                    "e generated mesh has a '"+received_element_name+
+                    "' element")
 
                 # Iterates through the nodes indices in the list of con-
                 # nectivity
@@ -155,12 +171,68 @@ class DomainElements:
                     element_nodes_coordinates[-1].append(
                     self.nodes_coordinates[node_index])
 
-            # Dispatches the class
+                    # Adds the node index to the set of used nodes
+
+                    used_nodes_set.add(node_index)
+
+                    # Adds the node index to the list of nodes in the 
+                    # element
+
+                    nodes_in_elements[-1].append(node_index)
+
+            # Sorts the set of used nodes
+
+            used_nodes_set = sorted(used_nodes_set)
+
+            # Gets a dictionary of DOFs per node
+
+            dofs_node_dict = dict()
+
+            max_dof_number = 0
+
+            for set_index in range(len(used_nodes_set)):
+
+                # Adds a list of the DOFs for this node
+
+                dofs_node_dict[used_nodes_set[set_index]] = []
+
+                # And iterates through the local numbers of DOFs
+                
+                for local_dof in range(n_dofs_per_node):
+
+                    DOF_number = ((set_index*n_dofs_per_node)+local_dof+
+                    self.dofs_counter)
+                    
+                    dofs_node_dict[used_nodes_set[set_index]].append(
+                    DOF_number)
+
+                    # Updates the maximum DOF number
+
+                    max_dof_number = max(DOF_number, max_dof_number)
+
+            # Uses the dictionary of nodes to DOFs to create a list of
+            # elements with nested lists for nodes, which, in turn, have
+            # nested lists for dimensions (local DOFs)
+
+            for element_index in range(len(nodes_in_elements)):
+
+                for node_index in range(len(nodes_in_elements[
+                element_index])):
+                    
+                    nodes_in_elements[element_index][node_index] = (
+                    dofs_node_dict[nodes_in_elements[element_index][
+                    node_index]])
+
+            # Updates the DOFs couter
+
+            self.dofs_counter = max_dof_number+1
+
+            # Instantiates the finite element class
 
             self.elements_dictionaries[field_name][physical_group_tag
             ] = element_info["class"](element_nodes_coordinates, 
-            polynomial_degree=element_info["polynomial degree"], 
-            quadrature_degree=self.quadrature_degree)
+            nodes_in_elements, polynomial_degree=element_info["polynom"+
+            "ial degree"], quadrature_degree=self.quadrature_degree)
 
     # Defines a function to verify is the element type tag is available
 

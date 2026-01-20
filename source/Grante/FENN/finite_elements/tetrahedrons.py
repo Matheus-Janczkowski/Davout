@@ -12,17 +12,24 @@ from ..tool_box.math_tools import jacobian_3D_element
 
 class Tetrahedron:
 
-    def __init__(self, node_coordinates, polynomial_degree=2, 
-    quadrature_degree=2, dtype=tf.float32):
+    def __init__(self, node_coordinates, dofs_per_element, 
+    polynomial_degree=2, quadrature_degree=2, dtype=tf.float32):
         
         # Saves the numerical type
 
         self.dtype = dtype
 
-        # Ensures node coordinates is a tensor with the given type
+        # Ensures node coordinates and dofs per element are tensors with 
+        # the given type
 
         node_coordinates = convert_object_to_tensor(node_coordinates,
         self.dtype)
+
+        # The dofs per element is a tensor [n_elements, n_nodes, 
+        # n_dofs_per_node]
+
+        self.dofs_per_element = convert_object_to_tensor(
+        dofs_per_element, self.dtype)
         
         # Evaluates the Gauss points and their corresponding weights
 

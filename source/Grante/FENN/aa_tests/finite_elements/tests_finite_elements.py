@@ -49,6 +49,11 @@ class TestANNTools(unittest.TestCase):
         nodes_coordinates[4], nodes_coordinates[8], nodes_coordinates[11],
         nodes_coordinates[12], nodes_coordinates[5], nodes_coordinates[13]])
 
+        self.dofs_per_elements = [[[0,1,2], [3,4,5], [6,7,8], [9,10,11], 
+        [12,13,14], [15,16,17], [18,19,20], [21,22,23], [24,25,26], [27,
+        28,29]], [[3,4,5], [0,1,2], [6,7,8], [30,31,32], [12,13,14], [24,
+        25,26], [33,34,35], [36,37,38], [15,16,17], [39,40,41]]]
+
     # Defines a function to test the instantiation of tetrahedron class
 
     def test_quadratic_tetrahedron(self):
@@ -58,13 +63,14 @@ class TestANNTools(unittest.TestCase):
         "trahedral element              #\n###########################"+
         "#############################################\n")
 
-        tetradron_mesh = Tetrahedron(self.nodes_coordinates_elements)
+        tetradron_mesh = Tetrahedron(self.nodes_coordinates_elements,
+        self.dofs_per_elements)
 
         print("The determinant of the jacobian evaluated at all quadra"+
         "ture points is:\n"+str(tetradron_mesh.det_J)+"\n")
 
-        print("The derivatives of the shape functions at all quadratur"+
-        "e point are:\n"+str(tetradron_mesh.shape_functions_derivatives))
+        #print("The derivatives of the shape functions at all quadratur"+
+        #"e point are:\n"+str(tetradron_mesh.shape_functions_derivatives))
 
     # Defines a function to test reading a mesh
 
@@ -131,7 +137,17 @@ class TestANNTools(unittest.TestCase):
         elements_per_field)
 
         print("The dictionary of elements per domain physical group is"+
-        ":\n"+str(volume_elements.elements_dictionaries))
+        ":\n"+str(volume_elements.elements_dictionaries)+"\n")
+
+        print("The tensor of DOFs per element is:")
+        
+        for field_name, element_dict in volume_elements.elements_dictionaries.items():
+            
+            for physical_group, element_class in element_dict.items():
+
+                print("\nField name: "+str(field_name)+"; physical gro"+
+                "up: "+str(physical_group)+"; DOFs per element:\n"+str(
+                element_class.dofs_per_element))
 
 # Runs all tests
 
