@@ -3,6 +3,8 @@
 
 import tensorflow as tf 
 
+from ..tool_box.constitutive_tools import DeformationGradient
+
 ########################################################################
 #               Internal work in reference configuration               #
 ########################################################################
@@ -14,41 +16,81 @@ import tensorflow as tf
 
 class CompressibleInternalWorkReferenceConfiguration:
 
-    def __init__(self, constitutive_models_dict, mesh_dict):
+    def __init__(self, vector_of_parameters, constitutive_models_dict, 
+    mesh_dict, domain_physical_groups_dict):
         
-        # Initializes the list of strain energy functions and the list
-        # of elements owned to each region
+        # Initializes the list of instances of the class to compute the
+        # deformation gradient 
 
-        self.elements_assigned_to_models = []
+        self.deformation_gradient_list = []
 
-        self.energy_functions_list = []
+        # Initializes a list with the function to evaluate the first Pi-
+        # ola-Kirchhoff stress tensor at each physical group
 
-        # Gets the identity tensor
-
-        identity_tensor = tf.eye(3, batch_shape=[mesh_data.number_elements, mesh_data.number_quadrature_points], 
-        dtype=dtype)
+        self.first_piola_kirchhoff_list = []
 
         # Iterates through the dictionary of constitutive models
 
         for physical_group, constitutive_class in (
         constitutive_models_dict.items()):
+            
+            # Gets the physical group tag
 
-            # Adds a tensor with a tensor containing the indices of the
-            # elements that belong to this region. Uses the physical 
-            # group as key in the dictionary of elements assigned to each
-            # region
+            physical_group_tag = None 
 
-            self.elements_assigned_to_models.append(
-            elements_in_region_dictionary[physical_group])
+            if not (physical_group in domain_physical_groups_dict):
 
-            # Adds the energy function
+                raise NameError("The physical group name '"+str(
+                physical_group)+"' in the dictionary of constitutive m"+
+                "odels is not a valid physical group name. Check the a"+
+                "vailable names:\n"+str(list(
+                domain_physical_groups_dict.keys())))
+            
+            else:
 
-            self.energy_functions_list.append(
-            constitutive_class.strain_energy)
+                physical_group_tag = domain_physical_groups_dict[
+                physical_group]
+
+            # Gets the instance of the mesh data
+
+            mesh_data = mesh_dict[physical_group_tag]
+
+            # Gets the identity tensor for the mesh within this physical
+            # group
+
+            identity_tensor = tf.eye(3, batch_shape=[
+            mesh_data.number_elements, mesh_data.number_quadrature_points
+            ], dtype=mesh_data.dtype)
+
+            # Instantiates the class to calculate the deformation gradi-
+            # ent
+
+            self.deformation_gradient_list.append(DeformationGradient(
+            vector_of_parameters, mesh_data.dofs_per_element, 
+            mesh_data.shape_functions_derivatives, identity_tensor))
+
+            # Adds the function to evaluate the first Piola-Kirchhoff 
+            # stress tensor
+
+            self.first_piola_kirchhoff_list.append(
+            constitutive_class.first_piola_kirchhoff)
 
         # Gets the number of materials
 
-        self.n_materials = len(self.energy_functions_list)
+        self.n_materials = len(self.first_piola_kirchhoff_list)
+
+    # Defines a function to assemble the residual vector
+
+    @tf.function
+    def assemble_residual_vector(self):
+
+        # Creates a list of the tensors containing the first Piola-
+        # Kirchhoff stress at each physical group
+
+        evaluated_first_piola = tf.stack([self.first_piola_kirchhoff_list[
+        i](self.deformation_gradient_list[i
+        ].compute_batched_deformation_gradient()) for i in range(
+        self.n_materials)], axis=0)
 
 ########################################################################
 #                                Garbage                               #
@@ -97,7 +139,7 @@ class CompiledFirstPiolaKirchhoff:
     @tf.function
     def assemble_total_strain_energy(self, F):
 
-        return tf.add_n([self.energy_functions_list[i](tf.gather(F, 
+        return tf.math.add_n([self.energy_functions_list[i](tf.gather(F, 
         self.elements_assigned_to_models[i])) for i in range(
         self.n_materials)])
     
