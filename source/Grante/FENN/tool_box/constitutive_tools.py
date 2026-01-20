@@ -7,31 +7,40 @@ import tensorflow as tf
 #                              Kinematics                              #
 ########################################################################
 
-# Defines a function to compute the deformation gradient as a tensor [
+# Defines a class to compute the deformation gradient as a tensor [
 # n_elements, n_quadrature_points, 3, 3]
 
-@tf.function
-def compute_batched_deformation_gradient(field_dofs, 
-shape_functions_derivatives, identity_tensor):
+class DeformationGradient:
 
-    """
-    Computes the deformation gradient for all quadrature points in each
-    element. Returns a tensor [n_elements, n_quadrature_points, 3, 3]
+    def __init__(self, vector_of_parameters, indexing_dofs_tensor, 
+    shape_functions_derivatives, identity_tensor):
+        
+        """
+        Defines a class to compute the batched deformation gradient
 
-    field_dofs: displacement DOFs per element as a tensor [n_elements,
-    n_nodes, 3]
+        indexing_dofs_tensor: indices of DOFs of the global vector of 
+        parameters as a tensor [n_elements, n_nodes, 3]
 
-    shape_function_derivatives: derivatives of the shape functions with
-    respect to the original coordinates (x, y, z) as a tensor [
-    n_elements, n_quadrature_points, n_nodes, 3]
+        shape_function_derivatives: derivatives of the shape functions 
+        with respect to the original coordinates (x, y, z) as a tensor
+        [n_elements, n_quadrature_points, n_nodes, 3]
 
-    identity_tensor: identity tensor as a tensor [n_elements, 
-    n_quadrature_points, 3, 3]
-    """
+        identity_tensor: identity tensor as a tensor [n_elements, 
+        n_quadrature_points, 3, 3]
+        """
+        
+        self.indexing_dofs_tensor = indexing_dofs_tensor
 
-    # Contracts the DOFs to get the material displacement gradient as a 
-    # tensor [n_elements, n_quadrature_points, 3, 3]. THen, adds the i-
-    # dentity tensor and returns
+        self.shape_functions_derivatives = shape_functions_derivatives
 
-    return (tf.einsum('eqnj,eni->eqij', shape_functions_derivatives, 
-    field_dofs)+identity_tensor)
+        self.identity_tensor = identity_tensor
+
+    @tf.function
+    def compute_batched_deformation_gradient(self):
+        
+        # Gathers the vector of DOFs for this mesh
+
+        field_dofs = tf.gather(self.vector_of_parameters, 
+        self.indexing_dofs_tensor)
+
+        # Contracts the DOFs to get the material displacement g

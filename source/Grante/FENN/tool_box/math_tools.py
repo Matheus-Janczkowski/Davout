@@ -2,6 +2,22 @@
 
 import tensorflow as tf
 
+########################################################################
+#                            Linear Algebra                            #
+########################################################################
+
+# Defines a function to take the inverse of a batched tensor by solving
+# a linear system with the identity
+
+@tf.function
+def get_inverse(tensor_to_be_inverted, identity_tensor):
+
+    return tf.linalg.solve(tensor_to_be_inverted, identity_tensor)
+
+########################################################################
+#                               Mappings                               #
+########################################################################
+
 # Defines a function to calculate the determinant and inverse of a 3D 
 # jacobian transformation given shape functions and nodal coordinates
 

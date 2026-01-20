@@ -22,6 +22,10 @@ class Tetrahedron:
 
         self.integer_dtype = integer_dtype
 
+        # Saves the number of elements
+
+        self.number_elements = len(node_coordinates)
+
         # Ensures node coordinates and dofs per element are tensors with 
         # the given type
 
@@ -115,6 +119,10 @@ class Tetrahedron:
             quadrature_degree)+" was asked to created tetrahedral fini"+
             " elements. But the only available degrees are 1 (one poin"+
             "t), 2 (four point), 3 (five points).")
+
+        # Saves the number of quadrature points
+
+        self.number_quadrature_points = self.weights.shape[0]
 
     # Defines a function to calculate quadratic shape functions for a 10-
     # node tetrahedron

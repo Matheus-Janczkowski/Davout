@@ -3,6 +3,57 @@
 
 import tensorflow as tf 
 
+########################################################################
+#               Internal work in reference configuration               #
+########################################################################
+
+# Defines a class to get the constitutive model dictionary and transform 
+# it into a compiled evaluation of the residual vector due to the inter-
+# nal work in the reference configuration, considering compressible hy-
+# perelasticity
+
+class CompressibleInternalWorkReferenceConfiguration:
+
+    def __init__(self, constitutive_models_dict, mesh_dict):
+        
+        # Initializes the list of strain energy functions and the list
+        # of elements owned to each region
+
+        self.elements_assigned_to_models = []
+
+        self.energy_functions_list = []
+
+        # Gets the identity tensor
+
+        identity_tensor = tf.eye(3, batch_shape=[mesh_data.number_elements, mesh_data.number_quadrature_points], 
+        dtype=dtype)
+
+        # Iterates through the dictionary of constitutive models
+
+        for physical_group, constitutive_class in (
+        constitutive_models_dict.items()):
+
+            # Adds a tensor with a tensor containing the indices of the
+            # elements that belong to this region. Uses the physical 
+            # group as key in the dictionary of elements assigned to each
+            # region
+
+            self.elements_assigned_to_models.append(
+            elements_in_region_dictionary[physical_group])
+
+            # Adds the energy function
+
+            self.energy_functions_list.append(
+            constitutive_class.strain_energy)
+
+        # Gets the number of materials
+
+        self.n_materials = len(self.energy_functions_list)
+
+########################################################################
+#                                Garbage                               #
+########################################################################
+
 # Defines a class to get the constitutive model dictionary and transform
 # into a compiled evaluation of the strain energy and of the first Piola-
 # Kirchhoff stress tensor
