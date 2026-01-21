@@ -4,9 +4,7 @@
 
 import unittest
 
-import numpy as np
-
-from ..finite_elements.tetrahedrons import Tetrahedron
+from ..finite_elements.volume_elements.tetrahedrons import Tetrahedron
 
 from ..tool_box import mesh_tools
 
