@@ -1,9 +1,11 @@
 # Routine to dispatch and instantiate finite element classes given the 
 # tag read by the mesh reader
 
-from ..finite_elements.tetrahedrons import Tetrahedron
+from ..finite_elements import volume_elements
 
-from ..finite_elements.triangles import Triangle
+from ..finite_elements import surface_elements
+
+from ...PythonicUtilities.import_tools import load_classes_from_package
 
 ########################################################################
 #                            Domain elements                           #
@@ -28,10 +30,7 @@ class DomainElements:
 
         self.finite_elements_classes = dict()
 
-        self.finite_elements_classes[11] = {"class": Tetrahedron, "pol"+
-        "ynomial degree": 2, "number of nodes": 10, "name": "tetrahedr"+
-        "on of 10 nodes", "indices of the gmsh connectivity": [1, 2, 3,
-        0, 5, 8, 7, 4, 9, 6]}
+        self.finite_elements_classes[11] = Tetrahedron
 
         # TODO
         # 4  - Tetrahedron of 4 nodes;
@@ -121,9 +120,7 @@ class BoundaryElements:
 
         self.finite_elements_classes = dict()
 
-        self.finite_elements_classes[9] = {"class": Triangle, "polynom"+
-        "ial degree": 2, "number of nodes": 6, "name": "triangle of 6 "+
-        "nodes", "indices of the gmsh connectivity": [0, 1, 2, 3, 4, 5]}
+        self.finite_elements_classes[9] = Triangle
 
         # TODO
         # 2  - triangle of 3 nodes;
@@ -217,7 +214,7 @@ dofs_node_dict, flag_building_dofs_dict=True):
 
             for given_type, info in finite_elements_classes.items():
 
-                if info["name"]==required_element_type:
+                if info.stored_elements[given_type]["name"]==required_element_type:
 
                     required_element_type = given_type 
 
@@ -225,7 +222,7 @@ dofs_node_dict, flag_building_dofs_dict=True):
 
         # Gets the element dictionary of information
 
-        element_info = get_element(required_element_type, 
+        element_class, element_info = get_element(required_element_type, 
         finite_elements_classes, region_name)
 
         # And adds a list of nodes for each element
@@ -261,7 +258,7 @@ dofs_node_dict, flag_building_dofs_dict=True):
                 if tag in finite_elements_classes:
 
                     received_element_name = str(finite_elements_classes[
-                    tag]["name"])
+                    tag].stored_elements[tag]["name"])
                 
                 raise IndexError("The element recovered from the mesh "+
                 "has a connectivity of "+str(connectivity)+". This con"+
@@ -352,9 +349,9 @@ dofs_node_dict, flag_building_dofs_dict=True):
         # Instantiates the finite element class
 
         elements_dictionaries[field_name][physical_group_tag
-        ] = element_info["class"](element_nodes_coordinates, 
-        nodes_in_elements, polynomial_degree=element_info["polynomial "+
-        "degree"], quadrature_degree=quadrature_degree, dtype=dtype)
+        ] = element_class(element_nodes_coordinates,  nodes_in_elements, 
+        polynomial_degree=element_info["polynomial degree"], 
+        quadrature_degree=quadrature_degree, dtype=dtype)
 
     return elements_dictionaries, dofs_counter, dofs_node_dict
 
@@ -375,7 +372,7 @@ def get_element(tag, finite_elements_classes, region):
         for tag, element_info in finite_elements_classes.items():
 
             elements_list += "\ntag: "+str(tag)+"; name: "+str(
-            element_info["name"])
+            element_info.stored_elements[tag]["name"])
 
         raise NotImplementedError("The element tag '"+str(tag)+"' has "+
         "not been implemented yet for the "+str(region)+". Check out t"+
@@ -383,4 +380,45 @@ def get_element(tag, finite_elements_classes, region):
     
     # Gets the element info
 
-    return finite_elements_classes[tag]
+    return finite_elements_classes[tag], finite_elements_classes[tag
+    ].stored_elements[tag]
+
+########################################################################
+#                      Automatic element importing                     #
+########################################################################
+
+# Defines a function to import elements automatically from the volume 
+# and surface elements packages. Then, it creates a dictionary of finite
+# elements classes, where the keys are the elements GMSH integer tag and
+# the respective values are the classes objects
+
+def automatic_import_finite_element_classes():
+
+    # Imports the classes of the volumetric finite elements
+
+    classes_list = load_classes_from_package(volume_elements, 
+    necessary_attributes=["stored_elements"])
+
+    # Imports the classes of the surface finite elements
+
+    classes_list = load_classes_from_package(volume_elements, 
+    necessary_attributes=["stored_elements"], classes_dict=
+    classes_list)
+
+    # Constructs the dictionary 
+
+    finite_elements_dictionary = dict()
+
+    for class_object in classes_list:
+
+        # Iterates through the dictionary of stored elements
+
+        for element_gmsh_tag in class_object.stored_elements.keys():
+            
+            # Adds to the dictionary of finite elements
+
+            finite_elements_dictionary[element_gmsh_tag] = class_object
+
+    # Returns the dictionary of finite elements
+
+    return finite_elements_dictionary

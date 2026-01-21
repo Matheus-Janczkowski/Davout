@@ -11,6 +11,14 @@ from ..tool_box.math_tools import jacobian_3D_element
 
 class Tetrahedron:
 
+    # Creates a dictionary with the types of elements created by this 
+    # class. The keys are GMSH element type, and the values are other 
+    # dictionaries with necessary information
+
+    stored_elements = {11: {"polynomial degree": 2, "number of nodes": 
+    10, "name": "tetrahedron of 10 nodes", "indices of the gmsh conn"+
+    "ectivity": [1, 2, 3, 0, 5, 8, 7, 4, 9, 6]}}
+
     def __init__(self, node_coordinates, dofs_per_element, 
     polynomial_degree=2, quadrature_degree=2, dtype=tf.float32, 
     integer_dtype=tf.int32):

@@ -11,6 +11,14 @@ from ..tool_box.math_tools import jacobian_3D_element
 
 class Triangle:
 
+    # Creates a dictionary with the types of elements created by this 
+    # class. The keys are GMSH element type, and the values are other 
+    # dictionaries with necessary information
+
+    stored_elements = {9: {"polynomial degree": 2, "number of nodes": 6, 
+    "name": "triangle of 6 nodes", "indices of the gmsh connectivity": [
+    0, 1, 2, 3, 4, 5]}}
+
     def __init__(self, node_coordinates, dofs_per_element, 
     polynomial_degree=2, quadrature_degree=2, dtype=tf.float32, 
     integer_dtype=tf.int32):
