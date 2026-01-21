@@ -8,13 +8,18 @@ import tensorflow as tf
 
 class ReferentialTractionWork:
 
-    def __init__(self, traction_dict, boundary_physical_groups_dict, 
-    mesh_dict):
+    def __init__(self, vector_of_parameters, traction_dict, 
+    boundary_physical_groups_dict, mesh_dict):
 
         # Creates a list of the variation of the primal field at the 
         # surfaces multiplied by the surface integration measure
 
         self.variation_field_ds = []
+
+        # Initializes a list of instances of classes that generate ten-
+        # sors of traction vectors
+
+        self.traction_classes = []
 
         # Iterates through the dictionary of constitutive models
 
@@ -48,8 +53,17 @@ class ReferentialTractionWork:
 
             mesh_data = mesh_dict[physical_group_tag]
 
+            # Adds the class with the mesh data
+
+            self.traction_classes.append(traction_vector)
+
+            self.traction_classes[-1].build_traction(mesh_data,
+            vector_of_parameters)
+
             # Gets the shape functions multiplied by the surface inte-
-            # gration measure
+            # gration measure. Uses the attribute dx, because the el-
+            # ement is 2D, thus the ds for the 3D mesh is the element's
+            # dx
 
             self.variation_field_ds.append(tf.einsum('eqnj,eq->eqnj',
             mesh_data.shape_functions_tensor, mesh_data.dx))
@@ -75,22 +89,20 @@ class ReferentialTractionWork:
         for i in range(self.n_surfaces_under_load):
 
             # Gets the batched tensor [n_elements, n_quadrature_points,
-            # 3, 3] of the first Piola-Kirchhoff stress
+            # 3] of the referential traction vector
 
-            P = self.first_piola_kirchhoff_list[i](self.deformation_gradient_list[
-            i].compute_batched_deformation_gradient())
+            T = self.traction_classes[i].compute_traction_vector()
 
-            # Contracts the first Piola-Kirchhoff stress with the deri-
-            # vatives of the shape functions multiplied by the integra-
-            # tion measure to get the integration of the internal work 
-            # of the variational form. Then, sums over the quadrature 
-            # points, that are the second dimension (index 1 in python 
-            # convention).
-            # The result is a tensor [n_elements,  n_nodes, 
+            # Contracts the referential traction vector with the shape 
+            # functions multiplied by the integration measure to get the 
+            # integration of the variation of the external work due to 
+            # surface tractions. Then, sums over the quadrature points, 
+            # that are the second dimension (index 1 in python conventi-
+            # on). The result is a tensor [n_elements,  n_nodes, 
             # n_physical_dimensions]
 
-            internal_work = tf.reduce_sum(tf.einsum('eqi,eqni->eqni', 
-            P, self.variation_field_ds[i]), axis=1)
+            external_work = tf.reduce_sum(tf.einsum('eqi,eqni->eqni', T,
+            self.variation_field_ds[i]), axis=1)
 
             # Adds the contribution of this physical group to the global
             # residual vector. Uses the own tensor of DOF indexing to
@@ -100,5 +112,5 @@ class ReferentialTractionWork:
             # global_residual_vector is a variable
 
             global_residual_vector.scatter_nd_add(tf.expand_dims(
-            self.deformation_gradient_list[i].indexing_dofs_tensor, axis=
-            -1), internal_work)
+            self.traction_classes[i].indexing_dofs_tensor, axis=-1),
+            external_work)
