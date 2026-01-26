@@ -13,7 +13,7 @@ import numpy as np
 
 def spline_3D_interpolation(x_points=None, y_points=None, z_points=None, 
 points_array=None, add_initial_point_as_end_point=False, 
-polar_angle_around_z=False):
+polar_angle_around_z=False, verbose=False):
     
     """
     Function for creating a cubic spline interpolation function of a
@@ -175,6 +175,12 @@ polar_angle_around_z=False):
         " the z direction. They must have the same size in 'spline_3D_"+
         "interpolation'")
     
+    # Calculates the centroid
+
+    x_centroid = np.mean(np.array(x_points))
+
+    y_centroid = np.mean(np.array(y_points))
+    
     # If the initial point is meant to be copied as the end point
 
     if add_initial_point_as_end_point:
@@ -203,27 +209,29 @@ polar_angle_around_z=False):
 
         # Verifies if the point lies on the first or fourth quadrants
 
-        if x_points[0]>1E-9:
+        if (x_points[0]-x_centroid)>1E-9:
 
-            polar_angle = np.arctan(y_points[0]/x_points[0])
+            polar_angle = np.arctan((y_points[0]-y_centroid)/(x_points[0
+            ]-x_centroid))
 
-            # If the point is in the fourth quadrant, adds 2 pi
+            # If the point is in the fourth or third quadrants, adds 2 pi
 
-            if y_points[0]<0.0:
+            if (y_points[0]-y_centroid)<0.0:
 
                 polar_angle += (2*np.pi)
 
         # Verifies if the point lies in the second or third quadrants
 
-        elif x_points[0]<-1E-9:
+        elif (x_points[0]-x_centroid)<-1E-9:
 
-            polar_angle = np.arctan(y_points[0]/x_points[0])
+            polar_angle = np.arctan((y_points[0]-y_centroid)/(x_points[0
+            ]-x_centroid))
 
             # Adds pi to correct for the negative x
             
             polar_angle += np.pi
 
-        elif y_points[0]<0.0:
+        elif (y_points[0]-y_centroid)<0.0:
 
             polar_angle = 1.5*np.pi 
 
@@ -238,16 +246,23 @@ polar_angle_around_z=False):
             # Calculates the angle between this point and the previous 
             # one using the cross product
 
-            a_x = x_points[i-1]
+            a_x = x_points[i-1]-x_centroid
 
-            a_y = y_points[i-1]
+            a_y = y_points[i-1]-y_centroid
 
-            b_x = x_points[i]
+            b_x = x_points[i]-x_centroid
 
-            b_y = y_points[i]
+            b_y = y_points[i]-y_centroid
 
-            delta_theta = np.arcsin(((a_x*b_y)-(a_y*b_x))/np.sqrt(((a_x*
-            a_x)+(a_y*a_y))*((b_x*b_x)+(b_y*b_y))))
+            numerator = ((a_x*b_y)-(a_y*b_x))
+
+            denominator = np.sqrt(((a_x*a_x)+(a_y*a_y))*((b_x*b_x)+(b_y*
+            b_y)))
+
+            # Takes care with values below -1.0 and above 1.0 
+
+            delta_theta = np.arcsin(min(max(numerator/denominator, -1.0), 
+            1.0))
 
             # If the angle is negative, adds 2 pi to get the complement
 
@@ -271,6 +286,19 @@ polar_angle_around_z=False):
     else:
 
         parametric_variable = np.linspace(0.0, 1.0, n_points)
+
+    if verbose:
+
+        print("The parametric variables and the coordinates for the sp"+
+        "line interpolation are:")
+
+        for i in range(len(x_points)):
+
+            print("theta = "+str(parametric_variable[i])+"; x = "+str(
+            x_points[i])+"; y = "+str(y_points[i])+"; z = "+str(z_points[
+            i]))
+
+        print("\n")
 
     # Gets the spline interpolation for each dimension
 

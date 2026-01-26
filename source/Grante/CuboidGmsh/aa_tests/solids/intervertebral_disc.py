@@ -44,11 +44,11 @@ def mesh_disc():
 
     inferior_curve_cube = spline_3D_interpolation(points_array=
     points_array_inferior_square, add_initial_point_as_end_point=True,
-    polar_angle_around_z=True)
+    polar_angle_around_z=True, verbose=True)
 
     superior_curve_cube = spline_3D_interpolation(points_array=
     points_array_superior_square, add_initial_point_as_end_point=True,
-    polar_angle_around_z=True)
+    polar_angle_around_z=True, verbose=True)
 
     # Inner curve
 
@@ -75,11 +75,11 @@ def mesh_disc():
 
     inferior_curve_inner = spline_3D_interpolation(points_array=
     points_array_inferior_inner, add_initial_point_as_end_point=True,
-    polar_angle_around_z=True)
+    polar_angle_around_z=True, verbose=True)
 
     superior_curve_inner = spline_3D_interpolation(points_array=
     points_array_superior_inner, add_initial_point_as_end_point=True,
-    polar_angle_around_z=True)
+    polar_angle_around_z=True, verbose=True)
 
     # Outer curve
 
@@ -106,11 +106,11 @@ def mesh_disc():
 
     inferior_curve_outer = spline_3D_interpolation(points_array=
     points_array_inferior_outer, add_initial_point_as_end_point=True,
-    polar_angle_around_z=True)
+    polar_angle_around_z=True, verbose=True)
 
     superior_curve_outer = spline_3D_interpolation(points_array=
     points_array_superior_outer, add_initial_point_as_end_point=True,
-    polar_angle_around_z=True)
+    polar_angle_around_z=True, verbose=True)
 
     parametric_curves = {"inferior square": inferior_curve_cube, "supe"+
     "rior square": superior_curve_cube, "inferior inner": 
@@ -249,7 +249,7 @@ def mesh_disc():
     parametric_curves=parametric_curves, bias_directions={"z": 
     bias_axial})
 
-    # First annulus flare
+    """# First annulus flare
 
     theta_1 = 45.0
 
@@ -341,7 +341,7 @@ def mesh_disc():
     parametric_curves=parametric_curves, bias_directions={"z": 
     bias_axial})
 
-    # Creates the geometry and meshes it
+    # Creates the geometry and meshes it"""
 
     tools.gmsh_finalize(geometric_data=geometric_data, file_name="inte"+
     "rvertebral_disc")
