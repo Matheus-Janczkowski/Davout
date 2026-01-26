@@ -1838,6 +1838,14 @@ def evaluate_centroidSurface(physical_group, mesh_dataClass):
 
     print("Gets centroid of surface tagged as "+str(physical_group)+"\n")
 
+    # Verifies if mesh data class is a string, with the file of the mesh
+
+    if isinstance(mesh_dataClass, str):
+
+        # Calls the mesh reader
+
+        mesh_dataClass = read_mshMesh(mesh_dataClass)
+
     # Gets the position vector from the mesh
 
     position_vector = mesh_dataClass.x

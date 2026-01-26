@@ -13,7 +13,8 @@ import numpy as np
 
 def spline_3D_interpolation(x_points=None, y_points=None, z_points=None, 
 points_array=None, add_initial_point_as_end_point=False, 
-polar_angle_around_z=False, verbose=False):
+polar_angle_around_z=False, verbose=False, x_centroid=None, y_centroid=
+None, z_centroid=None):
     
     """
     Function for creating a cubic spline interpolation function of a
@@ -177,11 +178,17 @@ polar_angle_around_z=False, verbose=False):
     
     # Calculates the centroid
 
-    x_centroid = np.mean(np.array(x_points))
+    if x_centroid is None:
 
-    y_centroid = np.mean(np.array(y_points))
+        x_centroid = np.mean(np.array(x_points))
 
-    z_centroid = np.mean(np.array(z_points))
+    if y_centroid is None:
+
+        y_centroid = np.mean(np.array(y_points))
+
+    if z_centroid is None:
+
+        z_centroid = np.mean(np.array(z_points))
     
     # If the initial point is meant to be copied as the end point
 
