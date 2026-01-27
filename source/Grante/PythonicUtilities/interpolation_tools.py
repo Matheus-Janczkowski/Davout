@@ -14,7 +14,7 @@ import numpy as np
 def spline_3D_interpolation(x_points=None, y_points=None, z_points=None, 
 points_array=None, add_initial_point_as_end_point=False, 
 polar_angle_around_z=False, verbose=False, x_centroid=None, y_centroid=
-None, z_centroid=None):
+None, z_centroid=None, return_initial_and_final_polar_angles=False):
     
     """
     Function for creating a cubic spline interpolation function of a
@@ -325,6 +325,11 @@ None, z_centroid=None):
 
     parametric_curve = lambda theta: [cubic_spline_x(theta), 
     cubic_spline_y(theta), cubic_spline_z(theta)]
+
+    if polar_angle_around_z and return_initial_and_final_polar_angles:
+
+        return (parametric_curve, parametric_variable[0], 
+        parametric_variable[-1])
 
     return parametric_curve
 
