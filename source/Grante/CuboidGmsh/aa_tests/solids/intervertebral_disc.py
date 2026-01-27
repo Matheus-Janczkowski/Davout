@@ -42,9 +42,11 @@ def mesh_disc():
     cube_radius*np.cos(np.pi*(7/4)), cube_radius*np.sin(np.pi*(7/4)), 
     height]]
 
-    inferior_curve_cube, initial_angle, final_angle = spline_3D_interpolation(points_array=
-    points_array_inferior_square, add_initial_point_as_end_point=True,
-    polar_angle_around_z=True, verbose=True, return_initial_and_final_polar_angles=True)
+    inferior_curve_cube, initial_angle, final_angle = spline_3D_interpolation(
+    points_array=points_array_inferior_square, 
+    add_initial_point_as_end_point=True, polar_angle_around_z=True, 
+    verbose=True, return_initial_and_final_polar_angles=True,
+    periodic_interpolation=True)
 
     print("Initial angle: "+str(initial_angle)+"; final angle: "+str(
     final_angle)+"\n")

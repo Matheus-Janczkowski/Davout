@@ -14,7 +14,8 @@ import numpy as np
 def spline_3D_interpolation(x_points=None, y_points=None, z_points=None, 
 points_array=None, add_initial_point_as_end_point=False, 
 polar_angle_around_z=False, verbose=False, x_centroid=None, y_centroid=
-None, z_centroid=None, return_initial_and_final_polar_angles=False):
+None, z_centroid=None, return_initial_and_final_polar_angles=False, 
+periodic_interpolation=False):
     
     """
     Function for creating a cubic spline interpolation function of a
@@ -323,8 +324,73 @@ None, z_centroid=None, return_initial_and_final_polar_angles=False):
 
     # Gets a parametric curve as a function of the single parameter
 
-    parametric_curve = lambda theta: [cubic_spline_x(theta), 
-    cubic_spline_y(theta), cubic_spline_z(theta)]
+    parametric_curve = None 
+
+    # If a periodic interpolation is to be created
+
+    if periodic_interpolation:
+
+        # Verifies if cylindrical coordinates were given
+
+        if not polar_angle_around_z:
+
+            raise ValueError("A periodic interpolation was asked for '"+
+            "spline_3D_interpolation', but 'polar_angle_around_z' is n"+
+            "ot True")
+        
+        # Gets the final and initial angles
+
+        initial_angle = parametric_variable[0]
+
+        final_angle = parametric_variable[-1]
+        
+        # Creates a function
+
+        def parametric_curve_function(theta, initial_angle, final_angle):
+
+            # If the angle is smaller than the initial angle
+
+            if theta<initial_angle:
+
+                # Gets the delta angle
+
+                delta_theta = theta-initial_angle
+
+                # Sums to the final angle
+
+                theta = final_angle+delta_theta
+
+            #  If the angle is larger than the final angle
+
+            elif theta>final_angle:
+
+                # Gets the remainder of the division of theta by the fi-
+                # nal angle 
+
+                delta_theta = theta%final_angle
+
+                # Adds this to the initial angle
+
+                theta = initial_angle+delta_theta
+
+            # Gets the parametric curve result
+
+            return [cubic_spline_x(theta), cubic_spline_y(theta), 
+            cubic_spline_z(theta)]
+        
+        # Creates a driver
+
+        parametric_curve = lambda theta: parametric_curve_function(theta,
+        initial_angle, final_angle)
+
+    # Otherwise, creates a plain driver
+
+    else:
+
+        parametric_curve = lambda theta: [cubic_spline_x(theta), 
+        cubic_spline_y(theta), cubic_spline_z(theta)]
+
+    # Returns everything
 
     if polar_angle_around_z and return_initial_and_final_polar_angles:
 
