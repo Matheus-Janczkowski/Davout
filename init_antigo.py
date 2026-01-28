@@ -1,4 +1,4 @@
-# Bit of code to get back to the main folder of the Grante repository, 
+# Bit of code to get back to the main folder of the Davout repository, 
 # even though it is used in another folder. This bit will get the current
 # file absolute path and add this path without the last 4 bits of path, 
 # including the file name
