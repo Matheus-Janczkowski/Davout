@@ -17,7 +17,7 @@ from ...PythonicUtilities.package_tools import load_classes_from_module
 class FixedSupportDirichletBC:
 
     def __init__(self, mesh_data_class, dirichlet_information, 
-    physical_group_name, time):
+    vector_of_parameters, physical_group_name, time):
         
         # Recovers the tensor of DOFs per element [n_element, n_nodes,
         # n_dofs_per_node], and flattens it to [number_of_dofs, 1]
@@ -66,7 +66,7 @@ class FixedSupportDirichletBC:
 class PrescribedDirichletBC:
 
     def __init__(self, mesh_data_class, dirichlet_information, 
-    physical_group_name, time):
+    vector_of_parameters, physical_group_name, time):
         
         # Gets the available parametric curves
 
@@ -129,9 +129,9 @@ class PrescribedDirichletBC:
 
             final_time = value_prescription[0]
 
-            # Verifies if the second component is a list or an integer
+            # Verifies if the second component is a list or an float
 
-            if isinstance(value_prescription[1], int):
+            if isinstance(value_prescription[1], float):
 
                 value_prescription[1] = [value_prescription[1]]
 
@@ -280,12 +280,14 @@ class PrescribedDirichletBC:
         # Stacks the list of prescribed DOFs back into a tensor, and re-
         # shapes it to a flat tensor
 
-        self.prescribed_dofs = tf.reshape(tf.stack(dofs_list, axis=
-        0), (-1,1))
+        self.prescribed_dofs = tf.reshape(tf.stack(dofs_list, axis=0), (
+        -1,1))
         
-        # Updates the tensor for further evaluation
+        # Stacks the list of prescribed values in the same fashion
 
-        self.update_load_curve()
+        self.prescribed_values = tf.Variable(tf.reshape(tf.stack(
+        [load_instance() for load_instance in (
+        self.list_of_load_instances)], axis=0), (-1,)))
 
     # Defines a function to update loads
 
@@ -293,9 +295,9 @@ class PrescribedDirichletBC:
         
         # Stacks the list of prescribed values in the same fashion
 
-        self.prescribed_values = tf.reshape(tf.stack(
+        self.prescribed_values.assign(tf.reshape(tf.stack(
         [load_instance() for load_instance in (
-        self.list_of_load_instances)], axis=0), (-1,))
+        self.list_of_load_instances)], axis=0), (-1,)))
 
     # Defines a function to apply such boundary conditions
 

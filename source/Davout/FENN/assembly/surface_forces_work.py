@@ -41,7 +41,7 @@ class ReferentialTractionWork:
             raise TypeError("The dictionary of tractions must be a dic"+
             "tionary. Currently, it is: "+str(traction_dict))
 
-        # Iterates through the dictionary of constitutive models
+        # Iterates through the dictionary of tractions
 
         for physical_group, traction_vector in traction_dict.items():
             
@@ -137,6 +137,8 @@ class ReferentialTractionWork:
 
         self.variation_field_ds = tf.stack(self.variation_field_ds,
         axis=0)
+
+        # TODO make traction_classes a tuple
 
     # Defines a function to assemble the residual vector
 

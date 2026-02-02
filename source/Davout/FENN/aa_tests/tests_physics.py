@@ -66,6 +66,10 @@ class TestANNTools(unittest.TestCase):
         convert_to_xdmf=False, file_directory=file_directory, 
         mesh_polinomial_order=2)
 
+        ################################################################
+        #                             FENN                             #
+        ################################################################
+
         # Defines a dictionary of finite element per field
 
         elements_per_field = {"Displacement": {"number of DOFs per nod"+
@@ -76,22 +80,18 @@ class TestANNTools(unittest.TestCase):
         mesh_data_class = mesh_tools.read_msh_mesh(file_name, 
         quadrature_degree, elements_per_field, verbose=True)
 
-        vector_of_parameters = np.zeros(81)
-
-        prescribed_dofs = [14, 17, 20, 23, 38, 41, 44, 47, 77]
+        # Sets the loads
 
         dirichlet_load = 0.1
 
         neumann_load = 0.0E5
 
-        # Initializes the vector of parameters as the null vector
+        # Creates a dictionary to tell Dirichlet boundary conditions
 
-        for dof in prescribed_dofs:
-
-            vector_of_parameters[dof] = dirichlet_load
-
-        vector_of_parameters = tf.Variable(tf.constant(
-        vector_of_parameters, dtype=mesh_data_class.dtype))
+        boundary_conditions_dict = {"top": {"BC case": "PrescribedDiri"+
+        "chletBC", "load_function": "linear", "degrees_ofFreedomList": 2,
+        "end_point": [1.0, dirichlet_load]}, "bottom": {"BC case": "Fi"+
+        "xedSupportDirichletBC"}}
 
         # Sets the dictionary of constitutive models
 
@@ -109,12 +109,16 @@ class TestANNTools(unittest.TestCase):
         # Instantiates the class to evaluate the residual vector
 
         residual_class = CompressibleHyperelasticity(mesh_data_class,
-        vector_of_parameters, constitutive_models, traction_dictionary=
-        traction_dictionary)
+        constitutive_models, traction_dictionary=traction_dictionary, 
+        boundary_conditions_dict=boundary_conditions_dict, time=1.0)
 
         # Evaluates the residual
 
         residual_vector = residual_class.evaluate_residual_vector()
+
+        ################################################################
+        #                            FEniCS                            #
+        ################################################################
 
         # Evaluates the residual vector using FEniCS
 
@@ -169,6 +173,10 @@ class TestANNTools(unittest.TestCase):
 
             bc.apply(functional_data_class.solution_fields["Displaceme"+
             "nt"].vector())
+
+        ################################################################
+        #                          Comparison                          #
+        ################################################################
 
         # Creates a class that finds the DOFs closest to a point
 
