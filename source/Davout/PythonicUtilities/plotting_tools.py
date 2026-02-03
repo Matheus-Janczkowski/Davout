@@ -225,12 +225,12 @@ plot_object=None):
 
                 y_data.append([])
 
-        # If the plot type is catter, treats each point as a separate 
+        """# If the plot type is scatter, treats each point as a separate 
         # curve
 
         elif plot_type=="scatter":
 
-            multiple_curves = len(data)
+            multiple_curves = len(data)"""
 
         for point in data:
 
@@ -1177,14 +1177,14 @@ plot_object=None):
                             plotted_entities = plot_object.scatter(
                             x_data[i], y_data[i], marker=element_style[i
                             ], s=element_size[i]**2, color=color[i], 
-                            zorder=3)
+                            zorder=3, label=label[i])
 
                         else:
 
                             plotted_entities = plot_object.scatter(
                             x_data, y_data[i], marker=element_style[i], 
                             s=element_size[i]**2, color=color[i], 
-                            zorder=3)
+                            zorder=3, label=label[i])
 
                     # If it is just the default treatment of scatter 
                     # plots
