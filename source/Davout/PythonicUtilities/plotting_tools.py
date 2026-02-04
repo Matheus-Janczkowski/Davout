@@ -1598,7 +1598,7 @@ plot_object=None):
 
         try:
 
-            plt.savefig(file_name)
+            plt.savefig(file_name, bbox_inches="tight", pad_inches=0)
 
         except Exception as e:
 

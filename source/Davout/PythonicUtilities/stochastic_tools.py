@@ -139,11 +139,11 @@ if __name__=="__main__":
 
     from ..PythonicUtilities.plotting_tools import plane_plot
 
-    limits = [[-2.0, 2.0], [-1.0, 1.0]]
+    limits = [[-3.0, 1.0], [-0.5, 1.5]]
 
     n_ellipses = 7
 
-    n_points = 200
+    n_points = 300
 
     x_data = []
 
