@@ -152,12 +152,16 @@ post_processes, mesh_fileName, solver_parameters, polynomial_degree=
 polynomial_degree, t=t, dirichlet_boundaryConditions=bcs_dictionary, 
 verbose=True)
 
+# Saves a snapshot of the solution using the automatization of ParaView
+
 frozen_snapshots(displacement_fileName, "Displacement", input_path=
-get_parent_path_of_file(), time=t_final, camera_focal_point=[0.15000000596046448, 0.5, 0.10000000149011612], 
-camera_position=[1.353486759242743, 1.2298227470603695, 1.5953915342476168],
-camera_up_direction=[-0.16175754636412246, 0.9319056569359231, -0.3246326273883827], 
-camera_parallel_scale=0.5, camera_rotation=[0.15000000596046448, 0.5, 0.10000000149011612],
-representation_type="Surface With Edges", legend_bar_position=[0.75, 0.2], 
-legend_bar_length=0.5, axes_color=[0.0, 0.0, 0.0], size_in_pixels={
-"aspect ratio": 0.8, "pixels in width": 700}, legend_bar_font="Times", 
-zoom_factor=1.0, component_to_plot="2", resolution_ratio=5)
+get_parent_path_of_file(), time=t_final, camera_focal_point=[
+0.15000000596046448, 0.5, 0.10000000149011612], camera_position=[
+1.353486759242743, 1.2298227470603695, 1.5953915342476168],
+camera_up_direction=[-0.16175754636412246, 0.9319056569359231, 
+-0.3246326273883827], camera_parallel_scale=0.5, camera_rotation=[
+0.15000000596046448, 0.5, 0.10000000149011612], representation_type=
+"Surface With Edges", legend_bar_position=[0.75, 0.2], legend_bar_length=
+0.5, axes_color=[0.0, 0.0, 0.0], size_in_pixels={"aspect ratio": 0.8, 
+"pixels in width": 700}, legend_bar_font="Times", zoom_factor=1.0, 
+component_to_plot="2", resolution_ratio=5)
