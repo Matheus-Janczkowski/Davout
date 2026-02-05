@@ -15,7 +15,7 @@ class CompressibleHyperelasticity:
 
     def __init__(self, mesh_data_class, constitutive_models_dict, 
     vector_of_parameters=None, traction_dictionary=None, 
-    boundary_conditions_dict=None, time=0.0):
+    boundary_conditions_dict=None, time=0.0, n_realizations=1):
         
         self.global_number_dofs = mesh_data_class.global_number_dofs
 

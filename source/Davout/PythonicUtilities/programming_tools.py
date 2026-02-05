@@ -6,6 +6,8 @@ import inspect
 
 import os
 
+from copy import deepcopy
+
 import subprocess
 
 from collections import OrderedDict
@@ -22,7 +24,8 @@ from ..PythonicUtilities import dictionary_tools
 
 def script_executioner(file_name, python_interpreter="python3",
 function_name=None, arguments_list=None, keyword_argumentsDict=None,
-parent_path=None, execution_rootPath=None, verbose=True):
+parent_path=None, execution_rootPath=None, verbose=True, run_as_module=
+False):
     
     # Verifies the existence of the parent path
 
@@ -44,7 +47,7 @@ parent_path=None, execution_rootPath=None, verbose=True):
 
         file_name = os.path.join(parent_path, file_name)
         
-    else:
+    elif not run_as_module:
 
         # Verifies the existence of the file
         
@@ -55,22 +58,65 @@ parent_path=None, execution_rootPath=None, verbose=True):
         
     # Verifies if the file name has the termination .py
 
-    if len(file_name)>2:
+    if not run_as_module:
 
-        if file_name[-3:len(file_name)]!=".py":
+        if len(file_name)>2:
+
+            if file_name[-3:len(file_name)]!=".py":
+
+                raise NameError("The file name '"+str(file_name)+"' do"+
+                "es not end with '.py', thus, cannot be run externally")
+            
+        else:
 
             raise NameError("The file name '"+str(file_name)+"' does n"+
-            "ot end with '.py', thus, cannot be run externally")
-        
-    else:
-
-        raise NameError("The file name '"+str(file_name)+"' does not h"+
-        "ave at least 3 characters. Hence, it is not possibly a runnab"+
-        "le file")
+            "ot have at least 3 characters. Hence, it is not possibly "+
+            "a runnable file")
         
     # Gets the arguments of the execution
 
-    exe_arguments = [python_interpreter, file_name]
+    exe_arguments = None 
+
+    # If the python file is to be run as a module
+
+    if run_as_module:
+
+        # Looks for // in the file name and substitute for .
+
+        file_name_copy = deepcopy(file_name)
+
+        file_name = ""
+
+        # Iterates through the characters of the copy
+
+        for index, character in enumerate(file_name_copy):
+
+            # Adds the character if it is not a bar
+
+            if character!="/":
+
+                file_name += character
+
+            # Otherwise
+
+            else:
+
+                file_name += "."
+
+        # Adds the file name
+
+        exe_arguments = [python_interpreter, "-m", file_name]
+
+    # Otherwise, just as a script
+
+    else:
+
+        exe_arguments = [python_interpreter, file_name]
+
+    # Initializes a copy of the arguments to print on screen
+
+    arguments_copy = {"python interpreter": python_interpreter, "file "+
+    "name": file_name}
 
     # Verifies if a specific function must be run
 
@@ -86,6 +132,12 @@ parent_path=None, execution_rootPath=None, verbose=True):
 
         exe_arguments.append(function_name)
 
+        # Saves the arguments for printing
+
+        if verbose:
+
+            arguments_copy["function name"] = function_name
+
     # Verifies if positional arguments were given
 
     if not (arguments_list is None):
@@ -97,6 +149,12 @@ parent_path=None, execution_rootPath=None, verbose=True):
             "ternally")
 
         exe_arguments.extend(arguments_list)
+
+        # Saves the arguments for printing
+
+        if verbose:
+
+            arguments_copy["arguments list"] = arguments_list
 
     # Verifies if keyword arguments were given
 
@@ -122,7 +180,19 @@ parent_path=None, execution_rootPath=None, verbose=True):
 
                 exe_arguments.append(str(value))
 
-    print(exe_arguments, "\n")
+                # Saves the arguments for printing
+
+                if verbose:
+
+                    arguments_copy[f"--{key}"] = value
+
+    if verbose:
+
+        print("Script_executioner arguments:\n")
+
+        for argument_name, argument_value in arguments_copy.items():
+
+            print(str(argument_name)+": "+str(argument_value)+"\n")
 
     # If the root path is passed 
 

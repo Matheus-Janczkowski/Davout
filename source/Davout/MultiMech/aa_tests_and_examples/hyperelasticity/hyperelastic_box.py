@@ -6,6 +6,8 @@ from .....Davout.MultiMech.constitutive_models.hyperelasticity import isotropic_
 
 from .....Davout.MultiMech.physics import hyperelastic_cauchy_continuum as variational_framework
 
+from .....Davout.MultiMech.tool_box.paraview_tools import frozen_snapshots
+
 ########################################################################
 ########################################################################
 ##                      User defined parameters                       ##
@@ -149,3 +151,8 @@ constitutive_model, traction_dictionary, maximum_loadingSteps, t_final,
 post_processes, mesh_fileName, solver_parameters, polynomial_degree=
 polynomial_degree, t=t, dirichlet_boundaryConditions=bcs_dictionary, 
 verbose=True)
+
+frozen_snapshots(displacement_fileName, "Displacement", input_path=
+get_parent_path_of_file(), time=t_final, camera_focal_point=[0.0, 0.0, 0.0],
+camera_position=[100.0, 0.0, -100.0], representation_type="Surface Wit"+
+"h Edges", legend_bar_position=[0.6, 0.2], legend_bar_length=0.5)
