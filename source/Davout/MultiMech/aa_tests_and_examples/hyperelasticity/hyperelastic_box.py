@@ -153,6 +153,11 @@ polynomial_degree, t=t, dirichlet_boundaryConditions=bcs_dictionary,
 verbose=True)
 
 frozen_snapshots(displacement_fileName, "Displacement", input_path=
-get_parent_path_of_file(), time=t_final, camera_focal_point=[0.0, 0.0, 0.0],
-camera_position=[100.0, 0.0, -100.0], representation_type="Surface Wit"+
-"h Edges", legend_bar_position=[0.6, 0.2], legend_bar_length=0.5)
+get_parent_path_of_file(), time=t_final, camera_focal_point=[0.15000000596046448, 0.5, 0.10000000149011612], 
+camera_position=[1.353486759242743, 1.2298227470603695, 1.5953915342476168],
+camera_up_direction=[-0.16175754636412246, 0.9319056569359231, -0.3246326273883827], 
+camera_parallel_scale=0.5, camera_rotation=[0.15000000596046448, 0.5, 0.10000000149011612],
+representation_type="Surfa"+
+"ce With Edges", legend_bar_position=[0.6, 0.2], legend_bar_length=0.5, 
+axes_color=[0.0, 0.0, 0.0], image_resolution=[1080, 1080], 
+get_attributes_render=True)

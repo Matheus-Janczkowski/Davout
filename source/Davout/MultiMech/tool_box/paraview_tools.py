@@ -21,7 +21,8 @@ output_path=None, camera_position=None, color_map="Cool to Warm",
 output_imageFileName="plot.png", execution_rootPath=None, time=None,
 time_step_index=None, camera_focal_point=None, camera_up_direction=None,
 representation_type=None, legend_bar_position=None, legend_bar_length=
-None):
+None, axes_color=None, image_resolution=None, get_attributes_render=None,
+camera_parallel_scale=None, camera_rotation=None):
     
     programming_tools.script_executioner("source.Davout.MultiMech.tool"+
     "_box.paraview_tools", python_interpreter="pvpython", function_name=
@@ -32,7 +33,10 @@ None):
     "p_index": time_step_index, "time": time, "camera_focal_point":
     camera_focal_point, "camera_up_direction": camera_up_direction,
     "representation_type": representation_type, "legend_bar_position":
-    legend_bar_position, "legend_bar_length": legend_bar_length},
+    legend_bar_position, "legend_bar_length": legend_bar_length, "axes"+
+    "_color": axes_color, "image_resolution": image_resolution, "get_a"+
+    "ttributes_render": get_attributes_render, "camera_parallel_scale":
+    camera_parallel_scale, "camera_rotation": camera_rotation},
     execution_rootPath=execution_rootPath, run_as_module=True)
 
 # Defines a function to control paraview to take a single or a set of
@@ -42,7 +46,9 @@ def LOCAL_frozenSnapshots(input_fileName, field_name, input_path=None,
 output_path=None, camera_position=None, color_map="Cool to Warm", 
 output_imageFileName="plot.png", time_step_index=None, time=None,
 camera_focal_point=None, camera_up_direction=None, representation_type=
-None, legend_bar_position=None, legend_bar_length=None):
+None, legend_bar_position=None, legend_bar_length=None, axes_color=None,
+image_resolution=None, get_attributes_render=None, camera_parallel_scale=
+None, camera_rotation=None):
     
     # Verifies the input and output paths
 
@@ -92,7 +98,7 @@ None, legend_bar_position=None, legend_bar_length=None):
 
         # Selects this time to show
 
-        times = animation_scene.TimeKeeper.TimestepValues,
+        times = animation_scene.TimeKeeper.TimestepValues
 
         animation_scene.AnimationTime = times[int(time_step_index)]
 
@@ -101,6 +107,32 @@ None, legend_bar_position=None, legend_bar_length=None):
     renderView = GetActiveViewOrCreate('RenderView')
 
     display = Show(data, renderView)
+
+    Render()
+
+    # Verifies if the color of the coordinate system triad is given
+
+    if axes_color:
+
+        # Verifies if it is a list
+
+        if (axes_color[0]!="[" or axes_color[-1]!="]"):
+
+            raise TypeError("'axes_color' in 'frozen_snapshots' must b"+
+            "e a list of 3 components of RGB values---[0.0, 0.0, 0.0] "+
+            "means black; [1.0, 1.0, 1.0] means white. Currently, it i"+
+            "s: "+str(axes_color)+"; whose type is: "+str(type(
+            axes_color)))
+        
+        # Converts the argument to a list and sets the parameter
+
+        axes_color = string_toList(axes_color)
+
+        renderView.OrientationAxesXColor = axes_color
+
+        renderView.OrientationAxesYColor = axes_color
+
+        renderView.OrientationAxesZColor = axes_color
 
     # Verifies if the representation is set
 
@@ -262,11 +294,72 @@ None, legend_bar_position=None, legend_bar_length=None):
 
         renderView.CameraViewUp = camera_up_direction
 
+    # Sets camera rotation
+
+    if camera_rotation:
+
+        if (camera_rotation[0]!="[" or camera_rotation[-1]!="]"):
+
+            raise TypeError("'camera_rotation' in 'frozen_snapshot"+
+            "s' must be a list of 3 components. Currently, it is: "+str(
+            camera_rotation)+"; whose type is: "+str(type(
+            camera_rotation)))
+        
+        # Converts the argument to a list
+
+        camera_rotation = string_toList(camera_rotation)
+
+        renderView.CenterOfRotation = camera_rotation
+
+    # Sets the parallel scale
+
+    if camera_parallel_scale:
+
+        try:
+
+            camera_parallel_scale = float(camera_parallel_scale)
+
+        except:
+
+            raise ValueError("Could not convert 'camera_parallel_scale"+
+            "' to float in 'frozen_snapshots'. The current value is: "+
+            str(camera_parallel_scale))
+        
+        # Sets the parallel scale
+
+        renderView.CameraParallelScale = camera_parallel_scale
+
+    # Verifies if image resolution has been provided
+
+    if image_resolution:
+
+        if (image_resolution[0]!="[" or image_resolution[-1]!="]"):
+
+            raise TypeError("'image_resolution' in 'frozen_snapshots' "+
+            "must be a list of 2 components. Currently, it is: "+str(
+            image_resolution)+"; whose type is: "+str(type(
+            image_resolution)))
+        
+        # Converts the argument to a list
+
+        renderView.ViewSize = string_toList(image_resolution)
+
+    else:
+
+        # Otherwise, uses the default
+
+        image_resolution = renderView.ViewSize
+
     # Renders and saves
 
     Render()
 
     SaveScreenshot(output_imageFileName, renderView)
+
+    if get_attributes_render:
+
+        print("\nThe attributes of the RenderView are:\n"+str(
+        renderView.ListProperties()))
 
 ########################################################################
 #                         Functions dispatching                        #
