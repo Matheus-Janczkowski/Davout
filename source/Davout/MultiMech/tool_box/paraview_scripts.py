@@ -1,6 +1,10 @@
 # Routine to externally control paraview and automate the extraction of
 # simulation output
 
+import paraview
+
+paraview.options.offscreen = True
+
 from paraview.simple import *
 
 from PIL import Image
@@ -59,13 +63,7 @@ size_in_pixels=None, get_attributes_render=None, camera_parallel_scale=
 None, camera_rotation=None, legend_bar_font=None, legend_bar_font_file=
 None, zoom_factor=None, plot_x_axis=None, plot_y_axis=None, plot_z_axis=
 None, no_axes=None, component_to_plot=None, resolution_ratio=None,
-transparent_background=None, off_screen_option=None):
-    
-    # If the off-screen option is valid
-
-    if off_screen_option=="True":
-
-        paraview.options.offscreen = True
+transparent_background=None):
     
     # Verifies the input and output paths
 
