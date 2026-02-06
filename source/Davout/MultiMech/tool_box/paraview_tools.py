@@ -22,7 +22,8 @@ camera_parallel_scale=None, camera_rotation=None, legend_bar_font=None,
 legend_bar_font_file=None, zoom_factor=None, plot_x_axis=None, 
 plot_y_axis=None, plot_z_axis=None, no_axes=None, component_to_plot=None,
 resolution_ratio=None, transparent_background=None, 
-LIBGL_ALWAYS_SOFTWARE=False, extra_execution_arguments=None):
+LIBGL_ALWAYS_SOFTWARE=False, extra_execution_arguments=None,
+python_interpreter="pvpython"):
     
     # Gets the path to the module where function LOCAL_frozenSnapshots is
 
@@ -31,7 +32,7 @@ LIBGL_ALWAYS_SOFTWARE=False, extra_execution_arguments=None):
     # Executes it as an external script
     
     programming_tools.script_executioner(module_path, python_interpreter=
-    "pvpython", function_name="LOCAL_frozenSnapshots", arguments_list=[
+    python_interpreter, function_name="LOCAL_frozenSnapshots", arguments_list=[
     input_fileName, field_name], keyword_argumentsDict={"input_path": 
     input_path, "output_path": output_path, "camera_position": 
     camera_position, "color_map": color_map, "output_imageFileName": 
