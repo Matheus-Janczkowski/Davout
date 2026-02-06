@@ -2,7 +2,32 @@
 
 import numpy as np
 
-from ..PythonicUtilities import recursion_tools
+#from ..PythonicUtilities import recursion_tools
+
+########################################################################
+#                           Imports preamble                           #
+########################################################################
+
+from pathlib import Path
+
+from importlib import util
+
+import sys
+
+# Gets the parent paths of the current 
+
+broken_path = Path(__file__).parents
+
+# Imports recursion tools
+
+specifications = util.spec_from_file_location("recursion_tools", 
+broken_path[1]/"PythonicUtilities"/"recursion_tools.py")
+
+recursion_tools = util.module_from_spec(specifications)
+
+sys.modules["recursion_tools"] = recursion_tools
+
+specifications.loader.exec_module(recursion_tools)
 
 ########################################################################
 #                   Parsing strings to other formats                   #

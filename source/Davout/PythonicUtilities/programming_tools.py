@@ -12,7 +12,32 @@ import subprocess
 
 from collections import OrderedDict
 
-from ..PythonicUtilities import dictionary_tools
+#from ..PythonicUtilities import dictionary_tools
+
+########################################################################
+#                           Imports preamble                           #
+########################################################################
+
+from pathlib import Path
+
+from importlib import util
+
+import sys
+
+# Gets the parent paths of the current 
+
+broken_path = Path(__file__).parents
+
+# Imports recursion tools
+
+specifications = util.spec_from_file_location("dictionary_tools", 
+broken_path[1]/"PythonicUtilities"/"dictionary_tools.py")
+
+dictionary_tools = util.module_from_spec(specifications)
+
+sys.modules["dictionary_tools"] = dictionary_tools
+
+specifications.loader.exec_module(dictionary_tools)
 
 ########################################################################
 #               Handler and executioner of other scripts               #

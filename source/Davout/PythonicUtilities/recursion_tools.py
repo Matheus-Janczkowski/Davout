@@ -2,7 +2,32 @@
 
 import copy
 
-from ..PythonicUtilities import programming_tools
+#from ..PythonicUtilities import programming_tools
+
+########################################################################
+#                           Imports preamble                           #
+########################################################################
+
+from pathlib import Path
+
+from importlib import util
+
+import sys
+
+# Gets the parent paths of the current 
+
+broken_path = Path(__file__).parents
+
+# Imports recursion tools
+
+specifications = util.spec_from_file_location("programming_tools", 
+broken_path[1]/"PythonicUtilities"/"programming_tools.py")
+
+programming_tools = util.module_from_spec(specifications)
+
+sys.modules["programming_tools"] = programming_tools
+
+specifications.loader.exec_module(programming_tools)
 
 ########################################################################
 #                           Recursion tools                            #
