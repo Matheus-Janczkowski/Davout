@@ -78,7 +78,11 @@ transparent_background=None, warp_by_vector=None, warp_scale=None,
 glyph=None, glyph_scale=None, display_reference_configuration="True",
 clip=None, clip_plane_origin=None, clip_plane_normal_vector=None,
 set_camera_interactively=None):
-    
+
+    # Resets session
+
+    ResetSession()
+
     # Verifies the input and output paths
 
     if input_path:
@@ -163,6 +167,34 @@ set_camera_interactively=None):
     # Sets a dictionary of displays to color
 
     display_dictionary = {}
+
+    # Verifies if the representation is set
+
+    if representation_type:
+
+        # Sets a list of allowed representation options
+
+        available_representations = ['Surface', 'Surface With Edges', 
+        'Wireframe', 'Points', 'Volume', 'Outline', 'Feature Edges', 
+        'Slice', 'Point Gaussian']
+
+        # Verifies if it is an available representation type
+
+        if not (representation_type in available_representations):
+
+            available_names = ""
+
+            for name in available_representations:
+
+                available_names += "\n"+name
+
+            raise ValueError("The provided 'representation_type' is '"+
+            str(representation_type)+"'. But the available options are:"+
+            available_names)
+        
+    else:
+
+        representation_type = "Surface"
 
     ####################################################################
     #                       Substitutive filters                       #
@@ -252,15 +284,6 @@ set_camera_interactively=None):
     # Verifies if a clip object must be created
 
     if clip=="True":
-
-        # Verifies if the data has at least 3 components
-
-        if number_of_components<2:
-
-            raise TypeError("The data provided to snapshot '"+str(
-            field_name)+"' field in '"+str(input_fileName)+"' has "+str(
-            number_of_components)+" components. Thus, it is not possib"+
-            "le to clip it")
 
         # Creates the clip object as a clip using a plane
 
@@ -355,7 +378,7 @@ set_camera_interactively=None):
 
     # Displays glyph to show vector field
 
-    if glyph:
+    if glyph=="True":
 
         # Verifies if the data has at least 3 components
 
@@ -469,37 +492,13 @@ set_camera_interactively=None):
         if plot_z_axis=="False":
 
             renderView.OrientationAxesZVisibility = False
-
-    # Verifies if the representation is set
-
-    if representation_type:
-
-        # Sets a list of allowed representation options
-
-        available_representations = ['Surface', 'Surface With Edges', 
-        'Wireframe', 'Points', 'Volume', 'Outline', 'Feature Edges', 
-        'Slice', 'Point Gaussian']
-
-        # Verifies if it is an available representation type
-
-        if not (representation_type in available_representations):
-
-            available_names = ""
-
-            for name in available_representations:
-
-                available_names += "\n"+name
-
-            raise ValueError("The provided 'representation_type' is '"+
-            str(representation_type)+"'. But the available options are:"+
-            available_names)
         
-        # Sets the representation
+    # Sets the representation
 
-        for display_object_dict in display_dictionary.values():
+    for display_object_dict in display_dictionary.values():
 
-            display_object_dict["object"].Representation = (
-            display_object_dict["representation"])
+        display_object_dict["object"].Representation = (
+        display_object_dict["representation"])
 
     # Verifies the component to plot
 
@@ -696,8 +695,8 @@ set_camera_interactively=None):
         print("The interactively gathered settings are:\nCameraPositio"+
         "n: "+str(camera_position)+"\nCameraFocalPoint: "+str(
         camera_focal_point)+"\nCameraViewUp: "+str(camera_up_direction)+
-        "\nCameraParallelScale: "+str(camera_up_direction)+"\nCenterOf"+
-        "Rotation: "+str(camera_rotation)+"\nScale bar position: "+
+        "\nCameraParallelScale: "+str(camera_parallel_scale)+"\nCenter"+
+        "OfRotation: "+str(camera_rotation)+"\nScale bar position: "+
         legend_bar_position+"\nScale bar length: "+str(legend_bar_length
         )+"\nViewSize: "+size_in_pixels+"\n")
 
