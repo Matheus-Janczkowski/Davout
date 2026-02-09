@@ -23,7 +23,9 @@ legend_bar_font_file=None, zoom_factor=None, plot_x_axis=None,
 plot_y_axis=None, plot_z_axis=None, no_axes=None, component_to_plot=None,
 resolution_ratio=None, transparent_background=None, 
 LIBGL_ALWAYS_SOFTWARE=False, extra_execution_arguments=None,
-python_interpreter="pvpython"):
+python_interpreter="pvpython", warp_by_vector=None, warp_scale=None, 
+glyph=None, glyph_scale=None, display_reference_configuration=True, clip=
+None, clip_plane_origin=None, clip_plane_normal_vector=None):
     
     # Gets the path to the module where function LOCAL_frozenSnapshots is
 
@@ -48,7 +50,12 @@ python_interpreter="pvpython"):
     "bar_font_file": legend_bar_font_file, "plot_x_axis": plot_x_axis,
     "plot_y_axis": plot_y_axis, "plot_z_axis": plot_z_axis, "no_axes":
     no_axes, "component_to_plot": component_to_plot, "resolution_ratio":
-    resolution_ratio, "transparent_background": transparent_background},
+    resolution_ratio, "transparent_background": transparent_background,
+    "warp_by_vector": warp_by_vector, "warp_scale": warp_scale, "glyph":
+    glyph, "glyph_scale": glyph_scale, "display_reference_configuration":
+    display_reference_configuration, "clip": clip, "clip_plane_origin":
+    clip_plane_origin, "clip_plane_normal_vector": 
+    clip_plane_normal_vector},
     execution_rootPath=execution_rootPath, run_as_module=False,
     LIBGL_ALWAYS_SOFTWARE=LIBGL_ALWAYS_SOFTWARE, 
     extra_execution_arguments=extra_execution_arguments)

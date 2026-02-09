@@ -63,7 +63,9 @@ size_in_pixels=None, get_attributes_render=None, camera_parallel_scale=
 None, camera_rotation=None, legend_bar_font=None, legend_bar_font_file=
 None, zoom_factor=None, plot_x_axis=None, plot_y_axis=None, plot_z_axis=
 None, no_axes=None, component_to_plot=None, resolution_ratio=None,
-transparent_background=None):
+transparent_background=None, warp_by_vector=None, warp_scale=None, 
+glyph=None, glyph_scale=None, display_reference_configuration="True",
+clip=None, clip_plane_origin=None, clip_plane_normal_vector=None):
     
     # Verifies the input and output paths
 
@@ -98,6 +100,26 @@ transparent_background=None):
 
     data.PointArrayStatus = [field_name]
 
+    # Gets the components of the data
+
+    data.UpdatePipeline()
+
+    info = data.GetPointDataInformation()
+
+    array_info = info.GetArray(field_name)
+
+    number_of_components = 1
+
+    if hasattr(array_info, "GetNumberOfComponents"):
+
+        number_of_components = array_info.GetNumberOfComponents()
+
+    else:
+
+        # Makes the component to plot automatically magnitude
+
+        component_to_plot = "Magnitude"
+
     # Selects the time step
 
     animation_scene = GetAnimationScene()
@@ -122,11 +144,271 @@ transparent_background=None):
 
         animation_scene.AnimationTime = times[int(time_step_index)]
 
-    # Shows data in view
+    # Creates a new view 
 
     renderView = GetActiveViewOrCreate('RenderView')
 
-    display = Show(data, renderView)
+    # Sets a dictionary of displays to color
+
+    display_dictionary = {}
+
+    ####################################################################
+    #                       Substitutive filters                       #
+    ####################################################################
+
+    # Creates a variable to store the data, especially if it was warped
+
+    active_data = data
+
+    # Otherwise displays the raw data only
+
+    if display_reference_configuration=="True":
+
+        # Displays the rendered data
+
+        display = Show(active_data, renderView)
+
+        # Adds this display object to the dictionary of displays
+
+        display_dictionary["reference"] = {"object": display, "number "+
+        "of components": number_of_components, "representation":
+        representation_type, "get scalar bar from": True}
+
+    # Verifies if a warped by vector object must be created
+
+    if warp_by_vector:
+
+        # Verifies if the data has at least 3 components
+
+        if number_of_components<2:
+
+            raise TypeError("The data provided to snapshot '"+str(
+            field_name)+"' field in '"+str(input_fileName)+"' has "+str(
+            number_of_components)+" components. Thus, it is not possib"+
+            "le to warp it by vector")
+
+        # Creates the warped object
+
+        warp_object = WarpByVector(Input=data)
+
+        warp_object.Vectors = ['POINTS', field_name]
+
+        # Verifies if the scale of the warped mesh was given
+
+        if warp_scale:
+
+            # Tries to convert the warp scale to a float
+
+            try:
+
+                warp_scale = float(warp_scale)
+
+            except:
+
+                raise ValueError("Could not convert 'warp_scale' to fl"+
+                "oat in 'frozen_snapshots'. The current value is: "+str(
+                warp_scale))
+            
+        # Otherwise, uses 1 as default
+
+        else:
+
+            warp_scale = 1.0
+
+        # Scales it
+
+        warp_object.ScaleFactor = warp_scale
+
+        # Hides the previously plotted data
+
+        Hide(active_data, renderView)
+
+        # Saves the warped data as the active data
+
+        active_data = warp_object
+
+        # Displays the warped object
+
+        display = Show(warp_object, renderView)
+
+        # Adds this display object to the dictionary of displays
+
+        display_dictionary["warp"] = {"object": display, "number of co"+
+        "mponents": number_of_components, "representation":
+        representation_type, "get scalar bar from": True}
+
+    # Verifies if a clip object must be created
+
+    if clip:
+
+        # Verifies if the data has at least 3 components
+
+        if number_of_components<2:
+
+            raise TypeError("The data provided to snapshot '"+str(
+            field_name)+"' field in '"+str(input_fileName)+"' has "+str(
+            number_of_components)+" components. Thus, it is not possib"+
+            "le to clip it")
+
+        # Creates the clip object as a clip using a plane
+
+        clip_object = None 
+
+        if active_data is None:
+
+            clip_object = Clip(Input=data)
+
+        else:
+
+            clip_object = Clip(Input=active_data)
+
+        clip_object.ClipType = 'Plane'
+
+        # Verifies if the origin point of the clip plane was given
+
+        if clip_plane_origin:
+
+            # Verifies if it is a list
+
+            if (clip_plane_origin[0]!="[" or clip_plane_origin[-1]!="]"):
+
+                raise TypeError("'clip_plane_origin' in 'frozen_snapsh"+
+                "ots' must be a list of 3 components with the (x,y,z) "+
+                "coordinates of the origin of the clip plane. Currentl"+
+                "y, it is: "+str(clip_plane_origin)+"; whose type is: "+
+                str(type(clip_plane_origin)))
+            
+            # Converts the argument to a list and sets the parameter
+
+            clip_plane_origin = string_tools.string_toList(
+            clip_plane_origin)
+            
+        # Otherwise, throws an error
+
+        else:
+
+            raise ValueError("'clip_plane_origin' in 'frozen_snapshots"+
+            "' must be a list of 3 components with the (x,y,z) coordin"+
+            "ates of the origin of the clip plane. Currently, it was n"+
+            "ot provided")
+
+        # Verifies if the normal vector of the clip plane was given
+
+        if clip_plane_normal_vector:
+
+            # Verifies if it is a list
+
+            if (clip_plane_normal_vector[0]!="[" or (
+            clip_plane_normal_vector[-1]!="]")):
+
+                raise TypeError("'clip_plane_normal_vector' in 'frozen"+
+                "_snapshots' must be a list of 3 components with the ("+
+                "x,y,z) values of the normal plane of the clip plane. "+
+                "Currently, it is: "+str(clip_plane_normal_vector)+"; "+
+                "whose type is: "+str(type(clip_plane_normal_vector)))
+            
+            # Converts the argument to a list and sets the parameter
+
+            clip_plane_normal_vector = string_tools.string_toList(
+            clip_plane_normal_vector)
+            
+        # Otherwise, throws an error
+
+        else:
+
+            raise ValueError("'clip_plane_normal_vector' in 'frozen_sn"+
+            "apshots' must be a list of 3 components with the (x,y,z) "+
+            "values of the normal vector of the clip plane. Currently,"+
+            " it was not provided")
+
+        # Sets the plane parameters
+
+        clip_object.ClipType.Origin = clip_plane_origin
+
+        clip_object.ClipType.Normal = clip_plane_normal_vector
+
+        # Hides the previously plotted data
+
+        Hide(active_data, renderView)
+
+        # Saves the clipped data as the active data
+
+        active_data = clip_object
+
+        # Displays the clipped object
+
+        display = Show(clip_object, renderView)
+
+        # Adds this display object to the dictionary of displays
+
+        display_dictionary["clip"] = {"object": display, "number of co"+
+        "mponents": number_of_components, "representation":
+        representation_type, "get scalar bar from": True}
+
+    ####################################################################
+    #                         Additive filters                         #
+    ####################################################################
+
+    # Displays glyph to show vector field
+
+    if glyph:
+
+        # Verifies if the data has at least 3 components
+
+        if number_of_components<2:
+
+            raise TypeError("The data provided to snapshot '"+str(
+            field_name)+"' field in '"+str(input_fileName)+"' has "+str(
+            number_of_components)+" components. Thus, it is not possib"+
+            "le to create a glyph")
+
+        # Creates the glyph object
+
+        glyph_object = Glyph(Input=active_data)
+
+        glyph_object.OrientationArray = ['POINTS', field_name]
+
+        glyph_object.ScaleArray = ['POINTS', field_name]
+
+        # Verifies if the scale of the glyph was given
+
+        if glyph_scale:
+
+            # Tries to convert the glyph scale to a float
+
+            try:
+
+                glyph_scale = float(glyph_scale)
+
+            except:
+
+                raise ValueError("Could not convert 'glyph_scale' to f"+
+                "loat in 'frozen_snapshots'. The current value is: "+
+                str(glyph_scale))
+            
+        # Otherwise, uses 1 as default
+
+        else:
+
+            glyph_scale = 1.0
+
+        # Applies the scale factor
+
+        glyph_object.ScaleFactor = glyph_scale
+
+        # Defines the type of the glyph
+
+        glyph_object.GlyphType = 'Arrow'
+
+        # Displays the rendered data
+
+        display = Show(glyph_object, renderView)
+
+        # Adds this display object to the dictionary of displays
+
+        display_dictionary["glyph"] = {"object": display, "number of c"+
+        "omponents": 1, "representation": "Surface", "get scalar bar f"+
+        "rom": False}
 
     Render()
 
@@ -210,29 +492,10 @@ transparent_background=None):
         
         # Sets the representation
 
-        display.Representation = representation_type
+        for display_object_dict in display_dictionary.values():
 
-    # Gets the components of the data
-
-    data.UpdatePipeline()
-
-    Render()
-
-    info = data.GetPointDataInformation()
-
-    array_info = info.GetArray(field_name)
-
-    number_of_components = 1
-
-    if hasattr(array_info, "GetNumberOfComponents"):
-
-        number_of_components = array_info.GetNumberOfComponents()
-
-    else:
-
-        # Makes the component to plot automatically magnitude
-
-        component_to_plot = "Magnitude"
+            display_object_dict["object"].Representation = (
+            display_object_dict["representation"])
 
     # Verifies the component to plot
 
@@ -302,30 +565,42 @@ transparent_background=None):
             " is '"+str(component_to_plot)+"', but it is not an availa"
             "ble name. Check the list of available names:"+
             available_names)
+        
+    # Sets the color table
 
-    # Sets color
+    LookupTable = None
 
-    # Takes care of scalar fields
+    # Sets color, thus, it must iterates over the display objects
 
-    if number_of_components==1:
+    for display_object_dict in display_dictionary.values():
 
-        ColorBy(display, ('POINTS', field_name))
+        # Gets the display object
 
-    # Otherwise, allows for the required component
+        display = display_object_dict["object"]
 
-    else:
+        # Takes care of scalar fields
 
-        ColorBy(display, ('POINTS', field_name, component_to_plot))
+        if display_object_dict["number of components"]==1:
 
-    Render()
+            ColorBy(display, ('POINTS', field_name))
 
-    # Rescales the color
+        # Otherwise, allows for the required component
 
-    display.RescaleTransferFunctionToDataRange(True, True)
+        else:
 
-    LookupTable = GetColorTransferFunction(field_name)
+            ColorBy(display, ('POINTS', field_name, component_to_plot))
 
-    display.SetScalarBarVisibility(renderView, True)
+        # Rescales the color
+
+        display.RescaleTransferFunctionToDataRange(True, True)
+
+        # Gets the color bar
+
+        if display_object_dict["get scalar bar from"]:
+
+            LookupTable = GetColorTransferFunction(field_name)
+
+            display.SetScalarBarVisibility(renderView, True)
 
     # Sets the position of the legend
 
