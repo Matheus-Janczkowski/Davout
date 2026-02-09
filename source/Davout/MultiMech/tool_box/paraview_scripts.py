@@ -3,7 +3,7 @@
 
 import paraview
 
-paraview.options.offscreen = True
+#paraview.options.offscreen = True
 
 from paraview.simple import *
 
