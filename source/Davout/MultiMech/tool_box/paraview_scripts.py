@@ -569,7 +569,7 @@ set_camera_interactively=None):
             "ble name. Check the list of available names:"+
             available_names)
         
-    # Sets the color table
+    # Sets the color table for the legend
 
     LookupTable = None
 
