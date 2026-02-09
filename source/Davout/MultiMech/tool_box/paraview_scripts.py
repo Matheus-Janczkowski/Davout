@@ -1,10 +1,6 @@
 # Routine to externally control paraview and automate the extraction of
 # simulation output
 
-import paraview
-
-#paraview.options.offscreen = True
-
 from paraview.simple import *
 
 from PIL import Image
@@ -77,7 +73,7 @@ None, no_axes=None, component_to_plot=None, resolution_ratio=None,
 transparent_background=None, warp_by_vector=None, warp_scale=None, 
 glyph=None, glyph_scale=None, display_reference_configuration="True",
 clip=None, clip_plane_origin=None, clip_plane_normal_vector=None,
-set_camera_interactively=None):
+set_camera_interactively=None, background_color=None):
 
     # Resets session
 
@@ -163,6 +159,74 @@ set_camera_interactively=None):
     # Creates a new view 
 
     renderView = GetActiveViewOrCreate('RenderView')
+
+    # Verifies if color is to be set for the background
+
+    if background_color:
+
+        # Sets a list of color palettes 
+
+        color_palettes = ['WarmGrayBackground', 'DarkGrayBackground', 
+        'NeutralGrayBackground', 'LightGrayBackground', 'WhiteBackgrou'+
+        'nd', 'BlackBackground', 'GradientBackground']
+
+        # Verifies if background color is in the color paletters
+
+        if background_color in color_palettes:
+
+            LoadPalette(paletteName=background_color) 
+        
+        else:
+
+            # Sets a dictionary of pre-made colors
+
+            colors_dictionary = {"white": [1.0, 1.0, 1.0], "black": [0.0, 
+            0.0, 0.0], "dark gray": [0.1, 0.1, 0.1]}
+
+            # Verifies if it is a list
+
+            if (background_color[0]=="[" and background_color[-1]=="]"):
+
+                # Transforms into a list
+
+                background_color = string_tools.string_toList(
+                background_color)
+
+            elif background_color in colors_dictionary:
+
+                # Gets the values from the dictionary
+
+                background_color = colors_dictionary[background_color]
+
+            else:
+
+                available_names = ""
+
+                for name in colors_dictionary.keys():
+
+                    available_names += "\n'"+name+"'"
+
+                available_palettes = ""
+
+                for name in color_palettes:
+
+                    available_palettes += "\n'"+name+"'"
+
+                raise TypeError("'background_color' in 'frozen_snapsho"+
+                "ts' must be:\n\na list of 3 components of RGB values-"+
+                "--[0.0, 0.0, 0.0] means black; [1.0, 1.0, 1.0] means "+
+                "white;\n\nor it can be one of the available names:"+
+                available_names+";\n\nor it can be one of the palletes"+
+                ":"+available_palettes+".\n\n"+"Currently, it is: "+str(
+                background_color))
+            
+            # Sets the color 
+
+            renderView.UseColorPaletteForBackground = 0
+
+            renderView.BackgroundColorMode = 'Single Color'
+
+            renderView.Background = background_color
 
     # Sets a dictionary of displays to color
 

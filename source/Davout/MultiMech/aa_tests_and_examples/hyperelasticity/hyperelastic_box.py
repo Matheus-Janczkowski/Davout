@@ -159,8 +159,9 @@ get_parent_path_of_file(), time=t_final, representation_type=
 "Surface With Edges", axes_color=[0.0, 0.0, 0.0], legend_bar_font="Tim"+
 "es", zoom_factor=1.0, component_to_plot="2", resolution_ratio=5, clip=
 False, clip_plane_origin=[0.15, 0.5, 0.1], clip_plane_normal_vector=
-[1.0, 1.0, 1.0], warp_by_vector=True,
-display_reference_configuration=False, set_camera_interactively=True,
+[1.0, 1.0, 1.0], warp_by_vector=True, background_color="WhiteBackground",
+display_reference_configuration=False, transparent_background=False,
+set_camera_interactively=False,
 camera_position=[-2.2202601190413063, 2.7845260002185928, 2.412838032797255],
 camera_focal_point=[0.500121318497246, 0.8894379799910188, 0.03488656665544461],
 camera_up_direction=[0.19171813331267484, 0.8626133794219494, -0.46812638784984917],
