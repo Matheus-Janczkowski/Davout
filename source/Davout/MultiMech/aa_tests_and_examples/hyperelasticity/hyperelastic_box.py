@@ -155,15 +155,17 @@ verbose=True)
 # Saves a snapshot of the solution using the automatization of ParaView
 
 frozen_snapshots(displacement_fileName, "Displacement", input_path=
-get_parent_path_of_file(), time=t_final, camera_focal_point=[
-0.21852376220223957, 0.8539221557221409, -0.10965916750028476], 
-camera_position=[1.3228575479655793, 2.4598844440870637, 2.962272946669594],
-camera_up_direction=[-0.16175754636412246, 0.9319056569359231, 
--0.3246326273883827], camera_parallel_scale=0.5, camera_rotation=[
-0.15000000596046448, 0.5, 0.10000000149011612], representation_type=
-"Surface With Edges", legend_bar_position=[0.75, 0.2], legend_bar_length=
-0.5, axes_color=[0.0, 0.0, 0.0], size_in_pixels={"aspect ratio": 0.8, 
-"pixels in width": 700}, legend_bar_font="Times", zoom_factor=1.0, 
-component_to_plot="2", resolution_ratio=5, clip=True, clip_plane_origin=
-[0.15, 0.5, 0.1], clip_plane_normal_vector=[1.0, 1.0, 1.0], warp_by_vector=True,
-display_reference_configuration=False)
+get_parent_path_of_file(), time=t_final, representation_type=
+"Surface With Edges", axes_color=[0.0, 0.0, 0.0], legend_bar_font="Tim"+
+"es", zoom_factor=1.0, component_to_plot="2", resolution_ratio=5, clip=
+False, clip_plane_origin=[0.15, 0.5, 0.1], clip_plane_normal_vector=
+[1.0, 1.0, 1.0], warp_by_vector=True,
+display_reference_configuration=False, set_camera_interactively=True,
+camera_position=[-2.2202601190413063, 2.7845260002185928, 2.412838032797255],
+camera_focal_point=[0.500121318497246, 0.8894379799910188, 0.03488656665544461],
+camera_up_direction=[0.19171813331267484, 0.8626133794219494, -0.46812638784984917],
+camera_parallel_scale=0.872714431199938,
+camera_rotation=[0.0, 0.0, 0.0],
+legend_bar_position=[0.6048594377510041, 0.09555555555555562],
+legend_bar_length=0.7344444444444449,
+size_in_pixels={'aspect ratio': 1.0, 'pixels in width': 400})

@@ -25,7 +25,8 @@ resolution_ratio=None, transparent_background=None,
 LIBGL_ALWAYS_SOFTWARE=False, extra_execution_arguments=None,
 python_interpreter="pvpython", warp_by_vector=None, warp_scale=None, 
 glyph=None, glyph_scale=None, display_reference_configuration=True, clip=
-None, clip_plane_origin=None, clip_plane_normal_vector=None):
+None, clip_plane_origin=None, clip_plane_normal_vector=None,
+set_camera_interactively=None):
     
     # Gets the path to the module where function LOCAL_frozenSnapshots is
 
@@ -55,7 +56,8 @@ None, clip_plane_origin=None, clip_plane_normal_vector=None):
     glyph, "glyph_scale": glyph_scale, "display_reference_configuration":
     display_reference_configuration, "clip": clip, "clip_plane_origin":
     clip_plane_origin, "clip_plane_normal_vector": 
-    clip_plane_normal_vector},
+    clip_plane_normal_vector, "set_camera_interactively": 
+    set_camera_interactively},
     execution_rootPath=execution_rootPath, run_as_module=False,
     LIBGL_ALWAYS_SOFTWARE=LIBGL_ALWAYS_SOFTWARE, 
     extra_execution_arguments=extra_execution_arguments)

@@ -5,11 +5,58 @@ import copy
 
 from collections import OrderedDict
 
-from ..PythonicUtilities import string_tools
+#from ..PythonicUtilities import string_tools
 
-from ..PythonicUtilities import recursion_tools
+#from ..PythonicUtilities import recursion_tools
 
-from ..PythonicUtilities import path_tools
+#from ..PythonicUtilities import path_tools
+
+########################################################################
+#                           Imports preamble                           #
+########################################################################
+
+from pathlib import Path
+
+from importlib import util
+
+import sys
+
+# Gets the parent paths of the current 
+
+broken_path = Path(__file__).parents
+
+# Imports recursion tools
+
+specifications = util.spec_from_file_location("string_tools", 
+broken_path[1]/"PythonicUtilities"/"string_tools.py")
+
+string_tools = util.module_from_spec(specifications)
+
+sys.modules["string_tools"] = string_tools
+
+specifications.loader.exec_module(string_tools)
+
+# Imports recursion tools
+
+specifications = util.spec_from_file_location("recursion_tools", 
+broken_path[1]/"PythonicUtilities"/"recursion_tools.py")
+
+recursion_tools = util.module_from_spec(specifications)
+
+sys.modules["recursion_tools"] = recursion_tools
+
+specifications.loader.exec_module(recursion_tools)
+
+# Imports recursion tools
+
+specifications = util.spec_from_file_location("path_tools", 
+broken_path[1]/"PythonicUtilities"/"path_tools.py")
+
+path_tools = util.module_from_spec(specifications)
+
+sys.modules["path_tools"] = path_tools
+
+specifications.loader.exec_module(path_tools)
 
 ########################################################################
 #                            Parsing tools                             #
@@ -106,6 +153,43 @@ def list_toDict(original_list):
 #                              txt files                               #
 ########################################################################
 
+# Defines a function to write a string into a txt file
+
+def save_string_into_txt(saved_string, file_name, add_extension=False,
+parent_path=None, verbose=False):
+
+    # Adds the parent path if it is given
+
+    if not (parent_path is None):
+
+        file_name = path_tools.verify_path(parent_path, file_name)
+
+    # Saves the string into a txt file
+
+    if add_extension:
+
+        file_name = file_name+".txt"
+
+    if verbose:
+
+        print("Saves a string into the file:\n"+str(file_name)+"\n")
+
+    txt_file = 0
+
+    try:
+
+        txt_file = open(file_name, "w")
+
+    except:
+
+        raise FileNotFoundError("The path to write the file '"+str(
+        file_name)+"' does not exist. It cannot be used to write the s"+
+        "tring")
+
+    txt_file.write(saved_string)
+
+    txt_file.close()
+
 # Defines a function to write a list into a txt file
 
 def list_toTxt(saved_list, file_name, add_extension=True, parent_path=
@@ -123,33 +207,10 @@ None):
 
     saved_string = saved_string[0:-1]
 
-    # Adds the parent path if it is given
-
-    if not (parent_path is None):
-
-        file_name = path_tools.verify_path(parent_path, file_name)
-
     # Saves the string into a txt file
 
-    if add_extension:
-
-        file_name = file_name+".txt"
-
-    txt_file = 0
-
-    try:
-
-        txt_file = open(file_name, "w")
-
-    except:
-
-        raise FileNotFoundError("The path to write the file '"+str(
-        file_name)+"' does not exist. It cannot be used to write the l"+
-        "ist")
-
-    txt_file.write(saved_string)
-
-    txt_file.close()
+    save_string_into_txt(saved_string, file_name, add_extension=
+    add_extension, parent_path=parent_path)
 
 # Defines a function to read a list from a txt file
 

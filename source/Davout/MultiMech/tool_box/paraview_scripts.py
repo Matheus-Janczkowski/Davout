@@ -47,6 +47,17 @@ sys.modules["string_tools"] = string_tools
 
 specifications.loader.exec_module(string_tools)
 
+# Imports file handling tools
+
+specifications = util.spec_from_file_location("file_tools", 
+broken_path[2]/"PythonicUtilities"/"file_handling_tools.py")
+
+file_tools = util.module_from_spec(specifications)
+
+sys.modules["file_tools"] = file_tools
+
+specifications.loader.exec_module(file_tools)
+
 ########################################################################
 #                           Frozen snapshots                           #
 ########################################################################
@@ -65,7 +76,8 @@ None, zoom_factor=None, plot_x_axis=None, plot_y_axis=None, plot_z_axis=
 None, no_axes=None, component_to_plot=None, resolution_ratio=None,
 transparent_background=None, warp_by_vector=None, warp_scale=None, 
 glyph=None, glyph_scale=None, display_reference_configuration="True",
-clip=None, clip_plane_origin=None, clip_plane_normal_vector=None):
+clip=None, clip_plane_origin=None, clip_plane_normal_vector=None,
+set_camera_interactively=None):
     
     # Verifies the input and output paths
 
@@ -176,7 +188,7 @@ clip=None, clip_plane_origin=None, clip_plane_normal_vector=None):
 
     # Verifies if a warped by vector object must be created
 
-    if warp_by_vector:
+    if warp_by_vector=="True":
 
         # Verifies if the data has at least 3 components
 
@@ -239,7 +251,7 @@ clip=None, clip_plane_origin=None, clip_plane_normal_vector=None):
 
     # Verifies if a clip object must be created
 
-    if clip:
+    if clip=="True":
 
         # Verifies if the data has at least 3 components
 
@@ -252,15 +264,7 @@ clip=None, clip_plane_origin=None, clip_plane_normal_vector=None):
 
         # Creates the clip object as a clip using a plane
 
-        clip_object = None 
-
-        if active_data is None:
-
-            clip_object = Clip(Input=data)
-
-        else:
-
-            clip_object = Clip(Input=active_data)
+        clip_object = Clip(Input=active_data)
 
         clip_object.ClipType = 'Plane'
 
@@ -601,6 +605,120 @@ clip=None, clip_plane_origin=None, clip_plane_normal_vector=None):
             LookupTable = GetColorTransferFunction(field_name)
 
             display.SetScalarBarVisibility(renderView, True)
+        
+    # Applies color map
+
+    if color_map:
+
+        # Sets a list of allowed color maps
+
+        available_color_maps = ['Cool to Warm', 'Warm to Cool', 'Rainb'+
+        'ow Uniform', 'Viridis (matplotlib)', 'Plasma (matplotlib)', 
+        'Inferno (matplotlib)', 'Magma (matplotlib)', 'Turbo', 'Jet',
+        'Grayscale', 'Black-Body Radiation', 'Blue to Red Rainbow', 'C'+
+        'old and Hot', 'X Ray', 'erdc_rainbow_dark', 'erdc_rainbow_bri'+
+        'ght', 'Rainbow Desaturated']
+
+        # Verifies if it is an available color map
+
+        if not (color_map in available_color_maps):
+
+            available_names = ""
+
+            for name in available_color_maps:
+
+                available_names += "\n"+name
+
+            raise ValueError("The provided 'color_map' is '"+str(
+            color_map)+"'. But the available options are:"+
+            available_names)
+
+        # Sets the color map
+
+        LookupTable.ApplyPreset(color_map, True)
+
+    Render()
+
+    # Verifies if an interactive window is to be used to camera aspects
+
+    if set_camera_interactively=="True":
+
+        print("\nAdjust the camera using the opened window. Then, clos"+
+        "e the window to get the camera settings", flush=True)
+
+        # Creates a view of what has already been rendered so far
+
+        view = GetActiveView()
+        
+        # Shows the interactive window to the user
+
+        Interact()
+
+        # Gets the camera info
+
+        camera_position = str(view.CameraPosition)
+
+        camera_focal_point = str(view.CameraFocalPoint)
+
+        camera_up_direction = str(view.CameraViewUp)
+
+        camera_parallel_scale = str(view.CameraParallelScale)
+
+        camera_rotation = str(view.CenterOfRotation)
+
+        # Gets the legend info
+
+        scalarBar = GetScalarBar(LookupTable, view)
+
+        legend_bar_position = str(scalarBar.Position)
+
+        legend_bar_length = str(scalarBar.ScalarBarLength) 
+
+        # Gets the size info
+
+        size_in_pixels = view.ViewSize
+
+        # Transforms the size into a dictionary for saving
+
+        pixels_in_width = size_in_pixels[0]
+
+        aspect_ratio = size_in_pixels[1]/size_in_pixels[0]
+
+        size_in_pixels_dict = {"aspect ratio": aspect_ratio, "pixels i"+
+        "n width": pixels_in_width}
+
+        # Transforms the original size in pixels to a string
+
+        size_in_pixels = str(size_in_pixels)
+
+        # Prints the gathered information
+
+        print("The interactively gathered settings are:\nCameraPositio"+
+        "n: "+str(camera_position)+"\nCameraFocalPoint: "+str(
+        camera_focal_point)+"\nCameraViewUp: "+str(camera_up_direction)+
+        "\nCameraParallelScale: "+str(camera_up_direction)+"\nCenterOf"+
+        "Rotation: "+str(camera_rotation)+"\nScale bar position: "+
+        legend_bar_position+"\nScale bar length: "+str(legend_bar_length
+        )+"\nViewSize: "+size_in_pixels+"\n")
+
+        # Saves the information as a list of arguments
+
+        arguments_list = ("camera_position="+camera_position+",\ncamer"+
+        "a_focal_point="+camera_focal_point+",\ncamera_up_direction="+
+        camera_up_direction+",\ncamera_parallel_scale="+
+        camera_parallel_scale+",\ncamera_rotation="+camera_rotation+","+
+        "\nlegend_bar_position="+legend_bar_position+",\nlegend_bar_le"+
+        "ngth="+legend_bar_length+",\nsize_in_pixels="+str(
+        size_in_pixels_dict))
+
+        # Saves the list of arguments as a string in a txt file
+
+        print("Saves a txt file with the arguments to 'frozen_snapshot"+
+        "s' to replicate the view set by the user as follows")
+
+        file_tools.save_string_into_txt(arguments_list, "paraview_came"+
+        "ra_settings.txt", add_extension=False, parent_path=input_path,
+        verbose=True)
 
     # Sets the position of the legend
 
@@ -664,37 +782,6 @@ clip=None, clip_plane_origin=None, clip_plane_normal_vector=None):
         scalarBar.TitleFontFile = legend_bar_font_file
 
         scalarBar.LabelFontFile = legend_bar_font_file
-        
-    # Applies color map
-
-    if color_map:
-
-        # Sets a list of allowed color maps
-
-        available_color_maps = ['Cool to Warm', 'Warm to Cool', 'Rainb'+
-        'ow Uniform', 'Viridis (matplotlib)', 'Plasma (matplotlib)', 
-        'Inferno (matplotlib)', 'Magma (matplotlib)', 'Turbo', 'Jet',
-        'Grayscale', 'Black-Body Radiation', 'Blue to Red Rainbow', 'C'+
-        'old and Hot', 'X Ray', 'erdc_rainbow_dark', 'erdc_rainbow_bri'+
-        'ght', 'Rainbow Desaturated']
-
-        # Verifies if it is an available color map
-
-        if not (color_map in available_color_maps):
-
-            available_names = ""
-
-            for name in available_color_maps:
-
-                available_names += "\n"+name
-
-            raise ValueError("The provided 'color_map' is '"+str(
-            color_map)+"'. But the available options are:"+
-            available_names)
-
-        # Sets the color map
-
-        LookupTable.ApplyPreset(color_map, True)
 
     # Sets camera position in space
 
