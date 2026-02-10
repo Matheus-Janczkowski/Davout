@@ -1,10 +1,18 @@
 # Routine to make collages
 
+import numpy as np
+
+from copy import deepcopy
+
 import matplotlib
 
 import matplotlib.pyplot as plt
 
-from matplotlib.patches import Rectangle, FancyBboxPatch
+from matplotlib.patches import FancyBboxPatch, FancyArrowPatch
+
+from matplotlib.transforms import Affine2D
+
+from matplotlib.path import Path
 
 from matplotlib.backends.backend_pdf import PdfPages
 
@@ -74,16 +82,88 @@ class ColorMiscellany:
             raise ValueError("'"+str(key)+"' is not a key of the dicti"+
             "onary of colors nor is a list with RGB values (3 componen"+
             "ts). Check the valid color names:"+available_colors)
+        
+# Defines a class to store alignment options
+
+class AlignmentOptions:
+
+    def __init__(self):
+
+        # Sets a dictionary with keys representing the position origin
+        # of a generic element, and the corresponding values are lists
+        # with the coefficients to multiply the element sizes 
+         
+        self.alignments = {'centroid': [-0.5, -0.5], 'bottom-left': [0.0, 
+        0.0], 'bottom-right': [-1.0, 0.0], 'top-right': [-1.0, -1.0], 
+        "top-left": [0.0, -1.0]}
+
+        # Sets a dictionary with keys representing text alignments
+         
+        self.text_alignments = {'centroid': ("center", "center"), "bott"+
+        "om-left": ("left", "bottom"), "bottom-right": ("right", "bott"+
+        "om"), "top-left": ("left", "top"), "top-right": ("right", "to"+
+        "p")}
+
+    def __call__(self, alignment, position, width, height, 
+    text_alignment=False):
+        
+        # If text alignment is to be given
+
+        if text_alignment:
+
+            # Verifies alignment consistency
+
+            if not (alignment in self.text_alignments):
+
+                alignments_options = ""
+
+                for name in self.text_alignments:
+
+                    alignments_options += "\n'"+str(name)+"'"
+
+                raise NameError("There is no '"+str(alignment)+"' opti"+
+                "on for alignment. Check the available options:"+
+                alignments_options)
+            
+            # Returns the matplotlib native settings
+
+            return (position, self.text_alignments[alignment][0], 
+            self.text_alignments[alignment][1])
+
+        # Verifies the alignment option
+
+        if not (alignment in self.alignments):
+
+            alignments_options = ""
+
+            for name in self.alignments:
+
+                alignments_options += "\n'"+str(name)+"'"
+
+            raise NameError("There is no '"+str(alignment)+"' option f"+
+            "or alignment. Check the available options:"+
+            alignments_options)
+        
+        # Gets the coefficients
+
+        c_width, c_height = self.alignments[alignment]
+
+        # Updates it
+
+        return [position[0]+(c_width*width), position[1]+(c_height*
+        height)]
 
 # Defines a function to create a collage using boxes
 
 def create_box_collage(output_file, input_path=None, output_path=None,
 no_padding=False, input_image_list=None, input_text_list=None, 
-boxes_list=None, dpi=300):
+boxes_list=None, arrows_list=None, dpi=300):
     
-    # Initializes the class of colors
+    # Initializes the class of colors and the class of alignments
 
     colors_class = ColorMiscellany()
+
+    alignments_class = AlignmentOptions()
 
     # Verifies the input and output paths
 
@@ -116,6 +196,8 @@ boxes_list=None, dpi=300):
 
         box_axes.set_ylim(0, 1)
 
+        box_axes.set_aspect('equal', adjustable='box')
+
         box_axes.axis("off") 
 
         # Sets a list of necessary keys
@@ -137,7 +219,10 @@ boxes_list=None, dpi=300):
             "eight of the box\n'transparency': transparency factor (op"+
             "tional and between 0 and 1)\n'corner radius': the radius "+
             "of the contour corners (optional)\n'contour style': 'soli"+
-            "d', 'dashed', or 'dotted'")
+            "d', 'dashed', or 'dotted'\n'origin point': available opti"+
+            "ons are 'centroid', 'bottom-left', 'bottom-right', 'top-l"+
+            "eft', 'top-right'\n'rotation in degrees': float with rota"+
+            "tion angle in degrees (from x axis counter-clockwise)")
         
         # Iterates through the elements
 
@@ -155,7 +240,10 @@ boxes_list=None, dpi=300):
                 "olor': string with the color name or a RGB list for t"+
                 "he fill (face)\n'position': list [x,y] position of th"+
                 "e centroid\n'width: width of the box\nheight: height "+
-                "of the box")
+                "of the box\n'origin point': available options are 'ce"+
+                "ntroid', 'bottom-left', 'bottom-right', 'top-left', '"+
+                "top-right'\n'rotation in degrees': float with rotatio"+
+                "n angle in degrees (from x axis counter-clockwise)")
             
             # Iterates through the necessary keys
 
@@ -185,7 +273,7 @@ boxes_list=None, dpi=300):
 
             # Gets the position
 
-            position = input_dictionary["position"]
+            position = deepcopy(input_dictionary["position"])
 
             # Verifies if it is a list
 
@@ -224,11 +312,18 @@ boxes_list=None, dpi=300):
 
                 alpha = input_dictionary["transparency"]
             
-            # Translates the position by the size
+            # Verifies if the origin point is prescribed
 
-            position[0] -= 0.5*width
+            origin_point = 'centroid'
 
-            position[1] -= 0.5*height
+            if "origin point" in input_dictionary:
+
+                origin_point = input_dictionary["origin point"]
+
+            # Updates position using the alignment
+
+            position = alignments_class(origin_point, position, width, 
+            height)
 
             # Verifies contour style
 
@@ -236,39 +331,78 @@ boxes_list=None, dpi=300):
 
             if "contour style" in input_dictionary:
 
-                if input_dictionary["contour style"]=="solid":
+                # Sets a dctionary of available styles
 
-                    line_style = '-'
+                available_line_styles = {"solid": '-', "dashed": (0, (
+                int(round(10*contour_thickness)), int(round(6*
+                contour_thickness)))), "dotted": (0, (int(round(1*
+                contour_thickness)), int(round(5*contour_thickness)))),
+                "dash-dotted": (0, (int(round(8*contour_thickness)), int(
+                round(4*contour_thickness)), int(round(2*
+                contour_thickness)), int(round(4*contour_thickness))))}
 
-                elif input_dictionary["contour style"]=="dashed":
+                if input_dictionary["contour style"] in available_line_styles:
 
-                    line_style = '--'
-
-                elif input_dictionary["contour style"]=="dotted":
-
-                    line_style = ':'
+                    line_style = available_line_styles[input_dictionary[
+                    "contour style"]]
 
                 else:
 
-                    raise NameError("The only 'contour style' availabl"+
-                    "e are: 'solid', 'dashed', or 'dotted'")
+                    available_contour_styles = ""
 
-            # Creates the rectangle
+                    for contour in available_line_styles:
+
+                        available_contour_styles += "\n'"+str(contour)+"'"
+
+                    raise NameError("The only 'contour style' availabl"+
+                    "e are:"+available_contour_styles)
+                
+            # Verifies if rounded corners are required
+
+            boxstyle = "square,pad=0.0"
 
             if "corner radius" in input_dictionary:
 
-                box_axes.add_patch(FancyBboxPatch((position[0], position[
-                1]), width, height, linewidth=contour_thickness, edgecolor=
-                contour_color, facecolor=fill_color, alpha=alpha,
+                # Alters box style to insert the corner radius
+
                 boxstyle=f"round,pad=0.0,rounding_size={input_dictionary[
-                "corner radius"]}", linestyle=line_style))
+                "corner radius"]}"
 
-            else:
+            # Creates the rectangle
 
-                box_axes.add_patch(Rectangle((position[0], position[1]), 
-                width, height, linewidth=contour_thickness, edgecolor=
-                contour_color, facecolor=fill_color, alpha=alpha, 
-                linestyle=line_style))
+            new_box = FancyBboxPatch((position[0], position[1]), width, 
+            height, linewidth=contour_thickness, edgecolor=contour_color, 
+            facecolor=fill_color, alpha=alpha, boxstyle=boxstyle, 
+            linestyle=line_style)
+
+            # Verifies if there is any rotation
+
+            if "rotation in degrees" in input_dictionary:
+
+                # Gets the angle
+
+                angle = input_dictionary["rotation in degrees"]
+
+                # Verifies if it is a float
+
+                if not isinstance(angle, float):
+
+                    raise TypeError("The "+str(index+1)+"-th element '"+
+                    "boxes_list' has at key 'rotation in degrees' a va"+
+                    "lue that is not a float. Currently, 'rotation in "+
+                    "degrees' is: "+str(angle))
+                
+                # Sets the rotation and transforms the box. Rotates a-
+                # round the original point
+
+                rotation = Affine2D().rotate_deg_around(*deepcopy(
+                input_dictionary["position"]), angle)
+
+                new_box.set_transform(rotation+box_axes.transData)
+
+            # Inserts the box into the figure
+
+            box_axes.add_patch(new_box)
 
     # Verifies if the dictionary of input figures is not None
 
@@ -286,7 +420,9 @@ boxes_list=None, dpi=300):
             " be a list where each item is a dictionary with the keys:"+
             "\n'file name': string with the file name\n'position': lis"+
             "t with position coordinates, [x,y]\n'size': list with wid"+
-            "th and height (fractions of the figure size)")
+            "th and height (fractions of the figure size)\n'origin poi"+
+            "nt': available options are 'centroid', 'bottom-left', 'bo"+
+            "ttom-right', 'top-left', 'top-right'")
         
         # Iterates through the elements
 
@@ -301,7 +437,9 @@ boxes_list=None, dpi=300):
                 "a dictionary with the keys:\n'file name': string with"+
                 " the file name\n'position': list with position coordi"+
                 "nates, [x,y]\n'size': list with width and height (fra"+
-                "ctions of the figure size)")
+                "ctions of the figure size)\n'origin point': available"+
+                " options are 'centroid', 'bottom-left', 'bottom-right"+
+                "', 'top-left', 'top-right'")
             
             # Iterates through the necessary keys
 
@@ -335,7 +473,7 @@ boxes_list=None, dpi=300):
 
             # Gets the position
 
-            position = input_dictionary["position"]
+            position = deepcopy(input_dictionary["position"])
 
             # Verifies if it is a list
 
@@ -376,11 +514,24 @@ boxes_list=None, dpi=300):
                 "o, height_ratio] (fractions of the figure size) or a "+
                 " float with the size of the width only (aspect ratio "+
                 "is kept). Currently, it is:\n"+str(size))
+            
+            # Verifies if the origin point is prescribed
+
+            origin_point = 'centroid'
+
+            if "origin point" in input_dictionary:
+
+                origin_point = input_dictionary["origin point"]
+
+            # Updates position using the alignment
+
+            position = alignments_class(origin_point, position, size[0], 
+            size[1])
 
             # Adds image panel
 
-            image_canvas = collage.add_axes([position[0]-(0.5*size[0]), 
-            position[1]-(0.5*size[1]), size[0], size[1]])
+            image_canvas = collage.add_axes([position[0], position[1], 
+            size[0], size[1]])
 
             # inserts the image in the canvas
 
@@ -402,10 +553,12 @@ boxes_list=None, dpi=300):
 
         if not isinstance(input_text_list, list):
 
-            raise TypeError("'input_text_list' is not a list. It must"+
-            " be a list where each item is a dictionary with the keys:"+
+            raise TypeError("'input_text_list' is not a list. It must "+
+            "be a list where each item is a dictionary with the keys:"+
             "\n'text': string with the text excerpt\n'position': list "+
-            "with position coordinates, [x,y]\n'font size': integer")
+            "with position coordinates, [x,y]\n'font size': integer\n'"+
+            "origin point': available options are 'centroid', 'bottom-"+
+            "left', 'bottom-right', 'top-left', 'top-right'")
         
         # Iterates through the elements
 
@@ -446,7 +599,7 @@ boxes_list=None, dpi=300):
 
             # Gets the position
 
-            position = input_dictionary["position"]
+            position = deepcopy(input_dictionary["position"])
 
             # Verifies if it is a list
 
@@ -456,6 +609,19 @@ boxes_list=None, dpi=300):
                 "t_text_list' has at key 'position' a value that is no"+
                 "t a list. It must be a list with [x, y] coordinates. "+
                 "Currently, it is:\n"+str(position))
+            
+            # Verifies if the origin point is prescribed
+
+            origin_point = 'centroid'
+
+            if "origin point" in input_dictionary:
+
+                origin_point = input_dictionary["origin point"]
+
+            # Updates position using the alignment
+
+            position, ha, va = alignments_class(origin_point, position, 
+            0.0, 0.0, text_alignment=True)
             
             # Gets the font size
 
@@ -471,7 +637,267 @@ boxes_list=None, dpi=300):
 
             # Adds the text input
 
-            collage.text(*position, input_text, fontsize=font_size)
+            collage.text(*position, input_text, fontsize=font_size, ha=
+            ha, va=va)
+
+    # Verifies if the list of arrows is not None
+
+    if arrows_list is not None:
+
+        # Sets axes for all boxes
+
+        arrow_axes = collage.add_axes([0, 0, 1, 1])
+
+        arrow_axes.set_xlim(0, 1)
+
+        arrow_axes.set_ylim(0, 1)
+
+        arrow_axes.axis("off") 
+
+        # Sets a list of necessary keys
+
+        necessary_keys = ["start point", "end point", "thickness"]
+
+        # Verifies if it is not a list
+
+        if not isinstance(arrows_list, list):
+
+            raise TypeError("'arrows_list' is not a list. It must be a"+
+            " list where each item is a dictionary with the keys:\n'st"+
+            "art point': list with [x,y] coordinates of the starting p"+
+            "oint\n'end point':  list with [x,y] coordinates of the en"+
+            "d point\n'thickness': 'thickness': float value with the a"+
+            "rrow line thickness\n'arrow style': string with the style"+
+            " of the arrow stem and edge (optional)\n'spline points': "+
+            "list of lists of point coordinates for a spline path, [[x"+
+            "1, y1], [x2, y2], ..., [xn, yn]] (optional)\n'arrow head "+
+            "size': integer with the arrow head size (optional)")
+        
+        # Iterates through the elements
+
+        for index, input_dictionary in enumerate(arrows_list):
+
+            # Verifies if this element is a dictionary
+
+            if not isinstance(input_dictionary, dict):
+
+                raise TypeError("The "+str(index+1)+"-th element of th"+
+                "e 'arrows_list' is not a dictionary. It must be a dic"+
+                "tionary with the keys:\n'start point': list with [x,y"+
+                "] coordinates of the starting point\n'end point':  li"+
+                "st with [x,y] coordinates of the end point\n'thicknes"+
+                "s': 'thickness': float value with the arrow line thic"+
+                "kness\n'arrow style': string with the style of the ar"+
+                "row stem and edge (optional)\n'spline points': list o"+
+                "f lists of point coordinates for a spline path, [[x1,"+
+                " y1], [x2, y2], ..., [xn, yn]] (optional)\n'arrow hea"+
+                "d size': integer with the arrow head size (optional)")
+            
+            # Iterates through the necessary keys
+
+            for key in necessary_keys:
+
+                # Verifies the key existence
+
+                if not (key in input_dictionary):
+
+                    names = ""
+
+                    for keys in necessary_keys:
+
+                        names += "\n'"+str(keys)+"'"
+
+                    raise ValueError("The "+str(index+1)+"-th element "+
+                    "'arrows_list' does not have all the necessary key"+
+                    "s, in particular '"+str(key)+"'. Check the necess"+
+                    "ary keys:"+names)
+                
+            # Gets the colors
+
+            arrow_color = colors_class("black")
+
+            if "color" in input_dictionary:
+
+                arrow_color = colors_class(input_dictionary["color"])
+
+            # Gets the start point
+
+            start_point = input_dictionary["start point"]
+
+            # Verifies if it is a list
+
+            if not isinstance(start_point, list):
+
+                raise TypeError("The "+str(index+1)+"-th element 'arro"+
+                "ws_list' has at key 'start_point' a value that is not"+
+                " a list. It must be a list with [x, y] coordinates. C"+
+                "urrently, it is:\n"+str(start_point))
+
+            # Gets the end point
+
+            end_point = input_dictionary["end point"]
+
+            # Verifies if it is a list
+
+            if not isinstance(end_point, list):
+
+                raise TypeError("The "+str(index+1)+"-th element 'arro"+
+                "ws_list' has at key 'end_point' a value that is not a"+
+                " list. It must be a list with [x, y] coordinates. Cur"+
+                "rently, it is:\n"+str(end_point))
+            
+            # Gets the thickness
+
+            thickness = input_dictionary["thickness"]
+
+            # Verifies if they are float
+
+            if (not isinstance(thickness, float)):
+
+                raise TypeError("The "+str(index+1)+"-th element 'arro"+
+                "ws_list' has at key 'thickness' a value that is not a"+
+                " float. Currently, 'thickness': "+str(thickness))
+
+            # Verifies contour style
+
+            arrow_style = '-|>'
+
+            if "arrow style" in input_dictionary:
+
+                # Gets the arrow style
+
+                arrow_style = input_dictionary["arrow style"]
+
+                # Verifies if it is in the list of admissible style
+
+                arrow_styles = ["-", "->", "-|>", "-[", "<-", "<->", 
+                "fancy", "simple", "wedge", "arc"]
+
+                if not (arrow_style in arrow_styles):
+
+                    available_arrows = ""
+
+                    for arrow in arrow_styles:
+
+                        available_arrows += "\n'"+str(arrow)+"'"
+
+                    raise NameError("The only 'arrow style' available "+
+                    " are:"+available_arrows)
+            
+            # Gets the arrow head size
+
+            arrow_head_size = 15
+
+            if "arrow head size" in input_dictionary:
+
+                arrow_head_size = input_dictionary["arrow head size"]
+
+                # Verifies if it is an integer
+
+                if (not isinstance(arrow_head_size, int)):
+
+                    raise TypeError("The "+str(index+1)+"-th element '"+
+                    "arrows_list' has at key 'arrow head size' a value"+
+                    " that is not an integer. Currently, 'arrow head s"+
+                    "ize': "+str(arrow_head_size))
+                
+            # Verifies if the arrow stem follows a spline curve
+
+            codes = [Path.MOVETO] 
+
+            vertices = [start_point]
+
+            if "spline points" in input_dictionary:
+
+                # Gets the spline points and verifies if they are a list
+
+                spline_points = input_dictionary["spline points"]
+
+                if not isinstance(spline_points, list):
+
+                    raise TypeError("'spline points' in 'arrows_list' "+
+                    "must be a list of lists [[x1, y1], [x2, y2], ...,"+
+                    " [xn, yn]]. Currently, it is:\n"+str(spline_points))
+                
+                # Adds the starting point to the spline points
+
+                spline_points = [start_point, *spline_points, end_point]
+                
+                # Iterates through the points to verify consistency
+
+                for index_point in range(len(spline_points)-1):
+
+                    # Gets the point and verifies it
+
+                    point_1 = spline_points[index_point]
+
+                    if not isinstance(point_1, list) or len(point_1)!=2:
+
+                        raise ValueError("The "+str(index_point+1)+"-t"+
+                        "h point of 'spline points' is not a list or i"+
+                        "ts length is not 2. Check it out:\n"+str(
+                        point_1))
+                    
+                    # Gets the four points for the Catmull-Rom conver-
+                    # sion and converts them to numpy
+
+                    point_0 = None
+
+                    if index_point>0:
+
+                        point_0 = np.array(spline_points[index_point-1])
+
+                    else:
+
+                        point_0 = np.array(spline_points[index_point])
+
+                    point_1 = np.array(point_1)
+
+                    point_2 = np.array(spline_points[index_point+1])
+
+                    point_3 = None
+
+                    if index_point+2<len(spline_points):
+
+                        point_3 = np.array(spline_points[index_point+2])
+
+                    else:
+
+                        point_3 = np.array(spline_points[index_point+1])
+
+                    # Subtracts them
+
+                    b1 = point_1+((point_2-point_0)/6)
+
+                    b2 = point_2-((point_3-point_1)/6)
+
+                    b3 = point_2
+
+                    # Adds these points to the vertices
+
+                    vertices.extend([b1, b2, b3])
+
+                    # Appends the instrictions to code
+
+                    codes.extend([Path.CURVE4, Path.CURVE4, Path.CURVE4])
+
+            else:
+
+                # Appends the code instruction to create the last segment
+                
+                codes.append(Path.LINETO)
+                
+                # Appends the end point and creates the path of the arrow
+
+                vertices.append(end_point)
+
+            arrow_path = Path(np.array(vertices), codes=codes)
+
+            # The arrow
+            
+            arrow_axes.add_patch(FancyArrowPatch(path=arrow_path, 
+            arrowstyle=arrow_style, color=arrow_color, linewidth=
+            thickness, mutation_scale=arrow_head_size))
 
     # Saves the figure
 

@@ -181,4 +181,6 @@ input_image_list=[{"file name": "plot.png", "position": [0.5, 0.75],
 input_text_list=[{"text": "Test", "position": [0.5, 0.85], "font size": 10}],
 boxes_list=[{"contour color": "black", "fill color": "red 1", "contour"+
 " thickness": 0.1, "position": [0.5, 0.75], "width": 0.5, "height": 0.25,
-"contour style": "dashed"}])
+"contour style": "dashed", "rotation in degrees": 45.0}],
+arrows_list=[{"start point": [0.25, 0.7], "end point": [0.4, 0.75], 
+"thickness": 0.1, "spline points": [[0.32, 0.8]]}])
