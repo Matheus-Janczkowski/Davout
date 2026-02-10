@@ -8,22 +8,44 @@ import matplotlib
 
 import matplotlib.pyplot as plt
 
-from matplotlib.patches import FancyBboxPatch, FancyArrowPatch
+from collections import OrderedDict
 
-from matplotlib.transforms import Affine2D
+from matplotlib.patches import FancyBboxPatch, FancyArrowPatch, Ellipse
+
+from matplotlib.transforms import Affine2D, Bbox
 
 from matplotlib.path import Path
-
-from matplotlib.backends.backend_pdf import PdfPages
 
 from PIL import Image
 
 from ..PythonicUtilities import path_tools
 
-# Sets LaTeX font
+########################################################################
+#                            LaTeX preamble                            #
+########################################################################
+
+from pathlib import Path as PathPathlib
+
+import os
+
+# Gets the parent paths of the current file
+
+broken_path = PathPathlib(__file__).parents
+
+# Gets the path to LaTeXUtilities.sty
+
+latex_utilities_path = broken_path[1]/"LaTeXUtilities"
+
+# Adds this path to the system
+
+os.environ["TEXINPUTS"] = (str(latex_utilities_path)+os.sep+os.pathsep+
+os.environ.get("TEXINPUTS", ""))
+
+# Sets LaTeX font and the latex utilities
 
 matplotlib.rcParams.update({"text.usetex": True, "font.family": "serif",
-"font.serif": ["Computer Modern Roman"]})
+"font.serif": ["Computer Modern Roman"], "text.latex.preamble": 
+r"\usepackage{LaTeXUtilities}"})
 
 # Defines a class with colors
 
@@ -157,7 +179,9 @@ class AlignmentOptions:
 
 def create_box_collage(output_file, input_path=None, output_path=None,
 no_padding=False, input_image_list=None, input_text_list=None, 
-boxes_list=None, arrows_list=None, dpi=300):
+boxes_list=None, arrows_list=None, dpi=300, verbose=False, aspect_ratio=
+'auto', adjustable=None, layout_width_milimeters=210.0, 
+layout_height_milimeters=297.0, add_overlaying_grid=False):
     
     # Initializes the class of colors and the class of alignments
 
@@ -180,25 +204,35 @@ boxes_list=None, arrows_list=None, dpi=300):
 
         output_file = path_tools.verify_path(output_path, output_file)
 
-    # Initializes a A4 collage
+    # Initializes the collage using the given information
 
-    collage = plt.figure(figsize=(8.27, 11.69))
+    collage = plt.figure(figsize=(layout_width_milimeters/25.4, 
+    layout_height_milimeters/25.4))
+
+    # Sets axes for all items
+
+    general_axes = collage.add_axes([0, 0, 1, 1])
+
+    general_axes.set_xlim(0, layout_width_milimeters)
+
+    general_axes.set_ylim(0, layout_height_milimeters)
+
+    general_axes.set_aspect(aspect_ratio, adjustable=adjustable)
+
+    general_axes.axis("off") 
+
+    # Initializes the counter of elements in depth
+
+    depth_order = 0
 
     # Verifies if the list of boxes is not None
 
     if boxes_list is not None:
 
-        # Sets axes for all boxes
-
-        box_axes = collage.add_axes([0, 0, 1, 1])
-
-        box_axes.set_xlim(0, 1)
-
-        box_axes.set_ylim(0, 1)
-
-        box_axes.set_aspect('equal', adjustable='box')
-
-        box_axes.axis("off") 
+        print("#######################################################"+
+        "#################\n#                            Making of box"+
+        "es                           #\n#############################"+
+        "###########################################\n")
 
         # Sets a list of necessary keys
 
@@ -222,7 +256,8 @@ boxes_list=None, arrows_list=None, dpi=300):
             "d', 'dashed', or 'dotted'\n'origin point': available opti"+
             "ons are 'centroid', 'bottom-left', 'bottom-right', 'top-l"+
             "eft', 'top-right'\n'rotation in degrees': float with rota"+
-            "tion angle in degrees (from x axis counter-clockwise)")
+            "tion angle in degrees (from x axis counter-clockwise)\n's"+
+            "hape': string with the name of the box shape")
         
         # Iterates through the elements
 
@@ -243,7 +278,8 @@ boxes_list=None, arrows_list=None, dpi=300):
                 "of the box\n'origin point': available options are 'ce"+
                 "ntroid', 'bottom-left', 'bottom-right', 'top-left', '"+
                 "top-right'\n'rotation in degrees': float with rotatio"+
-                "n angle in degrees (from x axis counter-clockwise)")
+                "n angle in degrees (from x axis counter-clockwise)\n'"+
+                "shape': string with the name of the box shape")
             
             # Iterates through the necessary keys
 
@@ -303,6 +339,10 @@ boxes_list=None, arrows_list=None, dpi=300):
                 "They must be both float. Currently, 'width' is: "+str(
                 width)+"\n'height' is: "+str(height)+"\ncontour thickn"+
                 "ess: "+str(contour_thickness))
+            
+            # Converts contour thickness from milimeters to points
+
+            contour_thickness = contour_thickness*(72.0/25.4)
             
             # Gets the transparency if it is
 
@@ -368,12 +408,54 @@ boxes_list=None, arrows_list=None, dpi=300):
                 boxstyle=f"round,pad=0.0,rounding_size={input_dictionary[
                 "corner radius"]}"
 
-            # Creates the rectangle
+            # Verifies if a depth number has been given
 
-            new_box = FancyBboxPatch((position[0], position[1]), width, 
-            height, linewidth=contour_thickness, edgecolor=contour_color, 
-            facecolor=fill_color, alpha=alpha, boxstyle=boxstyle, 
-            linestyle=line_style)
+            local_depth_order = deepcopy(depth_order)
+
+            if "depth order" in input_dictionary:
+
+                local_depth_order = input_dictionary["depth order"]
+
+            else:
+
+                # Updates the depth number
+
+                depth_order += 1
+
+            # Verifies if shape is in the input dictionary
+
+            shape = "rectangle"
+
+            if "shape" in input_dictionary:
+
+                shape = input_dictionary["shape"]
+
+            new_box = None
+
+            # If it is meant to be a rectangle
+
+            if shape=="rectangle":
+
+                new_box = FancyBboxPatch((position[0], position[1]), 
+                width, height, linewidth=contour_thickness, edgecolor=
+                contour_color, facecolor=fill_color, alpha=alpha, 
+                boxstyle=boxstyle, linestyle=line_style, zorder=
+                local_depth_order)
+
+            # If it is meant to be an ellipse
+
+            elif shape=="ellipse":
+
+                new_box = Ellipse((position[0], position[1]), width, 
+                height, linewidth=contour_thickness, edgecolor=
+                contour_color, facecolor=fill_color, alpha=alpha, 
+                linestyle=line_style, zorder=local_depth_order)
+
+            else:
+
+                raise NameError("'shape' has been given as '"+str(shape)+
+                "', but this shape is not available. The available sha"+
+                "pes are:\n'rectangle'\n'ellipse'")
 
             # Verifies if there is any rotation
 
@@ -395,18 +477,27 @@ boxes_list=None, arrows_list=None, dpi=300):
                 # Sets the rotation and transforms the box. Rotates a-
                 # round the original point
 
-                rotation = Affine2D().rotate_deg_around(*deepcopy(
-                input_dictionary["position"]), angle)
+                p_x, p_y = deepcopy(input_dictionary["position"])
 
-                new_box.set_transform(rotation+box_axes.transData)
+                rotation = Affine2D().rotate_deg_around(p_x, p_y, angle)
+
+                new_box.set_transform(rotation+general_axes.transData)
 
             # Inserts the box into the figure
 
-            box_axes.add_patch(new_box)
+            print("Adds box at point "+str(position)+" with 'origin po"+
+            "int' as '"+str(origin_point)+"'\n")
+
+            general_axes.add_patch(new_box)
 
     # Verifies if the dictionary of input figures is not None
 
     if input_image_list is not None:
+
+        print("#######################################################"+
+        "#################\n#                         Insertion of fig"+
+        "ures                         #\n#############################"+
+        "###########################################\n")
 
         # Sets a list of necessary keys
 
@@ -422,7 +513,11 @@ boxes_list=None, arrows_list=None, dpi=300):
             "t with position coordinates, [x,y]\n'size': list with wid"+
             "th and height (fractions of the figure size)\n'origin poi"+
             "nt': available options are 'centroid', 'bottom-left', 'bo"+
-            "ttom-right', 'top-left', 'top-right'")
+            "ttom-right', 'top-left', 'top-right'\n'rotation in degree"+
+            "s': float with rotation angle in degrees (from x axis cou"+
+            "nter-clockwise)\n'trim transparent background': True if a"+
+            "n image with transparent background is to be trimmed to g"+
+            "et the non-transparent features only")
         
         # Iterates through the elements
 
@@ -439,7 +534,11 @@ boxes_list=None, arrows_list=None, dpi=300):
                 "nates, [x,y]\n'size': list with width and height (fra"+
                 "ctions of the figure size)\n'origin point': available"+
                 " options are 'centroid', 'bottom-left', 'bottom-right"+
-                "', 'top-left', 'top-right'")
+                "', 'top-left', 'top-right'\n'rotation in degrees': fl"+
+                "oat with rotation angle in degrees (from x axis count"+
+                "er-clockwise)\n'trim transparent background': True if"+
+                " an image with transparent background is to be trimme"+
+                "d to get the non-transparent features only")
             
             # Iterates through the necessary keys
 
@@ -487,6 +586,31 @@ boxes_list=None, arrows_list=None, dpi=300):
             # Reads the image
 
             input_image = Image.open(input_file_name)
+
+            # Verifies if a transparent picture is to be trimmed
+
+            if (("trim transparent background" in input_dictionary) and (
+            input_dictionary["trim transparent background"])):
+
+                # Convert to RGBA to split the A channel
+
+                if input_image.mode!='RGBA':
+
+                    input_image = input_image.convert("RGBA")
+
+                # Splits the alpha channel
+
+                alpha = input_image.split()[-1]
+
+                # Gets the bounding box of non-zero alpha
+
+                bounding_box = alpha.getbbox()
+
+                # If there is any, crops the image
+
+                if bounding_box:
+
+                    input_image = input_image.crop(bounding_box)
             
             # Gets the size
 
@@ -525,25 +649,74 @@ boxes_list=None, arrows_list=None, dpi=300):
 
             # Updates position using the alignment
 
+            if verbose:
+
+                print("The input image at '"+str(input_file_name)+"'\n"+
+                "has a size of "+str(size)+"\n")
+
             position = alignments_class(origin_point, position, size[0], 
             size[1])
 
+            # Verifies if there is any rotation
+
+            if "rotation in degrees" in input_dictionary:
+
+                # Gets the angle
+
+                angle = input_dictionary["rotation in degrees"]
+
+                # Verifies if it is a float
+
+                if not isinstance(angle, float):
+
+                    raise TypeError("The "+str(index+1)+"-th element '"+
+                    "boxes_list' has at key 'rotation in degrees' a va"+
+                    "lue that is not a float. Currently, 'rotation in "+
+                    "degrees' is: "+str(angle))
+                
+                # Sets the rotation and transforms the box. Rotates a-
+                # round the original point
+
+                rotation = Affine2D().rotate_deg_around(*deepcopy(
+                input_dictionary["position"]), angle)
+
+                # Rotates the image
+
+                input_image = input_image.rotate(angle, expand=True)
+
+            # Verifies if a depth number has been given
+
+            local_depth_order = deepcopy(depth_order)
+
+            if "depth order" in input_dictionary:
+
+                local_depth_order = input_dictionary["depth order"]
+
+            else:
+
+                # Updates the depth number
+
+                depth_order += 1
+
             # Adds image panel
 
-            image_canvas = collage.add_axes([position[0], position[1], 
-            size[0], size[1]])
+            if verbose:
 
-            # inserts the image in the canvas
+                print("Adds figure at point "+str(position)+" with 'or"+
+                "igin point' as '"+str(origin_point)+"'\n")
 
-            image_canvas.imshow(input_image, interpolation='nearest')
-
-            # Removes the scaffolding of the canvas
-
-            image_canvas.axis("off")
+            general_axes.imshow(input_image, extent=[position[0], 
+            position[0]+size[0], position[1], position[1]+size[1]], 
+            origin='upper', zorder=local_depth_order)
 
     # Verifies if the list of input text excerpts is not None
 
     if input_text_list is not None:
+
+        print("#######################################################"+
+        "#################\n#                        Making of text ex"+
+        "cerpts                       #\n#############################"+
+        "###########################################\n")
 
         # Sets a list of necessary keys
 
@@ -558,7 +731,9 @@ boxes_list=None, arrows_list=None, dpi=300):
             "\n'text': string with the text excerpt\n'position': list "+
             "with position coordinates, [x,y]\n'font size': integer\n'"+
             "origin point': available options are 'centroid', 'bottom-"+
-            "left', 'bottom-right', 'top-left', 'top-right'")
+            "left', 'bottom-right', 'top-left', 'top-right'\n'rotation"+
+            " in degrees': float with rotation angle in degrees (from "+
+            "x axis counter-clockwise)")
         
         # Iterates through the elements
 
@@ -572,7 +747,9 @@ boxes_list=None, arrows_list=None, dpi=300):
                 "e 'input_text_list' is not a dictionary. It must be a"+
                 " dictionary with the keys:\n'text': string with the t"+
                 "ext excerpt\n'position': list with position coordinat"+
-                "es, [x,y]\n'font size': integer")
+                "es, [x,y]\n'font size': integer\n'rotation in degrees"+
+                "': float with rotation angle in degrees (from x axis "+
+                "counter-clockwise)")
             
             # Iterates through the necessary keys
 
@@ -634,25 +811,60 @@ boxes_list=None, arrows_list=None, dpi=300):
                 raise TypeError("The "+str(index+1)+"-th element 'inpu"+
                 "t_text_list' has at key 'font size' a value that is n"+
                 "ot an integer. Currently, it is:\n"+str(font_size))
+            
+            # Verifies if there is any rotation
+
+            angle = 0.0
+
+            if "rotation in degrees" in input_dictionary:
+
+                # Gets the angle
+
+                angle = input_dictionary["rotation in degrees"]
+
+                # Verifies if it is a float
+
+                if not isinstance(angle, float):
+
+                    raise TypeError("The "+str(index+1)+"-th element '"+
+                    "boxes_list' has at key 'rotation in degrees' a va"+
+                    "lue that is not a float. Currently, 'rotation in "+
+                    "degrees' is: "+str(angle))
+
+            # Verifies if a depth number has been given
+
+            local_depth_order = deepcopy(depth_order)
+
+            if "depth order" in input_dictionary:
+
+                local_depth_order = input_dictionary["depth order"]
+
+            else:
+
+                # Updates the depth number
+
+                depth_order += 1
 
             # Adds the text input
 
-            collage.text(*position, input_text, fontsize=font_size, ha=
-            ha, va=va)
+            if verbose:
+
+                print("Adds text at point "+str(position)+" with 'orig"+
+                "in point' as '"+str(origin_point)+"'\n")
+
+            collage.text(position[0]/layout_width_milimeters, position[1
+            ]/layout_height_milimeters, input_text, fontsize=font_size, 
+            ha=ha, va=va, rotation=angle, rotation_mode="anchor", zorder=
+            local_depth_order)
 
     # Verifies if the list of arrows is not None
 
     if arrows_list is not None:
 
-        # Sets axes for all boxes
-
-        arrow_axes = collage.add_axes([0, 0, 1, 1])
-
-        arrow_axes.set_xlim(0, 1)
-
-        arrow_axes.set_ylim(0, 1)
-
-        arrow_axes.axis("off") 
+        print("#######################################################"+
+        "#################\n#                           Making of arro"+
+        "ws                           #\n#############################"+
+        "###########################################\n")
 
         # Sets a list of necessary keys
 
@@ -757,6 +969,10 @@ boxes_list=None, arrows_list=None, dpi=300):
                 raise TypeError("The "+str(index+1)+"-th element 'arro"+
                 "ws_list' has at key 'thickness' a value that is not a"+
                 " float. Currently, 'thickness': "+str(thickness))
+            
+            # Converts contour thickness from milimeters to points
+
+            thickness = thickness*(72.0/25.4)
 
             # Verifies contour style
 
@@ -771,7 +987,7 @@ boxes_list=None, arrows_list=None, dpi=300):
                 # Verifies if it is in the list of admissible style
 
                 arrow_styles = ["-", "->", "-|>", "-[", "<-", "<->", 
-                "fancy", "simple", "wedge", "arc"]
+                "fancy", "simple", "wedge"]
 
                 if not (arrow_style in arrow_styles):
 
@@ -818,70 +1034,103 @@ boxes_list=None, arrows_list=None, dpi=300):
                     raise TypeError("'spline points' in 'arrows_list' "+
                     "must be a list of lists [[x1, y1], [x2, y2], ...,"+
                     " [xn, yn]]. Currently, it is:\n"+str(spline_points))
+
+                # Verifies if the arrow style is one of the reserved sty-
+                # les
+
+                if arrow_style in ["fancy", "simple", "wedge"]:
+
+                    print("Inserts arrow with quadratic Bézier curve\n")
+
+                    # Sets the vertices with the mid point and the end 
+                    # point
+
+                    vertices.append(spline_points[0])
+
+                    vertices.append(end_point)
+
+                    # Sets the codes
+
+                    codes = [Path.MOVETO, Path.CURVE3, Path.CURVE3]
+
+                # Otherwise, uses cubic splines
+
+                else:
+
+                    print("Inserts arrow with cubic Bézier curve\n")
                 
-                # Adds the starting point to the spline points
+                    # Adds the starting point to the spline points
 
-                spline_points = [start_point, *spline_points, end_point]
+                    spline_points = [start_point, *spline_points, 
+                    end_point]
                 
-                # Iterates through the points to verify consistency
+                    # Iterates through the points to verify consistency
 
-                for index_point in range(len(spline_points)-1):
+                    for index_point in range(len(spline_points)-1):
 
-                    # Gets the point and verifies it
+                        # Gets the point and verifies it
 
-                    point_1 = spline_points[index_point]
+                        point_1 = spline_points[index_point]
 
-                    if not isinstance(point_1, list) or len(point_1)!=2:
+                        if not isinstance(point_1, list) or len(point_1
+                        )!=2:
 
-                        raise ValueError("The "+str(index_point+1)+"-t"+
-                        "h point of 'spline points' is not a list or i"+
-                        "ts length is not 2. Check it out:\n"+str(
-                        point_1))
-                    
-                    # Gets the four points for the Catmull-Rom conver-
-                    # sion and converts them to numpy
+                            raise ValueError("The "+str(index_point+1)+
+                            "-th point of 'spline points' is not a lis"+
+                            "t or its length is not 2. Check it out:\n"+
+                            str(point_1))
+                        
+                        # Gets the four points for the Catmull-Rom con-
+                        # version and converts them to numpy
 
-                    point_0 = None
+                        point_0 = None
 
-                    if index_point>0:
+                        if index_point>0:
 
-                        point_0 = np.array(spline_points[index_point-1])
+                            point_0 = np.array(spline_points[index_point
+                            -1])
 
-                    else:
+                        else:
 
-                        point_0 = np.array(spline_points[index_point])
+                            point_0 = np.array(spline_points[index_point
+                            ])
 
-                    point_1 = np.array(point_1)
+                        point_1 = np.array(point_1)
 
-                    point_2 = np.array(spline_points[index_point+1])
+                        point_2 = np.array(spline_points[index_point+1])
 
-                    point_3 = None
+                        point_3 = None
 
-                    if index_point+2<len(spline_points):
+                        if index_point+2<len(spline_points):
 
-                        point_3 = np.array(spline_points[index_point+2])
+                            point_3 = np.array(spline_points[index_point
+                            +2])
 
-                    else:
+                        else:
 
-                        point_3 = np.array(spline_points[index_point+1])
+                            point_3 = np.array(spline_points[index_point
+                            +1])
 
-                    # Subtracts them
+                        # Subtracts them
 
-                    b1 = point_1+((point_2-point_0)/6)
+                        b1 = point_1+((point_2-point_0)/6)
 
-                    b2 = point_2-((point_3-point_1)/6)
+                        b2 = point_2-((point_3-point_1)/6)
 
-                    b3 = point_2
+                        b3 = point_2
 
-                    # Adds these points to the vertices
+                        # Adds these points to the vertices
 
-                    vertices.extend([b1, b2, b3])
+                        vertices.extend([b1, b2, b3])
 
-                    # Appends the instrictions to code
+                        # Appends the instrictions to code
 
-                    codes.extend([Path.CURVE4, Path.CURVE4, Path.CURVE4])
+                        codes.extend([Path.CURVE4, Path.CURVE4, 
+                        Path.CURVE4])
 
             else:
+
+                print("Inserts arrow with linear stem\n")
 
                 # Appends the code instruction to create the last segment
                 
@@ -893,20 +1142,171 @@ boxes_list=None, arrows_list=None, dpi=300):
 
             arrow_path = Path(np.array(vertices), codes=codes)
 
+            # Verifies if a depth number has been given
+
+            local_depth_order = deepcopy(depth_order)
+
+            if "depth order" in input_dictionary:
+
+                local_depth_order = input_dictionary["depth order"]
+
+            else:
+
+                # Updates the depth number
+
+                depth_order += 1
+
             # The arrow
             
-            arrow_axes.add_patch(FancyArrowPatch(path=arrow_path, 
+            general_axes.add_patch(FancyArrowPatch(path=arrow_path, 
             arrowstyle=arrow_style, color=arrow_color, linewidth=
-            thickness, mutation_scale=arrow_head_size))
+            thickness, mutation_scale=arrow_head_size, zorder=
+            local_depth_order))
+
+    # Verifies if an overlaying grid is to be added
+
+    if add_overlaying_grid:
+
+        # Sets the lines thickness. The keys are the distance in milime-
+        # ters from the last line to the next of the same kind. The va-
+        # lues are the line thickness
+
+        lines_thickness = OrderedDict([(1, 0.05*(72/25.4)), (10, 0.18*(
+        72/25.4)), (50, 0.3*(72/25.4))])
+
+        # Plots the vertical lines
+
+        for x in range(int(round(layout_width_milimeters))+1):
+
+            # Initializes the thickness
+
+            thickness = 0.1
+
+            # Gets the thickness of the line
+
+            for distance, thickness_trial in lines_thickness.items():
+
+                # Verifies if the division by the distance has no rest
+
+                if x%distance==0:
+
+                    thickness = deepcopy(thickness_trial)
+
+            # Plots the line
+
+            general_axes.plot([x, x], [0, layout_height_milimeters], 
+            color="black", linewidth=thickness, zorder=depth_order)
+
+        # Plots the horizontal lines
+
+        for y in range(int(round(layout_height_milimeters))+1):
+
+            # Initializes the thickness
+
+            thickness = 0.1
+
+            # Gets the thickness of the line
+
+            for distance, thickness_trial in lines_thickness.items():
+
+                # Verifies if the division by the distance has no rest
+
+                if y%distance==0:
+
+                    thickness = deepcopy(thickness_trial)
+
+            # Plots the line
+
+            general_axes.plot([0, layout_width_milimeters], [y, y], 
+            color="black", linewidth=thickness, zorder=depth_order)
 
     # Saves the figure
 
+    print("###########################################################"+
+    "#############\n#                                Saving           "+
+    "                     #\n#########################################"+
+    "###############################\n")
+
     if no_padding:
 
-        plt.savefig(output_file, bbox_inches="tight", pad_inches=0, dpi=
-        dpi)
+        # Gets what has been drawn only
+
+        collage.canvas.draw()
+
+        renderer = collage.canvas.get_renderer()
+
+        bounding_box = []
+
+        # Iterates through the elements of the drawing
+
+        for artist in general_axes.get_children():
+
+            # Skips non visible objects
+
+            if not artist.get_visible():
+
+                continue
+
+            # Skips axes background patch
+
+            if artist==general_axes.patch:
+
+                continue
+
+            # Skip spines
+
+            if artist in general_axes.spines.values():
+
+                continue
+
+            # Tries to get the window
+
+            try:
+
+                local_bounding_box = artist.get_window_extent(renderer)
+
+                # Ignores empty bounding boxes
+
+                if local_bounding_box.width>0 and (
+                local_bounding_box.height>0):
+                    
+                    bounding_box.append(local_bounding_box)
+
+            except Exception:
+
+                pass
+
+        # Makes the union of the bounding boxes
+
+        if bounding_box:
+
+            print("There is a bounding box to shrink and pad.\nSaves a"+
+            "t "+str(output_file)+"\n")
+
+            bounding_box = Bbox.union(bounding_box)
+
+            # Converts to inches
+
+            bbox_inches = bounding_box.transformed(
+            collage.dpi_scale_trans.inverted())
+
+            # Saves the figure with this bounding box in inches
+
+            plt.savefig(output_file, bbox_inches=bbox_inches, pad_inches=
+            0, dpi=dpi)
+
+        # Otherwise, saves it plainly
+
+        else:
+
+            print("There is no bounding box to shrink and pad.\nSaves "+
+            "at "+str(output_file)+"\n")
+
+            plt.savefig(output_file, dpi=dpi)
 
     else:
+
+        print("Saves as it is at "+str(output_file)+"\n")
 
         plt.savefig(output_file, dpi=dpi)
 

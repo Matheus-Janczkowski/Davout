@@ -156,31 +156,71 @@ verbose=True)
 
 # Saves a snapshot of the solution using the automatization of ParaView
 
-frozen_snapshots(displacement_fileName, "Displacement", input_path=
-get_parent_path_of_file(), time=t_final, representation_type=
-"Surface With Edges", axes_color=[0.0, 0.0, 0.0], legend_bar_font="Tim"+
-"es", zoom_factor=1.0, component_to_plot="2", resolution_ratio=10, clip=
-False, clip_plane_origin=[0.15, 0.5, 0.1], clip_plane_normal_vector=
-[1.0, 1.0, 1.0], warp_by_vector=True, background_color="WhiteBackground",
-display_reference_configuration=False, transparent_background=True,
-set_camera_interactively=False,
-camera_position=[-2.2202601190413063, 2.7845260002185928, 2.412838032797255],
-camera_focal_point=[0.500121318497246, 0.8894379799910188, 0.03488656665544461],
-camera_up_direction=[0.19171813331267484, 0.8626133794219494, -0.46812638784984917],
-camera_parallel_scale=0.872714431199938,
-camera_rotation=[0.0, 0.0, 0.0],
-legend_bar_position=[0.6048594377510041, 0.09555555555555562],
-legend_bar_length=0.7344444444444449,
-size_in_pixels={'aspect ratio': 1.0, 'pixels in width': 400})
+new_figures = False 
+
+if new_figures:
+
+    frozen_snapshots(displacement_fileName, "Displacement", input_path=
+    get_parent_path_of_file(), time=t_final, representation_type=
+    "Surface With Edges", axes_color=[0.0, 0.0, 0.0], legend_bar_font="Tim"+
+    "es", zoom_factor=1.0, component_to_plot="2", resolution_ratio=10, clip=
+    False, clip_plane_origin=[0.15, 0.5, 0.1], clip_plane_normal_vector=
+    [1.0, 1.0, 1.0], warp_by_vector=True, background_color="WhiteBackground",
+    display_reference_configuration=False, transparent_background=True,
+    set_camera_interactively=False,
+    camera_position=[-2.2202601190413063, 2.7845260002185928, 2.412838032797255],
+    camera_focal_point=[0.500121318497246, 0.8894379799910188, 0.03488656665544461],
+    camera_up_direction=[0.19171813331267484, 0.8626133794219494, -0.46812638784984917],
+    camera_parallel_scale=0.872714431199938,
+    camera_rotation=[0.0, 0.0, 0.0],
+    legend_bar_position=[0.6048594377510041, 0.09555555555555562],
+    legend_bar_length=0.7344444444444449,
+    size_in_pixels={'aspect ratio': 1.0, 'pixels in width': 400})
+
+    frozen_snapshots(displacement_fileName, "Displacement", input_path=
+    get_parent_path_of_file(), time=t_final, representation_type=
+    "Surface With Edges", axes_color=[0.0, 0.0, 0.0], legend_bar_font="Tim"+
+    "es", zoom_factor=1.0, component_to_plot="2", resolution_ratio=10, clip=
+    False, clip_plane_origin=[0.15, 0.5, 0.1], clip_plane_normal_vector=
+    [1.0, 1.0, 1.0], warp_by_vector=True, background_color="WhiteBackground",
+    display_reference_configuration=False, transparent_background=True,
+    set_camera_interactively=False, output_imageFileName="plot2.png",
+    camera_position=[-1.9564135985404367, 3.578848197233133, 1.3405449192875027],
+    camera_focal_point=[0.2025655268960625, 0.7311641302620293, -0.6282088835248996],
+    camera_up_direction=[-0.7902858082954154, -0.6124372353110827, 0.019208696243617818],
+    camera_parallel_scale=0.872714431199938,
+    camera_rotation=[0.0, 0.0, 0.0],
+    legend_bar_position=[0.4838246202873453, 0.10398826979472141],
+    legend_bar_length=0.6516788856304988,
+    size_in_pixels={'aspect ratio': 1.0, 'pixels in width': 400})
 
 # Creates a collage
 
-create_box_collage("collage.pdf", input_path=get_parent_path_of_file(),
-input_image_list=[{"file name": "plot.png", "position": [0.5, 0.75], 
-"size": 0.3}], 
-input_text_list=[{"text": "Test", "position": [0.5, 0.85], "font size": 10}],
-boxes_list=[{"contour color": "black", "fill color": "red 1", "contour"+
-" thickness": 0.1, "position": [0.5, 0.75], "width": 0.5, "height": 0.25,
-"contour style": "dashed", "rotation in degrees": 45.0}],
-arrows_list=[{"start point": [0.25, 0.7], "end point": [0.4, 0.75], 
-"thickness": 0.1, "spline points": [[0.32, 0.8]]}])
+create_box_collage("collage.png", input_path=get_parent_path_of_file(),
+input_image_list=[{"file name": "plot.png", "position": [50.0, 200.0], 
+"size": 50.0, "trim transparent background": True, "origin point":
+"bottom-left"}, 
+{"file name": "plot2.png", "position": [107.0, 200.0], "size": 50.0, 
+"trim transparent background": True, "origin point": "bottom-left"}], 
+
+input_text_list=[{"text": "Lateral", "position": [100.0, 195.0], "font size": 
+10, "origin point": "bottom-right"}, 
+{"text": "Upper", "position": [157.0, 195.0], "font size": 10,
+"origin point": "bottom-right"},
+{"text": "$\MaterialDivOf{\\boldsymbol{P}}=\\boldsymbol{0}$", 
+"position": [50.0, 195.0], "font size": 10, "origin point": "bottom-left"}],
+
+boxes_list=[{"contour color": "black", "fill color": "red 2", "contour"+
+" thickness": 0.2, "position": [46.5, 193.0], "width": 114.0, "height": 58.0,
+"contour style": "solid", "origin point": "bottom-left"},
+{"contour color": "black", "fill color": "red 1", "contour"+
+" thickness": 0.2, "position": [47.5, 194.0], "width": 55.0, "height": 56.0,
+"contour style": "solid", "origin point": "bottom-left"},
+{"contour color": "black", "fill color": "red 1", "contour"+
+" thickness": 0.2, "position": [104.5, 194.0], "width": 55.0, "height": 56.0,
+"contour style": "solid", "origin point": "bottom-left"}], 
+
+arrows_list=[{"start point": [99.0, 200.0], "end point": [109.0, 200.0],
+"spline points": [[104., 202.0]], "thickness": 0.2, "arrow style": "-|>"}],
+
+verbose=True, no_padding=True, add_overlaying_grid=False)
