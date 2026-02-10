@@ -8,6 +8,8 @@ from .....Davout.MultiMech.physics import hyperelastic_cauchy_continuum as varia
 
 from .....Davout.MultiMech.tool_box.paraview_tools import frozen_snapshots
 
+from .....Davout.PythonicUtilities.collage_tools import create_box_collage
+
 ########################################################################
 ########################################################################
 ##                      User defined parameters                       ##
@@ -157,10 +159,10 @@ verbose=True)
 frozen_snapshots(displacement_fileName, "Displacement", input_path=
 get_parent_path_of_file(), time=t_final, representation_type=
 "Surface With Edges", axes_color=[0.0, 0.0, 0.0], legend_bar_font="Tim"+
-"es", zoom_factor=1.0, component_to_plot="2", resolution_ratio=5, clip=
+"es", zoom_factor=1.0, component_to_plot="2", resolution_ratio=10, clip=
 False, clip_plane_origin=[0.15, 0.5, 0.1], clip_plane_normal_vector=
 [1.0, 1.0, 1.0], warp_by_vector=True, background_color="WhiteBackground",
-display_reference_configuration=False, transparent_background=False,
+display_reference_configuration=False, transparent_background=True,
 set_camera_interactively=False,
 camera_position=[-2.2202601190413063, 2.7845260002185928, 2.412838032797255],
 camera_focal_point=[0.500121318497246, 0.8894379799910188, 0.03488656665544461],
@@ -170,3 +172,13 @@ camera_rotation=[0.0, 0.0, 0.0],
 legend_bar_position=[0.6048594377510041, 0.09555555555555562],
 legend_bar_length=0.7344444444444449,
 size_in_pixels={'aspect ratio': 1.0, 'pixels in width': 400})
+
+# Creates a collage
+
+create_box_collage("collage.pdf", input_path=get_parent_path_of_file(),
+input_image_list=[{"file name": "plot.png", "position": [0.5, 0.75], 
+"size": 0.3}], 
+input_text_list=[{"text": "Test", "position": [0.5, 0.85], "font size": 10}],
+boxes_list=[{"contour color": "black", "fill color": "red 1", "contour"+
+" thickness": 0.1, "position": [0.5, 0.75], "width": 0.5, "height": 0.25,
+"contour style": "dashed"}])
