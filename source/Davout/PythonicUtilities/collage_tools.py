@@ -330,15 +330,17 @@ layout_height_milimeters=297.0, add_overlaying_grid=False):
 
             # Verifies if they are float
 
-            if (not isinstance(width, float)) or (not isinstance(height, 
-            float)) or (not isinstance(contour_thickness, float)):
+            if ((not isinstance(width, float)) and (not isinstance(width, 
+            int))) or ((not isinstance(height, float)) and (not isinstance(
+            height, int))) or ((not isinstance(contour_thickness, float)
+            ) and (not isinstance(contour_thickness, int))):
 
                 raise TypeError("The "+str(index+1)+"-th element 'boxe"+
                 "s_list' has at key 'width' a value that is not a floa"+
                 "t or at key 'height', or at key 'contour thickness'. "+
-                "They must be both float. Currently, 'width' is: "+str(
-                width)+"\n'height' is: "+str(height)+"\ncontour thickn"+
-                "ess: "+str(contour_thickness))
+                "They must be both float or integers. Currently, 'widt"+
+                "h' is: "+str(width)+"\n'height' is: "+str(height)+"\n"+
+                "contour thickness: "+str(contour_thickness))
             
             # Converts contour thickness from milimeters to points
 
