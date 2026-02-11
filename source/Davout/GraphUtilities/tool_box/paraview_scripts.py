@@ -841,6 +841,20 @@ legend_bar_font_color=None):
 
     if legend_bar_font_color:
 
+        if (legend_bar_font_color[0]!="[" or legend_bar_font_color[-1]!=
+        "]"):
+
+            raise TypeError("'legend_bar_font_color' in 'frozen_snapsh"+
+            "ots' must be a list of 3 components of RGB values---[0.0,"+
+            " 0.0, 0.0] means black; [1.0, 1.0, 1.0] means white. Curr"+
+            "ently, it is: "+str(legend_bar_font_color)+"; whose type "+
+            "is: "+str(type(legend_bar_font_color)))
+        
+        # Converts the argument to a list and sets the parameter
+
+        legend_bar_font_color = string_tools.string_toList(
+        legend_bar_font_color)
+
         scalarBar.TitleColor = legend_bar_font_color
 
         scalarBar.LabelColor = legend_bar_font_color

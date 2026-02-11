@@ -6,9 +6,9 @@ from .....Davout.MultiMech.constitutive_models.hyperelasticity import isotropic_
 
 from .....Davout.MultiMech.physics import hyperelastic_cauchy_continuum as variational_framework
 
-from .....Davout.MultiMech.tool_box.paraview_tools import frozen_snapshots
+from .....Davout.GraphUtilities.paraview_tools import frozen_snapshots
 
-from .....Davout.PythonicUtilities.collage_tools import create_box_collage
+from .....Davout.GraphUtilities.collage_tools import create_box_collage
 
 ########################################################################
 ########################################################################

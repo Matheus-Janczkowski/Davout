@@ -1,9 +1,9 @@
 # Routine to externally control paraview and automate the extraction of
 # simulation output
 
-from ...PythonicUtilities import programming_tools
+from ..PythonicUtilities import programming_tools
 
-from ...MultiMech.tool_box import paraview_scripts
+from ..GraphUtilities.tool_box import paraview_scripts
 
 ########################################################################
 #                           Frozen snapshots                           #
