@@ -14,6 +14,7 @@ setup(
     author_email="matheusj2009@hotmail.com",
     install_requires=['numpy', 'scipy', 'matplotlib'],
     include_package_data=True,
+    # Loads other package data than .py files
     package_data={'Davout': ['LaTeXUtilities/*.sty'], },
     classifiers=[
         'Programming Language :: Python :: 3',
