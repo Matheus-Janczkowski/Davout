@@ -73,7 +73,8 @@ None, no_axes=None, component_to_plot=None, resolution_ratio=None,
 transparent_background=None, warp_by_vector=None, warp_scale=None, 
 glyph=None, glyph_scale=None, display_reference_configuration="True",
 clip=None, clip_plane_origin=None, clip_plane_normal_vector=None,
-set_camera_interactively=None, background_color=None):
+set_camera_interactively=None, background_color=None, 
+legend_bar_font_color=None):
 
     # Resets session
 
@@ -527,6 +528,8 @@ set_camera_interactively=None, background_color=None):
 
         renderView.OrientationAxesZColor = axes_color
 
+        renderView.OrientationAxesLabelColor = axes_color
+
     # Verifies if no axes are to be plotted
 
     if no_axes:
@@ -833,6 +836,14 @@ set_camera_interactively=None, background_color=None):
         scalarBar.TitleFontFamily = legend_bar_font
 
         scalarBar.LabelFontFamily = legend_bar_font
+
+    # Sets the color 
+
+    if legend_bar_font_color:
+
+        scalarBar.TitleColor = legend_bar_font_color
+
+        scalarBar.LabelColor = legend_bar_font_color
 
     # Otherwise, if a font file is given
 

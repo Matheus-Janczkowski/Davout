@@ -156,7 +156,7 @@ verbose=True)
 
 # Saves a snapshot of the solution using the automatization of ParaView
 
-new_figures = False 
+new_figures = True 
 
 if new_figures:
 
@@ -167,7 +167,7 @@ if new_figures:
     False, clip_plane_origin=[0.15, 0.5, 0.1], clip_plane_normal_vector=
     [1.0, 1.0, 1.0], warp_by_vector=True, background_color="WhiteBackground",
     display_reference_configuration=False, transparent_background=True,
-    set_camera_interactively=False,
+    legend_bar_font_color=[0.0, 0.0, 0.0], set_camera_interactively=False,
     camera_position=[-2.2202601190413063, 2.7845260002185928, 2.412838032797255],
     camera_focal_point=[0.500121318497246, 0.8894379799910188, 0.03488656665544461],
     camera_up_direction=[0.19171813331267484, 0.8626133794219494, -0.46812638784984917],
@@ -184,7 +184,8 @@ if new_figures:
     False, clip_plane_origin=[0.15, 0.5, 0.1], clip_plane_normal_vector=
     [1.0, 1.0, 1.0], warp_by_vector=True, background_color="WhiteBackground",
     display_reference_configuration=False, transparent_background=True,
-    set_camera_interactively=False, output_imageFileName="plot2.png",
+    legend_bar_font_color=[0.0, 0.0, 0.0], set_camera_interactively=False, 
+    output_imageFileName="plot2.png",
     camera_position=[-1.9564135985404367, 3.578848197233133, 1.3405449192875027],
     camera_focal_point=[0.2025655268960625, 0.7311641302620293, -0.6282088835248996],
     camera_up_direction=[-0.7902858082954154, -0.6124372353110827, 0.019208696243617818],
@@ -216,11 +217,11 @@ boxes_list=[{"contour color": "black", "fill color": "red 2", "contour"+
 {"contour color": "black", "fill color": "red 1", "contour"+
 " thickness": 0.2, "position": [47.5, 194.0], "width": 55.0, "height": 56.0,
 "contour style": "solid", "origin point": "bottom-left"},
-{"contour color": "black", "fill color": "transparent", "contour"+
+{"contour color": "black", "fill color": "red 1", "contour"+
 " thickness": 0.2, "position": [104.5, 194.0], "width": 55.0, "height": 56.0,
-"contour style": "solid", "origin point": "bottom-left", "shape": "ellipse"}], 
+"contour style": "solid", "origin point": "bottom-left"}], 
 
 arrows_list=[{"start point": [99.0, 200.0], "end point": [109.0, 200.0],
 "spline points": [[104., 202.0]], "thickness": 0.2, "arrow style": "-|>"}],
 
-verbose=True, no_padding=True, add_overlaying_grid=True)
+verbose=True, no_padding=True, add_overlaying_grid=False)

@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 
 from collections import OrderedDict
 
-from matplotlib.patches import FancyBboxPatch, FancyArrowPatch, Ellipse
+from matplotlib.patches import FancyBboxPatch, FancyArrowPatch, Ellipse, RegularPolygon
 
 from matplotlib.transforms import Affine2D, Bbox
 
@@ -453,6 +453,10 @@ layout_height_milimeters=297.0, add_overlaying_grid=False):
 
             new_box = None
 
+            # Initializes the rotation shift
+
+            rotation_shift = None
+
             # If it is meant to be a rectangle
 
             if shape=="rectangle":
@@ -461,6 +465,10 @@ layout_height_milimeters=297.0, add_overlaying_grid=False):
                 width, height, linewidth=contour_thickness, edgecolor=
                 contour_color, facecolor=fill_color, boxstyle=boxstyle, 
                 linestyle=line_style, zorder=local_depth_order)
+
+                # Sets the rotation shift as the proper position
+
+                rotation_shift = deepcopy(input_dictionary["position"])
 
             # If it is meant to be an ellipse
 
@@ -509,6 +517,87 @@ layout_height_milimeters=297.0, add_overlaying_grid=False):
                 facecolor=fill_color, linestyle=line_style, zorder=
                 local_depth_order)
 
+                # Sets the rotation shift as the proper position
+
+                rotation_shift = [x_center*1.0, y_center*1.0]
+
+            # If it is a polygon
+
+            elif shape=="polygon":
+
+                # Verifies if there is a key for the number of sides
+
+                if not ("number of sides" in input_dictionary):
+
+                    raise KeyError("'polygon' shape has been asked to "+
+                    "create a box, but no 'number of sides' key has be"+
+                    "en provided")
+                
+                number_of_sides = input_dictionary["number of sides"]
+
+                # Verifies if the number of sides is integer
+
+                if not isinstance(number_of_sides, int):
+
+                    raise TypeError("'number of sides' to make a polyg"+
+                    "on must be an integer. Currently, it is: "+str(
+                    number_of_sides))
+
+                # Calculates the center coordinates
+
+                x_center = position[0]*1.0
+
+                y_center = position[1]*1.0
+
+                # Translates it according to position
+
+                if origin_point=="bottom-left":
+
+                    x_center += 0.5*width
+
+                    y_center += 0.5*height 
+
+                elif origin_point=="bottom-right":
+
+                    x_center -= 0.5*width 
+
+                    y_center += 0.5*height
+
+                elif origin_point=="top-right":
+
+                    x_center -= 0.5*width 
+
+                    y_center -= 0.5*height
+
+                elif origin_point=="top-left":
+
+                    x_center += 0.5*width 
+
+                    y_center -= 0.5*height
+                
+                # Creates the box
+
+                new_box = RegularPolygon((x_center, y_center), radius=
+                width*0.5, numVertices=number_of_sides, linewidth=
+                contour_thickness, edgecolor=contour_color, facecolor=
+                fill_color, linestyle=line_style, zorder=
+                local_depth_order)
+
+                # Stretches the polygon to match the required height. 
+                # Firstly, translates to the origin, stretches, and, 
+                # then, translates back to the correct position
+
+                stretch_transform = Affine2D().translate(-x_center, 
+                -y_center).scale(1.0, height/width).translate(x_center,
+                y_center)
+
+                new_box.set_transform(stretch_transform+
+                general_axes.transData)
+
+                # Sets the rotation shift as the proper position
+
+                rotation_shift = [x_center*1.0, y_center*1.0]
+
             else:
 
                 raise NameError("'shape' has been given as '"+str(shape)+
@@ -535,9 +624,8 @@ layout_height_milimeters=297.0, add_overlaying_grid=False):
                 # Sets the rotation and transforms the box. Rotates a-
                 # round the original point
 
-                p_x, p_y = deepcopy(input_dictionary["position"])
-
-                rotation = Affine2D().rotate_deg_around(p_x, p_y, angle)
+                rotation = Affine2D().rotate_deg_around(rotation_shift[0
+                ], rotation_shift[1], angle)
 
                 new_box.set_transform(rotation+general_axes.transData)
 
