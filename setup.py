@@ -14,10 +14,7 @@ setup(
     author_email="matheusj2009@hotmail.com",
     install_requires=['numpy', 'scipy', 'matplotlib'],
     include_package_data=True,
-    package_data={
-        # Include additional files like images, text files, etc.
-        # '': ['*.txt', '*.rst'],
-    },
+    package_data={'Davout': ['LaTeXUtilities/*.sty'], },
     classifiers=[
         'Programming Language :: Python :: 3',
         'License :: OSI Approved :: MIT License',
