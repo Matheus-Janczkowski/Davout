@@ -14,11 +14,11 @@ import matplotlib.ticker as ticker
 
 from matplotlib import markers
 
-from ..PythonicUtilities import file_handling_tools as file_tools
-
 from ..PythonicUtilities import path_tools
 
 from ..PythonicUtilities import programming_tools
+
+from ..PythonicUtilities import string_tools
 
 ########################################################################
 #                          Bidimensional plots                         #
@@ -1712,11 +1712,11 @@ x_ticksLabels=None, y_ticksLabels=None):
 
         # Converts the time value to integer
 
-        time = file_tools.float_toString(time)
+        time = string_tools.float_toString(time)
 
         # Plots and saves the figure
 
-        plane_plot(file_name=parent_path+"//"+base_file_name+"_t_"+time
+        plane_plot(parent_path=parent_path,file_name=base_file_name+"_t_"+time
         +".pdf", x_data=x_data, y_data=y_data, element_style="s", 
         element_size=element_size, color=colors, color_map=
         color_mapBuilder(color_map, max_ticksColorBar=max_ticksColorBar

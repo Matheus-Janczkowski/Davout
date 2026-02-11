@@ -22,7 +22,7 @@ from ..tool_box.read_write_tools import read_field_from_xdmf
 
 from ...PythonicUtilities import file_handling_tools as file_tools
 
-from ...PythonicUtilities import plotting_tools
+from ...GraphUtilities import plotting_tools
 
 from ...PythonicUtilities import programming_tools
 

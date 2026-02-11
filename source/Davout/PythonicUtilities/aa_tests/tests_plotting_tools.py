@@ -6,7 +6,7 @@ import numpy as np
 
 from copy import deepcopy
 
-from ...PythonicUtilities import plotting_tools
+from ...GraphUtilities import plotting_tools
 
 # Defines a function to test the ANN optimization wrappers
 

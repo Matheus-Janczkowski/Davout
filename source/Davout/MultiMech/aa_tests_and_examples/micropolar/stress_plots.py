@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 from dolfin import *
 
-from ....PythonicUtilities import plotting_tools
+from ....GraphUtilities import plotting_tools
 
 from ....PythonicUtilities import file_handling_tools as file_tools
 

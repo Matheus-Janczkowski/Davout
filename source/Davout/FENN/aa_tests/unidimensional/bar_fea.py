@@ -4,7 +4,7 @@ import numpy as np
 
 from scipy import sparse
 
-from ....MultiMech.tool_box import plotting_tools
+from ....GraphUtilities import plotting_tools
 
 from . import variational_tools
 
