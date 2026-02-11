@@ -20,6 +20,8 @@ from PIL import Image
 
 from ..PythonicUtilities import path_tools
 
+from .tool_box import collage_classes
+
 ########################################################################
 #                            LaTeX preamble                            #
 ########################################################################
@@ -47,147 +49,24 @@ matplotlib.rcParams.update({"text.usetex": True, "font.family": "serif",
 "font.serif": ["Computer Modern Roman"], "text.latex.preamble": 
 r"\usepackage{LaTeXUtilities}"})
 
-# Defines a class with colors
-
-class ColorMiscellany:
-
-    def __init__(self):
-
-        # Sets names as keys and values as RGB lists
-    
-        self.color_dictionary = {"white": [1.0, 1.0, 1.0], "black": [0.0,
-        0.0, 0.0], "red 1": [1.0, 0.835, 0.835], "red 2": [1.0, 0.667, 
-        0.667], "red 3": [1.0, 0.502, 0.502], "red 4": [1.0, 0.333, 0.333
-        ], "red 5": [1.0, 0.165, 0.165], "greyish red 1": [1.0, 0.843, 
-        0.843], "greyish red 2": [0.914, 0.686, 0.686], "greyish red 3":
-        [0.871, 0.529, 0.529], "greyish red 4": [0.827, 0.373, 0.373],
-        "greyish red 5": [0.784, 0.216, 0.216], "grey 1": [0.89, 0.859, 
-        0.859], "grey 2": [0.784, 0.718, 0.718], "grey 3": [0.675, 0.576, 
-        0.576], "grey 4": [0.569, 0.435, 0.435], "grey 5": [0.424, 0.325, 
-        0.325], "yellow 1": [1.0, 0.902, 0.835], "yellow 2": [1.0, 0.8, 
-        0.667], "yellow 3": [1.0, 0.702, 0.502], "yellow 4": [1.0, 0.6, 
-        0.333], "yellow 5": [1.0, 0.498, 0.165], "transparent": [1.0, 0.835, 0.835, 0.01]}
-
-    # Defines a function to get the color
-
-    def __call__(self, key):
-        
-        # Verifies if it is one of the keys
-
-        if key in self.color_dictionary:
-
-            return self.color_dictionary[key]
-        
-        # Otherwise, verifies if it is a list
-
-        elif isinstance(key, list):
-
-            # Verifies if it has 3 elements
-
-            if len(key)!=3:
-
-                raise IndexError("'"+str(key)+"' does not have 3 eleme"+
-                "nts. It must have 3 for they are the RGB values")
-            
-            return key 
-        
-        # Otherwise, throws an error
-
-        else:
-
-            available_colors = ""
-
-            for color in self.color_dictionary:
-
-                available_colors += "\n'"+str(color)+"'"
-
-            raise ValueError("'"+str(key)+"' is not a key of the dicti"+
-            "onary of colors nor is a list with RGB values (3 componen"+
-            "ts). Check the valid color names:"+available_colors)
-        
-# Defines a class to store alignment options
-
-class AlignmentOptions:
-
-    def __init__(self):
-
-        # Sets a dictionary with keys representing the position origin
-        # of a generic element, and the corresponding values are lists
-        # with the coefficients to multiply the element sizes 
-         
-        self.alignments = {'centroid': [-0.5, -0.5], 'bottom-left': [0.0, 
-        0.0], 'bottom-right': [-1.0, 0.0], 'top-right': [-1.0, -1.0], 
-        "top-left": [0.0, -1.0]}
-
-        # Sets a dictionary with keys representing text alignments
-         
-        self.text_alignments = {'centroid': ("center", "center"), "bott"+
-        "om-left": ("left", "bottom"), "bottom-right": ("right", "bott"+
-        "om"), "top-left": ("left", "top"), "top-right": ("right", "to"+
-        "p")}
-
-    def __call__(self, alignment, position, width, height, 
-    text_alignment=False):
-        
-        # If text alignment is to be given
-
-        if text_alignment:
-
-            # Verifies alignment consistency
-
-            if not (alignment in self.text_alignments):
-
-                alignments_options = ""
-
-                for name in self.text_alignments:
-
-                    alignments_options += "\n'"+str(name)+"'"
-
-                raise NameError("There is no '"+str(alignment)+"' opti"+
-                "on for alignment. Check the available options:"+
-                alignments_options)
-            
-            # Returns the matplotlib native settings
-
-            return (position, self.text_alignments[alignment][0], 
-            self.text_alignments[alignment][1])
-
-        # Verifies the alignment option
-
-        if not (alignment in self.alignments):
-
-            alignments_options = ""
-
-            for name in self.alignments:
-
-                alignments_options += "\n'"+str(name)+"'"
-
-            raise NameError("There is no '"+str(alignment)+"' option f"+
-            "or alignment. Check the available options:"+
-            alignments_options)
-        
-        # Gets the coefficients
-
-        c_width, c_height = self.alignments[alignment]
-
-        # Updates it
-
-        return [position[0]+(c_width*width), position[1]+(c_height*
-        height)]
-
 # Defines a function to create a collage using boxes
 
 def create_box_collage(output_file, input_path=None, output_path=None,
 no_padding=False, input_image_list=None, input_text_list=None, 
-boxes_list=None, arrows_list=None, dpi=300, verbose=False, aspect_ratio=
+boxes_list=None, arrows_and_lines_list=None, dpi=300, verbose=False, aspect_ratio=
 'auto', adjustable=None, layout_width_milimeters=210.0, 
 layout_height_milimeters=297.0, add_overlaying_grid=False):
     
-    # Initializes the class of colors and the class of alignments
+    # Initializes the class of colors, the class of alignments, and the 
+    # class of line styles
 
-    colors_class = ColorMiscellany()
+    colors_class = collage_classes.ColorMiscellany()
 
-    alignments_class = AlignmentOptions()
+    alignments_class = collage_classes.AlignmentOptions()
+
+    line_style_class = collage_classes.LineStyles()
+
+    arrow_style_class = collage_classes.ArrowHeadStyles()
 
     # Verifies the input and output paths
 
@@ -391,32 +270,9 @@ layout_height_milimeters=297.0, add_overlaying_grid=False):
             line_style = '-'
 
             if "contour style" in input_dictionary:
-
-                # Sets a dctionary of available styles
-
-                available_line_styles = {"solid": '-', "dashed": (0, (
-                int(round(10*contour_thickness)), int(round(6*
-                contour_thickness)))), "dotted": (0, (int(round(1*
-                contour_thickness)), int(round(5*contour_thickness)))),
-                "dash-dotted": (0, (int(round(8*contour_thickness)), int(
-                round(4*contour_thickness)), int(round(2*
-                contour_thickness)), int(round(4*contour_thickness))))}
-
-                if input_dictionary["contour style"] in available_line_styles:
-
-                    line_style = available_line_styles[input_dictionary[
-                    "contour style"]]
-
-                else:
-
-                    available_contour_styles = ""
-
-                    for contour in available_line_styles:
-
-                        available_contour_styles += "\n'"+str(contour)+"'"
-
-                    raise NameError("The only 'contour style' availabl"+
-                    "e are:"+available_contour_styles)
+                
+                line_style = line_style_class(input_dictionary["contou"+
+                "r style"], contour_thickness, "contour style")
                 
             # Verifies if rounded corners are required
 
@@ -1005,7 +861,7 @@ layout_height_milimeters=297.0, add_overlaying_grid=False):
 
     # Verifies if the list of arrows is not None
 
-    if arrows_list is not None:
+    if arrows_and_lines_list is not None:
 
         print("#######################################################"+
         "#################\n#                           Making of arro"+
@@ -1018,9 +874,9 @@ layout_height_milimeters=297.0, add_overlaying_grid=False):
 
         # Verifies if it is not a list
 
-        if not isinstance(arrows_list, list):
+        if not isinstance(arrows_and_lines_list, list):
 
-            raise TypeError("'arrows_list' is not a list. It must be a"+
+            raise TypeError("'arrows_and_lines_list' is not a list. It must be a"+
             " list where each item is a dictionary with the keys:\n'st"+
             "art point': list with [x,y] coordinates of the starting p"+
             "oint\n'end point':  list with [x,y] coordinates of the en"+
@@ -1029,18 +885,20 @@ layout_height_milimeters=297.0, add_overlaying_grid=False):
             " of the arrow stem and edge (optional)\n'spline points': "+
             "list of lists of point coordinates for a spline path, [[x"+
             "1, y1], [x2, y2], ..., [xn, yn]] (optional)\n'arrow head "+
-            "size': integer with the arrow head size (optional)")
+            "size': integer with the arrow head size (optional)\n'line"+
+            " style': string with the name of the line style of the st"+
+            "em (optional)")
         
         # Iterates through the elements
 
-        for index, input_dictionary in enumerate(arrows_list):
+        for index, input_dictionary in enumerate(arrows_and_lines_list):
 
             # Verifies if this element is a dictionary
 
             if not isinstance(input_dictionary, dict):
 
                 raise TypeError("The "+str(index+1)+"-th element of th"+
-                "e 'arrows_list' is not a dictionary. It must be a dic"+
+                "e 'arrows_and_lines_list' is not a dictionary. It must be a dic"+
                 "tionary with the keys:\n'start point': list with [x,y"+
                 "] coordinates of the starting point\n'end point':  li"+
                 "st with [x,y] coordinates of the end point\n'thicknes"+
@@ -1049,7 +907,9 @@ layout_height_milimeters=297.0, add_overlaying_grid=False):
                 "row stem and edge (optional)\n'spline points': list o"+
                 "f lists of point coordinates for a spline path, [[x1,"+
                 " y1], [x2, y2], ..., [xn, yn]] (optional)\n'arrow hea"+
-                "d size': integer with the arrow head size (optional)")
+                "d size': integer with the arrow head size (optional)"+
+                "\n'line style': string with the name of the line styl"+
+                "e of the stem (optional)")
             
             # Iterates through the necessary keys
 
@@ -1066,9 +926,9 @@ layout_height_milimeters=297.0, add_overlaying_grid=False):
                         names += "\n'"+str(keys)+"'"
 
                     raise ValueError("The "+str(index+1)+"-th element "+
-                    "'arrows_list' does not have all the necessary key"+
-                    "s, in particular '"+str(key)+"'. Check the necess"+
-                    "ary keys:"+names)
+                    "'arrows_and_lines_list' does not have all the nec"+
+                    "essary keys, in particular '"+str(key)+"'. Check "+
+                    "the necessary keys:"+names)
                 
             # Gets the colors
 
@@ -1087,9 +947,9 @@ layout_height_milimeters=297.0, add_overlaying_grid=False):
             if not isinstance(start_point, list):
 
                 raise TypeError("The "+str(index+1)+"-th element 'arro"+
-                "ws_list' has at key 'start_point' a value that is not"+
-                " a list. It must be a list with [x, y] coordinates. C"+
-                "urrently, it is:\n"+str(start_point))
+                "ws_and_lines_list' has at key 'start_point' a value t"+
+                "hat is not a list. It must be a list with [x, y] coor"+
+                "dinates. Currently, it is:\n"+str(start_point))
 
             # Gets the end point
 
@@ -1100,9 +960,9 @@ layout_height_milimeters=297.0, add_overlaying_grid=False):
             if not isinstance(end_point, list):
 
                 raise TypeError("The "+str(index+1)+"-th element 'arro"+
-                "ws_list' has at key 'end_point' a value that is not a"+
-                " list. It must be a list with [x, y] coordinates. Cur"+
-                "rently, it is:\n"+str(end_point))
+                "ws_and_lines_list' has at key 'end_point' a value tha"+
+                "t is not a list. It must be a list with [x, y] coordi"+
+                "nates. Currently, it is:\n"+str(end_point))
             
             # Gets the thickness
 
@@ -1113,12 +973,22 @@ layout_height_milimeters=297.0, add_overlaying_grid=False):
             if (not isinstance(thickness, float)):
 
                 raise TypeError("The "+str(index+1)+"-th element 'arro"+
-                "ws_list' has at key 'thickness' a value that is not a"+
-                " float. Currently, 'thickness': "+str(thickness))
+                "ws_and_lines_list' has at key 'thickness' a value tha"+
+                "t is not a float. Currently, 'thickness': "+str(
+                thickness))
             
             # Converts contour thickness from milimeters to points
 
             thickness = thickness*(72.0/25.4)
+
+            # Verifies contour style
+
+            line_style = '-'
+
+            if "line style" in input_dictionary:
+                
+                line_style = line_style_class(input_dictionary["line s"+
+                "tyle"], thickness, "line style")
 
             # Verifies contour style
 
@@ -1127,28 +997,13 @@ layout_height_milimeters=297.0, add_overlaying_grid=False):
             if "arrow style" in input_dictionary:
 
                 # Gets the arrow style
-
-                arrow_style = input_dictionary["arrow style"]
-
-                # Verifies if it is in the list of admissible style
-
-                arrow_styles = ["-", "->", "-|>", "-[", "<-", "<->", 
-                "fancy", "simple", "wedge"]
-
-                if not (arrow_style in arrow_styles):
-
-                    available_arrows = ""
-
-                    for arrow in arrow_styles:
-
-                        available_arrows += "\n'"+str(arrow)+"'"
-
-                    raise NameError("The only 'arrow style' available "+
-                    " are:"+available_arrows)
+                
+                arrow_style = arrow_style_class(input_dictionary["arro"+
+                "w style"])
             
             # Gets the arrow head size
 
-            arrow_head_size = 15
+            arrow_head_size = int(thickness*15)
 
             if "arrow head size" in input_dictionary:
 
@@ -1156,12 +1011,17 @@ layout_height_milimeters=297.0, add_overlaying_grid=False):
 
                 # Verifies if it is an integer
 
-                if (not isinstance(arrow_head_size, int)):
+                if (not isinstance(arrow_head_size, float)) and (
+                not isinstance(arrow_head_size, int)):
 
                     raise TypeError("The "+str(index+1)+"-th element '"+
-                    "arrows_list' has at key 'arrow head size' a value"+
-                    " that is not an integer. Currently, 'arrow head s"+
-                    "ize': "+str(arrow_head_size))
+                    "arrows_and_lines_list' has at key 'arrow head siz"+
+                    "e' a value that is not an integer nor a float. Cu"+
+                    "rrently, 'arrow head size': "+str(arrow_head_size))
+                
+                # Converts the size from milimeters to points
+
+                arrow_head_size = arrow_head_size*(72/25.4)
                 
             # Verifies if the arrow stem follows a spline curve
 
@@ -1177,27 +1037,10 @@ layout_height_milimeters=297.0, add_overlaying_grid=False):
 
                 if not isinstance(spline_points, list):
 
-                    raise TypeError("'spline points' in 'arrows_list' "+
-                    "must be a list of lists [[x1, y1], [x2, y2], ...,"+
-                    " [xn, yn]]. Currently, it is:\n"+str(spline_points))
-
-                # Verifies if the arrow style is one of the reserved sty-
-                # les
-
-                if arrow_style in ["fancy", "simple", "wedge"]:
-
-                    print("Inserts arrow with quadratic Bézier curve\n")
-
-                    # Sets the vertices with the mid point and the end 
-                    # point
-
-                    vertices.append(spline_points[0])
-
-                    vertices.append(end_point)
-
-                    # Sets the codes
-
-                    codes = [Path.MOVETO, Path.CURVE3, Path.CURVE3]
+                    raise TypeError("'spline points' in 'arrows_and_li"+
+                    "nes_list' must be a list of lists [[x1, y1], [x2,"+
+                    " y2], ..., [xn, yn]]. Currently, it is:\n"+str(
+                    spline_points))
 
                 # Otherwise, uses cubic splines
 
@@ -1286,7 +1129,15 @@ layout_height_milimeters=297.0, add_overlaying_grid=False):
 
                 vertices.append(end_point)
 
-            arrow_path = Path(np.array(vertices), codes=codes)
+            # Creates the arrow head path and for the arrow stem separa-
+            # tely
+
+            code_head = [Path.MOVETO, Path.LINETO]
+
+            arrow_head_path = Path(np.array(vertices[-2:len(vertices)]), 
+            codes=code_head)
+
+            arrow_stem_path = Path(np.array(vertices), codes=codes)
 
             # Verifies if a depth number has been given
 
@@ -1302,12 +1153,21 @@ layout_height_milimeters=297.0, add_overlaying_grid=False):
 
                 depth_order += 1
 
-            # The arrow
+            # Adds the arrow stem
             
-            general_axes.add_patch(FancyArrowPatch(path=arrow_path, 
-            arrowstyle=arrow_style, color=arrow_color, linewidth=
-            thickness, mutation_scale=arrow_head_size, zorder=
-            local_depth_order))
+            general_axes.add_patch(FancyArrowPatch(path=arrow_stem_path, 
+            arrowstyle='-', color=arrow_color, linewidth=thickness, 
+            zorder=local_depth_order, linestyle=line_style))
+
+            # Adds the arrow head
+
+            if arrow_style!='-':
+            
+                general_axes.add_patch(FancyArrowPatch(path=
+                arrow_head_path, arrowstyle=arrow_style, color=
+                arrow_color, mutation_scale=arrow_head_size, zorder=
+                local_depth_order, linestyle='-', linewidth=max(
+                thickness/3, 1), joinstyle='miter'))
 
     # Verifies if an overlaying grid is to be added
 
