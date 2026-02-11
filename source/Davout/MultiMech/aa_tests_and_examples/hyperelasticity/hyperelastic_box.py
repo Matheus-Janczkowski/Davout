@@ -216,11 +216,11 @@ boxes_list=[{"contour color": "black", "fill color": "red 2", "contour"+
 {"contour color": "black", "fill color": "red 1", "contour"+
 " thickness": 0.2, "position": [47.5, 194.0], "width": 55.0, "height": 56.0,
 "contour style": "solid", "origin point": "bottom-left"},
-{"contour color": "black", "fill color": "red 1", "contour"+
+{"contour color": "black", "fill color": "transparent", "contour"+
 " thickness": 0.2, "position": [104.5, 194.0], "width": 55.0, "height": 56.0,
-"contour style": "solid", "origin point": "bottom-left"}], 
+"contour style": "solid", "origin point": "bottom-left", "shape": "ellipse"}], 
 
 arrows_list=[{"start point": [99.0, 200.0], "end point": [109.0, 200.0],
 "spline points": [[104., 202.0]], "thickness": 0.2, "arrow style": "-|>"}],
 
-verbose=True, no_padding=True, add_overlaying_grid=False)
+verbose=True, no_padding=True, add_overlaying_grid=True)

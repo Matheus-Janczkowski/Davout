@@ -66,7 +66,7 @@ class ColorMiscellany:
         0.576], "grey 4": [0.569, 0.435, 0.435], "grey 5": [0.424, 0.325, 
         0.325], "yellow 1": [1.0, 0.902, 0.835], "yellow 2": [1.0, 0.8, 
         0.667], "yellow 3": [1.0, 0.702, 0.502], "yellow 4": [1.0, 0.6, 
-        0.333], "yellow 5": [1.0, 0.498, 0.165]}
+        0.333], "yellow 5": [1.0, 0.498, 0.165], "transparent": [1.0, 0.835, 0.835, 0.01]}
 
     # Defines a function to get the color
 
@@ -245,19 +245,22 @@ layout_height_milimeters=297.0, add_overlaying_grid=False):
 
             raise TypeError("'boxes_list' is not a list. It must be a "+
             "list where each item is a dictionary with the keys:\n'con"+
-            "our color': string with the color name or a RGB list for "+
-            "the contour\n'contour thickness': float with the contour "+
-            "thickness\n'fill color': string with the color name or a "+
-            "RGB list for the fill (face)\n'position': list [x,y] posi"+
-            "tion of the centroid\n'width: width of the box\nheight: h"+
-            "eight of the box\n'transparency': transparency factor (op"+
-            "tional and between 0 and 1)\n'corner radius': the radius "+
-            "of the contour corners (optional)\n'contour style': 'soli"+
-            "d', 'dashed', or 'dotted'\n'origin point': available opti"+
-            "ons are 'centroid', 'bottom-left', 'bottom-right', 'top-l"+
-            "eft', 'top-right'\n'rotation in degrees': float with rota"+
-            "tion angle in degrees (from x axis counter-clockwise)\n's"+
-            "hape': string with the name of the box shape")
+            "tour color': string with the color name or a RGB list for"+
+            " the contour\n'contour thickness': float with the contour"+
+            " thickness\n'fill color': string with the color name or a"+
+            " RGB list for the fill (face)\n'position': list [x,y] pos"+
+            "ition of the centroid\n'width: width of the box\nheight: "+
+            "height of the box\n'contour transparency': transparency f"+
+            "actor (optional and between 0 and 1) to set transparency "+
+            "of the contour line\n'corner radius': the radius of the c"+
+            "ontour corners (optional)\n'contour style': 'solid', 'das"+
+            "hed', or 'dotted'\n'origin point': available options are "+
+            "'centroid', 'bottom-left', 'bottom-right', 'top-left', 't"+
+            "op-right'\n'rotation in degrees': float with rotation ang"+
+            "le in degrees (from x axis counter-clockwise)\n'shape': s"+
+            "tring with the name of the box shape\n'background transpa"+
+            "rency': float value betweem 0 and 1 to make the backgroun"+
+            "d of the box transparent")
         
         # Iterates through the elements
 
@@ -269,17 +272,24 @@ layout_height_milimeters=297.0, add_overlaying_grid=False):
 
                 raise TypeError("The "+str(index+1)+"-th element of th"+
                 "e 'boxes_list' is not a dictionary. It must be a dict"+
-                "ionary with the keys:\n'conour color': string with th"+
-                "e color name or a RGB list for the contour\n'contour "+
-                "thickness': float with the contour thickness\n'fill c"+
-                "olor': string with the color name or a RGB list for t"+
-                "he fill (face)\n'position': list [x,y] position of th"+
-                "e centroid\n'width: width of the box\nheight: height "+
-                "of the box\n'origin point': available options are 'ce"+
-                "ntroid', 'bottom-left', 'bottom-right', 'top-left', '"+
-                "top-right'\n'rotation in degrees': float with rotatio"+
-                "n angle in degrees (from x axis counter-clockwise)\n'"+
-                "shape': string with the name of the box shape")
+                "ionary with the keys:\n'contour color': string with t"+
+                "he color name or a RGB list for the contour\n'contour"+
+                " thickness': float with the contour thickness\n'fill "+
+                "color': string with the color name or a RGB list for "+
+                "the fill (face)\n'position': list [x,y] position of t"+
+                "he centroid\n'width: width of the box\nheight: height"+
+                " of the box\n'contour transparency': transparency fac"+
+                "tor (optional and between 0 and 1) to set transparenc"+
+                "y of the contour line\n'corner radius': the radius of"+
+                " the contour corners (optional)\n'contour style': 'so"+
+                "lid', 'dashed', or 'dotted'\n'origin point': availabl"+
+                "e options are 'centroid', 'bottom-left', 'bottom-righ"+
+                "t', 'top-left', 'top-right'\n'rotation in degrees': f"+
+                "loat with rotation angle in degrees (from x axis coun"+
+                "ter-clockwise)\n'shape': string with the name of the "+
+                "box shape\n'background transparency': float value bet"+
+                "weem 0 and 1 to make the background of the box transp"+
+                "arent")
             
             # Iterates through the necessary keys
 
@@ -348,11 +358,20 @@ layout_height_milimeters=297.0, add_overlaying_grid=False):
             
             # Gets the transparency if it is
 
-            alpha = 1.0
+            if "contour transparency" in input_dictionary:
 
-            if "transparency" in input_dictionary:
+                # Adds a 0.0 to the fourth channel of RGBA
+                
+                contour_color.append(input_dictionary["contour transparency"]) 
+            
+            # Gets the transparency if it is for the background only
 
-                alpha = input_dictionary["transparency"]
+            if "background transparency" in input_dictionary:
+
+                # Adds a 0.0 to the fourth channel of RGBA
+                
+                fill_color.append(input_dictionary["background transpa"+
+                "rency"]) 
             
             # Verifies if the origin point is prescribed
 
@@ -440,24 +459,61 @@ layout_height_milimeters=297.0, add_overlaying_grid=False):
 
                 new_box = FancyBboxPatch((position[0], position[1]), 
                 width, height, linewidth=contour_thickness, edgecolor=
-                contour_color, facecolor=fill_color, alpha=alpha, 
-                boxstyle=boxstyle, linestyle=line_style, zorder=
-                local_depth_order)
+                contour_color, facecolor=fill_color, boxstyle=boxstyle, 
+                linestyle=line_style, zorder=local_depth_order)
 
             # If it is meant to be an ellipse
 
-            elif shape=="ellipse":
+            elif shape=="ellipse" or shape=="circle":
 
-                new_box = Ellipse((position[0], position[1]), width, 
-                height, linewidth=contour_thickness, edgecolor=
-                contour_color, facecolor=fill_color, alpha=alpha, 
-                linestyle=line_style, zorder=local_depth_order)
+                # Calculates the center coordinates
+
+                x_center = position[0]*1.0
+
+                y_center = position[1]*1.0
+
+                # Translates it according to position
+
+                if origin_point=="bottom-left":
+
+                    x_center += 0.5*width
+
+                    y_center += 0.5*height 
+
+                elif origin_point=="bottom-right":
+
+                    x_center -= 0.5*width 
+
+                    y_center += 0.5*height
+
+                elif origin_point=="top-right":
+
+                    x_center -= 0.5*width 
+
+                    y_center -= 0.5*height
+
+                elif origin_point=="top-left":
+
+                    x_center += 0.5*width 
+
+                    y_center -= 0.5*height
+
+                # If circle is asked for, ignores height
+
+                if shape=="circle":
+
+                    height = width*1.0
+
+                new_box = Ellipse((x_center, y_center), width, height, 
+                linewidth=contour_thickness, edgecolor=contour_color, 
+                facecolor=fill_color, linestyle=line_style, zorder=
+                local_depth_order)
 
             else:
 
                 raise NameError("'shape' has been given as '"+str(shape)+
                 "', but this shape is not available. The available sha"+
-                "pes are:\n'rectangle'\n'ellipse'")
+                "pes are:\n'rectangle'\n'ellipse'\n'circle'")
 
             # Verifies if there is any rotation
 
@@ -487,8 +543,8 @@ layout_height_milimeters=297.0, add_overlaying_grid=False):
 
             # Inserts the box into the figure
 
-            print("Adds box at point "+str(position)+" with 'origin po"+
-            "int' as '"+str(origin_point)+"'\n")
+            print("Adds box with '"+str(shape)+"' at point "+str(position
+            )+" with 'origin point' as '"+str(origin_point)+"'\n")
 
             general_axes.add_patch(new_box)
 
