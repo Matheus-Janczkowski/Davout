@@ -222,7 +222,11 @@ boxes_list=[{"contour color": "black", "fill color": "red 2", "contour"+
 "contour style": "solid", "origin point": "bottom-left"}], 
 
 arrows_and_lines_list=[{"start point": [99.0, 200.0], "end point": [109.0, 200.0],
-"spline points": [[104., 202.0]], "thickness": 0.2, "arrow style": "inkscape angular arrow",
-"line style": "dashed 7x3"}],
+"polygonal points": [[104., 202.0]], "thickness": 0.2, "arrow style": "inkscape angular arrow",
+"line style": "dashed 7x3"},
+{"start point": [99.0, 240.0], "end point": [99.0, 240.0], 
+"spline points": [[102.3, 243.0], [105.6, 243.0], [109.0, 240.0], 
+[105.6, 237.0], [102.3, 237.0]], "closed path": True, "thickness": 0.2,
+"arrow style": "no arrow", "fill path with color": "red 3"}],
 
-verbose=True, no_padding=True, add_overlaying_grid=False, dpi=500)
+verbose=True, no_padding=True, add_overlaying_grid=True, dpi=500)
