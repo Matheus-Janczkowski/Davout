@@ -250,7 +250,7 @@ new_y_max, input_path, depth_order, arrows_and_lines_file):
 
         elif event.key=="q":
 
-            pass
+            # Adds the spline 
 
     # Function to zoom in and out using mouse scroll
 
