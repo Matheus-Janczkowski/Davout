@@ -16,7 +16,7 @@ depth_order):
 
     # Sets a list of necessary keys
 
-    necessary_keys = ["start point", "end point", "thickness"]
+    necessary_keys = ["thickness"]
 
     # Verifies if it is not a list
 
@@ -90,29 +90,37 @@ depth_order):
 
         # Gets the start point
 
-        start_point = input_dictionary["start point"]
+        start_point = None 
 
-        # Verifies if it is a list
+        if "start point" in input_dictionary:
 
-        if not isinstance(start_point, list):
+            start_point = input_dictionary["start point"]
 
-            raise TypeError("The "+str(index+1)+"-th element 'arrows_a"+
-            "nd_lines_list' has at key 'start_point' a value that is n"+
-            "ot a list. It must be a list with [x, y] coordinates. Cur"+
-            "rently, it is:\n"+str(start_point))
+            # Verifies if it is a list
+
+            if not isinstance(start_point, list):
+
+                raise TypeError("The "+str(index+1)+"-th element 'arro"+
+                "ws_and_lines_list' has at key 'start_point' a value t"+
+                "hat is not a list. It must be a list with [x, y] coor"+
+                "dinates. Currently, it is:\n"+str(start_point))
 
         # Gets the end point
 
-        end_point = input_dictionary["end point"]
+        end_point = None
 
-        # Verifies if it is a list
+        if "end point" in input_dictionary:
 
-        if not isinstance(end_point, list):
+            end_point = input_dictionary["end point"]
 
-            raise TypeError("The "+str(index+1)+"-th element 'arrows_a"+
-            "nd_lines_list' has at key 'end_point' a value that is not"+
-            " a list. It must be a list with [x, y] coordinates. Curre"+
-            "ntly, it is:\n"+str(end_point))
+            # Verifies if it is a list
+
+            if not isinstance(end_point, list):
+
+                raise TypeError("The "+str(index+1)+"-th element 'arro"+
+                "ws_and_lines_list' has at key 'end_point' a value tha"+
+                "t is not a list. It must be a list with [x, y] coordi"+
+                "nates. Currently, it is:\n"+str(end_point))
         
         # Gets the thickness
 
@@ -185,8 +193,9 @@ depth_order):
 
             # Verifies if the start and end points match
 
-            if np.linalg.norm(np.array(start_point)-np.array(
-            end_point))>tolerance:
+            if (start_point is not None) and (end_point is not None
+            ) and np.linalg.norm(np.array(start_point)-np.array(end_point
+            ))>tolerance:
                 
                 raise ValueError("'closed path' is True, but the 'star"+
                 "t point' and 'end point' are not the same given a tol"+
@@ -220,8 +229,27 @@ depth_order):
             
                 # Adds the starting point to the spline points
 
-                full_spline_points = [start_point, *spline_points, 
-                end_point]
+                full_spline_points = []
+
+                if start_point is not None:
+
+                    full_spline_points.append(start_point)
+
+                else:
+
+                    # Takes start point away from vertices
+
+                    vertices = [spline_points[0]]
+
+                # Adds the spline points
+
+                full_spline_points.extend(spline_points)
+
+                # Adds the end point if it is not None
+
+                if end_point is not None:
+                
+                    full_spline_points.append(end_point)
             
                 # Iterates through the points to verify consistency
 
@@ -329,13 +357,39 @@ depth_order):
             
                 # Adds the starting point to the spline points
 
-                vertices = [start_point, *polygonal_points, end_point]
+                vertices = []
+
+                if start_point is not None:
+
+                    vertices.append(start_point)
+
+                else:
+
+                    vertices.append(polygonal_points[0])
+
+                # Adds the polygonal points
+
+                vertices.extend(polygonal_points)
+
+                # Adds the end point if it is not None
+
+                if end_point is not None:
+                
+                    vertices.append(end_point)
 
                 # Iterates through the points
 
                 for point in range(len(vertices)-1):
 
                     codes.append(Path.LINETO)
+
+        # Otherwise, verifies if start and end points are not None
+
+        elif (start_point is None) or (end_point is None):
+
+            raise ValueError("'start point' is None or 'end point' is "+
+            "None. This is unatainable if no 'spline points' or 'polyg"+
+            "onal points' are provided")
 
         # Otherwise, just finish the path
 

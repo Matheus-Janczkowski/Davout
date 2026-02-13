@@ -197,36 +197,77 @@ if new_figures:
 
 # Creates a collage
 
+create_collage = False
+
+if create_collage:
+
+    create_box_collage("collage.png", input_path=get_parent_path_of_file(),
+    input_image_list=[{"file name": "plot.png", "position": [50.0, 200.0], 
+    "size": 50.0, "trim transparent background": True, "origin point":
+    "bottom-left"}, 
+    {"file name": "plot2.png", "position": [107.0, 200.0], "size": 50.0, 
+    "trim transparent background": True, "origin point": "bottom-left"}], 
+
+    input_text_list=[{"text": "Lateral", "position": [100.0, 195.0], "font size": 
+    10, "origin point": "bottom-right"}, 
+    {"text": "Upper", "position": [157.0, 195.0], "font size": 10,
+    "origin point": "bottom-right"},
+    {"text": "$\MaterialDivOf{\\boldsymbol{P}}=\\boldsymbol{0}$", 
+    "position": [50.0, 195.0], "font size": 10, "origin point": "bottom-left"}],
+
+    boxes_list=[{"contour color": "black", "fill color": "red 2", "contour"+
+    " thickness": 0.2, "position": [46.5, 193.0], "width": 114.0, "height": 58.0,
+    "contour style": "solid", "origin point": "bottom-left"},
+    {"contour color": "black", "fill color": "red 1", "contour"+
+    " thickness": 0.2, "position": [47.5, 194.0], "width": 55.0, "height": 56.0,
+    "contour style": "solid", "origin point": "bottom-left"},
+    {"contour color": "black", "fill color": "red 1", "contour"+
+    " thickness": 0.2, "position": [104.5, 194.0], "width": 55.0, "height": 56.0,
+    "contour style": "solid", "origin point": "bottom-left"}], 
+
+    arrows_and_lines_list=[{"start point": [99.0, 200.0], "end point": [109.0, 200.0],
+    "polygonal points": [[104., 202.0]], "thickness": 0.2, "arrow style": "inkscape angular arrow",
+    "line style": "dashed 7x3"},
+    {"start point": [99.0, 240.0], "end point": [99.0, 240.0], 
+    "spline points": [[102.3, 243.0], [105.6, 243.0], [109.0, 240.0], 
+    [105.6, 237.0], [102.3, 237.0]], "closed path": True, "thickness": 0.2,
+    "arrow style": "no arrow", "fill path with color": "red 3"}],
+
+    vanishing_points_list=[
+    {"coordinates": [105.0, -50.0], "rays central direction": [0.0, 1.0],
+    "angle amplitude": 10.0, "number of rays": 15, "color": "black", 
+    "thickness": 0.4}, 
+    {"coordinates": [320.0, 250.0], "rays central direction": [-1.0, -0.1],
+    "angle amplitude": 10.0, "number of rays": 15, "color": "black", 
+    "thickness": 0.4}, 
+    {"coordinates": [-110.0, 250.0], "rays central direction": [1.0, -0.1],
+    "angle amplitude": 10.0, "number of rays": 15, "color": "black", 
+    "thickness": 0.4}],
+
+    verbose=True, no_padding=True, add_overlaying_grid=True, dpi=500,
+    grid_annotation_length=10, save_lists_to_txt=True)
+
+# Creates a collage using the saved files befor
+
 create_box_collage("collage.png", input_path=get_parent_path_of_file(),
-input_image_list=[{"file name": "plot.png", "position": [50.0, 200.0], 
-"size": 50.0, "trim transparent background": True, "origin point":
-"bottom-left"}, 
-{"file name": "plot2.png", "position": [107.0, 200.0], "size": 50.0, 
-"trim transparent background": True, "origin point": "bottom-left"}], 
+input_image_list="input_image_list", 
 
-input_text_list=[{"text": "Lateral", "position": [100.0, 195.0], "font size": 
-10, "origin point": "bottom-right"}, 
-{"text": "Upper", "position": [157.0, 195.0], "font size": 10,
-"origin point": "bottom-right"},
-{"text": "$\MaterialDivOf{\\boldsymbol{P}}=\\boldsymbol{0}$", 
-"position": [50.0, 195.0], "font size": 10, "origin point": "bottom-left"}],
+input_text_list="input_text_list",
 
-boxes_list=[{"contour color": "black", "fill color": "red 2", "contour"+
-" thickness": 0.2, "position": [46.5, 193.0], "width": 114.0, "height": 58.0,
-"contour style": "solid", "origin point": "bottom-left"},
-{"contour color": "black", "fill color": "red 1", "contour"+
-" thickness": 0.2, "position": [47.5, 194.0], "width": 55.0, "height": 56.0,
-"contour style": "solid", "origin point": "bottom-left"},
-{"contour color": "black", "fill color": "red 1", "contour"+
-" thickness": 0.2, "position": [104.5, 194.0], "width": 55.0, "height": 56.0,
-"contour style": "solid", "origin point": "bottom-left"}], 
+boxes_list="boxes_list", 
 
-arrows_and_lines_list=[{"start point": [99.0, 200.0], "end point": [109.0, 200.0],
-"polygonal points": [[104., 202.0]], "thickness": 0.2, "arrow style": "inkscape angular arrow",
-"line style": "dashed 7x3"},
-{"start point": [99.0, 240.0], "end point": [99.0, 240.0], 
-"spline points": [[102.3, 243.0], [105.6, 243.0], [109.0, 240.0], 
-[105.6, 237.0], [102.3, 237.0]], "closed path": True, "thickness": 0.2,
-"arrow style": "no arrow", "fill path with color": "red 3"}],
+arrows_and_lines_list="arrows_and_lines_list",
 
-verbose=True, no_padding=True, add_overlaying_grid=True, dpi=500)
+vanishing_points_list=[
+{"coordinates": [105.0, -50.0], "rays central direction": [0.0, 1.0],
+"angle amplitude": 10.0, "number of rays": 15, "color": "black", 
+"thickness": 0.4}, 
+{"coordinates": [320.0, 250.0], "rays central direction": [-1.0, -0.1],
+"angle amplitude": 10.0, "number of rays": 15, "color": "black", 
+"thickness": 0.4}, 
+{"coordinates": [-110.0, 250.0], "rays central direction": [1.0, -0.1],
+"angle amplitude": 10.0, "number of rays": 15, "color": "black", 
+"thickness": 0.4}],
+
+verbose=True, no_padding=True, add_overlaying_grid=True, dpi=500,
+grid_annotation_length=10, interactive_preview=True)

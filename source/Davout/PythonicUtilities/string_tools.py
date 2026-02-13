@@ -38,7 +38,9 @@ specifications.loader.exec_module(recursion_tools)
 
 def string_toDict(original_string):
 
-    #print("Receives:", original_string)
+    #print("Receives:", original_string+",\nrepr:")
+
+    #print(repr(original_string))
 
     # Initializes the dictionary
 
@@ -49,6 +51,10 @@ def string_toDict(original_string):
     key = ""
 
     value = ""
+
+    # Initializes a counter of open brackets
+
+    open_brackets = 0
 
     # Initializes one flag to inform what is being read: True for key;
     # False for the value. Initializes it as True because keys appear
@@ -88,7 +94,7 @@ def string_toDict(original_string):
 
                     # Saves the pair
 
-                    #print(key, value)
+                    #print("Final pair: "+str(key)+", "+str(value))
 
                     read_dictionary[key] = value
 
@@ -121,6 +127,15 @@ def string_toDict(original_string):
 
                 key += character
 
+            # Tests if the value is a list
+
+            elif len(value)>0 and (value[0]=="[" or value[0]=="(") and (
+            open_brackets!=0):
+
+                # Adds to the value
+
+                value += character
+
             else:
 
                 # Changes the flag to save keys
@@ -135,6 +150,10 @@ def string_toDict(original_string):
 
                 value = convert_value(value)
 
+                #print("key: "+str(key))
+
+                #print("value: "+str(value))
+
                 # Saves the pair
 
                 read_dictionary[key] = value
@@ -145,9 +164,13 @@ def string_toDict(original_string):
 
                 value = ""
 
+                # Cleans up the open brackets counter
+
+                open_brackets = 0
+
         # Verifies if there's a dictionary inside this dictionary
 
-        elif character=="{" or character=='{':
+        elif (character=="{" or character=='{') and len(value)==0:
 
             #print("nested dictiopnary")
 
@@ -220,11 +243,27 @@ def string_toDict(original_string):
 
                 value += character
 
+            # If the character is a left bracket, adds a new open bracket 
+            # to the counter
+
+            if character=="[" or character=="(":
+
+                open_brackets += 1
+
+            # If it is a right bracket, subtracts a new open bracket to
+            # the counter
+
+            elif character=="]" or character==")":
+
+                open_brackets -= 1
+
         # Updates the character counter
 
         character_counter += 1
 
     # Returns the dictionary
+
+    #print("\nReturns: "+str(read_dictionary)+"\n")
 
     return read_dictionary
 

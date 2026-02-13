@@ -228,7 +228,7 @@ def txt_toList(file_name, parent_path=None):
 
     try:
 
-        with open(file_name+".txt", "r") as infile:
+        with open(file_name+".txt", "r", encoding="utf-8") as infile:
 
             saved_string = infile.read()
 
@@ -237,8 +237,14 @@ def txt_toList(file_name, parent_path=None):
         raise FileNotFoundError("The file "+file_name+".txt was not fo"+
         "und while evaluating txt_toList method in file_handling_tools"+
         ".py\n")
+    
+    saved_string = saved_string.encode('utf-8').decode('unicode_escape')
 
     # Converts the string to a list
+    
+    #print("Receives:", saved_string+",\nrepr:")
+
+    #print(repr(saved_string))
 
     read_list = string_tools.string_toList(saved_string)
 
