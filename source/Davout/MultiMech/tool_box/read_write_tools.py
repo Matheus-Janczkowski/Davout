@@ -790,8 +790,8 @@ return_functional_data_class=False, verbose=True):
                 for step in time_step:
 
                     xdmf_file.read_checkpoint(
-                    function_space_info.monolithic_solution, field_name, 
-                    time_step)
+                    function_space_info.monolithic_solution, field_name,
+                    step)
 
                     # Stores a copy
 
