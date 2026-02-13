@@ -197,7 +197,7 @@ if new_figures:
 
 # Creates a collage
 
-create_collage = False
+create_collage = True
 
 if create_collage:
 
@@ -209,11 +209,11 @@ if create_collage:
     "trim transparent background": True, "origin point": "bottom-left"}], 
 
     input_text_list=[{"text": "Lateral", "position": [100.0, 195.0], "font size": 
-    10, "origin point": "bottom-right"}, 
-    {"text": "Upper", "position": [157.0, 195.0], "font size": 10,
+    4, "origin point": "bottom-right"}, 
+    {"text": "Upper", "position": [157.0, 195.0], "font size": 4,
     "origin point": "bottom-right"},
     {"text": "$\MaterialDivOf{\\boldsymbol{P}}=\\boldsymbol{0}$", 
-    "position": [50.0, 195.0], "font size": 10, "origin point": "bottom-left"}],
+    "position": [50.0, 195.0], "font size": 4, "origin point": "bottom-left"}],
 
     boxes_list=[{"contour color": "black", "fill color": "red 2", "contour"+
     " thickness": 0.2, "position": [46.5, 193.0], "width": 114.0, "height": 58.0,

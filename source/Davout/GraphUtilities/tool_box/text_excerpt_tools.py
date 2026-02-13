@@ -2,10 +2,12 @@
 
 from copy import deepcopy
 
+from .collage_classes import milimeters_to_points
+
 # Defines a function to plot excerpts of text from a list
 
-def plot_text_excerpts(collage, input_text_list, alignments_class, 
-layout_width_milimeters, layout_height_milimeters, verbose, depth_order):
+def plot_text_excerpts(general_axes, input_text_list, alignments_class, 
+verbose, depth_order):
         
     # Sets a list of necessary keys
 
@@ -97,11 +99,16 @@ layout_width_milimeters, layout_height_milimeters, verbose, depth_order):
 
         # Verifies if it is an integer
 
-        if not isinstance(font_size, int):
+        if (not isinstance(font_size, int)) and (not isinstance(
+        font_size, float)):
 
             raise TypeError("The "+str(index+1)+"-th element 'input_te"+
             "xt_list' has at key 'font size' a value that is not an in"+
-            "teger. Currently, it is:\n"+str(font_size))
+            "teger nor a float. Currently, it is:\n"+str(font_size))
+        
+        # Converts it from mm to points
+
+        font_size = milimeters_to_points(font_size)
         
         # Verifies if there is any rotation
 
@@ -143,9 +150,8 @@ layout_width_milimeters, layout_height_milimeters, verbose, depth_order):
             print("Adds text at point "+str(position)+" with 'origin p"+
             "oint' as '"+str(origin_point)+"'\n")
 
-        collage.text(position[0]/layout_width_milimeters, position[1
-        ]/layout_height_milimeters, input_text, fontsize=font_size, 
-        ha=ha, va=va, rotation=angle, rotation_mode="anchor", zorder=
-        local_depth_order)
+        general_axes.text(position[0], position[1], input_text, fontsize=
+        font_size, ha=ha, va=va, rotation=angle, rotation_mode="anchor", 
+        zorder=local_depth_order, transform=general_axes.transData)
 
-    return collage, depth_order
+    return general_axes, depth_order

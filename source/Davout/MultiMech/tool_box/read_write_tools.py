@@ -557,7 +557,9 @@ return_functional_data_class=False):
 
         field_file = directory_path+"//"+field_file
 
-        mesh_file = directory_path+"//"+mesh_file
+        if mesh_file is not None:
+
+            mesh_file = directory_path+"//"+mesh_file
     
     # Verifies if the field file exists and if it is a xdmf file
 
@@ -567,9 +569,11 @@ return_functional_data_class=False):
     
     # Verifies if the mesh file exists and if it is a msh file
 
-    mesh_file = take_outFileNameTermination(mesh_file)
+    if mesh_file is not None:
 
-    verify_file_existence(mesh_file+".msh")
+        mesh_file = take_outFileNameTermination(mesh_file)
+
+        verify_file_existence(mesh_file+".msh")
 
     # Reads the mesh
 
@@ -596,7 +600,13 @@ return_functional_data_class=False):
 
         # Verifies if the file of the mesh is the same as the asked now
 
-        if mesh_file==code_given_mesh_data_class.mesh_file:
+        if mesh_file is not None:
+
+            if mesh_file==code_given_mesh_data_class.mesh_file:
+
+                mesh_data_class = code_given_mesh_data_class
+
+        else:
 
             mesh_data_class = code_given_mesh_data_class
 

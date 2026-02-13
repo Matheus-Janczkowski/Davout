@@ -377,3 +377,19 @@ class ArrowHeadStyles:
             arrow_path = Path(vertices, codes)
 
             return arrow_path, True
+
+########################################################################
+#                              Utilities                               #
+########################################################################
+
+# Defines a function to convert mm to points
+
+def milimeters_to_points(x):
+
+    return (x/25.4)*72
+
+# Defines a function to convert mm to points
+
+def points_to_milimeters(x):
+
+    return (x/72)*25.4

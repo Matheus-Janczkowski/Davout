@@ -14,7 +14,7 @@ from matplotlib.transforms import Bbox
 
 from ..PythonicUtilities import path_tools
 
-from ..PythonicUtilities.file_handling_tools import txt_toList, list_toTxt, save_string_into_txt
+from ..PythonicUtilities.file_handling_tools import txt_toList, list_toTxt
 
 from .tool_box import collage_classes
 
@@ -27,6 +27,8 @@ from .tool_box.image_tools import plot_images
 from .tool_box.box_tools import plot_boxes
 
 from .tool_box.perspective_tools import perspective_lines_from_vanishing_points
+
+from .tool_box.interactivity_tools import create_interactive_window
 
 ########################################################################
 #                            LaTeX preamble                            #
@@ -206,10 +208,8 @@ False):
 
             # Plots the text excerpts
 
-            collage, depth_order = plot_text_excerpts(collage,
-            read_input_text_list, alignments_class, 
-            layout_width_milimeters, layout_height_milimeters, verbose, 
-            depth_order)
+            general_axes, depth_order = plot_text_excerpts(general_axes,
+            read_input_text_list, alignments_class, verbose, depth_order)
 
         else:
 
@@ -222,9 +222,8 @@ False):
 
             # Plots the text excerpts
 
-            collage, depth_order = plot_text_excerpts(collage,
-            input_text_list, alignments_class, layout_width_milimeters, 
-            layout_height_milimeters, verbose, depth_order)
+            general_axes, depth_order = plot_text_excerpts(general_axes,
+            input_text_list, alignments_class, verbose, depth_order)
 
     # Verifies if the list of arrows is not None
 
@@ -272,8 +271,10 @@ False):
         # ters from the last line to the next of the same kind. The va-
         # lues are the line thickness
 
-        lines_thickness = OrderedDict([(1, 0.05*(72/25.4)), (10, 0.18*(
-        72/25.4)), (50, 0.3*(72/25.4))])
+        lines_thickness = OrderedDict([(1, 
+        collage_classes.milimeters_to_points(0.05)), (10, 
+        collage_classes.milimeters_to_points(0.18)), (50, 
+        collage_classes.milimeters_to_points(0.3))])
 
         # Plots the vertical lines
 
@@ -430,8 +431,8 @@ False):
 
                 # Updates the bounding box to include the numbers
 
-                extension_length = ((rule_fontsize/72)*25.4+
-                rule_number_offset)
+                extension_length = (collage_classes.points_to_milimeters(
+                rule_fontsize)+rule_number_offset)
 
                 factor = 1/25.4
 
@@ -450,18 +451,18 @@ False):
                 general_axes, vanishing_points_list, 0.1, depth_order, 
                 x_min, x_max, y_min, y_max)
 
+            # Saves the figure with this bounding box in inches
+
+            plt.savefig(output_file, bbox_inches=bbox_inches, pad_inches=
+            0, dpi=dpi)
+
             # Verifies if an interactive window is to be shown
 
             if interactive_preview:
 
                 create_interactive_window(general_axes, collage, 0.0, 
                 layout_width_milimeters, 0.0, layout_height_milimeters, 
-                x_min, x_max, y_min, y_max, input_path)
-
-            # Saves the figure with this bounding box in inches
-
-            plt.savefig(output_file, bbox_inches=bbox_inches, pad_inches=
-            0, dpi=dpi)
+                x_min, x_max, y_min, y_max, input_path, depth_order, dpi)
 
         # Otherwise, saves it plainly
 
@@ -483,8 +484,8 @@ False):
 
                 # Updates the number offset to make the number appear
 
-                rule_number_offset = ((rule_fontsize/72)*25.4+
-                rule_number_offset)
+                rule_number_offset = (collage_classes.points_to_milimeters(
+                rule_fontsize)+rule_number_offset)
 
                 # Adds the x ticks
 
@@ -519,18 +520,20 @@ False):
                 general_axes, vanishing_points_list, 0.1, depth_order, 
                 x_min, x_max, y_min, y_max)
 
+            # Saves the figure
+
+            print("There is no bounding box to shrink and pad.\nSaves "+
+            "at "+str(output_file)+"\n")
+
+            plt.savefig(output_file, dpi=dpi)
+
             # Verifies if an interactive window is to be shown
 
             if interactive_preview:
 
                 create_interactive_window(general_axes, collage, 0.0, 
                 layout_width_milimeters, 0.0, layout_height_milimeters, 
-                x_min, x_max, y_min, y_max, input_path)
-
-            print("There is no bounding box to shrink and pad.\nSaves "+
-            "at "+str(output_file)+"\n")
-
-            plt.savefig(output_file, dpi=dpi)
+                x_min, x_max, y_min, y_max, input_path, depth_order, dpi)
 
     else:
 
@@ -550,8 +553,8 @@ False):
 
             # Updates the number offset to make the number appear
 
-            rule_number_offset = ((rule_fontsize/72)*25.4+
-            rule_number_offset)
+            rule_number_offset = (collage_classes.points_to_milimeters(
+            rule_fontsize)+rule_number_offset)
 
             # Adds the x ticks
 
@@ -585,137 +588,18 @@ False):
             general_axes, vanishing_points_list, 0.1, depth_order, x_min, 
             x_max, y_min, y_max)
 
+        # Saves the figure
+
+        print("Saves as it is at "+str(output_file)+"\n")
+
+        plt.savefig(output_file, dpi=dpi)
+
         # Verifies if an interactive window is to be shown
 
         if interactive_preview:
 
             create_interactive_window(general_axes, collage, 0.0, 
             layout_width_milimeters, 0.0, layout_height_milimeters, 
-            x_min, x_max, y_min, y_max, input_path)
-
-        print("Saves as it is at "+str(output_file)+"\n")
-
-        plt.savefig(output_file, dpi=dpi)
+            x_min, x_max, y_min, y_max, input_path, depth_order, dpi)
 
     plt.close()
-
-# Defines a function to create an interactive window
-
-def create_interactive_window(general_axes, collage, old_x_min, 
-old_x_max, old_y_min, old_y_max, new_x_min, new_x_max, new_y_min, 
-new_y_max, input_path):
-
-    # Zoom axes to the bounding box
-
-    general_axes.set_xlim(new_x_min, new_x_max)
-
-    general_axes.set_ylim(new_y_min, new_y_max)
-
-    # Redraw before opening interactive window
-
-    collage.canvas.draw_idle()
-
-    # Initializes a list of points
-
-    points_list = []
-
-    # Defines a function to detect the mouse motion
-
-    def on_move(event):
-
-        if event.inaxes==general_axes and (event.xdata is not None):
-
-            # Prints coordinates to terminal continuously
-
-            print(f"[MOVE] x = {event.xdata:.2f}, y = {event.ydata:.2f}", 
-            end="\r")
-
-    # Defines a function to detect clicking of the mouse
-
-    def on_click(event):
-
-        if event.inaxes == general_axes and event.xdata is not None:
-
-            print(f"[CLICK] x = {event.xdata:.4f}, y = {event.ydata:.4f}")
-
-            # Saves the point into the list
-
-            points_list.append([event.xdata, event.ydata])
-
-    # Defines a function to detect the press of the ENTER key
-
-    def on_key(event):
-
-        nonlocal points_list
-
-        if event.key == "enter":
-
-            plt.close(collage)
-
-        # Uses the key t to get string from the user
-
-        if event.key == "t":
-
-            list_name = input("\nType the name of this list: ")
-
-            print("The user selected the name '"+str(list_name)+"'")
-
-            # Concatenates it to the list of points
-
-            data_list = list_name+"="+str(points_list)
-
-            # Reads the already saved data
-
-            saved_string = ""
-
-            try:
-
-                with open(input_path+"//preview_data.txt", "r", encoding=
-                "utf-8") as infile:
-
-                        saved_string = infile.read()
-
-            except:
-
-                pass
-
-            # Adds the data
-
-            saved_string += "\n\n"+data_list
-
-            # Rewrites it
-
-            save_string_into_txt(saved_string, "preview_data.txt", 
-            parent_path=input_path)
-
-            # Cleans the list of points
-
-            points_list = []
-
-    # Accesses the collage
-
-    collage.canvas.mpl_connect("motion_notify_event", on_move)
-
-    collage.canvas.mpl_connect("button_press_event", on_click)
-
-    collage.canvas.mpl_connect("key_press_event", on_key)
-
-    print("\nInteractive preview enabled (terminal output).")
-
-    print("Move mouse → see coordinates")
-
-    print("Click → print coordinates")
-
-    print("Press key T → type the name of the list of points")
-
-    print("Press ENTER → continue and save image\n")
-
-    # Shows the image
-
-    plt.show()
-
-    # After closing preview, restore original limits
-
-    general_axes.set_xlim(old_x_min, old_x_max)
-
-    general_axes.set_ylim(old_y_min, old_y_max)
