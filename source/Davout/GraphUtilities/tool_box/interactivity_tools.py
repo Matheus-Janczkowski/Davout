@@ -5,13 +5,13 @@ import matplotlib.pyplot as plt
 
 from ..tool_box import collage_classes
 
-from ...PythonicUtilities.file_handling_tools import save_string_into_txt
+from ...PythonicUtilities.file_handling_tools import save_string_into_txt, txt_toList, list_toTxt
 
 # Defines a function to create an interactive window
 
 def create_interactive_window(general_axes, collage, old_x_min, 
 old_x_max, old_y_min, old_y_max, new_x_min, new_x_max, new_y_min, 
-new_y_max, input_path, depth_order, dpi):
+new_y_max, input_path, depth_order, arrows_and_lines_file):
 
     # Zoom axes to the bounding box
 
@@ -31,64 +31,37 @@ new_y_max, input_path, depth_order, dpi):
 
     points_list = []
 
+    # Reads the list of arrows and lines
+
+    arrows_and_lines_list = txt_toList(arrows_and_lines_file, input_path)
+
     # Sets some commands for clicking and panning (dragging)
 
     is_panning = False
 
     # Sets the initial point and the initial limits
 
-    pan_start = [0, 0]
-
-    x_lim_start = [0, 0]
-    
-    y_lim_start = [0, 0]
+    last_mouse_position = (0, 0)
 
     # When pressing the scroll
 
     def on_press(event):
 
-        global is_panning, pan_start, x_lim_start, y_lim_start
+        nonlocal is_panning, last_mouse_position
 
-        if event.inaxes != general_axes:
+        # If the scroll (midlle button of the mouse is pressed)
 
-            return
-        
-        if event.button == 1:  # left mouse button for pan
+        if event.inaxes==general_axes and event.button==2:
+
             is_panning = True
-            pan_start = [event.xdata, event.ydata]
-            x_lim_start = list(general_axes.get_xlim())
-            y_lim_start = list(general_axes.get_ylim())
 
-    def on_release(event):
-        global is_panning
-        is_panning = False
+            last_mouse_position = (event.xdata, event.ydata)
 
-    def on_motion(event):
-        if event.inaxes != general_axes or not is_panning:
-            return
-        dx = pan_start[0] - event.xdata
-        dy = pan_start[1] - event.ydata
-        # shift limits
-        general_axes.set_xlim(x_lim_start[0] + dx, x_lim_start[1] + dx)
-        general_axes.set_ylim(y_lim_start[0] + dy, y_lim_start[1] + dy)
-        collage.canvas.draw_idle()
+        # Defines a function to detect clicking of the mouse (left click
+        # only)
 
-    # Defines a function to detect the mouse motion
-
-    def on_move(event):
-
-        if event.inaxes==general_axes and (event.xdata is not None):
-
-            # Prints coordinates to terminal continuously
-
-            print(f"[MOVE] x = {event.xdata:.2f}, y = {event.ydata:.2f}", 
-            end="\r")
-
-    # Defines a function to detect clicking of the mouse
-
-    def on_click(event):
-
-        if event.inaxes==general_axes and event.xdata is not None:
+        elif event.button==1 and event.inaxes==general_axes and (
+        event.xdata is not None):
 
             # Gets the clicked point coordinates
 
@@ -113,19 +86,73 @@ new_y_max, input_path, depth_order, dpi):
 
             collage.canvas.draw()
 
+    # If the scroll is released
+
+    def on_release(event):
+
+        nonlocal is_panning
+
+        if event.button==2:
+
+            # Makes the panning flag inactive
+
+            is_panning = False
+        
+    # If the flag panning is active, drags the plot along
+
+    def on_motion(event):
+
+        nonlocal last_mouse_position
+
+        if is_panning and event.inaxes==general_axes and (
+        event.xdata is not None):
+            
+            # Gets the movement direction
+
+            dx = last_mouse_position[0] - event.xdata
+
+            dy = last_mouse_position[1] - event.ydata
+
+            # Gets the current original limits of the plot bounding box
+
+            x0, x1 = general_axes.get_xlim()
+
+            y0, y1 = general_axes.get_ylim()
+
+            # Updates the limits using the direction
+
+            general_axes.set_xlim(x0+dx, x1+dx)
+
+            general_axes.set_ylim(y0+dy, y1+dy)
+
+            # Updates the mouse last position and redraws the canvas
+
+            last_mouse_position = (event.xdata, event.ydata)
+
+            collage.canvas.draw_idle()
+            
+        # Otherwise, simply detect the mouse position
+        
+        elif event.inaxes==general_axes and (event.xdata is not None):
+
+            # Prints coordinates to terminal continuously
+
+            print(f"[MOVE] x = {event.xdata:.2f}, y = {event.ydata:.2f}", 
+            end="\r")
+
     # Defines a function to detect the press of the ENTER key
 
     def on_key(event):
 
         nonlocal points_list
 
-        if event.key == "enter":
+        if event.key=="enter":
 
             plt.close(collage)
 
         # Uses the key t to get string from the user
 
-        if event.key == "t":
+        elif event.key=="t":
 
             list_name = input("\nType the name of this list: ")
 
@@ -159,9 +186,71 @@ new_y_max, input_path, depth_order, dpi):
             save_string_into_txt(saved_string, "preview_data.txt", 
             parent_path=input_path)
 
+            # Removes the X's and switches them by squares
+
+            for point in points_list:
+
+                if general_axes.lines:
+
+                    general_axes.lines[-1].remove()
+
+            # Plots the squares
+
+            for point in points_list:
+
+                general_axes.plot(point[0], point[1], marker="s",
+                color="black", zorder=depth_order, markersize=
+                collage_classes.milimeters_to_points(2.0), mew=2)
+
+            collage.canvas.draw_idle()
+
             # Cleans the list of points
 
             points_list = []
+
+        # Detects Ctrl+Z to erase the last point
+         
+        elif event.key=="ctrl+z":
+
+            if points_list:
+
+                removed = points_list.pop()
+                
+                print(f"[UNDO] removed {removed}")
+
+                # Removes the last plotted X marker
+                
+                if general_axes.lines:
+
+                    general_axes.lines[-1].remove()
+
+                collage.canvas.draw_idle()
+
+            else:
+
+                print("[UNDO] no points left")
+
+                # Removes the last plotted X marker
+                
+                if general_axes.lines:
+
+                    print("But removes already saved markers")
+
+                    general_axes.lines[-1].remove()
+
+                    collage.canvas.draw_idle()
+
+                else:
+
+                    print("No markers left to delete")
+
+                print("")
+
+        # If a spline is to be saved
+
+        elif event.key=="q":
+
+            pass
 
     # Function to zoom in and out using mouse scroll
 
@@ -173,7 +262,7 @@ new_y_max, input_path, depth_order, dpi):
         
         # Ctrl key must be pressed
 
-        if not event.key == 'control':
+        if not (event.key in ('control', 'ctrl')):
 
             return
         
@@ -211,15 +300,17 @@ new_y_max, input_path, depth_order, dpi):
 
         collage.canvas.draw_idle()
 
-    # Accesses the collage
-
-    collage.canvas.mpl_connect("motion_notify_event", on_move)
-
-    collage.canvas.mpl_connect("button_press_event", on_click)
+    # Accesses the collage and states the events
 
     collage.canvas.mpl_connect("key_press_event", on_key)
 
     collage.canvas.mpl_connect("scroll_event", on_scroll)
+
+    collage.canvas.mpl_connect("button_press_event", on_press)
+
+    collage.canvas.mpl_connect("button_release_event", on_release)
+
+    collage.canvas.mpl_connect("motion_notify_event", on_motion)
 
     print("\nInteractive preview enabled (terminal output).")
 

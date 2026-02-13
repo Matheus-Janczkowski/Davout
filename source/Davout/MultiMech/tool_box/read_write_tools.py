@@ -771,15 +771,41 @@ return_functional_data_class=False, verbose=True):
         mpi_print(comm_object, "Reads the xmdf file at "+str(field_file)+
         "\n")
 
+    # Initializes a list of solutions in case of multiple time steps
+
+    solutions_across_time_steps = []
+
     # Finally reads the xdmf file with the field
 
     try:
 
         with XDMFFile(mesh_data_class.mesh.mpi_comm(), field_file) as xdmf_file:
 
-            xdmf_file.read_checkpoint(
-            function_space_info.monolithic_solution, field_name, 
-            time_step)
+            # If the time step is a list with multiple time steps
+
+            if isinstance(time_step, list):
+
+                # Iterates through the time steps
+
+                for step in time_step:
+
+                    xdmf_file.read_checkpoint(
+                    function_space_info.monolithic_solution, field_name, 
+                    time_step)
+
+                    # Stores a copy
+
+                    solutions_across_time_steps.append(
+                    function_space_info.monolithic_solution.copy(
+                    deepcopy=True))
+
+            # Otherwise, reads the only time step
+
+            else:
+
+                xdmf_file.read_checkpoint(
+                function_space_info.monolithic_solution, field_name, 
+                time_step)
 
     except Exception as e:
 
@@ -794,14 +820,21 @@ return_functional_data_class=False, verbose=True):
         "as the one used when the function was saved.\n\nThe original "+
         "error message is: "+str(e))
     
+    # If the list of solutions is empty, makes it the proper monolithic 
+    # solution
+
+    if len(solutions_across_time_steps)==0:
+
+        solutions_across_time_steps = function_space_info.monolithic_solution
+    
     # If the functional data class is to be spit out too
 
     if return_functional_data_class:
 
-        return function_space_info.monolithic_solution, function_space_info
+        return solutions_across_time_steps, function_space_info
 
     # Returns the function
 
     else:
 
-        return function_space_info.monolithic_solution
+        return solutions_across_time_steps

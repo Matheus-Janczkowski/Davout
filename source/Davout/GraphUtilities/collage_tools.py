@@ -66,7 +66,7 @@ aspect_ratio='auto', adjustable=None, layout_width_milimeters=210.0,
 layout_height_milimeters=297.0, add_overlaying_grid=False, tolerance=
 1E-5, grid_annotation_length=10, rule_fontsize=6, rule_number_offset=0.5,
 vanishing_points_list=None, save_lists_to_txt=False, interactive_preview=
-False):
+False, arrows_and_lines_file="arrows_and_lines_list"):
     
     # Initializes the class of colors, the class of alignments, and the 
     # class of line styles
@@ -254,8 +254,8 @@ False):
 
             if save_lists_to_txt:
 
-                list_toTxt(arrows_and_lines_list, "arrows_and_lines_li"+
-                "st", parent_path=input_path)
+                list_toTxt(arrows_and_lines_list, arrows_and_lines_file, 
+                parent_path=input_path)
 
             # Plots the list of lines or arrows
 
@@ -462,7 +462,8 @@ False):
 
                 create_interactive_window(general_axes, collage, 0.0, 
                 layout_width_milimeters, 0.0, layout_height_milimeters, 
-                x_min, x_max, y_min, y_max, input_path, depth_order, dpi)
+                x_min, x_max, y_min, y_max, input_path, depth_order, 
+                arrows_and_lines_file)
 
         # Otherwise, saves it plainly
 
@@ -533,7 +534,8 @@ False):
 
                 create_interactive_window(general_axes, collage, 0.0, 
                 layout_width_milimeters, 0.0, layout_height_milimeters, 
-                x_min, x_max, y_min, y_max, input_path, depth_order, dpi)
+                x_min, x_max, y_min, y_max, input_path, depth_order, 
+                arrows_and_lines_file)
 
     else:
 
@@ -600,6 +602,7 @@ False):
 
             create_interactive_window(general_axes, collage, 0.0, 
             layout_width_milimeters, 0.0, layout_height_milimeters, 
-            x_min, x_max, y_min, y_max, input_path, depth_order, dpi)
+            x_min, x_max, y_min, y_max, input_path, depth_order, 
+            arrows_and_lines_file)
 
     plt.close()
