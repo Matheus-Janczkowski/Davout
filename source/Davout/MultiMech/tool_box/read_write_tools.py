@@ -24,7 +24,7 @@ def write_field_to_xdmf(functional_data_class, time=0.0, field_name=None,
 directory_path=None, visualization_copy=False, close_file=True, file=
 None, visualization_copy_file=None, time_step=0, explicit_file_name=None,
 code_given_mesh_data_class=None, field_type=None, interpolation_function=
-None, polynomial_degree=None, comm_object=None):
+None, polynomial_degree=None, comm_object=None, verbose=True):
     
     """
     Function for writing a FEniCS function to xdmf files.
@@ -191,10 +191,12 @@ None, polynomial_degree=None, comm_object=None):
                     decapitalize_and_insert_underline(str(field_name))+
                     ".xdmf")
 
-                mpi_print(comm_object, "Saves the field '"+str(field_name
-                )+"' at "+explicit_file_name)
+                if verbose:
 
-                mpi_print(comm_object, "")
+                    mpi_print(comm_object, "Saves the field '"+str(
+                    field_name)+"' at "+explicit_file_name)
+
+                    mpi_print(comm_object, "")
 
                 # Gets the individual field and renames it
 
@@ -210,8 +212,10 @@ None, polynomial_degree=None, comm_object=None):
 
                 if not isinstance(file, XDMFFile):
 
-                    mpi_print(comm_object, "Creates a new XDMFFile ins"+
-                    "tance\n")
+                    if verbose:
+
+                        mpi_print(comm_object, "Creates a new XDMFFile"+
+                        " instance\n")
 
                     file = XDMFFile(individual_field.function_space(
                     ).mesh().mpi_comm(), explicit_file_name)
@@ -254,10 +258,12 @@ None, polynomial_degree=None, comm_object=None):
                     decapitalize_and_insert_underline(str(field_name
                     ))+".xdmf")
 
-                mpi_print(comm_object, "Saves the field '"+str(field_name
-                )+"' at "+explicit_file_name)
+                if verbose:
 
-                mpi_print(comm_object, "")
+                    mpi_print(comm_object, "Saves the field '"+str(
+                    field_name)+"' at "+explicit_file_name)
+
+                    mpi_print(comm_object, "")
 
                 # Gets the individual field and renames it
 
@@ -273,8 +279,10 @@ None, polynomial_degree=None, comm_object=None):
 
                 if not isinstance(file, XDMFFile):
 
-                    mpi_print(comm_object, "Creates a new XDMFFile ins"+
-                    "tance\n")
+                    if verbose:
+
+                        mpi_print(comm_object, "Creates a new XDMFFile"+
+                        " instance\n")
 
                     file = XDMFFile(individual_field.function_space(
                     ).mesh().mpi_comm(), explicit_file_name)
@@ -314,10 +322,12 @@ None, polynomial_degree=None, comm_object=None):
                     decapitalize_and_insert_underline(str(field_name
                     ))+".xdmf")
 
-                mpi_print(comm_object, "Saves the field '"+str(
-                field_name)+"' at "+explicit_file_name)
+                if verbose:
 
-                mpi_print(comm_object, "")
+                    mpi_print(comm_object, "Saves the field '"+str(
+                    field_name)+"' at "+explicit_file_name)
+
+                    mpi_print(comm_object, "")
 
                 # Gets the individual field and renames it
 
@@ -332,8 +342,10 @@ None, polynomial_degree=None, comm_object=None):
 
                 if not isinstance(file, XDMFFile):
 
-                    mpi_print(comm_object, "Creates a new XDMFFile ins"+
-                    "tance\n")
+                    if verbose:
+
+                        mpi_print(comm_object, "Creates a new XDMFFile"+
+                        " instance\n")
 
                     file = XDMFFile(individual_field.function_space(
                     ).mesh().mpi_comm(), explicit_file_name)
@@ -378,10 +390,12 @@ None, polynomial_degree=None, comm_object=None):
                 decapitalize_and_insert_underline(str(field_name))+
                 ".xdmf")
 
-            mpi_print(comm_object, "Saves the field '"+str(field_name)+
-            "' at "+explicit_file_name)
+            if verbose:
 
-            mpi_print(comm_object, "")
+                mpi_print(comm_object, "Saves the field '"+str(
+                field_name)+"' at "+explicit_file_name)
+
+                mpi_print(comm_object, "")
 
             # Gets the individual field and renames it
 
@@ -396,8 +410,10 @@ None, polynomial_degree=None, comm_object=None):
 
             if not isinstance(file, XDMFFile):
 
-                mpi_print(comm_object, "Creates a new XDMFFile instanc"+
-                "e\n")
+                if verbose:
+
+                    mpi_print(comm_object, "Creates a new XDMFFile ins"+
+                    "tance\n")
 
                 file = XDMFFile(individual_field.function_space(
                 ).mesh().mpi_comm(), explicit_file_name)
@@ -469,7 +485,7 @@ None, polynomial_degree=None, comm_object=None):
         visualization_copy_file=visualization_copy_file, close_file=
         close_file, code_given_mesh_data_class=
         code_given_mesh_data_class, comm_object=comm_object,
-        original_function=individual_field)
+        original_function=individual_field, verbose=verbose)
 
         # Synchonizes all processors
 
@@ -488,10 +504,12 @@ def write_visualization_copy(functional_data_dictionary, file_name,
 mesh_file, code_given_field_name, time=0.0, time_step=0, 
 visualization_copy_file=None, close_file=True, 
 code_given_mesh_data_class=None, comm_object=None, original_function=
-None):
+None, verbose=True):
     
-    mpi_print(comm_object, "Creates a visualization copy for the field"+
-    " '"+str(code_given_field_name)+"'\n")
+    if verbose:
+    
+        mpi_print(comm_object, "Creates a visualization copy for the f"+
+        "ield '"+str(code_given_field_name)+"'\n")
 
     # Reads the file back only if the code is not being run in parallel
 
@@ -514,15 +532,19 @@ None):
     copy_file_name = (take_outFileNameTermination(file_name)+"_visuali"+
     "zation_copy.xdmf")
 
-    mpi_print(comm_object, "Saves the visualization copy at file '"+str(
-    copy_file_name)+"'\n")
+    if verbose:
+
+        mpi_print(comm_object, "Saves the visualization copy at file '"+
+        str(copy_file_name)+"'\n")
 
     # Verifies if this file has already been created. If not, creates it
 
     if not isinstance(visualization_copy_file, XDMFFile):
 
-        mpi_print(comm_object, "Creates a new XDMFFile instance for th"+
-        "e visualization copy file\n")
+        if verbose:
+
+            mpi_print(comm_object, "Creates a new XDMFFile instance fo"+
+            "r the visualization copy file\n")
 
         visualization_copy_file = XDMFFile(read_function.function_space(
         ).mesh().mpi_comm(), copy_file_name)
@@ -549,7 +571,7 @@ None):
 def read_field_from_xdmf(field_file, mesh_file, function_space_info,
 directory_path=None, code_given_field_name=None, comm_object=None,
 code_given_mesh_data_class=None, time_step=0, rename_function=True,
-return_functional_data_class=False):
+return_functional_data_class=False, verbose=True):
     
     # If the directory path is given, joins them
 
@@ -616,8 +638,10 @@ return_functional_data_class=False):
 
         try:
 
-            mpi_print(comm_object, "Reads a new mesh from "+str(mesh_file
-            ))
+            if verbose:
+
+                mpi_print(comm_object, "Reads a new mesh from "+str(
+                mesh_file))
 
             mesh_data_class = read_mshMesh(mesh_file, comm=comm_object)
 
@@ -742,8 +766,10 @@ return_functional_data_class=False):
 
         function_space_info.monolithic_solution.rename(field_name, "DNS")
 
-    mpi_print(comm_object, "Reads the xmdf file at "+str(field_file)+
-    "\n")
+    if verbose:
+
+        mpi_print(comm_object, "Reads the xmdf file at "+str(field_file)+
+        "\n")
 
     # Finally reads the xdmf file with the field
 

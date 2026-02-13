@@ -161,9 +161,13 @@ file_directory=None, n_subdomains_z=1, bias_x=1.0, bias_y=1.0, bias_z=
 lambda: ['tetra', 'triangle'], 'data_sets': lambda: ["domain", ("bound"+
 "ary")]})
 
-def read_mshMesh(file_name, desired_elements=None, data_sets=None, 
+def read_mshMesh(given_file_name, desired_elements=None, data_sets=None, 
 quadrature_degree=2, verbose=False, comm=None, automatic_comm_generation=
 False):
+    
+    # Copies the file name
+
+    file_name = deepcopy(given_file_name)
     
     # If a comm object is to be automatically generated for paralleliza-
     # tion
