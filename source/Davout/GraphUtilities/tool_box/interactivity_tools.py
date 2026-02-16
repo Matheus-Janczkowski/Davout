@@ -1,6 +1,26 @@
 # Routine to store methods for interactivity with the user using mat-
 # plotlib functionalities
 
+import matplotlib as mpl
+
+from time import time
+
+# Overrules some commands to free them for the curves defined here
+
+mpl.rcParams['keymap.quit'] = []
+
+mpl.rcParams['keymap.home'] = []
+
+mpl.rcParams['keymap.save'] = []
+
+mpl.rcParams['keymap.fullscreen'] = []
+
+mpl.rcParams['keymap.grid'] = []
+
+mpl.rcParams['keymap.back'] = []
+
+mpl.rcParams['keymap.forward'] = []
+
 import matplotlib.pyplot as plt
 
 from ..tool_box import collage_classes
@@ -12,6 +32,10 @@ from ...PythonicUtilities.file_handling_tools import save_string_into_txt, txt_t
 def create_interactive_window(general_axes, collage, old_x_min, 
 old_x_max, old_y_min, old_y_max, new_x_min, new_x_max, new_y_min, 
 new_y_max, input_path, depth_order, arrows_and_lines_file):
+    
+    # Enables the redrawing of only changed aspects of the figure
+
+    collage.canvas.blit(collage.bbox)
 
     # Zoom axes to the bounding box
 
@@ -21,11 +45,11 @@ new_y_max, input_path, depth_order, arrows_and_lines_file):
 
     # Redraw before opening interactive window
 
-    collage.canvas.draw()
+    collage.canvas.draw_idle()
 
     plt.pause(0.05)
 
-    collage.canvas.draw()
+    collage.canvas.draw_idle()
 
     # Initializes a list of points
 
@@ -70,7 +94,7 @@ new_y_max, input_path, depth_order, arrows_and_lines_file):
             y_coordinate = event.ydata
 
             print(f"[CLICK] x = {x_coordinate:.4f}, y = {(y_coordinate
-            ):.4f}")
+            ):.4f}", flush=True)
 
             # Saves the point into the list
 
@@ -84,7 +108,7 @@ new_y_max, input_path, depth_order, arrows_and_lines_file):
 
             # Refreshes the figure on the open screen
 
-            collage.canvas.draw()
+            collage.canvas.draw_idle()
 
     # If the scroll is released
 
@@ -100,9 +124,26 @@ new_y_max, input_path, depth_order, arrows_and_lines_file):
         
     # If the flag panning is active, drags the plot along
 
+    last_zoom_time = 0
+
     def on_motion(event):
 
-        nonlocal last_mouse_position
+        nonlocal last_mouse_position, last_zoom_time
+
+        # Controls time to not fire the event at each time. This pre-
+        # vents event flooding
+
+        current_time = time()
+
+        if (current_time-last_zoom_time)<0.03:
+
+            # Ignores at each 30 miliseconds
+
+            return
+        
+        last_zoom_time = current_time
+
+        # Zooms in and out altering the limits of the axes
 
         if is_panning and event.inaxes==general_axes and (
         event.xdata is not None):
@@ -138,13 +179,13 @@ new_y_max, input_path, depth_order, arrows_and_lines_file):
             # Prints coordinates to terminal continuously
 
             print(f"[MOVE] x = {event.xdata:.2f}, y = {event.ydata:.2f}", 
-            end="\r")
+            end="\r", flush=True)
 
     # Defines a function to detect the press of the ENTER key
 
     def on_key(event):
 
-        nonlocal points_list
+        nonlocal points_list, general_axes
 
         if event.key=="enter":
 
@@ -156,7 +197,8 @@ new_y_max, input_path, depth_order, arrows_and_lines_file):
 
             list_name = input("\nType the name of this list: ")
 
-            print("The user selected the name '"+str(list_name)+"'")
+            print("The user selected the name '"+str(list_name)+"'", 
+            flush=True)
 
             # Concatenates it to the list of points
 
@@ -186,27 +228,41 @@ new_y_max, input_path, depth_order, arrows_and_lines_file):
             save_string_into_txt(saved_string, "preview_data.txt", 
             parent_path=input_path)
 
-            # Removes the X's and switches them by squares
+            # Substitutes the X markers by square markers, and cleans the
+            # list of points
 
-            for point in points_list:
+            points_list, general_axes = substitute_markers(points_list,
+            general_axes, depth_order, collage)
 
-                if general_axes.lines:
+        # If a spline is to be saved
 
-                    general_axes.lines[-1].remove()
+        elif event.key=="q":
 
-            # Plots the squares
+            # Creates the dictionary to create this spline
 
-            for point in points_list:
+            spline_dictionary = {"thickness": 0.2, "arrow style": "no "+
+            "arrow", "line style": "solid", "color": "black", "spline "+
+            "points": points_list}
 
-                general_axes.plot(point[0], point[1], marker="s",
-                color="black", zorder=depth_order, markersize=
-                collage_classes.milimeters_to_points(2.0), mew=2)
+            # Appends to the list of arrows and lines and saves the lat-
+            # ter to the appropriate txt file
 
-            collage.canvas.draw_idle()
+            arrows_and_lines_list.append(spline_dictionary)
 
-            # Cleans the list of points
+            print("Saves the spline")
 
-            points_list = []
+            list_toTxt(arrows_and_lines_list, arrows_and_lines_file,
+            parent_path=input_path)
+
+            print("Substitutes markers")
+
+            # Substitutes the X markers by square markers, and cleans the
+            # list of points
+
+            points_list, general_axes = substitute_markers(points_list,
+            general_axes, depth_order, collage)
+
+            print("Finalizes substituting markers")
 
         # Detects Ctrl+Z to erase the last point
          
@@ -216,7 +272,7 @@ new_y_max, input_path, depth_order, arrows_and_lines_file):
 
                 removed = points_list.pop()
                 
-                print(f"[UNDO] removed {removed}")
+                print(f"[UNDO] removed {removed}", flush=True)
 
                 # Removes the last plotted X marker
                 
@@ -228,13 +284,14 @@ new_y_max, input_path, depth_order, arrows_and_lines_file):
 
             else:
 
-                print("[UNDO] no points left")
+                print("[UNDO] no points left", flush=True)
 
                 # Removes the last plotted X marker
                 
                 if general_axes.lines:
 
-                    print("But removes already saved markers")
+                    print("But removes already saved markers", flush=
+                    True)
 
                     general_axes.lines[-1].remove()
 
@@ -242,15 +299,9 @@ new_y_max, input_path, depth_order, arrows_and_lines_file):
 
                 else:
 
-                    print("No markers left to delete")
+                    print("No markers left to delete", flush=True)
 
-                print("")
-
-        # If a spline is to be saved
-
-        elif event.key=="q":
-
-            # Adds the spline 
+                print("", flush=True)
 
     # Function to zoom in and out using mouse scroll
 
@@ -312,15 +363,16 @@ new_y_max, input_path, depth_order, arrows_and_lines_file):
 
     collage.canvas.mpl_connect("motion_notify_event", on_motion)
 
-    print("\nInteractive preview enabled (terminal output).")
+    print("\nInteractive preview enabled (terminal output).", flush=True)
 
-    print("Move mouse → see coordinates")
+    print("Move mouse → see coordinates", flush=True)
 
-    print("Click → print coordinates")
+    print("Click → print coordinates", flush=True)
 
-    print("Press key T → type the name of the list of points")
+    print("Press key T → type the name of the list of points", flush=
+    True)
 
-    print("Press ENTER → continue and save image\n")
+    print("Press ENTER → continue and save image\n", flush=True)
 
     # Shows the image
 
@@ -331,3 +383,32 @@ new_y_max, input_path, depth_order, arrows_and_lines_file):
     general_axes.set_xlim(old_x_min, old_x_max)
 
     general_axes.set_ylim(old_y_min, old_y_max)
+
+# Defines a function to substitute the X markers by square markers when
+# points defined by the user are saved
+
+def substitute_markers(points_list, general_axes, depth_order, collage):
+
+    # Removes the X's and switches them by squares
+
+    for point in points_list:
+
+        if general_axes.lines:
+
+            general_axes.lines[-1].remove()
+
+    # Plots the squares
+
+    for point in points_list:
+
+        general_axes.plot(point[0], point[1], marker="s", color="black", 
+        zorder=depth_order, markersize=
+        collage_classes.milimeters_to_points(2.0), mew=2)
+
+    collage.canvas.draw_idle()
+
+    # Cleans the list of points
+
+    points_list = []
+
+    return points_list, general_axes
