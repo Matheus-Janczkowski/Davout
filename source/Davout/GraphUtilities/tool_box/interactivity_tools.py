@@ -31,11 +31,8 @@ from ...PythonicUtilities.file_handling_tools import save_string_into_txt, txt_t
 
 def create_interactive_window(general_axes, collage, old_x_min, 
 old_x_max, old_y_min, old_y_max, new_x_min, new_x_max, new_y_min, 
-new_y_max, input_path, depth_order, arrows_and_lines_file):
-    
-    # Enables the redrawing of only changed aspects of the figure
-
-    collage.canvas.blit(collage.bbox)
+new_y_max, input_path, depth_order, arrows_and_lines_file,
+create_box_collage):
 
     # Zoom axes to the bounding box
 
@@ -187,9 +184,25 @@ new_y_max, input_path, depth_order, arrows_and_lines_file):
 
         nonlocal points_list, general_axes
 
+        # If enter is pressed, saves the image and do not resume redraw-
+        # ing
+
         if event.key=="enter":
 
             plt.close(collage)
+
+        # Otherwise, if 'r' is pressed, saves the drawing and redraws a-
+        # gain
+
+        elif event.key=="r":
+
+            # Sets a variable informing to close the figure
+
+            plt.close()
+
+            # Calls the collage function
+
+            create_box_collage()
 
         # Uses the key t to get string from the user
 
@@ -383,6 +396,10 @@ new_y_max, input_path, depth_order, arrows_and_lines_file):
     general_axes.set_xlim(old_x_min, old_x_max)
 
     general_axes.set_ylim(old_y_min, old_y_max)
+
+    # Returns None just for the sake of returning something
+
+    return None
 
 # Defines a function to substitute the X markers by square markers when
 # points defined by the user are saved

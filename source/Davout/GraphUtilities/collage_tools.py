@@ -66,7 +66,8 @@ aspect_ratio='auto', adjustable=None, layout_width_milimeters=210.0,
 layout_height_milimeters=297.0, add_overlaying_grid=False, tolerance=
 1E-5, grid_annotation_length=10, rule_fontsize=6, rule_number_offset=0.5,
 vanishing_points_list=None, save_lists_to_txt=False, interactive_preview=
-False, arrows_and_lines_file="arrows_and_lines_list"):
+False, arrows_and_lines_file="arrows_and_lines_list", 
+reused_variables_in_recurrence_mode={}):
     
     # Initializes the class of colors, the class of alignments, and the 
     # class of line styles
@@ -83,7 +84,8 @@ False, arrows_and_lines_file="arrows_and_lines_list"):
 
     if output_path:
 
-        output_file = path_tools.verify_path(output_path, output_file)
+        output_file_name = path_tools.verify_path(output_path, 
+        output_file)
 
     # If the output path is None, but the input path is given, makes the
     # former equal to the latter
@@ -92,7 +94,12 @@ False, arrows_and_lines_file="arrows_and_lines_list"):
 
         output_path = input_path
 
-        output_file = path_tools.verify_path(output_path, output_file)
+        output_file_name = path_tools.verify_path(output_path, 
+        output_file)
+
+    else:
+
+        output_file_name = deepcopy(output_file)
 
     # Initializes the collage using the given information
 
@@ -117,7 +124,7 @@ False, arrows_and_lines_file="arrows_and_lines_list"):
 
     # Verifies if the list of boxes is not None
 
-    if boxes_list is not None:
+    if (boxes_list is not None):
 
         print("#######################################################"+
         "#################\n#                            Making of box"+
@@ -155,7 +162,7 @@ False, arrows_and_lines_file="arrows_and_lines_list"):
 
     # Verifies if the dictionary of input figures is not None
 
-    if input_image_list is not None:
+    if (input_image_list is not None):
 
         print("#######################################################"+
         "#################\n#                         Insertion of fig"+
@@ -191,7 +198,7 @@ False, arrows_and_lines_file="arrows_and_lines_list"):
 
     # Verifies if the list of input text excerpts is not None
 
-    if input_text_list is not None:
+    if (input_text_list is not None):
 
         print("#######################################################"+
         "#################\n#                        Making of text ex"+
@@ -227,7 +234,7 @@ False, arrows_and_lines_file="arrows_and_lines_list"):
 
     # Verifies if the list of arrows is not None
 
-    if arrows_and_lines_list is not None:
+    if (arrows_and_lines_list is not None):
 
         print("#######################################################"+
         "#################\n#                      Making of arrows an"+
@@ -383,7 +390,7 @@ False, arrows_and_lines_file="arrows_and_lines_list"):
         if bounding_box:
 
             print("There is a bounding box to shrink and pad.\nSaves a"+
-            "t "+str(output_file)+"\n")
+            "t "+str(output_file_name)+"\n")
 
             bounding_box = Bbox.union(bounding_box)
 
@@ -453,17 +460,18 @@ False, arrows_and_lines_file="arrows_and_lines_list"):
 
             # Saves the figure with this bounding box in inches
 
-            plt.savefig(output_file, bbox_inches=bbox_inches, pad_inches=
-            0, dpi=dpi)
+            plt.savefig(output_file_name, bbox_inches=bbox_inches, 
+            pad_inches=0, dpi=dpi)
 
             # Verifies if an interactive window is to be shown
 
             if interactive_preview:
 
-                create_interactive_window(general_axes, collage, 0.0, 
-                layout_width_milimeters, 0.0, layout_height_milimeters, 
-                x_min, x_max, y_min, y_max, input_path, depth_order, 
-                arrows_and_lines_file)
+                return create_interactive_window(general_axes, collage, 
+                0.0, layout_width_milimeters, 0.0, 
+                layout_height_milimeters, x_min, x_max, y_min, y_max, 
+                input_path, depth_order, arrows_and_lines_file,
+                create_box_collage)
 
         # Otherwise, saves it plainly
 
@@ -524,18 +532,19 @@ False, arrows_and_lines_file="arrows_and_lines_list"):
             # Saves the figure
 
             print("There is no bounding box to shrink and pad.\nSaves "+
-            "at "+str(output_file)+"\n")
+            "at "+str(output_file_name)+"\n")
 
-            plt.savefig(output_file, dpi=dpi)
+            plt.savefig(output_file_name, dpi=dpi)
 
             # Verifies if an interactive window is to be shown
 
             if interactive_preview:
 
-                create_interactive_window(general_axes, collage, 0.0, 
-                layout_width_milimeters, 0.0, layout_height_milimeters, 
-                x_min, x_max, y_min, y_max, input_path, depth_order, 
-                arrows_and_lines_file)
+                return create_interactive_window(general_axes, collage, 
+                0.0, layout_width_milimeters, 0.0, 
+                layout_height_milimeters, x_min, x_max, y_min, y_max, 
+                input_path, depth_order, arrows_and_lines_file,
+                create_box_collage)
 
     else:
 
@@ -592,17 +601,19 @@ False, arrows_and_lines_file="arrows_and_lines_list"):
 
         # Saves the figure
 
-        print("Saves as it is at "+str(output_file)+"\n")
+        print("Saves as it is at "+str(output_file_name)+"\n")
 
-        plt.savefig(output_file, dpi=dpi)
+        plt.savefig(output_file_name, dpi=dpi)
 
         # Verifies if an interactive window is to be shown
 
         if interactive_preview:
 
-            create_interactive_window(general_axes, collage, 0.0, 
+            return create_interactive_window(general_axes, collage, 0.0, 
             layout_width_milimeters, 0.0, layout_height_milimeters, 
             x_min, x_max, y_min, y_max, input_path, depth_order, 
-            arrows_and_lines_file)
+            arrows_and_lines_file, create_box_collage)
 
     plt.close()
+
+    return None
