@@ -106,10 +106,16 @@ legend_bar_font_color=None):
 
     input_fileName = path_tools.take_outFileNameTermination(
     input_fileName)+".xdmf"
+
+    # Verify the file existence
+
+    path_tools.verify_file_existence(input_fileName)
     
     # Loads the simulation output data
 
     data = XDMFReader(FileNames=[input_fileName])
+
+    data.UpdatePipeline()
 
     data.PointArrayStatus = [field_name]
 
@@ -127,7 +133,13 @@ legend_bar_font_color=None):
 
         number_of_components = array_info.GetNumberOfComponents()
 
+        print(str(number_of_components)+" components of the field were"+
+        " recovered\n", flush=True)
+
     else:
+
+        print("It was not possible to get components. The field must b"+
+        "e a scalar\n", flush=True)
 
         # Makes the component to plot automatically magnitude
 
@@ -294,7 +306,9 @@ legend_bar_font_color=None):
             raise TypeError("The data provided to snapshot '"+str(
             field_name)+"' field in '"+str(input_fileName)+"' has "+str(
             number_of_components)+" components. Thus, it is not possib"+
-            "le to warp it by vector")
+            "le to warp it by vector. The user asked to plot component"+
+            " '"+str(component_to_plot)+"' over the deformed configura"+
+            "tion")
 
         # Creates the warped object
 

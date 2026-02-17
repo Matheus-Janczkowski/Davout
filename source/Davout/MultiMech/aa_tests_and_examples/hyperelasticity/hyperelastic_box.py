@@ -156,7 +156,7 @@ verbose=True)
 
 # Saves a snapshot of the solution using the automatization of ParaView
 
-new_figures = False 
+new_figures = True 
 
 if new_figures:
 

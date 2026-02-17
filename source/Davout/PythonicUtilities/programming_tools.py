@@ -450,7 +450,8 @@ def get_result(whole_result, variable_name):
 # does, returns the attribute, otherwise gives an error message
 
 def get_attribute(class_object, attribute_name, error_message, 
-dictionary_of_methods=False, delete_init_key=False):
+dictionary_of_methods=False, delete_init_key=False, reserved_methods=
+None):
 
     """
     Arguments: class_object, a class instance; attribute_name, a string 
@@ -465,8 +466,29 @@ dictionary_of_methods=False, delete_init_key=False):
 
     if dictionary_of_methods:
 
-        dictionary_of_methods = {name: member for name, member in 
-        inspect.getmembers(class_object, predicate=inspect.ismethod)}
+        # Transforms the reserved methods to the default empty list
+        
+        if reserved_methods is None:
+    
+            reserved_methods = []
+
+        # Initializes a dictionary of methods
+
+        dictionary_of_methods = dict()
+
+        # Iterates over the methods of this class instance
+
+        for name, member in inspect.getmembers(class_object, predicate=
+        inspect.ismethod):
+            
+            # Verifies if the name is not in one of the reserved func-
+            # tions
+
+            if not (name in reserved_methods):
+
+                dictionary_of_methods[name] = member
+
+        # If the __init__ method is to be taken away
 
         if delete_init_key:
 
