@@ -420,8 +420,13 @@ interactive_window_info, verbose=False):
 
             # Rewrites it
 
-            save_string_into_txt(saved_string, "preview_data.txt", 
+            output_file_name = "preview_data.txt"
+
+            save_string_into_txt(saved_string, output_file_name, 
             parent_path=input_path)
+
+            print("Saved the data points at '"+str(input_path)+"//"+
+            output_file_name+"\n")
 
             # Substitutes the X markers by square markers, and cleans the
             # list of points
