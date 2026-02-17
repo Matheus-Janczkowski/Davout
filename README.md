@@ -10,7 +10,7 @@ Repository to store my workhorses and research-themed park.
 # Installation using installer file
 Download the zip file, unzip it and move it to a suitable directory. 
 Open the Davout folder, where setup.py is located. Open this path in
-terminal and run the following command
+terminal (using a virtual environment) and run the following command
 
 python davout_installer.py
 
