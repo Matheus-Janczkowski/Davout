@@ -7,7 +7,7 @@ Repository to store my workhorses and research-themed park.
 
 3. Link to the booklet on writing in LaTeX: https://www.overleaf.com/read/sdrvfrpdjhft#66d6f9
 
-# Installation
+# Installation using command
 Download the repository, unzip the file, put it in a suitable place for you.
 Activate a python virtual environment (follow instruction in the booklet 1. 
 to create a virtual environment if you don't have one), go into the directory 
@@ -24,3 +24,10 @@ To test the installation:
 python
 
 import Davout
+
+# Installation using installer file
+Download the zip file, unzip it and move it to a suitable directory. 
+Open the Davout folder, where setup.py is located. Open this path in
+terminal and run the following command
+
+python davout_installer.py
