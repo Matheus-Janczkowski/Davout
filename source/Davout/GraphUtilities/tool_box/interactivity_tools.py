@@ -27,9 +27,11 @@ import matplotlib.pyplot as plt
 
 from ..tool_box import collage_classes
 
+from ..tool_box import curves_setter
+
 from ...PythonicUtilities.file_handling_tools import save_string_into_txt, txt_toList, list_toTxt
 
-from ..tool_box import curves_setter
+from ...PythonicUtilities.path_tools import verify_file_existence
 
 # Sets a class of data that is communicated from and to the interactive
 # window
@@ -37,7 +39,7 @@ from ..tool_box import curves_setter
 class InteractiveWindowInfo:
 
     def __init__(self, flag_redraw, add_overlaying_grid, 
-    vanishing_points_list,tolerance):
+    vanishing_points_list, tolerance, perspective_lines_visualization):
         
         self.flag_redraw = flag_redraw
         
@@ -46,6 +48,9 @@ class InteractiveWindowInfo:
         self.vanishing_points_list = vanishing_points_list
 
         self.tolerance = tolerance
+
+        self.perspective_lines_visualization = (
+        perspective_lines_visualization)
 
 # Defines a function to create an interactive window
 
@@ -70,7 +75,14 @@ interactive_window_info, verbose=False):
 
     # Reads the list of arrows and lines
 
-    arrows_and_lines_list = txt_toList(arrows_and_lines_file, input_path)
+    arrows_and_lines_list = txt_toList(arrows_and_lines_file, input_path,
+    do_not_raise_error=True)
+
+    # If no arrows and lines has been read, makes it an empty list
+
+    if arrows_and_lines_list is None:
+
+        arrows_and_lines_list = []
 
     # Sets some commands for clicking and panning (dragging)
 
@@ -257,6 +269,22 @@ interactive_window_info, verbose=False):
                 print("Enables the overlaying grid\n")
 
                 interactive_window_info.add_overlaying_grid = True
+
+        # If B is pressed, toggle the addition of the perspective lines
+
+        elif event.key=="b":
+
+            if interactive_window_info.perspective_lines_visualization:
+
+                print("Disables the overlaying perspective lines\n")
+
+                interactive_window_info.perspective_lines_visualization = False 
+
+            else:
+
+                print("Enables the overlaying perspective lines\n")
+
+                interactive_window_info.perspective_lines_visualization = True
 
         # If V is pressed, adds a new point with lines connecting to the
         # vanishing points
@@ -656,6 +684,9 @@ interactive_window_info, verbose=False):
     print("Press key V .............................. => add a new per"+
     "spective point with lines connecting to the vanishing points", 
     flush=True)
+
+    print("Press key B .............................. => toggle the ad"+
+    "dition or not of the perspective lines", flush=True)
 
     print("\n7.1. Spline curves:")
 

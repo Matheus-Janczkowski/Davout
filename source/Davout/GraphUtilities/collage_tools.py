@@ -64,7 +64,7 @@ no_padding=False, input_image_list=None, input_text_list=None,
 boxes_list=None, arrows_and_lines_list=None, dpi=300, verbose=False, 
 aspect_ratio='auto', adjustable=None, layout_width_milimeters=210.0, 
 layout_height_milimeters=297.0, add_overlaying_grid=False, tolerance=
-1E-2, grid_annotation_length=10, rule_fontsize=6, rule_number_offset=0.5,
+1E-1, grid_annotation_length=10, rule_fontsize=6, rule_number_offset=0.5,
 vanishing_points_list=None, save_lists_to_txt=False, interactive_preview=
 False, arrows_and_lines_file="arrows_and_lines_list"):
     
@@ -80,7 +80,7 @@ False, arrows_and_lines_file="arrows_and_lines_list"):
     arrow_style_class = collage_classes.ArrowHeadStyles()
 
     interactive_window_info = InteractiveWindowInfo(True, 
-    add_overlaying_grid, vanishing_points_list, tolerance)
+    add_overlaying_grid, vanishing_points_list, tolerance, True)
 
     # Verifies the input and output paths
 
@@ -471,7 +471,8 @@ False, arrows_and_lines_file="arrows_and_lines_list"):
                 # Verifies if a list of vanishing points has been given to 
                 # construct perspective lines
 
-                if interactive_window_info.vanishing_points_list:
+                if interactive_window_info.vanishing_points_list and (
+                interactive_window_info.perspective_lines_visualization):
 
                     # Calls the function to add the perspective lines
 
@@ -556,7 +557,8 @@ False, arrows_and_lines_file="arrows_and_lines_list"):
                 # Verifies if a list of vanishing points has been given to 
                 # construct perspective lines
 
-                if interactive_window_info.vanishing_points_list:
+                if interactive_window_info.vanishing_points_list and (
+                interactive_window_info.perspective_lines_visualization):
 
                     # Calls the function to add the perspective lines
 
@@ -635,7 +637,8 @@ False, arrows_and_lines_file="arrows_and_lines_list"):
             # Verifies if a list of vanishing points has been given to cons-
             # truct perspective lines
 
-            if interactive_window_info.vanishing_points_list:
+            if interactive_window_info.vanishing_points_list and (
+            interactive_window_info.perspective_lines_visualization):
 
                 # Calls the function to add the perspective lines
 

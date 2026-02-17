@@ -214,7 +214,7 @@ None):
 
 # Defines a function to read a list from a txt file
 
-def txt_toList(file_name, parent_path=None):
+def txt_toList(file_name, parent_path=None, do_not_raise_error=False):
 
     # Adds the parent path if it is given
 
@@ -222,21 +222,32 @@ def txt_toList(file_name, parent_path=None):
 
         file_name = path_tools.verify_path(parent_path, file_name)
 
+    # Makes sure the file ends with txt
+
+    file_name = path_tools.take_outFileNameTermination(file_name)+".txt"
+
+    # Verifies the file existence
+
+    if not path_tools.verify_file_existence(file_name, 
+    do_not_raise_error=do_not_raise_error):
+        
+        return None
+
     # Reads the txt file
 
     saved_string = ""
 
     try:
 
-        with open(file_name+".txt", "r", encoding="utf-8") as infile:
+        with open(file_name, "r", encoding="utf-8") as infile:
 
             saved_string = infile.read()
 
     except:
 
-        raise FileNotFoundError("The file "+file_name+".txt was not fo"+
-        "und while evaluating txt_toList method in file_handling_tools"+
-        ".py\n")
+        raise FileNotFoundError("The file "+file_name+" was not found "+
+        "while evaluating txt_toList method in file_handling_tools.py"+
+        "\n")
     
     saved_string = saved_string.encode('utf-8').decode('unicode_escape')
 

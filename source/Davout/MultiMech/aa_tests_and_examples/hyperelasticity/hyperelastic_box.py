@@ -156,7 +156,7 @@ verbose=True)
 
 # Saves a snapshot of the solution using the automatization of ParaView
 
-new_figures = True 
+new_figures = False 
 
 if new_figures:
 
@@ -197,7 +197,7 @@ if new_figures:
 
 # Creates a collage
 
-create_collage = True
+create_collage = False
 
 if create_collage:
 

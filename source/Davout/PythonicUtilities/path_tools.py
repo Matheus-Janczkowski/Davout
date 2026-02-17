@@ -52,7 +52,7 @@ def get_list_of_directories(whole_path):
 # Defines a function to verify if a file exists
 
 def verify_file_existence(file_path, saving_function=None, termination=
-None):
+None, do_not_raise_error=False):
 
     # Verifies is the file path is a string
 
@@ -95,8 +95,10 @@ None):
 
         if saving_function is None:
 
-            raise FileNotFoundError("The file at '"+str(file_path)+"' "+
-            "was not found")
+            if not do_not_raise_error:
+
+                raise FileNotFoundError("The file at '"+str(file_path)+
+                "' was not found")
         
         else:
 
@@ -106,10 +108,16 @@ None):
 
             except Exception as error_message:
 
-                raise TypeError("It is not possible to save the file '"+
-                str(file_path)+"' using function '"+str(
-                saving_function.__name__)+"' due to the following exce"+
-                "ption:\n"+str(error_message))
+                if not do_not_raise_error:
+
+                    raise TypeError("It is not possible to save the fi"+
+                    "le '"+str(file_path)+"' using function '"+str(
+                    saving_function.__name__)+"' due to the following "+
+                    "exception:\n"+str(error_message))
+                
+        return False
+            
+    return True
 
 # Defines a function to verify if a path exists or not. If not, create
 # it
