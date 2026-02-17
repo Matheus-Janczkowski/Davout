@@ -74,7 +74,8 @@ class TestCollage():
         "thickness": 0.4}],
 
         verbose=True, no_padding=True, add_overlaying_grid=True, dpi=500,
-        grid_annotation_length=10, save_lists_to_txt=True)
+        grid_annotation_length=10, save_lists_to_txt=True, 
+        interactive_preview=False)
 
 # Runs all tests
 
