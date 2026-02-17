@@ -137,7 +137,7 @@ if __name__=="__main__":
     print("The limits are:\n"+str(limits)+"\nThe random point is:\n"+str(
     random_point)+"\nf(x,y,z)="+str(value))
 
-    from ..PythonicUtilities.plotting_tools import plane_plot
+    from ..GraphUtilities.plotting_tools import plane_plot
 
     limits = [[-3.0, 1.0], [-0.5, 1.5]]
 

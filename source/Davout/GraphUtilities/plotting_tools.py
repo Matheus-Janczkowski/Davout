@@ -1647,6 +1647,19 @@ x_ticksLabels=None, y_ticksLabels=None):
     rameters for the scaling function
     """
 
+    # Verifies if the matrix given is not in the format [[time, matrix]]
+
+    flag_save_time = True
+
+    if not isinstance(list_of_matrices[0][1], list):
+
+        list_of_matrices = [[0.0, list_of_matrices]]
+
+        # Updates the flag of time to not save the time number in the
+        # file name
+
+        flag_save_time = False
+
     # Scales the list of matrices
 
     (scaled_matrices, min_component, max_component, scaling_function,
@@ -1714,15 +1727,27 @@ x_ticksLabels=None, y_ticksLabels=None):
 
         time = string_tools.float_toString(time)
 
+        # Creates the name of the file
+
+        file_name = ""
+
+        if flag_save_time:
+
+            file_name = base_file_name+"_t_"+time+".pdf"
+
+        else:
+
+            file_name = base_file_name+".pdf"
+
         # Plots and saves the figure
 
-        plane_plot(parent_path=parent_path,file_name=base_file_name+"_t_"+time
-        +".pdf", x_data=x_data, y_data=y_data, element_style="s", 
-        element_size=element_size, color=colors, color_map=
-        color_mapBuilder(color_map, max_ticksColorBar=max_ticksColorBar
-        ), plot_type="scatter", flag_grid=True, flag_noTicks=False, 
-        aspect_ratio='equal', x_grid=x_grid, y_grid=y_grid, color_bar=
-        True, color_barMaximum=color_barMaximum, color_barMinimum=
+        plane_plot(parent_path=parent_path, file_name=file_name, x_data=
+        x_data, y_data=y_data, element_style="s", element_size=
+        element_size, color=colors, color_map=color_mapBuilder(
+        color_map, max_ticksColorBar=max_ticksColorBar), plot_type="sc"+
+        "atter", flag_grid=True, flag_noTicks=False, aspect_ratio='equ'+
+        'al', x_grid=x_grid, y_grid=y_grid, color_bar=True, 
+        color_barMaximum=color_barMaximum, color_barMinimum=
         color_barMinimum, color_barTitle=scaling_functionTitle, title=
         title, color_barIncludeMinMaxTicks=True, color_barIntegerTicks=
         False, color_barNumberOfTicks=max_ticksColorBar, 

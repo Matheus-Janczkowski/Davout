@@ -4,7 +4,7 @@ import unittest
 
 import numpy as np
 
-from copy import deepcopy
+from ...PythonicUtilities.path_tools import get_parent_path_of_file
 
 from ...GraphUtilities import plotting_tools
 
@@ -213,6 +213,77 @@ class TestPlots(unittest.TestCase):
         self.multimodal_y_data, error_bar={"name": "normal distribution",
         "confidence": 0.9}, file_name="test_error_region_z_score_0_90", 
         plot_type="line")
+
+    def test_matrix_plot(self):
+
+        print("\n#####################################################"+
+        "###################\n#                              Matrix pl"+
+        "ot                             #\n###########################"+
+        "#############################################\n")
+
+        generic_matrix = []
+
+        n = 20
+
+        for i in range(n):
+
+            generic_matrix.append([])
+
+            for j in range(n):
+
+                generic_matrix[-1].append(((i+1)*(j+1))/(n**2))
+
+        plotting_tools.plot_matrix(generic_matrix, 
+        get_parent_path_of_file(), "generic matrix")
+
+    def test_mutliple_scattered_ellipses(self):
+
+        print("\n#####################################################"+
+        "###################\n#                      Multiple scattere"+
+        "d ellipses                     #\n###########################"+
+        "#############################################\n")
+
+        limits = [[[-3.0, 1.0], [-1.0, 1.0]], [[-0.5, 1.5], [-1.0, 1.0]]]
+
+        n_ellipses = len(limits)
+
+        n_points = 300
+
+        x_data = []
+
+        y_data = []
+
+        labels = ["E = "+str(j+1) for j in range(n_ellipses)]
+
+        for j in range(n_ellipses):
+
+            x_data.append([])
+
+            y_data.append([])
+
+            for i in range(n_points):
+
+                # Gets a random direction
+
+                random_point = np.random.randn(2)
+
+                # Normalizes it
+
+                random_point = ((1/np.linalg.norm(random_point))*
+                random_point)
+
+                # Iterpolates it by the limits
+
+                x_data[-1].append((0.5*(1-random_point[0])*limits[j][0][
+                0])+(0.5*(1+random_point[0])*limits[j][0][1]))
+
+                y_data[-1].append((0.5*(1-random_point[1])*limits[j][1][
+                0])+(0.5*(1+random_point[1])*limits[j][1][1]))
+
+        plotting_tools.plane_plot("2D_ellipse", x_data=x_data, y_data=
+        y_data, plot_type="scatter", element_size=2.5, label=labels, 
+        title="$E^{p}\\left(\mathbf{D},\mathbf{x}_{c}\\right)$",
+        color_map="coolwarm", aspect_ratio=1.0)
 
 # Runs all tests
 

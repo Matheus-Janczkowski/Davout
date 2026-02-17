@@ -159,7 +159,6 @@ def experiment():
 
             pearson_matrix[i,j] = pearson_value*1.0
 
-    plot_matrix([[0.0, pearson_matrix]], get_parent_path_of_file(), "p"+
-    "earson")
+    plot_matrix(pearson_matrix, get_parent_path_of_file(), "pearson")
 
 experiment()
