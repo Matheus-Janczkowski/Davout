@@ -6,6 +6,8 @@ from ...PythonicUtilities.programming_tools import get_attribute
 
 from ...PythonicUtilities.path_tools import get_parent_path_of_file
 
+import traceback
+
 # Defines a class to store all tests
 
 class TestCollage():
@@ -75,7 +77,7 @@ class TestCollage():
 
         verbose=True, no_padding=True, add_overlaying_grid=True, dpi=500,
         grid_annotation_length=10, save_lists_to_txt=True, 
-        interactive_preview=False)
+        interactive_preview=True)
 
 # Runs all tests
 
@@ -107,7 +109,11 @@ if __name__=="__main__":
 
             success_counter += 1
 
-        except:
+        except Exception as e:
+
+            print("Method '"+str(name)+"' failed:\n"+str(e)+"\n")
+
+            traceback.print_exc()
 
             failure_counter += 1
 

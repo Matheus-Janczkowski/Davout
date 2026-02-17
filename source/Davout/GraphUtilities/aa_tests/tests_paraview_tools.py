@@ -1,5 +1,7 @@
 # Routine to test the implementation of paraview tools
 
+import traceback
+
 from ...GraphUtilities import paraview_tools
 
 from ...PythonicUtilities.programming_tools import get_attribute
@@ -178,7 +180,11 @@ if __name__=="__main__":
 
             success_counter += 1
 
-        except:
+        except Exception as e:
+
+            print("Method '"+str(name)+"' failed:\n"+str(e)+"\n")
+
+            traceback.print_exc()
 
             failure_counter += 1
 

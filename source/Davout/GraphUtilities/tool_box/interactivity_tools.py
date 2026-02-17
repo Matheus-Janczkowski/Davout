@@ -82,7 +82,16 @@ interactive_window_info, verbose=False):
 
     if arrows_and_lines_list is None:
 
+        print("\nThe list of arrows and lines was not found at:\n"+str(
+        input_path+"//"+arrows_and_lines_file)+"\nAn empty list was au"+
+        "tomatically created\n")
+
         arrows_and_lines_list = []
+
+    elif verbose:
+
+        print("\nThe list of arrows and lines was successfully read.\n"+
+        str(arrows_and_lines_list)+"\n")
 
     # Sets some commands for clicking and panning (dragging)
 

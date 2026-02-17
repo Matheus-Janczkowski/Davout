@@ -65,7 +65,7 @@ boxes_list=None, arrows_and_lines_list=None, dpi=300, verbose=False,
 aspect_ratio='auto', adjustable=None, layout_width_milimeters=210.0, 
 layout_height_milimeters=297.0, add_overlaying_grid=False, tolerance=
 1E-1, grid_annotation_length=10, rule_fontsize=6, rule_number_offset=0.5,
-vanishing_points_list=None, save_lists_to_txt=False, interactive_preview=
+vanishing_points_list=None, save_lists_to_txt=True, interactive_preview=
 False, arrows_and_lines_file="arrows_and_lines_list"):
     
     # Initializes the class of colors, the class of alignments, and the 
@@ -263,6 +263,27 @@ False, arrows_and_lines_file="arrows_and_lines_list"):
 
                 read_arrows_and_lines_list = txt_toList(
                 arrows_and_lines_list, parent_path=input_path)
+
+                # Plots the list of lines or arrows
+
+                general_axes, depth_order = plot_arrows_and_lines(
+                general_axes, read_arrows_and_lines_list, colors_class, 
+                line_style_class, arrow_style_class, tolerance, 
+                depth_order, verbose=verbose)
+
+                # If the given list is to be saved as a txt file
+
+                if save_lists_to_txt:
+
+                    list_toTxt(arrows_and_lines_list, 
+                    arrows_and_lines_file, parent_path=input_path)
+
+            # Or, if it is a redrawing step
+
+            elif interactive_window_info.flag_redraw:
+
+                read_arrows_and_lines_list = txt_toList(
+                arrows_and_lines_file, parent_path=input_path)
 
                 # Plots the list of lines or arrows
 
