@@ -97,6 +97,10 @@ False, arrows_and_lines_file="arrows_and_lines_list"):
 
         output_file = path_tools.verify_path(output_path, output_file)
 
+    # Initializes a counter of how many times the canvas has been redrawn
+
+    redrawing_counter = 0
+
     # Initializes a flag to tell if the process of redrawing is to be
     # carried out iteratively
 
@@ -280,7 +284,8 @@ False, arrows_and_lines_file="arrows_and_lines_list"):
 
             # Or, if it is a redrawing step
 
-            elif interactive_window_info.flag_redraw:
+            elif interactive_window_info.flag_redraw and (
+            redrawing_counter>0):
 
                 read_arrows_and_lines_list = txt_toList(
                 arrows_and_lines_file, parent_path=input_path)
@@ -522,6 +527,10 @@ False, arrows_and_lines_file="arrows_and_lines_list"):
                     input_path, depth_order, arrows_and_lines_file, 
                     interactive_window_info, verbose=verbose)
 
+                    # Updates the counter of redrawing occurrences
+
+                    redrawing_counter += 1
+
                 # Otherwise, just makes the flag for redrawing False
 
                 else:
@@ -605,6 +614,10 @@ False, arrows_and_lines_file="arrows_and_lines_list"):
                     y_max, input_path, depth_order, arrows_and_lines_file, 
                     interactive_window_info, verbose=verbose)
 
+                    # Updates the counter of redrawing occurrences
+
+                    redrawing_counter += 1
+
                 # Otherwise, just makes the flag for redrawing False
 
                 else:
@@ -682,6 +695,10 @@ False, arrows_and_lines_file="arrows_and_lines_list"):
                 layout_height_milimeters, x_min, x_max, y_min, y_max, 
                 input_path, depth_order, arrows_and_lines_file, 
                 interactive_window_info, verbose=verbose)
+
+                # Updates the counter of redrawing occurrences
+
+                redrawing_counter += 1
 
             # Otherwise, just makes the flag for redrawing False
 
