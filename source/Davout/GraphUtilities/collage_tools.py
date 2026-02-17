@@ -28,7 +28,7 @@ from .tool_box.box_tools import plot_boxes
 
 from .tool_box.perspective_tools import perspective_lines_from_vanishing_points
 
-from .tool_box.interactivity_tools import create_interactive_window
+from .tool_box.interactivity_tools import create_interactive_window, InteractiveWindowInfo
 
 ########################################################################
 #                            LaTeX preamble                            #
@@ -64,7 +64,7 @@ no_padding=False, input_image_list=None, input_text_list=None,
 boxes_list=None, arrows_and_lines_list=None, dpi=300, verbose=False, 
 aspect_ratio='auto', adjustable=None, layout_width_milimeters=210.0, 
 layout_height_milimeters=297.0, add_overlaying_grid=False, tolerance=
-1E-5, grid_annotation_length=10, rule_fontsize=6, rule_number_offset=0.5,
+1E-2, grid_annotation_length=10, rule_fontsize=6, rule_number_offset=0.5,
 vanishing_points_list=None, save_lists_to_txt=False, interactive_preview=
 False, arrows_and_lines_file="arrows_and_lines_list"):
     
@@ -78,6 +78,9 @@ False, arrows_and_lines_file="arrows_and_lines_list"):
     line_style_class = collage_classes.LineStyles()
 
     arrow_style_class = collage_classes.ArrowHeadStyles()
+
+    interactive_window_info = InteractiveWindowInfo(True, 
+    add_overlaying_grid, vanishing_points_list, tolerance)
 
     # Verifies the input and output paths
 
@@ -97,9 +100,7 @@ False, arrows_and_lines_file="arrows_and_lines_list"):
     # Initializes a flag to tell if the process of redrawing is to be
     # carried out iteratively
 
-    flag_redraw = True 
-
-    while flag_redraw:
+    while interactive_window_info.flag_redraw:
 
         # Initializes the collage using the given information
 
@@ -288,7 +289,7 @@ False, arrows_and_lines_file="arrows_and_lines_list"):
 
         # Verifies if an overlaying grid is to be added
 
-        if add_overlaying_grid:
+        if interactive_window_info.add_overlaying_grid:
 
             # Sets the lines thickness. The keys are the distance in mi-
             # limeters from the last line to the next of the same kind. 
@@ -434,7 +435,7 @@ False, arrows_and_lines_file="arrows_and_lines_list"):
 
                 # If the grid is to be plotted, annotates the grid ruler
 
-                if add_overlaying_grid:
+                if interactive_window_info.add_overlaying_grid:
 
                     # Adds the x ticks
 
@@ -470,13 +471,14 @@ False, arrows_and_lines_file="arrows_and_lines_list"):
                 # Verifies if a list of vanishing points has been given to 
                 # construct perspective lines
 
-                if vanishing_points_list:
+                if interactive_window_info.vanishing_points_list:
 
                     # Calls the function to add the perspective lines
 
                     general_axes = perspective_lines_from_vanishing_points(
-                    general_axes, vanishing_points_list, 0.1, depth_order, 
-                    x_min, x_max, y_min, y_max, verbose=verbose)
+                    general_axes, interactive_window_info.vanishing_points_list, 
+                    0.1, depth_order, x_min, x_max, y_min, y_max, 
+                    input_path, verbose=verbose)
 
                 # Saves the figure with this bounding box in inches
 
@@ -492,17 +494,17 @@ False, arrows_and_lines_file="arrows_and_lines_list"):
 
                 if interactive_preview:
 
-                    flag_redraw = create_interactive_window(general_axes, 
-                    collage, 0.0, layout_width_milimeters, 0.0, 
+                    interactive_window_info = create_interactive_window(
+                    general_axes, collage, 0.0, layout_width_milimeters, 0.0, 
                     layout_height_milimeters, x_min, x_max, y_min, y_max, 
                     input_path, depth_order, arrows_and_lines_file, 
-                    flag_redraw, verbose=verbose)
+                    interactive_window_info, verbose=verbose)
 
                 # Otherwise, just makes the flag for redrawing False
 
                 else:
 
-                    flag_redraw = False
+                    interactive_window_info.flag_redraw = False
 
                     plt.close()
 
@@ -522,7 +524,7 @@ False, arrows_and_lines_file="arrows_and_lines_list"):
 
                 # If the grid is to be plotted, annotates the grid ruler
 
-                if add_overlaying_grid:
+                if interactive_window_info.add_overlaying_grid:
 
                     # Updates the number offset to make the number appear
 
@@ -554,13 +556,14 @@ False, arrows_and_lines_file="arrows_and_lines_list"):
                 # Verifies if a list of vanishing points has been given to 
                 # construct perspective lines
 
-                if vanishing_points_list:
+                if interactive_window_info.vanishing_points_list:
 
                     # Calls the function to add the perspective lines
 
                     general_axes = perspective_lines_from_vanishing_points(
-                    general_axes, vanishing_points_list, 0.1, depth_order, 
-                    x_min, x_max, y_min, y_max)
+                    general_axes, interactive_window_info.vanishing_points_list, 
+                    0.1, depth_order, x_min, x_max, y_min, y_max, 
+                    input_path)
 
                 # Saves the figure
 
@@ -573,17 +576,17 @@ False, arrows_and_lines_file="arrows_and_lines_list"):
 
                 if interactive_preview:
 
-                    flag_redraw = create_interactive_window(general_axes, 
-                    collage, 0.0, layout_width_milimeters, 0.0, 
-                    layout_height_milimeters, x_min, x_max, y_min, y_max, 
-                    input_path, depth_order, arrows_and_lines_file, 
-                    flag_redraw, verbose=verbose)
+                    interactive_window_info = create_interactive_window(
+                    general_axes, collage, 0.0, layout_width_milimeters, 
+                    0.0, layout_height_milimeters, x_min, x_max, y_min, 
+                    y_max, input_path, depth_order, arrows_and_lines_file, 
+                    interactive_window_info, verbose=verbose)
 
                 # Otherwise, just makes the flag for redrawing False
 
                 else:
 
-                    flag_redraw = False
+                    interactive_window_info.flag_redraw = False
 
                     plt.close()
 
@@ -601,7 +604,7 @@ False, arrows_and_lines_file="arrows_and_lines_list"):
 
             # If the grid is to be plotted, annotates the grid ruler
 
-            if add_overlaying_grid:
+            if interactive_window_info.add_overlaying_grid:
 
                 # Updates the number offset to make the number appear
 
@@ -632,13 +635,13 @@ False, arrows_and_lines_file="arrows_and_lines_list"):
             # Verifies if a list of vanishing points has been given to cons-
             # truct perspective lines
 
-            if vanishing_points_list:
+            if interactive_window_info.vanishing_points_list:
 
                 # Calls the function to add the perspective lines
 
                 general_axes = perspective_lines_from_vanishing_points(
-                general_axes, vanishing_points_list, 0.1, depth_order, x_min, 
-                x_max, y_min, y_max)
+                general_axes, interactive_window_info.vanishing_points_list, 
+                0.1, depth_order, x_min, x_max, y_min, y_max, input_path)
 
             # Saves the figure
 
@@ -650,16 +653,16 @@ False, arrows_and_lines_file="arrows_and_lines_list"):
 
             if interactive_preview:
 
-                flag_redraw = create_interactive_window(general_axes, 
+                interactive_window_info = create_interactive_window(general_axes, 
                 collage, 0.0, layout_width_milimeters, 0.0, 
                 layout_height_milimeters, x_min, x_max, y_min, y_max, 
                 input_path, depth_order, arrows_and_lines_file, 
-                flag_redraw, verbose=verbose)
+                interactive_window_info, verbose=verbose)
 
             # Otherwise, just makes the flag for redrawing False
 
             else:
 
-                flag_redraw = False
+                interactive_window_info.flag_redraw = False
 
                 plt.close()

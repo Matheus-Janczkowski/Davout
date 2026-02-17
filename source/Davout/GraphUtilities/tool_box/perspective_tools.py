@@ -2,18 +2,39 @@
 
 import numpy as np
 
+from copy import deepcopy
+
 from ..tool_box.collage_classes import ColorMiscellany
+
+from ...PythonicUtilities.file_handling_tools import txt_toList
 
 # Defines a function to plot perspective lines from a list of vanishing
 # points. Each point has a corresponding dictionary
 
 def perspective_lines_from_vanishing_points(axes_object, 
-vanishing_points_list, thickness, depth_order, x_min, x_max, y_min, 
-y_max, verbose=False):
+vanishing_points_list_info, thickness, depth_order, x_min, x_max, y_min, 
+y_max, input_path, verbose=False):
     
     # Instantiates the color class
 
     colors_class = ColorMiscellany()
+
+    # Verifies if vanishing points is a string
+
+    vanishing_points_list = None
+
+    if isinstance(vanishing_points_list_info, str):
+
+        # Reads it from a txt file
+
+        vanishing_points_list = txt_toList(vanishing_points_list_info, 
+        parent_path=input_path)
+
+    # Otherwise, just copy it
+
+    else:
+
+        vanishing_points_list = deepcopy(vanishing_points_list_info)
 
     # Iterates through the list of vanishing points
 
@@ -114,25 +135,50 @@ y_max, verbose=False):
         
         # Gets the rays central direction
 
-        rays_central_direction = point_dict["rays central direction"]
+        rays_central_directions = point_dict["rays central direction"]
 
         # Verifies if it is a list
 
-        if (not isinstance(rays_central_direction, list)) or (len(
-        rays_central_direction)!=2):
+        if (not isinstance(rays_central_directions, list)):
 
             raise TypeError("The 'rays central direction' key provided"+
             " to create the "+str(index_point+1)+"-th vanishing point "+
-            "is not a list with 2 elements within, such as [x, y]. Cur"+
-            "rently it is: "+str(rays_central_direction))
+            "is not a list with 2 elements within, such as [x, y], or "+
+            "it can be a list of lists, where each sublist is a direct"+
+            "ion. Currently it is: "+str(rays_central_directions))
         
-        # Transforms the ray central direction to a numpy array, and
-        # normalizes it, then scales by the maximum ray length
+        # Verifies if there are multiple directions
 
-        rays_central_direction = np.array(rays_central_direction)
+        elif isinstance(rays_central_directions[0], list):
 
-        rays_central_direction = (1/np.linalg.norm(rays_central_direction
-        )*rays_central_direction)
+            # Iterates through the different directions
+
+            for index, direction in enumerate(rays_central_directions):
+
+                # Transforms the ray central direction to a numpy array, 
+                # and normalizes it, then scales by the maximum ray 
+                # length
+
+                direction = np.array(direction)
+
+                # Reassembles to the list of directions
+
+                rays_central_directions[index] = (1/np.linalg.norm(
+                direction)*direction)
+
+        # Otherwise, it there is just a single direction
+
+        else:
+        
+            # Transforms the ray central direction to a numpy array, and
+            # normalizes it, then scales by the maximum ray length
+
+            rays_central_directions = np.array(rays_central_directions)
+
+            # Transforms into a list of a single element
+
+            rays_central_directions = [1/np.linalg.norm(
+            rays_central_directions)*rays_central_directions]
         
         # Gets the angle amplitude
 
@@ -159,55 +205,34 @@ y_max, verbose=False):
             raise TypeError("The 'number of rays' key provided to crea"+
             "te the "+str(index_point+1)+"-th vanishing point is not a"+
             "n integer or is less than 2. Currently, it is: "+str(
-            number_of_rays))
+            number_of_rays)+", whose type is: "+str(type(number_of_rays)))
         
         # Iterates through the number of points. But forces an odd number
         # of points to have a ray over the central direction
 
         half_number_of_points = int(np.floor(number_of_rays*0.5))+1
 
-        for i in range(half_number_of_points):
+        # Iterates through the rays
 
-            ############################################################
-            #                         Right ray                        #
-            ############################################################
+        for rays_central_direction in rays_central_directions:
 
-            # Calculates the angle to this ray, and converts to radians
+            for i in range(half_number_of_points):
 
-            ray_angle = angle_amplitude*(i/(half_number_of_points-1))*(
-            np.pi/180)
+                ########################################################
+                #                       Right ray                      #
+                ########################################################
 
-            # Calculates the rotation matrix for the angle to the right
+                # Calculates the angle to this ray, and converts to ra-
+                # dians
 
-            R = np.array([[np.cos(ray_angle), -np.sin(ray_angle)], [
-            np.sin(ray_angle),  np.cos(ray_angle)]])
+                ray_angle = angle_amplitude*(i/(half_number_of_points-1)
+                )*(np.pi/180)
 
-            # Gets the initial and final points on the boundary
+                # Calculates the rotation matrix for the angle to the 
+                # right
 
-            initial_point, final_point = clip_lines(R@(
-            rays_central_direction), coordinates, x_min, x_max, y_min,
-            y_max)
-
-            # Plots the right ray
-
-            if initial_point is not None:
-
-                axes_object.plot([initial_point[0], final_point[0]], [
-                initial_point[1], final_point[1]], color=color, 
-                linewidth=thickness, zorder=depth_order, clip_on=True)
-
-            ############################################################
-            #                         Left ray                         #
-            ############################################################
-
-            # Calculates the rotation matrix for the angle to the left
-
-            R = np.array([[np.cos(-ray_angle), -np.sin(-ray_angle)], [
-            np.sin(-ray_angle),  np.cos(-ray_angle)]])
-
-            # Skips the left ray if the angle is 0
-
-            if abs(ray_angle)>1E-7:
+                R = np.array([[np.cos(ray_angle), -np.sin(ray_angle)], [
+                np.sin(ray_angle),  np.cos(ray_angle)]])
 
                 # Gets the initial and final points on the boundary
 
@@ -215,7 +240,7 @@ y_max, verbose=False):
                 rays_central_direction), coordinates, x_min, x_max, 
                 y_min, y_max)
 
-                # Plots the left ray
+                # Plots the right ray
 
                 if initial_point is not None:
 
@@ -223,6 +248,35 @@ y_max, verbose=False):
                     [initial_point[1], final_point[1]], color=color, 
                     linewidth=thickness, zorder=depth_order, clip_on=
                     True)
+
+                ########################################################
+                #                       Left ray                       #
+                ########################################################
+
+                # Calculates the rotation matrix for the angle to the 
+                # left
+
+                R = np.array([[np.cos(-ray_angle), -np.sin(-ray_angle)], 
+                [np.sin(-ray_angle),  np.cos(-ray_angle)]])
+
+                # Skips the left ray if the angle is 0
+
+                if abs(ray_angle)>1E-7:
+
+                    # Gets the initial and final points on the boundary
+
+                    initial_point, final_point = clip_lines(R@(
+                    rays_central_direction), coordinates, x_min, x_max, 
+                    y_min, y_max)
+
+                    # Plots the left ray
+
+                    if initial_point is not None:
+
+                        axes_object.plot([initial_point[0], final_point[
+                        0]], [initial_point[1], final_point[1]], color=
+                        color, linewidth=thickness, zorder=depth_order, 
+                        clip_on=True)
 
     # Returns the plotted object
 

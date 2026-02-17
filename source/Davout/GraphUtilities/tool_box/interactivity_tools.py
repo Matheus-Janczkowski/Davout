@@ -31,12 +31,28 @@ from ...PythonicUtilities.file_handling_tools import save_string_into_txt, txt_t
 
 from ..tool_box import curves_setter
 
+# Sets a class of data that is communicated from and to the interactive
+# window
+
+class InteractiveWindowInfo:
+
+    def __init__(self, flag_redraw, add_overlaying_grid, 
+    vanishing_points_list,tolerance):
+        
+        self.flag_redraw = flag_redraw
+        
+        self.add_overlaying_grid = add_overlaying_grid
+
+        self.vanishing_points_list = vanishing_points_list
+
+        self.tolerance = tolerance
+
 # Defines a function to create an interactive window
 
 def create_interactive_window(general_axes, collage, old_x_min, 
 old_x_max, old_y_min, old_y_max, new_x_min, new_x_max, new_y_min, 
 new_y_max, input_path, depth_order, arrows_and_lines_file,
-flag_redraw, verbose=False):
+interactive_window_info, verbose=False):
 
     # Zoom axes to the bounding box
 
@@ -71,7 +87,7 @@ flag_redraw, verbose=False):
 
     def on_close(event):
         
-        nonlocal flag_redraw, points_list, manual_close
+        nonlocal interactive_window_info, points_list, manual_close
 
         # Treats the case where the event-loop is closed by the a key-
         # board shortcut
@@ -80,7 +96,7 @@ flag_redraw, verbose=False):
 
             print("[CLOSE] Window closed by user.", flush=True)
             
-            flag_redraw = False
+            interactive_window_info.flag_redraw = False
             
             points_list = []
 
@@ -213,25 +229,156 @@ flag_redraw, verbose=False):
 
     def on_key(event):
 
-        nonlocal points_list, general_axes, flag_redraw, manual_close, arrows_and_lines_list, flag_input
+        nonlocal points_list, general_axes, manual_close, arrows_and_lines_list, flag_input, interactive_window_info
 
         # If enter is pressed, saves the image and do not resume redraw-
         # ing
 
         if event.key=="enter":
 
-            flag_redraw = False
+            interactive_window_info.flag_redraw = False
 
             manual_close = False
 
             plt.close(collage)
+
+        # If C is pressed, toggle the addition of grid
+
+        elif event.key=="c":
+
+            if interactive_window_info.add_overlaying_grid:
+
+                print("Disables the overlaying grid\n")
+
+                interactive_window_info.add_overlaying_grid = False 
+
+            else:
+
+                print("Enables the overlaying grid\n")
+
+                interactive_window_info.add_overlaying_grid = True
+
+        # If V is pressed, adds a new point with lines connecting to the
+        # vanishing points
+
+        elif event.key=="v":
+
+            if points_list:
+
+                print("Adds new rays from the vanishing points to a se"+
+                "lected point\nPress R to redraw the image if you want"+
+                " to see the perspective lines immediatly")
+
+                for new_point in points_list:
+
+                    # Initializes a list of directions from the last ad-
+                    # ded point to the provided vanishing points
+
+                    rays_directions = []
+
+                    # Iterates through the vanishing points
+
+                    for vanishing_point in interactive_window_info.vanishing_points_list:
+
+                        # Verifies if this is not another perspective 
+                        # point
+
+                        flag_get_ray = True
+
+                        if ("type" in vanishing_point) and vanishing_point[
+                        "type"]=="perspective point":
+                            
+                            flag_get_ray = False 
+
+                        # Updates only if the point is a proper vanishing 
+                        # point
+
+                        if flag_get_ray:
+
+                            # Gets the coordinates
+
+                            ray_coordinates = vanishing_point["coordin"+
+                            "ates"]
+
+                            # Gets the directions
+
+                            rays_directions.append([ray_coordinates[0]-
+                            new_point[0], ray_coordinates[1]-new_point[1
+                            ]])
+
+                    # Assembles the dictionary of this ray point
+
+                    perspective_point = {"coordinates": new_point, "ra"+
+                    "ys central direction": rays_directions, "angle am"+
+                    "plitude": 0.0, "number of rays": 2,"color": "black", 
+                    "type": "perspective point"}
+
+                    # Adds this dictionary to the list of vanishing 
+                    # points
+
+                    interactive_window_info.vanishing_points_list.append(
+                    perspective_point)
+
+                # Substitutes the X markers by square markers, and cleans 
+                # the list of points
+
+                points_list, general_axes = curves_setter.substitute_markers(
+                points_list, general_axes, depth_order, collage)
+
+            else:
+
+                print("Tries to add new rays from the vanishing points"+
+                " to a selected point. But there is no selected point\n")
+
+        # If CTRL+V is pressed, deletes the last point with lines connec-
+        # ting to the vanishing points
+
+        elif event.key=="ctrl+v":
+
+            if interactive_window_info.vanishing_points_list:
+
+                removed = interactive_window_info.vanishing_points_list[-1]
+
+                # Takes input
+
+                flag_input = True 
+
+                response = input("\nAre you sure you want to remove th"+
+                "e last vanishing or perspective point? Type 'y' if so"+
+                ": ")
+
+                # If it is different than y, moves forward
+
+                if response!="y":
+
+                    print("\nCancels removing the following element:\n"+
+                    str(removed))
+
+                    flag_input = False 
+
+                    return None
+                
+                # Removes the last point and disables the input flag
+
+                interactive_window_info.vanishing_points_list = (
+                interactive_window_info.vanishing_points_list[0:-1])
+
+                print("Type R if you want to redraw the image immediat"+
+                "ly")
+                
+                flag_input = False 
+
+            else:
+
+                print("Tries to remove vanishing points or perspective"+
+                "points. But there is no such point to be deleted\n")
 
         # Otherwise, if 'r' is pressed, saves the drawing and redraws a-
         # gain
 
         elif event.key=="r":
 
-            flag_redraw = True
+            interactive_window_info.flag_redraw = True
 
             manual_close = False
 
@@ -362,7 +509,7 @@ flag_redraw, verbose=False):
 
                 # Triggers redrawing
                 
-                flag_redraw = True
+                interactive_window_info.flag_redraw = True
 
                 manual_close = False
 
@@ -384,7 +531,9 @@ flag_redraw, verbose=False):
 
             points_list, general_axes, arrows_and_lines_list = curves_setter.set_curve(
             event.key, arrows_and_lines_list, arrows_and_lines_file, 
-            input_path, depth_order, collage, points_list, general_axes)
+            input_path, depth_order, collage, points_list, general_axes,
+            interactive_window_info.tolerance, 
+            interactive_window_info.vanishing_points_list)
 
             # Disables the flag input again
 
@@ -452,7 +601,7 @@ flag_redraw, verbose=False):
 
     collage.canvas.mpl_connect("close_event", on_close)
 
-    print("\nInteractive preview enabled (terminal output).", flush=True)
+    print("\n1. Interactive preview enabled (terminal output).", flush=True)
 
     print("Move mouse ............................... => see coordinat"+
     "es", flush=True)
@@ -460,11 +609,19 @@ flag_redraw, verbose=False):
     print("Click .................................... => print coordin"+
     "ates", flush=True)
 
+    print("\n2. Deletion:")
+
     print("Press CTRL+Z ............................. => delete the la"+
     "st point", flush=True)
 
     print("Press CTRL+X ............................. => delete the la"+
     "st line", flush=True)
+
+    print("Press CTRL+V ............................. => delete the la"+
+    "st perspective point with lines connecting to the vanishing point"+
+    "s, or a vanishing point itself", flush=True)
+
+    print("\n3. Zoom:")
 
     print("Press CTRL and scroll with the mouse ..... => zoom in and o"+
     "ut", flush=True)
@@ -472,12 +629,30 @@ flag_redraw, verbose=False):
     print("Press the mouse scroll and hold it pressed => drag the figu"+
     "re around", flush=True)
 
+    print("\n4. Redrawing and saving:")
+
     print("Press key R .............................. => redraw and sa"+
     "ve the figure", flush=True)
+
+    print("Press ENTER .............................. => save figure a"+
+    "nd stops the drawing loop", flush=True)
+
+    print("\n5. Data query:")
 
     print("Press key T .............................. => type the name"+
     " of the list of points", flush=
     True)
+
+    print("\n6. Visibility:")
+
+    print("Press key C .............................. => toggle the ad"+
+    "dition or not of the grid", flush=True)
+
+    print("Press key V .............................. => add a new per"+
+    "spective point with lines connecting to the vanishing points", 
+    flush=True)
+
+    print("\n7.1. Spline curves:")
 
     print("Press key Q .............................. => transform the"+
     " last points in a spline curve", flush=True)
@@ -488,6 +663,8 @@ flag_redraw, verbose=False):
     print("Press key E .............................. => transform the"+
     " last points in an arrow with a spline stem", flush=True)
 
+    print("\n7.2. Polygonal curves:")
+
     print("Press key A .............................. => transform the"+
     " last points in a polygonal curve", flush=True)
 
@@ -496,9 +673,6 @@ flag_redraw, verbose=False):
 
     print("Press key D .............................. => transform the"+
     " last points in an arrow with a polygonal stem", flush=True)
-
-    print("Press ENTER .............................. => continue and "+
-    "save image\n", flush=True)
 
     # Shows the image
 
@@ -510,4 +684,4 @@ flag_redraw, verbose=False):
 
     general_axes.set_ylim(old_y_min, old_y_max)
 
-    return flag_redraw
+    return interactive_window_info

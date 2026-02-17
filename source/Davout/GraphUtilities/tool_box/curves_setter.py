@@ -1,6 +1,8 @@
 # Routine to set the different curves in the event function triggered by
 # keyboard shortcuts
 
+from copy import deepcopy
+
 from ...PythonicUtilities.file_handling_tools import list_toTxt
 
 from ...PythonicUtilities.string_tools import string_toList
@@ -8,11 +10,81 @@ from ...PythonicUtilities.string_tools import string_toList
 from ..tool_box import collage_classes
 
 def set_curve(key, arrows_and_lines_list, arrows_and_lines_file, 
-input_path, depth_order, collage, points_list, general_axes):
+input_path, depth_order, collage, points_list, general_axes, tolerance,
+vanishing_points):
     
     # Initializes the dictionary with the curve information
 
     curve_dictionary = None
+
+    # Creates a copy of the points
+
+    points_list_copy = deepcopy(points_list)
+
+    # Initializes the list of points to compare against
+
+    comparison_points = []
+
+    # Iterates through the points in the curves already created
+
+    for curve in arrows_and_lines_list:
+
+        # If it is a spline
+
+        if "spline points" in curve:
+
+            # Gets the list of point and appends to the list of points
+            # to compare
+
+            comparison_points.extend(curve["spline points"])
+
+        # If it is a polygonal
+
+        elif "polygonal points" in curve:
+
+            # Gets the list of point and appends to the list of points
+            # to compare
+
+            comparison_points.extend(curve["polygonal points"])
+
+        # If it has a start point
+
+        if "start point" in curve:
+
+            comparison_points.append(curve["start point"])
+
+        # If it has an end point
+
+        if "end point" in curve:
+
+            comparison_points.append(curve["end point"])
+
+    # Iterates through the perspective points to gather possible matching
+    # points
+
+    for perspective_point in vanishing_points:
+
+        # Appends the point
+
+        comparison_points.append(perspective_point["coordinates"])
+
+    # Iterates over the points given for this curve
+
+    for index, point in enumerate(points_list_copy):
+
+        # Verifies if this point is close to any point of the comparison
+        # points
+
+        for compared_point in comparison_points:
+
+            if (((compared_point[0]-point[0])**2)+((compared_point[1]-
+            point[1])**2))<(tolerance**2):
+                
+                # Substitutes the point for the compared one
+
+                points_list_copy[index] = compared_point
+
+                break
 
     ####################################################################
     #                           Spline curve                           #
@@ -31,12 +103,6 @@ input_path, depth_order, collage, points_list, general_axes):
 
         # Converts these strings 
 
-        thickness = ""
-
-        line_style = ""
-
-        color = ""
-
         thickness = convert_string(thickness, 0.2)
 
         line_style = convert_string(line_style, "solid")
@@ -47,7 +113,7 @@ input_path, depth_order, collage, points_list, general_axes):
 
         curve_dictionary = {"thickness": thickness, "arrow style": "no"+
         " arrow", "line style": line_style, "color": color, "spline po"+
-        "ints": points_list}
+        "ints": points_list_copy}
 
     ####################################################################
     #                        Closed spline curve                       #
@@ -81,8 +147,8 @@ input_path, depth_order, collage, points_list, general_axes):
 
         curve_dictionary = {"thickness": thickness, "arrow style": "no"+
         " arrow", "line style": line_style, "color": color, "spline po"+
-        "ints": points_list, "closed path": True, "fill path with colo"+
-        "r": fill_color}
+        "ints": points_list_copy, "closed path": True, "fill path with"+
+        " color": fill_color}
 
     ####################################################################
     #                      Arrow with spline stem                      #
@@ -116,7 +182,7 @@ input_path, depth_order, collage, points_list, general_axes):
 
         curve_dictionary = {"thickness": thickness, "arrow style": 
         arrow_style, "line style": line_style, "color": color, "spline"+
-        " points": points_list}
+        " points": points_list_copy}
 
     ####################################################################
     #                          Polygonal curve                         #
@@ -135,12 +201,6 @@ input_path, depth_order, collage, points_list, general_axes):
 
         # Converts these strings 
 
-        thickness = ""
-
-        line_style = ""
-
-        color = ""
-
         thickness = convert_string(thickness, 0.2)
 
         line_style = convert_string(line_style, "solid")
@@ -151,7 +211,7 @@ input_path, depth_order, collage, points_list, general_axes):
 
         curve_dictionary = {"thickness": thickness, "arrow style": "no"+
         " arrow", "line style": line_style, "color": color, "polygonal"+
-        " points": points_list}
+        " points": points_list_copy}
 
     ####################################################################
     #                      Closed polygonal curve                      #
@@ -185,8 +245,8 @@ input_path, depth_order, collage, points_list, general_axes):
 
         curve_dictionary = {"thickness": thickness, "arrow style": "no"+
         " arrow", "line style": line_style, "color": color, "polygonal"+
-        " points": points_list, "closed path": True, "fill path with c"+
-        "olor": fill_color}
+        " points": points_list_copy, "closed path": True, "fill path w"+
+        "ith color": fill_color}
 
     ####################################################################
     #                     Arrow with polygonal stem                    #
@@ -220,7 +280,7 @@ input_path, depth_order, collage, points_list, general_axes):
 
         curve_dictionary = {"thickness": thickness, "arrow style": 
         arrow_style, "line style": line_style, "color": color, "polygo"+
-        "nal points": points_list}
+        "nal points": points_list_copy}
 
     # Appends to the list of arrows and lines and saves the later to the 
     # appropriate txt file
@@ -232,11 +292,11 @@ input_path, depth_order, collage, points_list, general_axes):
         list_toTxt(arrows_and_lines_list, arrows_and_lines_file, 
         parent_path=input_path)
 
-    # Substitutes the X markers by square markers, and cleans the list 
-    # of points
+        # Substitutes the X markers by square markers, and cleans the 
+        # list of points
 
-    points_list, general_axes = substitute_markers(points_list,
-    general_axes, depth_order, collage)
+        points_list, general_axes = substitute_markers(points_list,
+        general_axes, depth_order, collage)
 
     return points_list, general_axes, arrows_and_lines_list
 
@@ -308,7 +368,8 @@ def convert_string(string, default_value):
     # If the string is still a string and the default value is not None,
     # returns the default value
 
-    if isinstance(string, str) and (default_value is not None):
+    if isinstance(string, str) and (default_value is not None) and (
+    not isinstance(default_value, str)):
 
         return default_value
     
