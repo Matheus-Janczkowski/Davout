@@ -8,7 +8,8 @@ from ..tool_box.collage_classes import ColorMiscellany
 # points. Each point has a corresponding dictionary
 
 def perspective_lines_from_vanishing_points(axes_object, 
-vanishing_points_list, thickness, depth_order, x_min, x_max, y_min, y_max):
+vanishing_points_list, thickness, depth_order, x_min, x_max, y_min, 
+y_max, verbose=False):
     
     # Instantiates the color class
 
@@ -224,6 +225,10 @@ vanishing_points_list, thickness, depth_order, x_min, x_max, y_min, y_max):
                     True)
 
     # Returns the plotted object
+
+    if verbose:
+
+        print("Finishes printing the perspective lines\n")
 
     return axes_object
 

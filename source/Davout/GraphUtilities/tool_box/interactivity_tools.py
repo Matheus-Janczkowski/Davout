@@ -3,6 +3,8 @@
 
 import matplotlib as mpl
 
+mpl.use('TkAgg')
+
 from time import time
 
 # Overrules some commands to free them for the curves defined here
@@ -27,12 +29,14 @@ from ..tool_box import collage_classes
 
 from ...PythonicUtilities.file_handling_tools import save_string_into_txt, txt_toList, list_toTxt
 
+from ..tool_box import curves_setter
+
 # Defines a function to create an interactive window
 
 def create_interactive_window(general_axes, collage, old_x_min, 
 old_x_max, old_y_min, old_y_max, new_x_min, new_x_max, new_y_min, 
 new_y_max, input_path, depth_order, arrows_and_lines_file,
-create_box_collage):
+flag_redraw, verbose=False):
 
     # Zoom axes to the bounding box
 
@@ -41,10 +45,6 @@ create_box_collage):
     general_axes.set_ylim(new_y_min, new_y_max)
 
     # Redraw before opening interactive window
-
-    collage.canvas.draw_idle()
-
-    plt.pause(0.05)
 
     collage.canvas.draw_idle()
 
@@ -63,6 +63,34 @@ create_box_collage):
     # Sets the initial point and the initial limits
 
     last_mouse_position = (0, 0)
+
+    # Function to handle the closing of the window by the X symbol. This
+    # function assures that the flag for redrawing is deactivated
+
+    manual_close = True
+
+    def on_close(event):
+        
+        nonlocal flag_redraw, points_list, manual_close
+
+        # Treats the case where the event-loop is closed by the a key-
+        # board shortcut
+
+        if manual_close:
+
+            print("[CLOSE] Window closed by user.", flush=True)
+            
+            flag_redraw = False
+            
+            points_list = []
+
+        # If the user has indeed set to close by clicking on X
+
+        else:
+
+            # Resets the flag for the next iteration
+
+            manual_close = True
 
     # When pressing the scroll
 
@@ -123,9 +151,11 @@ create_box_collage):
 
     last_zoom_time = 0
 
+    flag_input = False
+
     def on_motion(event):
 
-        nonlocal last_mouse_position, last_zoom_time
+        nonlocal last_mouse_position, last_zoom_time, flag_input
 
         # Controls time to not fire the event at each time. This pre-
         # vents event flooding
@@ -171,7 +201,8 @@ create_box_collage):
             
         # Otherwise, simply detect the mouse position
         
-        elif event.inaxes==general_axes and (event.xdata is not None):
+        elif event.inaxes==general_axes and (event.xdata is not None
+        ) and (not flag_input):
 
             # Prints coordinates to terminal continuously
 
@@ -182,12 +213,16 @@ create_box_collage):
 
     def on_key(event):
 
-        nonlocal points_list, general_axes
+        nonlocal points_list, general_axes, flag_redraw, manual_close, arrows_and_lines_list, flag_input
 
         # If enter is pressed, saves the image and do not resume redraw-
         # ing
 
         if event.key=="enter":
+
+            flag_redraw = False
+
+            manual_close = False
 
             plt.close(collage)
 
@@ -196,13 +231,13 @@ create_box_collage):
 
         elif event.key=="r":
 
+            flag_redraw = True
+
+            manual_close = False
+
             # Sets a variable informing to close the figure
 
             plt.close()
-
-            # Calls the collage function
-
-            create_box_collage()
 
         # Uses the key t to get string from the user
 
@@ -244,38 +279,8 @@ create_box_collage):
             # Substitutes the X markers by square markers, and cleans the
             # list of points
 
-            points_list, general_axes = substitute_markers(points_list,
-            general_axes, depth_order, collage)
-
-        # If a spline is to be saved
-
-        elif event.key=="q":
-
-            # Creates the dictionary to create this spline
-
-            spline_dictionary = {"thickness": 0.2, "arrow style": "no "+
-            "arrow", "line style": "solid", "color": "black", "spline "+
-            "points": points_list}
-
-            # Appends to the list of arrows and lines and saves the lat-
-            # ter to the appropriate txt file
-
-            arrows_and_lines_list.append(spline_dictionary)
-
-            print("Saves the spline")
-
-            list_toTxt(arrows_and_lines_list, arrows_and_lines_file,
-            parent_path=input_path)
-
-            print("Substitutes markers")
-
-            # Substitutes the X markers by square markers, and cleans the
-            # list of points
-
-            points_list, general_axes = substitute_markers(points_list,
-            general_axes, depth_order, collage)
-
-            print("Finalizes substituting markers")
+            points_list, general_axes = curves_setter.substitute_markers(
+            points_list, general_axes, depth_order, collage)
 
         # Detects Ctrl+Z to erase the last point
          
@@ -315,6 +320,75 @@ create_box_collage):
                     print("No markers left to delete", flush=True)
 
                 print("", flush=True)
+
+        # Detects Ctrl+X to erase the last curve
+         
+        elif event.key=="ctrl+x":
+
+            if arrows_and_lines_list:
+
+                removed = arrows_and_lines_list[-1]
+
+                # Takes input
+
+                flag_input = True 
+
+                response = input("\nAre you sure you want to remove th"+
+                "e last line? Type 'y' if so: ")
+
+                # If it is different than y, moves forward
+
+                if response!="y":
+
+                    print("\nCancels removing the following element:\n"+
+                    str(removed))
+
+                    flag_input = False 
+
+                    return None
+                
+                # Removes the last line and disables the input flag
+
+                arrows_and_lines_list = arrows_and_lines_list[0:-1]
+                
+                flag_input = False 
+                
+                print(f"[UNDO] removed {removed}", flush= True)
+
+                # Rewrites the arrows list
+
+                list_toTxt(arrows_and_lines_list, arrows_and_lines_file,
+                parent_path=input_path)
+
+                # Triggers redrawing
+                
+                flag_redraw = True
+
+                manual_close = False
+
+                plt.close()
+
+            else:
+
+                print("[UNDO] no curves left", flush=True)
+
+                print("", flush=True)
+
+        # Verifies if one of the pre-fabricated curves were asked
+
+        else:
+
+            # Enables the flag input to disable the printing of MOVE
+
+            flag_input = True
+
+            points_list, general_axes, arrows_and_lines_list = curves_setter.set_curve(
+            event.key, arrows_and_lines_list, arrows_and_lines_file, 
+            input_path, depth_order, collage, points_list, general_axes)
+
+            # Disables the flag input again
+
+            flag_input = False
 
     # Function to zoom in and out using mouse scroll
 
@@ -376,16 +450,55 @@ create_box_collage):
 
     collage.canvas.mpl_connect("motion_notify_event", on_motion)
 
+    collage.canvas.mpl_connect("close_event", on_close)
+
     print("\nInteractive preview enabled (terminal output).", flush=True)
 
-    print("Move mouse → see coordinates", flush=True)
+    print("Move mouse ............................... => see coordinat"+
+    "es", flush=True)
 
-    print("Click → print coordinates", flush=True)
+    print("Click .................................... => print coordin"+
+    "ates", flush=True)
 
-    print("Press key T → type the name of the list of points", flush=
+    print("Press CTRL+Z ............................. => delete the la"+
+    "st point", flush=True)
+
+    print("Press CTRL+X ............................. => delete the la"+
+    "st line", flush=True)
+
+    print("Press CTRL and scroll with the mouse ..... => zoom in and o"+
+    "ut", flush=True)
+
+    print("Press the mouse scroll and hold it pressed => drag the figu"+
+    "re around", flush=True)
+
+    print("Press key R .............................. => redraw and sa"+
+    "ve the figure", flush=True)
+
+    print("Press key T .............................. => type the name"+
+    " of the list of points", flush=
     True)
 
-    print("Press ENTER → continue and save image\n", flush=True)
+    print("Press key Q .............................. => transform the"+
+    " last points in a spline curve", flush=True)
+
+    print("Press key W .............................. => transform the"+
+    " last points in a closed spline curve", flush=True)
+
+    print("Press key E .............................. => transform the"+
+    " last points in an arrow with a spline stem", flush=True)
+
+    print("Press key A .............................. => transform the"+
+    " last points in a polygonal curve", flush=True)
+
+    print("Press key S .............................. => transform the"+
+    " last points in a closed polygonal curve", flush=True)
+
+    print("Press key D .............................. => transform the"+
+    " last points in an arrow with a polygonal stem", flush=True)
+
+    print("Press ENTER .............................. => continue and "+
+    "save image\n", flush=True)
 
     # Shows the image
 
@@ -397,35 +510,4 @@ create_box_collage):
 
     general_axes.set_ylim(old_y_min, old_y_max)
 
-    # Returns None just for the sake of returning something
-
-    return None
-
-# Defines a function to substitute the X markers by square markers when
-# points defined by the user are saved
-
-def substitute_markers(points_list, general_axes, depth_order, collage):
-
-    # Removes the X's and switches them by squares
-
-    for point in points_list:
-
-        if general_axes.lines:
-
-            general_axes.lines[-1].remove()
-
-    # Plots the squares
-
-    for point in points_list:
-
-        general_axes.plot(point[0], point[1], marker="s", color="black", 
-        zorder=depth_order, markersize=
-        collage_classes.milimeters_to_points(2.0), mew=2)
-
-    collage.canvas.draw_idle()
-
-    # Cleans the list of points
-
-    points_list = []
-
-    return points_list, general_axes
+    return flag_redraw

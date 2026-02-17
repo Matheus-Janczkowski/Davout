@@ -12,7 +12,7 @@ from matplotlib.path import Path
 
 def plot_arrows_and_lines(general_axes, arrows_and_lines_list, 
 colors_class, line_style_class, arrow_style_class, tolerance, 
-depth_order):
+depth_order, verbose=False):
 
     # Sets a list of necessary keys
 
@@ -225,7 +225,9 @@ depth_order):
 
             else:
 
-                print("Inserts arrow with cubic Bézier curve\n")
+                if verbose:
+
+                    print("Inserts arrow with cubic Bézier curve\n")
             
                 # Adds the starting point to the spline points
 
@@ -353,7 +355,9 @@ depth_order):
 
             else:
 
-                print("Inserts arrow with polygonal curve\n")
+                if verbose:
+
+                    print("Inserts arrow with polygonal curve\n")
             
                 # Adds the starting point to the spline points
 
@@ -395,7 +399,9 @@ depth_order):
 
         else:
 
-            print("Inserts arrow with linear stem\n")
+            if verbose:
+
+                print("Inserts arrow with linear stem\n")
 
             # Appends the code instruction to create the last segment
             

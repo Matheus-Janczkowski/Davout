@@ -9,7 +9,7 @@ from matplotlib.transforms import Affine2D
 # Defines a function to plot boxes from a list of instructions
 
 def plot_boxes(general_axes, boxes_list, colors_class, line_style_class, 
-alignments_class, depth_order):
+alignments_class, depth_order, verbose=False):
     
     # Sets a list of necessary keys
 
@@ -378,8 +378,10 @@ alignments_class, depth_order):
 
         # Inserts the box into the figure
 
-        print("Adds box with '"+str(shape)+"' at point "+str(position)+
-        " with 'origin point' as '"+str(origin_point)+"'\n")
+        if verbose:
+
+            print("Adds box with '"+str(shape)+"' at point "+str(position
+            )+" with 'origin point' as '"+str(origin_point)+"'\n")
 
         general_axes.add_patch(new_box)
     

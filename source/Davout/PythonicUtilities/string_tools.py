@@ -543,7 +543,7 @@ def convert_value(value):
 # Defines a function to try to convert string variables to some useful
 # other formats
 
-def convert_string(string):
+def convert_string(string, return_none_if_fail=False):
 
     # Tries to convert it to integer
 
@@ -562,6 +562,12 @@ def convert_string(string):
         except:
 
             pass
+
+    # If the flag to return None in case of failure to convert
+
+    if return_none_if_fail and isinstance(string, str):
+
+        return None
 
     return string
 

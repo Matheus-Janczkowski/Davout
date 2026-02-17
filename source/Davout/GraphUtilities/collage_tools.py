@@ -66,8 +66,7 @@ aspect_ratio='auto', adjustable=None, layout_width_milimeters=210.0,
 layout_height_milimeters=297.0, add_overlaying_grid=False, tolerance=
 1E-5, grid_annotation_length=10, rule_fontsize=6, rule_number_offset=0.5,
 vanishing_points_list=None, save_lists_to_txt=False, interactive_preview=
-False, arrows_and_lines_file="arrows_and_lines_list", 
-reused_variables_in_recurrence_mode={}):
+False, arrows_and_lines_file="arrows_and_lines_list"):
     
     # Initializes the class of colors, the class of alignments, and the 
     # class of line styles
@@ -84,8 +83,7 @@ reused_variables_in_recurrence_mode={}):
 
     if output_path:
 
-        output_file_name = path_tools.verify_path(output_path, 
-        output_file)
+        output_file = path_tools.verify_path(output_path, output_file)
 
     # If the output path is None, but the input path is given, makes the
     # former equal to the latter
@@ -94,386 +92,500 @@ reused_variables_in_recurrence_mode={}):
 
         output_path = input_path
 
-        output_file_name = path_tools.verify_path(output_path, 
-        output_file)
+        output_file = path_tools.verify_path(output_path, output_file)
 
-    else:
+    # Initializes a flag to tell if the process of redrawing is to be
+    # carried out iteratively
 
-        output_file_name = deepcopy(output_file)
+    flag_redraw = True 
 
-    # Initializes the collage using the given information
+    while flag_redraw:
 
-    collage = plt.figure(figsize=(layout_width_milimeters/25.4, 
-    layout_height_milimeters/25.4))
+        # Initializes the collage using the given information
 
-    # Sets axes for all items
+        collage = plt.figure(figsize=(layout_width_milimeters/25.4, 
+        layout_height_milimeters/25.4))
 
-    general_axes = collage.add_axes([0, 0, 1, 1])
+        # Sets axes for all items
 
-    general_axes.set_xlim(0, layout_width_milimeters)
+        general_axes = collage.add_axes([0, 0, 1, 1])
 
-    general_axes.set_ylim(0, layout_height_milimeters)
+        general_axes.set_xlim(0, layout_width_milimeters)
 
-    general_axes.set_aspect(aspect_ratio, adjustable=adjustable)
+        general_axes.set_ylim(0, layout_height_milimeters)
 
-    general_axes.axis("off") 
+        general_axes.set_aspect(aspect_ratio, adjustable=adjustable)
 
-    # Initializes the counter of elements in depth
+        general_axes.axis("off") 
 
-    depth_order = 0
+        # Initializes the counter of elements in depth
 
-    # Verifies if the list of boxes is not None
+        depth_order = 0
 
-    if (boxes_list is not None):
+        # Verifies if the list of boxes is not None
 
-        print("#######################################################"+
-        "#################\n#                            Making of box"+
-        "es                           #\n#############################"+
-        "###########################################\n")
+        if boxes_list is not None:
 
-        # Verifies if boxes list is a string. If so, it is a file path 
-        # with the list to be read
+            if verbose:
 
-        if isinstance(boxes_list, str):
+                print("###############################################"+
+                "#########################\n#                         "+
+                "   Making of boxes                           #\n#####"+
+                "#####################################################"+
+                "##############\n")
 
-            read_boxes_list = txt_toList(boxes_list, parent_path=
-            input_path)
+            # Verifies if boxes list is a string. If so, it is a file 
+            # path with the list to be read
 
-            general_axes, depth_order = plot_boxes(general_axes, 
-            read_boxes_list, colors_class, line_style_class, 
-            alignments_class, depth_order)
+            if isinstance(boxes_list, str):
 
-        # Otherwise, uses it plainly
-
-        else:
-
-            # If the given list is to be saved as a txt file
-
-            if save_lists_to_txt:
-
-                list_toTxt(boxes_list, "boxes_list", parent_path=
+                read_boxes_list = txt_toList(boxes_list, parent_path=
                 input_path)
 
-            # Plots the boxes
+                general_axes, depth_order = plot_boxes(general_axes, 
+                read_boxes_list, colors_class, line_style_class, 
+                alignments_class, depth_order, verbose=verbose)
 
-            general_axes, depth_order = plot_boxes(general_axes, 
-            boxes_list, colors_class, line_style_class, 
-            alignments_class, depth_order)
+            # Otherwise, uses it plainly
 
-    # Verifies if the dictionary of input figures is not None
+            else:
 
-    if (input_image_list is not None):
+                # If the given list is to be saved as a txt file
 
-        print("#######################################################"+
-        "#################\n#                         Insertion of fig"+
-        "ures                         #\n#############################"+
-        "###########################################\n")
+                if save_lists_to_txt:
 
-        # Verifies if images list is a string. If so, it is a file path 
-        # with the list to be read
+                    list_toTxt(boxes_list, "boxes_list", parent_path=
+                    input_path)
 
-        if isinstance(input_image_list, str):
+                # Plots the boxes
 
-            read_input_image_list = txt_toList(input_image_list, 
-            parent_path=input_path)
+                general_axes, depth_order = plot_boxes(general_axes, 
+                boxes_list, colors_class, line_style_class, 
+                alignments_class, depth_order, verbose=verbose)
 
-            general_axes, depth_order = plot_images(general_axes, 
-            read_input_image_list, alignments_class, input_path, verbose, 
-            depth_order)
+        # Verifies if the dictionary of input figures is not None
 
-        else:
+        if input_image_list is not None:
 
-            # If the given list is to be saved as a txt file
+            if verbose:
 
-            if save_lists_to_txt:
+                print("###############################################"+
+                "#########################\n#                         "+
+                "Insertion of figures                         #\n#####"+
+                "#####################################################"+
+                "##############\n")
 
-                list_toTxt(input_image_list, "input_image_list", 
+            # Verifies if images list is a string. If so, it is a file 
+            # path with the list to be read
+
+            if isinstance(input_image_list, str):
+
+                read_input_image_list = txt_toList(input_image_list, 
                 parent_path=input_path)
 
-            # Plots the images
+                general_axes, depth_order = plot_images(general_axes, 
+                read_input_image_list, alignments_class, input_path, 
+                verbose, depth_order)
 
-            general_axes, depth_order = plot_images(general_axes, 
-            input_image_list, alignments_class, input_path, verbose, 
-            depth_order)
+            else:
 
-    # Verifies if the list of input text excerpts is not None
+                # If the given list is to be saved as a txt file
 
-    if (input_text_list is not None):
+                if save_lists_to_txt:
 
-        print("#######################################################"+
-        "#################\n#                        Making of text ex"+
-        "cerpts                       #\n#############################"+
-        "###########################################\n")
+                    list_toTxt(input_image_list, "input_image_list", 
+                    parent_path=input_path)
 
-        # Verifies if text list is a string. If so, it is a file path 
-        # with the list to be read
+                # Plots the images
 
-        if isinstance(input_text_list, str):
+                general_axes, depth_order = plot_images(general_axes, 
+                input_image_list, alignments_class, input_path, verbose, 
+                depth_order)
 
-            read_input_text_list = txt_toList(input_text_list, 
-            parent_path=input_path)
+        # Verifies if the list of input text excerpts is not None
 
-            # Plots the text excerpts
+        if input_text_list is not None:
 
-            general_axes, depth_order = plot_text_excerpts(general_axes,
-            read_input_text_list, alignments_class, verbose, depth_order)
+            if verbose:
 
-        else:
+                print("###############################################"+
+                "#########################\n#                        M"+
+                "aking of text excerpts                       #\n#####"+
+                "#####################################################"+
+                "##############\n")
 
-            # If the given list is to be saved as a txt file
+            # Verifies if text list is a string. If so, it is a file 
+            # path with the list to be read
 
-            if save_lists_to_txt:
+            if isinstance(input_text_list, str):
 
-                list_toTxt(input_text_list, "input_text_list", 
+                read_input_text_list = txt_toList(input_text_list, 
                 parent_path=input_path)
 
-            # Plots the text excerpts
+                # Plots the text excerpts
 
-            general_axes, depth_order = plot_text_excerpts(general_axes,
-            input_text_list, alignments_class, verbose, depth_order)
+                general_axes, depth_order = plot_text_excerpts(
+                general_axes, read_input_text_list, alignments_class, 
+                verbose, depth_order)
 
-    # Verifies if the list of arrows is not None
+            else:
 
-    if (arrows_and_lines_list is not None):
+                # If the given list is to be saved as a txt file
+
+                if save_lists_to_txt:
+
+                    list_toTxt(input_text_list, "input_text_list", 
+                    parent_path=input_path)
+
+                # Plots the text excerpts
+
+                general_axes, depth_order = plot_text_excerpts(
+                general_axes, input_text_list, alignments_class, verbose, 
+                depth_order)
+
+        # Verifies if the list of arrows is not None
+
+        if arrows_and_lines_list is not None:
+
+            if verbose:
+
+                print("###############################################"+
+                "#########################\n#                      Mak"+
+                "ing of arrows and lines                      #\n#####"+
+                "#####################################################"+
+                "##############\n")
+
+            # Verifies if arrows list is a string. If so, it is a file 
+            # path with the list to be read
+
+            if isinstance(arrows_and_lines_list, str):
+
+                read_arrows_and_lines_list = txt_toList(
+                arrows_and_lines_list, parent_path=input_path)
+
+                # Plots the list of lines or arrows
+
+                general_axes, depth_order = plot_arrows_and_lines(
+                general_axes, read_arrows_and_lines_list, colors_class, 
+                line_style_class, arrow_style_class, tolerance, 
+                depth_order, verbose=verbose)
+
+            else:
+
+                # If the given list is to be saved as a txt file
+
+                if save_lists_to_txt:
+
+                    list_toTxt(arrows_and_lines_list, 
+                    arrows_and_lines_file, parent_path=input_path)
+
+                # Plots the list of lines or arrows
+
+                general_axes, depth_order = plot_arrows_and_lines(
+                general_axes, arrows_and_lines_list, colors_class,
+                line_style_class, arrow_style_class, tolerance, 
+                depth_order, verbose=verbose)
+
+        # Verifies if an overlaying grid is to be added
+
+        if add_overlaying_grid:
+
+            # Sets the lines thickness. The keys are the distance in mi-
+            # limeters from the last line to the next of the same kind. 
+            # The values are the line thickness
+
+            lines_thickness = OrderedDict([(1, 
+            collage_classes.milimeters_to_points(0.05)), (10, 
+            collage_classes.milimeters_to_points(0.18)), (50, 
+            collage_classes.milimeters_to_points(0.3))])
+
+            # Plots the vertical lines
+
+            for x in range(int(round(layout_width_milimeters))+1):
+
+                # Initializes the thickness
+
+                thickness = 0.1
+
+                # Gets the thickness of the line
+
+                for distance, thickness_trial in lines_thickness.items():
+
+                    # Verifies if the division by the distance has no 
+                    # rest
+
+                    if x%distance==0:
+
+                        thickness = deepcopy(thickness_trial)
+
+                # Plots the line
+
+                general_axes.plot([x, x], [0, layout_height_milimeters], 
+                color="black", linewidth=thickness, zorder=depth_order)
+
+            # Plots the horizontal lines
+
+            for y in range(int(round(layout_height_milimeters))+1):
+
+                # Initializes the thickness
+
+                thickness = 0.1
+
+                # Gets the thickness of the line
+
+                for distance, thickness_trial in lines_thickness.items():
+
+                    # Verifies if the division by the distance has no 
+                    # rest
+
+                    if y%distance==0:
+
+                        thickness = deepcopy(thickness_trial)
+
+                # Plots the line
+
+                general_axes.plot([0, layout_width_milimeters], [y, y], 
+                color="black", linewidth=thickness, zorder=depth_order)
+
+        # Saves the figure
 
         print("#######################################################"+
-        "#################\n#                      Making of arrows an"+
-        "d lines                      #\n#############################"+
+        "#################\n#                                Saving   "+
+        "                             #\n#############################"+
         "###########################################\n")
 
-        # Verifies if arrows list is a string. If so, it is a file path 
-        # with the list to be read
+        if no_padding:
 
-        if isinstance(arrows_and_lines_list, str):
+            # Gets what has been drawn only
 
-            read_arrows_and_lines_list = txt_toList(
-            arrows_and_lines_list, parent_path=input_path)
+            collage.canvas.draw_idle()
 
-            # Plots the list of lines or arrows
+            renderer = collage.canvas.get_renderer()
 
-            general_axes, depth_order = plot_arrows_and_lines(
-            general_axes, read_arrows_and_lines_list, colors_class, 
-            line_style_class, arrow_style_class, tolerance, depth_order)
+            bounding_box = []
 
-        else:
+            # Iterates through the elements of the drawing
 
-            # If the given list is to be saved as a txt file
+            for artist in general_axes.get_children():
 
-            if save_lists_to_txt:
+                # Skips non visible objects
 
-                list_toTxt(arrows_and_lines_list, arrows_and_lines_file, 
-                parent_path=input_path)
+                if not artist.get_visible():
 
-            # Plots the list of lines or arrows
+                    continue
 
-            general_axes, depth_order = plot_arrows_and_lines(
-            general_axes, arrows_and_lines_list, colors_class,
-            line_style_class, arrow_style_class, tolerance, depth_order)
+                # Skips axes background patch
 
-    # Verifies if an overlaying grid is to be added
+                if artist==general_axes.patch:
 
-    if add_overlaying_grid:
+                    continue
 
-        # Sets the lines thickness. The keys are the distance in milime-
-        # ters from the last line to the next of the same kind. The va-
-        # lues are the line thickness
+                # Skip spines
 
-        lines_thickness = OrderedDict([(1, 
-        collage_classes.milimeters_to_points(0.05)), (10, 
-        collage_classes.milimeters_to_points(0.18)), (50, 
-        collage_classes.milimeters_to_points(0.3))])
+                if artist in general_axes.spines.values():
 
-        # Plots the vertical lines
+                    continue
 
-        for x in range(int(round(layout_width_milimeters))+1):
+                # Tries to get the window
 
-            # Initializes the thickness
+                try:
 
-            thickness = 0.1
+                    local_bounding_box = artist.get_window_extent(renderer)
 
-            # Gets the thickness of the line
+                    # Ignores empty bounding boxes
 
-            for distance, thickness_trial in lines_thickness.items():
+                    if local_bounding_box.width>0 and (
+                    local_bounding_box.height>0):
+                        
+                        bounding_box.append(local_bounding_box)
 
-                # Verifies if the division by the distance has no rest
+                except Exception:
 
-                if x%distance==0:
+                    pass
 
-                    thickness = deepcopy(thickness_trial)
+            # Makes the union of the bounding boxes
 
-            # Plots the line
+            if bounding_box:
 
-            general_axes.plot([x, x], [0, layout_height_milimeters], 
-            color="black", linewidth=thickness, zorder=depth_order)
+                print("There is a bounding box to shrink and pad.\nSav"+
+                "es at "+str(output_file)+"\n")
 
-        # Plots the horizontal lines
+                bounding_box = Bbox.union(bounding_box)
 
-        for y in range(int(round(layout_height_milimeters))+1):
+                # Converts to inches
 
-            # Initializes the thickness
+                bbox_inches = bounding_box.transformed(
+                collage.dpi_scale_trans.inverted())
 
-            thickness = 0.1
+                # Gets the limits of the bounding box and converts to 
+                # milimeters
 
-            # Gets the thickness of the line
+                factor = 25.4
 
-            for distance, thickness_trial in lines_thickness.items():
+                x_min, y_min = bbox_inches.x0*factor, (bbox_inches.y0*
+                factor)
 
-                # Verifies if the division by the distance has no rest
+                x_max, y_max = bbox_inches.x1*factor, (bbox_inches.y1*
+                factor)
 
-                if y%distance==0:
+                print("The limits of the bounding box are:\n"+str(x_min
+                )+" <= x <= "+str(x_max)+"\n"+str(y_min)+" <= y <= "+str(
+                y_max)+"\n")
 
-                    thickness = deepcopy(thickness_trial)
+                # If the grid is to be plotted, annotates the grid ruler
 
-            # Plots the line
+                if add_overlaying_grid:
 
-            general_axes.plot([0, layout_width_milimeters], [y, y], 
-            color="black", linewidth=thickness, zorder=depth_order)
+                    # Adds the x ticks
 
-    # Saves the figure
+                    for x in range(int(np.floor(x_min/grid_annotation_length
+                    )*grid_annotation_length), int(np.ceil(x_max/
+                    grid_annotation_length)*grid_annotation_length)+1, 
+                    grid_annotation_length):
+                        
+                        general_axes.text(x, y_min-rule_number_offset, f"{x}", 
+                        ha='right', va='top', fontsize=rule_fontsize)
 
-    print("###########################################################"+
-    "#############\n#                                Saving           "+
-    "                     #\n#########################################"+
-    "###############################\n")
+                    # Adds the y ticks
 
-    if no_padding:
+                    for y in range(int(np.floor(y_min/grid_annotation_length
+                    )*grid_annotation_length), int(np.ceil(y_max/
+                    grid_annotation_length)*grid_annotation_length)+1, 
+                    grid_annotation_length):
+                        
+                        general_axes.text(x_min-rule_number_offset, y, f"{y}", 
+                        ha='right', va='top', fontsize=rule_fontsize)
 
-        # Gets what has been drawn only
+                    # Updates the bounding box to include the numbers
 
-        collage.canvas.draw()
+                    extension_length = (collage_classes.points_to_milimeters(
+                    rule_fontsize)+rule_number_offset)
 
-        renderer = collage.canvas.get_renderer()
+                    factor = 1/25.4
 
-        bounding_box = []
+                    bbox_inches = Bbox.from_extents((x_min-(extension_length
+                    *2))*factor, (y_min-extension_length)*factor, x_max*
+                    factor, y_max*factor)
 
-        # Iterates through the elements of the drawing
+                # Verifies if a list of vanishing points has been given to 
+                # construct perspective lines
 
-        for artist in general_axes.get_children():
+                if vanishing_points_list:
 
-            # Skips non visible objects
+                    # Calls the function to add the perspective lines
 
-            if not artist.get_visible():
+                    general_axes = perspective_lines_from_vanishing_points(
+                    general_axes, vanishing_points_list, 0.1, depth_order, 
+                    x_min, x_max, y_min, y_max, verbose=verbose)
 
-                continue
+                # Saves the figure with this bounding box in inches
 
-            # Skips axes background patch
+                plt.savefig(output_file, bbox_inches=bbox_inches, 
+                pad_inches=0, dpi=dpi)
 
-            if artist==general_axes.patch:
+                if verbose:
 
-                continue
+                    print("Finishes saving the figure at "+str(
+                    output_file)+"\n")
 
-            # Skip spines
+                # Verifies if an interactive window is to be shown
 
-            if artist in general_axes.spines.values():
+                if interactive_preview:
 
-                continue
+                    flag_redraw = create_interactive_window(general_axes, 
+                    collage, 0.0, layout_width_milimeters, 0.0, 
+                    layout_height_milimeters, x_min, x_max, y_min, y_max, 
+                    input_path, depth_order, arrows_and_lines_file, 
+                    flag_redraw, verbose=verbose)
 
-            # Tries to get the window
+                # Otherwise, just makes the flag for redrawing False
 
-            try:
+                else:
 
-                local_bounding_box = artist.get_window_extent(renderer)
+                    flag_redraw = False
 
-                # Ignores empty bounding boxes
+                    plt.close()
 
-                if local_bounding_box.width>0 and (
-                local_bounding_box.height>0):
-                    
-                    bounding_box.append(local_bounding_box)
+            # Otherwise, saves it plainly
 
-            except Exception:
+            else:
 
-                pass
+                # Sets the minima and maxima of the dimensions
 
-        # Makes the union of the bounding boxes
+                x_min = 0.0
+                
+                y_min = 0.0
 
-        if bounding_box:
+                x_max = layout_width_milimeters
 
-            print("There is a bounding box to shrink and pad.\nSaves a"+
-            "t "+str(output_file_name)+"\n")
+                y_max = layout_height_milimeters
 
-            bounding_box = Bbox.union(bounding_box)
+                # If the grid is to be plotted, annotates the grid ruler
 
-            # Converts to inches
+                if add_overlaying_grid:
 
-            bbox_inches = bounding_box.transformed(
-            collage.dpi_scale_trans.inverted())
+                    # Updates the number offset to make the number appear
 
-            # Gets the limits of the bounding box and converts to mili-
-            # meters
+                    rule_number_offset = (collage_classes.points_to_milimeters(
+                    rule_fontsize)+rule_number_offset)
 
-            factor = 25.4
+                    # Adds the x ticks
 
-            x_min, y_min = bbox_inches.x0*factor, bbox_inches.y0*factor
+                    for x in range(int(np.floor(x_min/grid_annotation_length
+                    )*grid_annotation_length), int(np.ceil(x_max/
+                    grid_annotation_length)*grid_annotation_length)+1, 
+                    grid_annotation_length):
+                        
+                        general_axes.text(x, min(y_min+rule_number_offset,
+                        y_max), f"{x}", ha='right', va='top', fontsize=
+                        rule_fontsize)
 
-            x_max, y_max = bbox_inches.x1*factor, bbox_inches.y1*factor
+                    # Adds the y ticks
 
-            print("The limits of the bounding box are:\n"+str(x_min)+
-            " <= x <= "+str(x_max)+"\n"+str(y_min)+" <= y <= "+str(y_max
-            )+"\n")
+                    for y in range(int(np.floor(y_min/grid_annotation_length
+                    )*grid_annotation_length), int(np.ceil(y_max/
+                    grid_annotation_length)*grid_annotation_length)+1, 
+                    grid_annotation_length):
+                        
+                        general_axes.text(min(x_min+rule_number_offset, x_max
+                        ), y, f"{y}", ha='right', va='top', fontsize=
+                        rule_fontsize)
 
-            # If the grid is to be plotted, annotates the grid ruler
+                # Verifies if a list of vanishing points has been given to 
+                # construct perspective lines
 
-            if add_overlaying_grid:
+                if vanishing_points_list:
 
-                # Adds the x ticks
+                    # Calls the function to add the perspective lines
 
-                for x in range(int(np.floor(x_min/grid_annotation_length
-                )*grid_annotation_length), int(np.ceil(x_max/
-                grid_annotation_length)*grid_annotation_length)+1, 
-                grid_annotation_length):
-                    
-                    general_axes.text(x, y_min-rule_number_offset, f"{x}", 
-                    ha='right', va='top', fontsize=rule_fontsize)
+                    general_axes = perspective_lines_from_vanishing_points(
+                    general_axes, vanishing_points_list, 0.1, depth_order, 
+                    x_min, x_max, y_min, y_max)
 
-                # Adds the y ticks
+                # Saves the figure
 
-                for y in range(int(np.floor(y_min/grid_annotation_length
-                )*grid_annotation_length), int(np.ceil(y_max/
-                grid_annotation_length)*grid_annotation_length)+1, 
-                grid_annotation_length):
-                    
-                    general_axes.text(x_min-rule_number_offset, y, f"{y}", 
-                    ha='right', va='top', fontsize=rule_fontsize)
+                print("There is no bounding box to shrink and pad.\nSaves "+
+                "at "+str(output_file)+"\n")
 
-                # Updates the bounding box to include the numbers
+                plt.savefig(output_file, dpi=dpi)
 
-                extension_length = (collage_classes.points_to_milimeters(
-                rule_fontsize)+rule_number_offset)
+                # Verifies if an interactive window is to be shown
 
-                factor = 1/25.4
+                if interactive_preview:
 
-                bbox_inches = Bbox.from_extents((x_min-(extension_length
-                *2))*factor, (y_min-extension_length)*factor, x_max*
-                factor, y_max*factor)
+                    flag_redraw = create_interactive_window(general_axes, 
+                    collage, 0.0, layout_width_milimeters, 0.0, 
+                    layout_height_milimeters, x_min, x_max, y_min, y_max, 
+                    input_path, depth_order, arrows_and_lines_file, 
+                    flag_redraw, verbose=verbose)
 
-            # Verifies if a list of vanishing points has been given to 
-            # construct perspective lines
+                # Otherwise, just makes the flag for redrawing False
 
-            if vanishing_points_list:
+                else:
 
-                # Calls the function to add the perspective lines
+                    flag_redraw = False
 
-                general_axes = perspective_lines_from_vanishing_points(
-                general_axes, vanishing_points_list, 0.1, depth_order, 
-                x_min, x_max, y_min, y_max)
-
-            # Saves the figure with this bounding box in inches
-
-            plt.savefig(output_file_name, bbox_inches=bbox_inches, 
-            pad_inches=0, dpi=dpi)
-
-            # Verifies if an interactive window is to be shown
-
-            if interactive_preview:
-
-                return create_interactive_window(general_axes, collage, 
-                0.0, layout_width_milimeters, 0.0, 
-                layout_height_milimeters, x_min, x_max, y_min, y_max, 
-                input_path, depth_order, arrows_and_lines_file,
-                create_box_collage)
-
-        # Otherwise, saves it plainly
+                    plt.close()
 
         else:
 
@@ -498,122 +610,56 @@ reused_variables_in_recurrence_mode={}):
 
                 # Adds the x ticks
 
-                for x in range(int(np.floor(x_min/grid_annotation_length
-                )*grid_annotation_length), int(np.ceil(x_max/
+                for x in range(int(np.floor(x_min/grid_annotation_length)*
+                grid_annotation_length), int(np.ceil(x_max/
                 grid_annotation_length)*grid_annotation_length)+1, 
                 grid_annotation_length):
                     
-                    general_axes.text(x, min(y_min+rule_number_offset,
-                    y_max), f"{x}", ha='right', va='top', fontsize=
-                    rule_fontsize)
+                    general_axes.text(x, min(y_min+rule_number_offset, y_max
+                    ), f"{x}", ha='right', va='top', fontsize=rule_fontsize)
 
                 # Adds the y ticks
 
-                for y in range(int(np.floor(y_min/grid_annotation_length
-                )*grid_annotation_length), int(np.ceil(y_max/
+                for y in range(int(np.floor(y_min/grid_annotation_length)*
+                grid_annotation_length), int(np.ceil(y_max/
                 grid_annotation_length)*grid_annotation_length)+1, 
                 grid_annotation_length):
                     
-                    general_axes.text(min(x_min+rule_number_offset, x_max
-                    ), y, f"{y}", ha='right', va='top', fontsize=
+                    general_axes.text(min(x_min+(2*rule_number_offset), 
+                    x_max), y, f"{y}", ha='right', va='top', fontsize=
                     rule_fontsize)
 
-            # Verifies if a list of vanishing points has been given to 
-            # construct perspective lines
+            # Verifies if a list of vanishing points has been given to cons-
+            # truct perspective lines
 
             if vanishing_points_list:
 
                 # Calls the function to add the perspective lines
 
                 general_axes = perspective_lines_from_vanishing_points(
-                general_axes, vanishing_points_list, 0.1, depth_order, 
-                x_min, x_max, y_min, y_max)
+                general_axes, vanishing_points_list, 0.1, depth_order, x_min, 
+                x_max, y_min, y_max)
 
             # Saves the figure
 
-            print("There is no bounding box to shrink and pad.\nSaves "+
-            "at "+str(output_file_name)+"\n")
+            print("Saves as it is at "+str(output_file)+"\n")
 
-            plt.savefig(output_file_name, dpi=dpi)
+            plt.savefig(output_file, dpi=dpi)
 
             # Verifies if an interactive window is to be shown
 
             if interactive_preview:
 
-                return create_interactive_window(general_axes, collage, 
-                0.0, layout_width_milimeters, 0.0, 
+                flag_redraw = create_interactive_window(general_axes, 
+                collage, 0.0, layout_width_milimeters, 0.0, 
                 layout_height_milimeters, x_min, x_max, y_min, y_max, 
-                input_path, depth_order, arrows_and_lines_file,
-                create_box_collage)
+                input_path, depth_order, arrows_and_lines_file, 
+                flag_redraw, verbose=verbose)
 
-    else:
+            # Otherwise, just makes the flag for redrawing False
 
-        # Sets the minima and maxima of the dimensions
+            else:
 
-        x_min = 0.0
-        
-        y_min = 0.0
+                flag_redraw = False
 
-        x_max = layout_width_milimeters
-
-        y_max = layout_height_milimeters
-
-        # If the grid is to be plotted, annotates the grid ruler
-
-        if add_overlaying_grid:
-
-            # Updates the number offset to make the number appear
-
-            rule_number_offset = (collage_classes.points_to_milimeters(
-            rule_fontsize)+rule_number_offset)
-
-            # Adds the x ticks
-
-            for x in range(int(np.floor(x_min/grid_annotation_length)*
-            grid_annotation_length), int(np.ceil(x_max/
-            grid_annotation_length)*grid_annotation_length)+1, 
-            grid_annotation_length):
-                
-                general_axes.text(x, min(y_min+rule_number_offset, y_max
-                ), f"{x}", ha='right', va='top', fontsize=rule_fontsize)
-
-            # Adds the y ticks
-
-            for y in range(int(np.floor(y_min/grid_annotation_length)*
-            grid_annotation_length), int(np.ceil(y_max/
-            grid_annotation_length)*grid_annotation_length)+1, 
-            grid_annotation_length):
-                
-                general_axes.text(min(x_min+(2*rule_number_offset), 
-                x_max), y, f"{y}", ha='right', va='top', fontsize=
-                rule_fontsize)
-
-        # Verifies if a list of vanishing points has been given to cons-
-        # truct perspective lines
-
-        if vanishing_points_list:
-
-            # Calls the function to add the perspective lines
-
-            general_axes = perspective_lines_from_vanishing_points(
-            general_axes, vanishing_points_list, 0.1, depth_order, x_min, 
-            x_max, y_min, y_max)
-
-        # Saves the figure
-
-        print("Saves as it is at "+str(output_file_name)+"\n")
-
-        plt.savefig(output_file_name, dpi=dpi)
-
-        # Verifies if an interactive window is to be shown
-
-        if interactive_preview:
-
-            return create_interactive_window(general_axes, collage, 0.0, 
-            layout_width_milimeters, 0.0, layout_height_milimeters, 
-            x_min, x_max, y_min, y_max, input_path, depth_order, 
-            arrows_and_lines_file, create_box_collage)
-
-    plt.close()
-
-    return None
+                plt.close()
