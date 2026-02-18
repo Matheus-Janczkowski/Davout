@@ -143,7 +143,7 @@ def verify_installation(package_name):
 
 if __name__ == "__main__":
 
-    # Ensure we are in the script's directory
+    # Ensures the terminal is in the path of this very file
 
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
