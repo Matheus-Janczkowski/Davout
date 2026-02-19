@@ -229,14 +229,14 @@ class TestParaView():
         [0.0, 0.0, 0.0], set_camera_interactively=False, 
         color_bar_min_value=0.1, color_bar_max_value=0.6,
         output_imageFileName="magnitude_with_color_bounds.png", output_path=self.output_path,
-        camera_position=[-2.2202601190413063, 2.7845260002185928, 2.412838032797255],
-        camera_focal_point=[0.500121318497246, 0.8894379799910188, 0.03488656665544461],
-        camera_up_direction=[0.19171813331267484, 0.8626133794219494, -0.46812638784984917],
+        camera_position=[2.1948379693177307, 0.08612584086013976, -2.4688418309425533],
+        camera_focal_point=[0.15000000596046448, 0.8538913726806641, 0.10000000149011612],
+        camera_up_direction=[0.19196302856395392, 0.9717059902296702, -0.13761418610132722],
         camera_parallel_scale=0.872714431199938,
         camera_rotation=[0.0, 0.0, 0.0],
-        legend_bar_position=[0.6048594377510041, 0.09555555555555562],
-        legend_bar_length=0.7344444444444449,
-        size_in_pixels={'aspect ratio': 1.0, 'pixels in width': 400})
+        legend_bar_position=[0.8114463840399002, 0.032500000000000015],
+        legend_bar_length=0.9125000000000001,
+        size_in_pixels={'aspect ratio': 0.49875311720698257, 'pixels in width': 802})
 
 # Runs all tests
 

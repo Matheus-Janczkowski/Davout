@@ -899,7 +899,9 @@ color_bar_max_value=None):
 
         # Gets the size info
 
-        size_in_pixels = view.ViewSize
+        vtk_view = view.GetRenderWindow()
+
+        size_in_pixels = list(vtk_view.GetSize())
 
         # Transforms the size into a dictionary for saving
 
@@ -940,7 +942,7 @@ color_bar_max_value=None):
         "s' to replicate the view set by the user as follows")
 
         file_tools.save_string_into_txt(arguments_list, "paraview_came"+
-        "ra_settings.txt", add_extension=False, parent_path=input_path,
+        "ra_settings.txt", add_extension=False, parent_path=output_path,
         verbose=True)
 
     # Sets the position of the legend

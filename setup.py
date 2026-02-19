@@ -15,7 +15,8 @@ setup(
     install_requires=['numpy', 'scipy', 'matplotlib'],
     include_package_data=True,
     # Loads other package data than .py files
-    package_data={'Davout': ['LaTeXUtilities/*.sty'], },
+    package_data={'Davout': ['LaTeXUtilities/*.sty', 'PythonicUtilitie'+
+    's/fonts/*.ttf'], },
     classifiers=[
         'Programming Language :: Python :: 3',
         'License :: OSI Approved :: MIT License',
