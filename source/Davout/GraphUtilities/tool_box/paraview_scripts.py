@@ -13,12 +13,6 @@ import sys
 
 import numpy as np
 
-import matplotlib as mpl
-
-mpl.rcParams['mathtext.fontset'] = 'cm'
-
-mpl.rcParams['mathtext.rm'] = 'serif'
-
 ########################################################################
 #                           Imports preamble                           #
 ########################################################################
@@ -59,6 +53,25 @@ file_tools = util.module_from_spec(specifications)
 sys.modules["file_tools"] = file_tools
 
 specifications.loader.exec_module(file_tools)
+
+########################################################################
+#                              Fonts class                             #
+########################################################################
+
+# Defines a class with fonts files
+
+class FontsFiles:
+
+    def __init__(self):
+        
+        # Defines a dictionary with font files
+
+        self.font_files = {"latex": broken_path[2]/"PythonicUtilitie"+
+        "s"/"fonts"/"CMU_Serif_Roman.ttf"}
+
+    def __call__(self, font_name):
+        
+        # Verifies if the font name is valid
 
 ########################################################################
 #                           Frozen snapshots                           #

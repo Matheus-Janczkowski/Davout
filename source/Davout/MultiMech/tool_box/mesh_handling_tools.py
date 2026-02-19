@@ -1338,7 +1338,7 @@ node_proximity_tolerance=1E-6, return_coordinates_per_dof_found=False):
 
             self.tolerance = tolerance
 
-            self.return_coordinates = return_coordinates
+            self.return_coordinates_per_dof_found = return_coordinates
 
         # Defines a call method to get the node numebr
 
@@ -1370,7 +1370,7 @@ node_proximity_tolerance=1E-6, return_coordinates_per_dof_found=False):
             # If the coordinates of the found nodes are to be returned 
             # as well
 
-            if self.return_coordinates:
+            if self.return_coordinates_per_dof_found:
             
                 # If there are multiple DOFs in a single location, re-
                 # turns a list of them
