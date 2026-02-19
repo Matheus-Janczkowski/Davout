@@ -60,29 +60,35 @@ specifications.loader.exec_module(file_tools)
 
 # Defines a class with fonts files
 
-class FontsFiles:
+class FontsClass:
 
     def __init__(self):
         
         # Defines a dictionary with font files
 
-        self.font_files = {"latex": broken_path[2]/"PythonicUtilitie"+
-        "s"/"fonts"/"CMU_Serif_Roman.ttf"}
+        self.font_dictionary = {"latex": ["File", str(broken_path[2
+        ]/"PythonicUtilities"/"fonts"/"CMU_Serif_Roman.ttf")], "Times": 
+        "Times", "Arial": "Arial", "Courier": "Courier"}
 
     def __call__(self, font_name):
         
         # Verifies if the font name is valid
 
-        if not (font_name in self.font_files):
+        if not (font_name in self.font_dictionary):
 
             available_names = ""
 
-            for name in self.font_files.keys():
+            for name in self.font_dictionary.keys():
 
                 available_names += "\n'"+str(name)+"'"
 
             raise ValueError("The font name '"+str(font_name)+"' is no"+
-            "t a valid font name. Check the available names")
+            "t a valid font name. Check the available names:"+
+            available_names)
+        
+        # Otherwise, returns the font file
+
+        return self.font_dictionary[font_name]
 
 ########################################################################
 #                           Frozen snapshots                           #
@@ -106,6 +112,10 @@ clip=None, clip_plane_origin=None, clip_plane_normal_vector=None,
 set_camera_interactively=None, background_color=None, 
 legend_bar_font_color=None, color_bar_min_value=None, 
 color_bar_max_value=None):
+    
+    # Instantiates the class of fonts
+
+    font_class = FontsClass()
 
     # Resets session
 
@@ -980,9 +990,32 @@ color_bar_max_value=None):
 
     if legend_bar_font:
 
-        scalarBar.TitleFontFamily = legend_bar_font
+        # Gets the font from the class
 
-        scalarBar.LabelFontFamily = legend_bar_font
+        retrieved_font = font_class(legend_bar_font)
+
+        # If the retrieved font is a list, it has a font file attached
+        # to it
+
+        if isinstance(retrieved_font, list):
+
+            scalarBar.TitleFontFamily = retrieved_font[0]
+
+            scalarBar.LabelFontFamily = retrieved_font[0]
+
+            # Gets the file
+
+            scalarBar.TitleFontFile = retrieved_font[1]
+
+            scalarBar.LabelFontFile = retrieved_font[1]
+
+        # Otherwise, it is the name of a font already owned by ParaView
+
+        else:
+
+            scalarBar.TitleFontFamily = retrieved_font
+
+            scalarBar.LabelFontFamily = retrieved_font
 
     # Sets the color 
 

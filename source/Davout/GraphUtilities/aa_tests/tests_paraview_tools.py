@@ -222,7 +222,7 @@ class TestParaView():
         paraview_tools.frozen_snapshots(self.file_name, self.field_name, 
         input_path=self.input_path, time=1.0, representation_type=
         "Surface With Edges", axes_color=[0.0, 0.0, 0.0], 
-        legend_bar_font="Times", zoom_factor=1.0, component_to_plot="Magnitude", 
+        legend_bar_font="latex", zoom_factor=1.0, component_to_plot="Magnitude", 
         warp_by_vector=True, resolution_ratio=10, background_color=
         "WhiteBackground", display_reference_configuration=False, 
         transparent_background=True, legend_bar_font_color=

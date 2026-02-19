@@ -18,7 +18,7 @@ output_imageFileName="plot.png", execution_rootPath=None, time=None,
 time_step_index=None, camera_focal_point=None, camera_up_direction=None,
 representation_type=None, legend_bar_position=None, legend_bar_length=
 None, axes_color=None, size_in_pixels=None, get_attributes_render=None,
-camera_parallel_scale=None, camera_rotation=None, legend_bar_font=None,
+camera_parallel_scale=None, camera_rotation=None, legend_bar_font="latex",
 legend_bar_font_file=None, zoom_factor=None, plot_x_axis=None, 
 plot_y_axis=None, plot_z_axis=None, no_axes=None, component_to_plot=None,
 resolution_ratio=None, transparent_background=None, 
