@@ -1274,7 +1274,7 @@ physical_group_name=None, region_function=None, field_name=None):
 # closest to a point 
 
 def dofs_per_node_finder_class(functional_data_class, field_name=None, 
-node_proximity_tolerance=1E-6):
+node_proximity_tolerance=1E-6, return_coordinates_per_dof_found=False):
     
     """
     Function to construct a class that stores a tree query object that,
@@ -1327,7 +1327,7 @@ node_proximity_tolerance=1E-6):
     class DOFsNode:
 
         def __init__(self, dof_coordinates, function_space, tolerance=
-        1E-6):
+        1E-6, return_coordinates=False):
             
             # Reshapes the dof coordinates according to the number of 
             # dimensions of the geometry, since FEniCS returns an array
@@ -1337,6 +1337,8 @@ node_proximity_tolerance=1E-6):
             function_space.mesh().geometry().dim()))
 
             self.tolerance = tolerance
+
+            self.return_coordinates = return_coordinates
 
         # Defines a call method to get the node numebr
 
@@ -1365,16 +1367,32 @@ node_proximity_tolerance=1E-6):
                 " node is x="+str(closest_node[0])+", y="+str(
                 closest_node[1])+", z="+str(closest_node[2]))
             
-            # If there are multiple DOFs in a single location, returns a
-            # list of them
+            # If the coordinates of the found nodes are to be returned 
+            # as well
 
-            return dofs_indices
+            if self.return_coordinates:
+            
+                # If there are multiple DOFs in a single location, re-
+                # turns a list of them
+
+                return dofs_indices, [self.dof_coordinates[dof_index,:
+                ] for dof_index in dofs_indices]
+            
+            # Otherwise, returns the dof indices only
+
+            else:
+            
+                # If there are multiple DOFs in a single location, re-
+                # turns a list of them
+
+                return dofs_indices
 
     # Instantiates the class and returns it
 
     return DOFsNode(dof_coordinates, 
     functional_data_class.monolithic_function_space, tolerance=
-    node_proximity_tolerance)
+    node_proximity_tolerance, return_coordinates=
+    return_coordinates_per_dof_found)
     
 # Defines a function to create a list of nodes indexes that lie on a
 # surface

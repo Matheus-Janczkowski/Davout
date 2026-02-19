@@ -13,6 +13,12 @@ import sys
 
 import numpy as np
 
+import matplotlib as mpl
+
+mpl.rcParams['mathtext.fontset'] = 'cm'
+
+mpl.rcParams['mathtext.rm'] = 'serif'
+
 ########################################################################
 #                           Imports preamble                           #
 ########################################################################
