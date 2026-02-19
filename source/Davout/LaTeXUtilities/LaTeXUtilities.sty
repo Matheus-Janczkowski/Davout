@@ -211,6 +211,13 @@ top=3cm, bottom=2cm}}\onehalfspacing\setlength{\parindent}{1.25cm}%
 
 \newcommand{\RegionIntegration}[3]{\int\limits_{#1}#2\IntegralDif#3}
 
+% Macro to make an integral onto a path or a single variable. The first
+% argument is the lower integration limit; the second is the upper in-
+% tegration limit; the third is the integrand; the fourth, the integra-
+% tion differential
+
+\newcommand{\SingleVariableIntegration}[4]{\int_{#1}^{#2}#3\IntegralDif#4}
+
 % Command for partial derivative
 
 \newcommand{\PartialDerivative}[2]{\frac{\partial #1}{\partial #2}}
@@ -221,7 +228,7 @@ top=3cm, bottom=2cm}}\onehalfspacing\setlength{\parindent}{1.25cm}%
 
 % Command for creating the vertical bar that evaluates derivatives
 
-\newcommand{\EvaluateBar}[2]{\left.#1\right|_{#2}}
+\newcommand{\EvaluateBar}[3]{\left.#1\right|_{#2}^{#3}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                           Sets and analysis                          %

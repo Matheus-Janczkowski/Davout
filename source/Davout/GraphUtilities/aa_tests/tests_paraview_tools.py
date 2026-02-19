@@ -236,7 +236,7 @@ class TestParaView():
         camera_rotation=[0.0, 0.0, 0.0],
         legend_bar_position=[0.8114463840399002, 0.032500000000000015],
         legend_bar_length=0.9125000000000001,
-        size_in_pixels={'aspect ratio': 0.49875311720698257, 'pixels in width': 802})
+        size_in_pixels={'aspect ratio': 0.49875311720698257, 'pixels in width': 802}) 
 
 # Runs all tests
 

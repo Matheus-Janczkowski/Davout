@@ -746,8 +746,7 @@ plot_object=None):
 
                 for j in range(len(y_data)):
 
-                    standard_deviation += (standard_deviation-y_data[j][
-                    i])**2
+                    standard_deviation += (mean-y_data[j][i])**2
 
                 # Takes the square root and divides by the number of de-
                 # grees of freedom
