@@ -1397,7 +1397,7 @@ do_not_throw_error=False, n_closest_dofs=None):
                     raise ValueError("Point ("+str(x)+", "+str(y)+", "+
                     str(z)+") is not a valid node to look for DOFs. Th"+
                     "e closest node is x="+str(closest_node[0])+", y="+
-                    +str(closest_node[1])+", z="+str(closest_node[2]))
+                    str(closest_node[1])+", z="+str(closest_node[2]))
             
             # If the coordinates of the found nodes are to be returned 
             # as well
