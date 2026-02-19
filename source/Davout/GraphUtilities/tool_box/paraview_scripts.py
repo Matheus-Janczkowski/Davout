@@ -74,7 +74,8 @@ transparent_background=None, warp_by_vector=None, warp_scale=None,
 glyph=None, glyph_scale=None, display_reference_configuration="True",
 clip=None, clip_plane_origin=None, clip_plane_normal_vector=None,
 set_camera_interactively=None, background_color=None, 
-legend_bar_font_color=None):
+legend_bar_font_color=None, color_bar_min_value=None, 
+color_bar_max_value=None):
 
     # Resets session
 
@@ -716,6 +717,70 @@ legend_bar_font_color=None):
         # Sets the color map
 
         LookupTable.ApplyPreset(color_map, True)
+
+    # Verifies if limits for the color bar were given
+
+    if (color_bar_min_value is not None) or ((color_bar_max_value
+    ) is not None):
+        
+        # Gets the automatically retrieved values
+
+        look_up_table_range = [0.0, 0.0]
+
+        LookupTable.GetRange(look_up_table_range)
+
+        automatic_min_value = look_up_table_range[0]
+        
+        automatic_max_value = look_up_table_range[1]
+
+        # Verifies if the minimum value is given
+
+        if color_bar_min_value is not None:
+
+            # Verifies if it is a float
+
+            try:
+
+                color_bar_min_value = float(color_bar_min_value)
+
+            except:
+
+                raise ValueError("Could not convert 'color_bar_min_val"+
+                "ue to float in 'frozen_snapshots'. The current value "+
+                "is: "+str(color_bar_min_value))
+            
+        # Otherwise, uses the automatically found value
+            
+        else:
+
+            color_bar_min_value = automatic_min_value
+
+        # Verifies if the maximum value is given
+
+        if color_bar_max_value is not None:
+
+            # Verifies if it is a float
+
+            try:
+
+                color_bar_max_value = float(color_bar_max_value)
+
+            except:
+
+                raise ValueError("Could not convert 'color_bar_max_val"+
+                "ue to float in 'frozen_snapshots'. The current value "+
+                "is: "+str(color_bar_max_value))
+            
+        # Otherwise, uses the automatically found value
+            
+        else:
+
+            color_bar_max_value = automatic_max_value
+        
+        # Rescales the range
+
+        LookupTable.RescaleTransferFunction(color_bar_min_value, 
+        color_bar_max_value)
 
     Render()
 

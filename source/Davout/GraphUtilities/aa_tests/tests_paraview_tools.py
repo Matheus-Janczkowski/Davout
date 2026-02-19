@@ -44,11 +44,9 @@ class TestParaView():
         input_path=self.input_path, time=1.0, representation_type=
         "Surface With Edges", axes_color=[0.0, 0.0, 0.0], 
         legend_bar_font="Times", zoom_factor=1.0, component_to_plot="2", 
-        resolution_ratio=10, clip=False, clip_plane_origin=[0.15, 0.5, 
-        0.1], clip_plane_normal_vector=[1.0, 1.0, 1.0], warp_by_vector=
-        True, background_color="WhiteBackground", 
-        display_reference_configuration=False, transparent_background=
-        True, legend_bar_font_color=[0.0, 0.0, 0.0],
+        resolution_ratio=10, warp_by_vector=True, background_color=
+        "WhiteBackground", display_reference_configuration=False, 
+        transparent_background=True, legend_bar_font_color=[0.0, 0.0, 0.0],
         set_camera_interactively=False, output_imageFileName="warp.png",
         output_path=self.output_path,
         camera_position=[-2.2202601190413063, 2.7845260002185928, 2.412838032797255],
@@ -121,6 +119,66 @@ class TestParaView():
         legend_bar_length=0.7344444444444449,
         size_in_pixels={'aspect ratio': 1.0, 'pixels in width': 400})
 
+    def test_glyph(self):
+
+        print("\n#####################################################"+
+        "###################\n#                                 Glyph "+
+        "                               #\n###########################"+
+        "#############################################\n")
+        
+        # Takes a snapshot of a simulation saved at self.file name whose
+        # field is called as 'Displacement' inside FEniCS. The edges of
+        # the finite elements will be shown
+        
+        paraview_tools.frozen_snapshots(self.file_name, self.field_name, 
+        input_path=self.input_path, time=1.0, representation_type=
+        "Surface With Edges", axes_color=[0.0, 0.0, 0.0], 
+        legend_bar_font="Times", zoom_factor=1.0, component_to_plot="2", 
+        resolution_ratio=10, glyph=True, glyph_scale=0.3, 
+        background_color="WhiteBackground", 
+        display_reference_configuration=True, 
+        transparent_background=True, legend_bar_font_color=
+        [0.0, 0.0, 0.0], set_camera_interactively=False, 
+        output_imageFileName="glyph.png", output_path=self.output_path,
+        camera_position=[-2.2202601190413063, 2.7845260002185928, 2.412838032797255],
+        camera_focal_point=[0.500121318497246, 0.8894379799910188, 0.03488656665544461],
+        camera_up_direction=[0.19171813331267484, 0.8626133794219494, -0.46812638784984917],
+        camera_parallel_scale=0.872714431199938,
+        camera_rotation=[0.0, 0.0, 0.0],
+        legend_bar_position=[0.6048594377510041, 0.09555555555555562],
+        legend_bar_length=0.7344444444444449,
+        size_in_pixels={'aspect ratio': 1.0, 'pixels in width': 400})
+
+    def test_warp_and_glyph(self):
+
+        print("\n#####################################################"+
+        "###################\n#                            Warp and gl"+
+        "yph                            #\n###########################"+
+        "#############################################\n")
+        
+        # Takes a snapshot of a simulation saved at self.file name whose
+        # field is called as 'Displacement' inside FEniCS. The edges of
+        # the finite elements will be shown
+        
+        paraview_tools.frozen_snapshots(self.file_name, self.field_name, 
+        input_path=self.input_path, time=1.0, representation_type=
+        "Surface With Edges", axes_color=[0.0, 0.0, 0.0], 
+        legend_bar_font="Times", zoom_factor=1.0, component_to_plot="2", 
+        warp_by_vector=True, resolution_ratio=10, glyph=True, 
+        glyph_scale=0.3, background_color="WhiteBackground", 
+        display_reference_configuration=False, 
+        transparent_background=True, legend_bar_font_color=
+        [0.0, 0.0, 0.0], set_camera_interactively=False, 
+        output_imageFileName="warp_and_glyph.png", output_path=self.output_path,
+        camera_position=[-2.2202601190413063, 2.7845260002185928, 2.412838032797255],
+        camera_focal_point=[0.500121318497246, 0.8894379799910188, 0.03488656665544461],
+        camera_up_direction=[0.19171813331267484, 0.8626133794219494, -0.46812638784984917],
+        camera_parallel_scale=0.872714431199938,
+        camera_rotation=[0.0, 0.0, 0.0],
+        legend_bar_position=[0.6048594377510041, 0.09555555555555562],
+        legend_bar_length=0.7344444444444449,
+        size_in_pixels={'aspect ratio': 1.0, 'pixels in width': 400})
+
     def test_select_component(self):
 
         print("\n#####################################################"+
@@ -140,6 +198,7 @@ class TestParaView():
         "WhiteBackground", display_reference_configuration=False, 
         transparent_background=True, legend_bar_font_color=
         [0.0, 0.0, 0.0], set_camera_interactively=False, 
+        color_bar_min_value=0.1,
         output_imageFileName="magnitude_plot.png", output_path=self.output_path,
         camera_position=[-2.2202601190413063, 2.7845260002185928, 2.412838032797255],
         camera_focal_point=[0.500121318497246, 0.8894379799910188, 0.03488656665544461],

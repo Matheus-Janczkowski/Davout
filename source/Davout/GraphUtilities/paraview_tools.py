@@ -27,7 +27,8 @@ python_interpreter="pvpython", warp_by_vector=None, warp_scale=None,
 glyph=None, glyph_scale=None, display_reference_configuration=True, clip=
 None, clip_plane_origin=None, clip_plane_normal_vector=None,
 set_camera_interactively=None, background_color=None, 
-legend_bar_font_color=None):
+legend_bar_font_color=None, color_bar_min_value=None, 
+color_bar_max_value=None):
     
     # Gets the path to the module where function LOCAL_frozenSnapshots is
 
@@ -59,7 +60,8 @@ legend_bar_font_color=None):
     clip_plane_origin, "clip_plane_normal_vector": 
     clip_plane_normal_vector, "set_camera_interactively": 
     set_camera_interactively, "background_color": background_color,
-    "legend_bar_font_color": legend_bar_font_color},
+    "legend_bar_font_color": legend_bar_font_color, "color_bar_min_val"+
+    "ue": color_bar_min_value, "color_bar_max_value": color_bar_max_value},
     execution_rootPath=execution_rootPath, run_as_module=False,
     LIBGL_ALWAYS_SOFTWARE=LIBGL_ALWAYS_SOFTWARE, 
     extra_execution_arguments=extra_execution_arguments)
