@@ -686,6 +686,44 @@ color_bar_max_value=None):
             LookupTable = GetColorTransferFunction(field_name)
 
             display.SetScalarBarVisibility(renderView, True)
+
+    # If still no look-up table was created, forces with a additive fil-
+    # ter, such as glyph
+
+    if LookupTable is None:
+
+        # Verifies if the dictionary of display is not empty
+
+        if len(list(display_dictionary.keys()))==0:
+
+            raise ValueError("There is no substitutive filter (display"+
+            "_reference_configuration, warp_by_vector, or clip) nor ad"+
+            "ditive filters (such as glyph). The user must select some"+
+            "thing")
+        
+        # Gets the first display
+
+        display = list(display_dictionary.values())[0]["object"]
+
+        # Takes care of scalar fields
+
+        if display_object_dict["number of components"]==1:
+
+            ColorBy(display, ('POINTS', field_name))
+
+        # Otherwise, allows for the required component
+
+        else:
+
+            ColorBy(display, ('POINTS', field_name, component_to_plot))
+
+        # Rescales the color
+
+        display.RescaleTransferFunctionToDataRange(True, True)
+
+        LookupTable = GetColorTransferFunction(field_name)
+
+        display.SetScalarBarVisibility(renderView, True)
         
     # Applies color map
 
@@ -730,7 +768,7 @@ color_bar_max_value=None):
         LookupTable.GetRange(look_up_table_range)
 
         automatic_min_value = look_up_table_range[0]
-        
+
         automatic_max_value = look_up_table_range[1]
 
         # Verifies if the minimum value is given
