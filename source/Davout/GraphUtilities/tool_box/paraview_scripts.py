@@ -156,7 +156,7 @@ color_bar_max_value=None):
 
     data = XDMFReader(FileNames=[input_fileName])
 
-    data.UpdatePipeline()
+    #data.UpdatePipeline()
 
     data.PointArrayStatus = [field_name]
 
@@ -557,7 +557,7 @@ color_bar_max_value=None):
         "omponents": 1, "representation": "Surface", "get scalar bar f"+
         "rom": False}
 
-    Render()
+    #Render()
 
     # Verifies if the color of the coordinate system triad is given
 

@@ -43,7 +43,7 @@ class TestParaView():
         paraview_tools.frozen_snapshots(self.file_name, self.field_name, 
         input_path=self.input_path, time=1.0, representation_type=
         "Surface With Edges", axes_color=[0.0, 0.0, 0.0], 
-        legend_bar_font="Times", zoom_factor=1.0, component_to_plot="2", 
+        zoom_factor=1.0, component_to_plot="2", 
         resolution_ratio=10, warp_by_vector=True, background_color=
         "WhiteBackground", display_reference_configuration=False, 
         transparent_background=True, legend_bar_font_color=[0.0, 0.0, 0.0],
@@ -72,7 +72,7 @@ class TestParaView():
         paraview_tools.frozen_snapshots(self.file_name, self.field_name, 
         input_path=self.input_path, time=1.0, representation_type=
         "Surface With Edges", axes_color=[0.0, 0.0, 0.0], 
-        legend_bar_font="Times", zoom_factor=1.0, component_to_plot="2", 
+        zoom_factor=1.0, component_to_plot="2", 
         resolution_ratio=10, clip=True, clip_plane_origin=[0.15, 0.5, 
         0.1], clip_plane_normal_vector=[1.0, 1.0, 1.0], background_color=
         "WhiteBackground", display_reference_configuration=False, 
@@ -102,7 +102,7 @@ class TestParaView():
         paraview_tools.frozen_snapshots(self.file_name, self.field_name, 
         input_path=self.input_path, time=1.0, representation_type=
         "Surface With Edges", axes_color=[0.0, 0.0, 0.0], 
-        legend_bar_font="Times", zoom_factor=1.0, component_to_plot="2", 
+        zoom_factor=1.0, component_to_plot="2", 
         warp_by_vector=True, resolution_ratio=10, clip=True, 
         clip_plane_origin=[0.15, 0.5, 0.1], clip_plane_normal_vector=
         [1.0, 1.0, 1.0], background_color="WhiteBackground", 
@@ -133,7 +133,7 @@ class TestParaView():
         paraview_tools.frozen_snapshots(self.file_name, self.field_name, 
         input_path=self.input_path, time=1.0, representation_type=
         "Surface With Edges", axes_color=[0.0, 0.0, 0.0], 
-        legend_bar_font="Times", zoom_factor=1.0, component_to_plot="2", 
+        zoom_factor=1.0, component_to_plot="2", 
         resolution_ratio=10, glyph=True, glyph_scale=0.3, 
         background_color="WhiteBackground", 
         display_reference_configuration=False, 
@@ -163,7 +163,7 @@ class TestParaView():
         paraview_tools.frozen_snapshots(self.file_name, self.field_name, 
         input_path=self.input_path, time=1.0, representation_type=
         "Surface With Edges", axes_color=[0.0, 0.0, 0.0], 
-        legend_bar_font="Times", zoom_factor=1.0, component_to_plot="2", 
+        zoom_factor=1.0, component_to_plot="2", 
         warp_by_vector=True, resolution_ratio=10, glyph=True, 
         glyph_scale=0.3, background_color="WhiteBackground", 
         display_reference_configuration=False, 
