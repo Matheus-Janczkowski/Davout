@@ -342,7 +342,7 @@ None):
         # Instantiates the finite element class
 
         elements_dictionaries[field_name][physical_group_tag
-        ] = element_class(element_nodes_coordinates,  nodes_in_elements, 
+        ] = element_class(element_nodes_coordinates, nodes_in_elements, 
         polynomial_degree=element_info["polynomial degree"], 
         quadrature_degree=quadrature_degree, dtype=dtype)
 

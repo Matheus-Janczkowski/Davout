@@ -35,7 +35,7 @@ class CompressibleHyperelasticity:
 
         if vector_of_parameters is None:
 
-            vector_of_parameters = tf.Variable(tf.zeros([
+            vector_of_parameters = tf.Variable(tf.zeros([n_realizations,
             self.global_number_dofs], dtype=self.dtype))
 
         # Verifies if the domain elements have the field displacement

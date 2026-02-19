@@ -14,6 +14,10 @@ class ReferentialTractionWork:
 
     def __init__(self, vector_of_parameters, traction_dict, mesh_dict,
     boundary_physical_groups_dict):
+        
+        # Gets the number of batched BVP instances
+
+        self.n_realizations = vector_of_parameters.shape[0]
 
         # Creates a list of the variation of the primal field at the 
         # surfaces multiplied by the surface integration measure
@@ -117,7 +121,7 @@ class ReferentialTractionWork:
 
             self.traction_classes.append(available_traction_classes[
             traction_vector["load case"]](mesh_data, traction_vector,
-            vector_of_parameters, physical_group))
+            vector_of_parameters, physical_group, self.n_realizations))
 
             # Gets the shape functions multiplied by the surface inte-
             # gration measure. Uses the attribute dx, because the el-
@@ -156,20 +160,26 @@ class ReferentialTractionWork:
             # integration of the variation of the external work due to 
             # surface tractions. Then, sums over the quadrature points, 
             # that are the second dimension (index 1 in python conventi-
-            # on). The result is a tensor [n_elements,  n_nodes, 
-            # n_physical_dimensions]
+            # on). The result is a tensor [n_realizations, n_elements, 
+            # n_nodes, n_physical_dimensions]
 
-            external_work = tf.reduce_sum(tf.einsum('eqi,eqn->eqni', 
+            # TODO change the traction tensor to [n_realizations, n_physical_dimensions]
+
+            external_work = tf.reduce_sum(tf.einsum('peqi,eqn->peqni', 
             self.traction_classes[i].traction_tensor,
-            self.variation_field_ds[i]), axis=1)
+            self.variation_field_ds[i]), axis=2)
 
             # Adds the contribution of this physical group to the global
             # residual vector. Uses the own tensor of DOF indexing to
-            # scatter the local residual. Another dimension is added to
+            # scatter the local residual. Another dimension was added to
             # the indexing tensor to make it compatible with tensorflow
             # tensor_scatter_nd_add. Performs this change in place, as
             # global_residual_vector is a variable
 
-            global_residual_vector.scatter_nd_add(tf.expand_dims(
-            self.traction_classes[i].surface_mesh_data.dofs_per_element, 
-            axis=-1), -external_work)
+            dofs_per_element = self.traction_classes[i
+            ].surface_mesh_data.dofs_per_element
+
+            global_residual_vector.scatter_nd_add(tf.broadcast_to(
+            tf.expand_dims(dofs_per_element, axis=0), [
+            self.n_realizations, *dofs_per_element.shape]), 
+            -external_work)

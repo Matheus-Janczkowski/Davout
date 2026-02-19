@@ -40,14 +40,16 @@ class DeformationGradient:
     @tf.function
     def compute_batched_deformation_gradient(self):
         
-        # Gathers the vector of DOFs for this mesh
+        # Gathers the vector of DOFs for this mesh. Uses axis=1 to ensure
+        # that the gathering is done in the DOFs index, as the first in-
+        # dex is related to batching for multiple BVP instances
 
         field_dofs = tf.gather(self.vector_of_parameters, 
-        self.indexing_dofs_tensor)
+        self.indexing_dofs_tensor, axis=1)
 
         # Contracts the DOFs to get the material displacement gradient as 
-        # a tensor [n_elements, n_quadrature_points, 3, 3]. THen, adds 
-        # the identity tensor and returns
+        # a tensor [n_realizations, n_elements, n_quadrature_points, 3, 
+        # 3]. Then, adds the identity tensor and returns
 
-        return (tf.einsum('eqnj,eni->eqij', 
+        return (tf.einsum('eqnj,peni->peqij', 
         self.shape_functions_derivatives, field_dofs)+self.identity_tensor)
