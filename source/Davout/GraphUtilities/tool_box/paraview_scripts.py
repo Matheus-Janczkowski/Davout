@@ -73,6 +73,17 @@ class FontsFiles:
         
         # Verifies if the font name is valid
 
+        if not (font_name in self.font_files):
+
+            available_names = ""
+
+            for name in self.font_files.keys():
+
+                available_names += "\n'"+str(name)+"'"
+
+            raise ValueError("The font name '"+str(font_name)+"' is no"+
+            "t a valid font name. Check the available names")
+
 ########################################################################
 #                           Frozen snapshots                           #
 ########################################################################

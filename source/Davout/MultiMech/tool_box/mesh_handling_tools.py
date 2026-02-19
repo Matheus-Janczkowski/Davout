@@ -1274,7 +1274,8 @@ physical_group_name=None, region_function=None, field_name=None):
 # closest to a point 
 
 def dofs_per_node_finder_class(functional_data_class, field_name=None, 
-node_proximity_tolerance=1E-6, return_coordinates_per_dof_found=False):
+node_proximity_tolerance=1E-6, return_coordinates_per_dof_found=False,
+do_not_throw_error=False, n_closest_dofs=None):
     
     """
     Function to construct a class that stores a tree query object that,
@@ -1327,7 +1328,8 @@ node_proximity_tolerance=1E-6, return_coordinates_per_dof_found=False):
     class DOFsNode:
 
         def __init__(self, dof_coordinates, function_space, tolerance=
-        1E-6, return_coordinates=False):
+        1E-6, return_coordinates=False, do_not_throw_error=False,
+        n_closest_dofs=None):
             
             # Reshapes the dof coordinates according to the number of 
             # dimensions of the geometry, since FEniCS returns an array
@@ -1340,6 +1342,22 @@ node_proximity_tolerance=1E-6, return_coordinates_per_dof_found=False):
 
             self.return_coordinates_per_dof_found = return_coordinates
 
+            self.do_not_throw_error = do_not_throw_error
+
+            self.n_closest_dofs = n_closest_dofs
+
+            # Verifies if the number of closest DOFs were provided if an
+            # error is not be raised in case of a violated tolerance
+
+            if self.do_not_throw_error:
+
+                if self.n_closest_dofs is None:
+
+                    raise ValueError("'do_not_throw_error' is True, bu"+
+                    "t 'n_closest_dofs' was not provided. Give a numbe"+
+                    "r of closest DOFs to the given coordinate to be r"+
+                    "eturned")
+
         # Defines a call method to get the node numebr
 
         def __call__(self, x, y, z):
@@ -1350,22 +1368,36 @@ node_proximity_tolerance=1E-6, return_coordinates_per_dof_found=False):
             distances = np.linalg.norm(self.dof_coordinates-np.array([x, 
             y, z]), axis=1)
 
-            # Selects the DOFs indices that are close to the point given
-            # the tolerance
+            dofs_indices = None
 
-            dofs_indices = np.where(distances<self.tolerance)[0]
+            # If the tolerance is not to be used, but simply the closest
+            # DOFs are to be found
 
-            # Verifies if the found DOFs are close enough to consider it 
-            # a valid node
+            if self.do_not_throw_error:
 
-            if len(dofs_indices)==0:
+                # Gets the closest DOFs to the given coordinate
 
-                closest_node = self.dof_coordinates[np.argmin(distances)]
+                dofs_indices = np.argsort(distances)[:self.n_closest_dofs]
 
-                raise ValueError("Point ("+str(x)+", "+str(y)+", "+str(z
-                )+") is not a valid node to look for DOFs. The closest"+
-                " node is x="+str(closest_node[0])+", y="+str(
-                closest_node[1])+", z="+str(closest_node[2]))
+            else:
+
+                # Selects the DOFs indices that are close to the point 
+                # given the tolerance
+
+                dofs_indices = np.where(distances<self.tolerance)[0]
+
+                # Verifies if the found DOFs are close enough to consider 
+                # it a valid node
+
+                if len(dofs_indices)==0:
+
+                    closest_node = self.dof_coordinates[np.argmin(
+                    distances)]
+
+                    raise ValueError("Point ("+str(x)+", "+str(y)+", "+
+                    str(z)+") is not a valid node to look for DOFs. Th"+
+                    "e closest node is x="+str(closest_node[0])+", y="+
+                    +str(closest_node[1])+", z="+str(closest_node[2]))
             
             # If the coordinates of the found nodes are to be returned 
             # as well
@@ -1392,7 +1424,8 @@ node_proximity_tolerance=1E-6, return_coordinates_per_dof_found=False):
     return DOFsNode(dof_coordinates, 
     functional_data_class.monolithic_function_space, tolerance=
     node_proximity_tolerance, return_coordinates=
-    return_coordinates_per_dof_found)
+    return_coordinates_per_dof_found, do_not_throw_error=
+    do_not_throw_error, n_closest_dofs=n_closest_dofs)
     
 # Defines a function to create a list of nodes indexes that lie on a
 # surface
