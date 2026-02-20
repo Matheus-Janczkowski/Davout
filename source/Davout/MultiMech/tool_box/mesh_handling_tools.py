@@ -1338,6 +1338,8 @@ do_not_throw_error=False, n_closest_dofs=None):
             self.dof_coordinates = dof_coordinates.reshape((-1, 
             function_space.mesh().geometry().dim()))
 
+            self.n_dofs = self.dof_coordinates.shape[0]
+
             self.tolerance = tolerance
 
             self.return_coordinates_per_dof_found = return_coordinates
@@ -1357,6 +1359,22 @@ do_not_throw_error=False, n_closest_dofs=None):
                     "t 'n_closest_dofs' was not provided. Give a numbe"+
                     "r of closest DOFs to the given coordinate to be r"+
                     "eturned")
+                
+        # Defines a method to get the coordinates of a given DOF
+
+        def get_coordinates_from_dof(self, dof_index):
+
+            # Verifies if the index is valid
+
+            if dof_index>=self.n_dofs:
+
+                raise IndexError("The DOF index "+str(dof_index)+" is "+
+                "not valid. A DOF index to be valid must be between 0 "+
+                "and "+str(self.n_dofs-1))
+            
+            # Returns the DOF coordinates
+
+            return self.dof_coordinates[dof_index,:]
 
         # Defines a call method to get the node numebr
 
