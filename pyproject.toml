@@ -10,7 +10,7 @@ readme = "README.md"
 authors = [
     { name = "Matheus Janczkowski", email = "matheusj2009@hotmail.com" }
 ]
-license = { text = "MIT" }
+license = "MIT"
 requires-python = ">=3.10"
 
 dependencies = [
@@ -20,8 +20,7 @@ dependencies = [
 ]
 
 classifiers = [
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3"
 ]
 
 [project.urls]

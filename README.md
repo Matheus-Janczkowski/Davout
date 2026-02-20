@@ -1,5 +1,6 @@
 # Davout
-Repository to store my workhorses and research-themed park.
+Repository to store my workhorses and research-themed park. Github link
+to the repository and source files: https://github.com/Matheus-Janczkowski/Davout
 
 1. Link to the booklet on installation of a miscelaneous of software: https://www.overleaf.com/read/wbxhncmtnmkm#0eb73b
 
@@ -8,6 +9,9 @@ Repository to store my workhorses and research-themed park.
 3. Link to the booklet on writing in LaTeX: https://www.overleaf.com/read/sdrvfrpdjhft#66d6f9
 
 4. Link for the presentation template: https://www.overleaf.com/read/sbgxdphxswmm#6d7d64
+
+# Installation using pip
+pip install Davout
 
 # Installation using installer file
 Download the zip file, unzip it and move it to a suitable directory. 
