@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "Davout"
+version = "0.1.0"
+description = "Scientific computing utilities combining FEM, ANN and tooling"
+readme = "README.md"
+authors = [
+    { name = "Matheus Janczkowski", email = "matheusj2009@hotmail.com" }
+]
+license = { text = "MIT" }
+requires-python = ">=3.10"
+
+dependencies = [
+    "numpy",
+    "scipy",
+    "matplotlib",
+]
+
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+]
+
+[project.urls]
+Homepage = "https://github.com/Matheus-Janczkowski/Davout"
+
+[tool.setuptools]
+package-dir = {"" = "source"}
+
+[tool.setuptools.packages.find]
+where = ["source"]
+
+[tool.setuptools.package-data]
+Davout = [
+    "LaTeXUtilities/*.sty",
+    "PythonicUtilities/fonts/*.ttf",
+]
