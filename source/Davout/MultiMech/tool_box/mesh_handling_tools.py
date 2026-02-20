@@ -1364,6 +1364,11 @@ class DOFsNode:
                 )+") is not a valid node to look for DOFs. The closest"+
                 " node is x="+str(closest_node[0])+", y="+str(
                 closest_node[1])+", z="+str(closest_node[2]))
+            
+        # Reassembles the DOFs to match the list of DOFs indices
+
+        correct_dofs_indices = [self.dofs_indices[dof_index] for (
+        dof_index) in dofs_indices]
         
         # If the coordinates of the found nodes are to be returned as 
         # well
@@ -1373,8 +1378,8 @@ class DOFsNode:
             # If there are multiple DOFs in a single location, returns a
             # a list of them
 
-            return dofs_indices, [self.dof_coordinates[dof_index,:] for (
-            dof_index) in dofs_indices]
+            return correct_dofs_indices, [self.dof_coordinates[dof_index,
+            :] for dof_index in dofs_indices]
         
         # Otherwise, returns the dof indices only
 
@@ -1383,7 +1388,7 @@ class DOFsNode:
             # If there are multiple DOFs in a single location, returns a 
             # list of them
 
-            return dofs_indices
+            return correct_dofs_indices
     
 # Defines a function to create a class that returns the DOFs in a node
 # closest to a point 

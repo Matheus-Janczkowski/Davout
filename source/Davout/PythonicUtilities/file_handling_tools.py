@@ -263,17 +263,72 @@ def txt_toList(file_name, parent_path=None, do_not_raise_error=False):
 
 # Defines a function to read a txt file and convert it into a dictionary
 
-def txt_toDict(file_name, parent_path=None):
+def txt_toDict(file_name, parent_path=None, 
+txt_has_list_of_keys_and_values=True, do_not_raise_error=False):
+    
+    # If the txt file has a list of paired keys and values 
+    
+    if txt_has_list_of_keys_and_values:
 
-    # Reads as a list first
+        # Reads as a list first
 
-    read_list = txt_toList(file_name, parent_path=parent_path)
+        read_list = txt_toList(file_name, parent_path=parent_path)
 
-    print(read_list)
+        print(read_list)
 
-    # Converts to dictionary and returns it
+        # Converts to dictionary and returns it
 
-    return list_toDict(read_list)
+        return list_toDict(read_list)
+    
+    # Otherwise, if its a plain dictionary
+
+    else:
+
+        # Adds the parent path if it is given
+
+        if not (parent_path is None):
+
+            file_name = path_tools.verify_path(parent_path, file_name)
+
+        # Makes sure the file ends with txt
+
+        file_name = (path_tools.take_outFileNameTermination(file_name)+
+        ".txt")
+
+        # Verifies the file existence
+
+        if not path_tools.verify_file_existence(file_name, 
+        do_not_raise_error=do_not_raise_error):
+            
+            return None
+
+        # Reads the txt file
+
+        saved_string = ""
+
+        try:
+
+            with open(file_name, "r", encoding="utf-8") as infile:
+
+                saved_string = infile.read()
+
+        except:
+
+            raise FileNotFoundError("The file "+file_name+" was not found "+
+            "while evaluating txt_toDict method in file_handling_tools.py"+
+            "\n")
+        
+        saved_string = saved_string.encode('utf-8').decode('unicode_escape')
+
+        # Converts the string to a dictionary
+        
+        #print("Receives:", saved_string+",\nrepr:")
+
+        #print(repr(saved_string))
+
+        read_dict = string_tools.string_toDict(saved_string)
+
+    return read_dict
 
 ########################################################################
 #                               Testing                                #

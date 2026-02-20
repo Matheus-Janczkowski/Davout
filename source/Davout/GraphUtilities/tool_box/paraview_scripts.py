@@ -111,7 +111,7 @@ glyph=None, glyph_scale=None, display_reference_configuration="True",
 clip=None, clip_plane_origin=None, clip_plane_normal_vector=None,
 set_camera_interactively=None, background_color=None, 
 legend_bar_font_color=None, color_bar_min_value=None, 
-color_bar_max_value=None):
+color_bar_max_value=None, read_camera_settings_dictionary=None):
     
     # Instantiates the class of fonts
 
@@ -936,6 +936,17 @@ color_bar_max_value=None):
         "ngth="+legend_bar_length+",\nsize_in_pixels="+str(
         size_in_pixels_dict))
 
+        # Saves this as a list as well
+
+        arguments_dict = ("{'camera_position': "+str(camera_position)+
+        ", 'camera_focal_point': "+str(camera_focal_point)+", 'camera_"+
+        "up_direction': "+str(camera_up_direction)+", 'camera_parallel"+
+        "_scale': "+str(camera_parallel_scale)+", 'camera_rotation': "+
+        str(camera_rotation)+", 'legend_bar_position': "+str(
+        legend_bar_position)+", 'legend_bar_length': "+str(
+        legend_bar_length)+", 'size_in_pixels': "+str(size_in_pixels_dict
+        )+"}")
+
         # Saves the list of arguments as a string in a txt file
 
         print("Saves a txt file with the arguments to 'frozen_snapshot"+
@@ -944,6 +955,57 @@ color_bar_max_value=None):
         file_tools.save_string_into_txt(arguments_list, "paraview_came"+
         "ra_settings.txt", add_extension=False, parent_path=output_path,
         verbose=True)
+
+        file_tools.save_string_into_txt(str(arguments_dict), "paraview"+
+        "_camera_settings_dictionary.txt", add_extension=False, 
+        parent_path=output_path, verbose=True)
+
+    # Verifies if the flag to read the dictionary of camera settings is
+    # active
+
+    if read_camera_settings_dictionary=="True":
+
+        # Verifies if there is a file with the settings
+
+        if not path_tools.verify_file_existence(output_path+"//paravie"+
+        "w_camera_settings_dictionary.txt", do_not_raise_error=True):
+            
+            raise FileNotFoundError("The user asked to read the camera"+
+            " settings from the dictionary of camera settings internal"+
+            "ly created by paraview_tools. But the file '"+str(
+            output_path+"//paraview_camera_settings_dictionary.txt")+
+            "' was not found. Possibly it has not yet been created. pa"+
+            "raview_tools creates it automatically by setting\nset_cam"+
+            "era_interactively=True")
+        
+        print("Reads the dictionary of camera settings at '"+str(
+        output_path)+"//paraview_camera_settings_dictionary.txt'\n")
+        
+        # Gets the dictionary from the txt file
+
+        settings_dict = file_tools.txt_toDict("paraview_camera_setting"+
+        "s_dictionary.txt", parent_path=output_path, 
+        txt_has_list_of_keys_and_values=False)
+
+        # Gets the individual components, but make them strings to let
+        # them compatible with the next steps
+
+        camera_position = str(settings_dict['camera_position'])
+
+        camera_focal_point = str(settings_dict['camera_focal_point'])
+
+        camera_up_direction = str(settings_dict['camera_up_direction'])
+
+        camera_parallel_scale = str(settings_dict['camera_parallel_sca'+
+        'le'])
+
+        camera_rotation = str(settings_dict['camera_rotation'])
+
+        legend_bar_position = str(settings_dict['legend_bar_position'])
+
+        legend_bar_length = str(settings_dict['legend_bar_length'])
+
+        size_in_pixels = str(settings_dict['size_in_pixels'])
 
     # Sets the position of the legend
 
