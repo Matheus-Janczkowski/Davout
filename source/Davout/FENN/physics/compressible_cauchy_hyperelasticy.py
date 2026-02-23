@@ -35,8 +35,8 @@ class CompressibleHyperelasticity:
 
         if vector_of_parameters is None:
 
-            vector_of_parameters = tf.Variable(tf.zeros([n_realizations,
-            self.global_number_dofs], dtype=self.dtype))
+            self.vector_of_parameters = tf.Variable(tf.zeros([
+            n_realizations, self.global_number_dofs], dtype=self.dtype))
 
         # Verifies if the domain elements have the field displacement
 
@@ -48,16 +48,16 @@ class CompressibleHyperelasticity:
         
         # Instantiates the class to enforce Dirichlet boundary conditions
 
-        self.BCs_class = DirichletBoundaryConditions(vector_of_parameters, 
-        boundary_conditions_dict, mesh_data_class.boundary_elements["D"+
-        "isplacement"], mesh_data_class.boundary_physicalGroupsNameToTag, 
-        self.time)
+        self.BCs_class = DirichletBoundaryConditions(
+        self.vector_of_parameters, boundary_conditions_dict, 
+        mesh_data_class.boundary_elements["Displacement"], 
+        mesh_data_class.boundary_physicalGroupsNameToTag, self.time)
         
         # Instantiates the class to compute the parcel of the residual
         # vector due to the variation of the internal work
 
         self.internal_work_variation = CompressibleInternalWorkReferenceConfiguration(
-        vector_of_parameters, constitutive_models_dict, 
+        self.vector_of_parameters, constitutive_models_dict, 
         mesh_data_class.domain_elements["Displacement"], 
         mesh_data_class.domain_physicalGroupsNameToTag)
 
@@ -66,7 +66,7 @@ class CompressibleHyperelasticity:
         # surface tractions
 
         self.traction_work_variation = ReferentialTractionWork(
-        vector_of_parameters, traction_dictionary, 
+        self.vector_of_parameters, traction_dictionary, 
         mesh_data_class.boundary_elements["Displacement"], 
         mesh_data_class.boundary_physicalGroupsNameToTag)
 
