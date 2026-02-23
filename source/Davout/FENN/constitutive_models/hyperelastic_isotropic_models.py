@@ -10,26 +10,93 @@ from ..tool_box.math_tools import get_inverse
 class NeoHookean:
 
     def __init__(self, material_properties, mesh_data_class):
+
+        # Verifies if material properties are a list, which indicates 
+        # different material properties along different realizations of
+        # the BVP
+
+        if isinstance(material_properties, list):
+
+            # Initializes a list for each Lamé parameter, to store their
+            # values across realizations
+
+            self.mu = []
+
+            self.lmbda = []
+
+            # Iterates through the dictionaries in the material proper-
+            # ties list
+
+            for material_dict in material_properties:
+
+                # Gets the material parameters
+
+                E = material_dict["E"]
+
+                nu = material_dict["nu"]
+
+                # Evaluates the Lamé parameters
+
+                self.mu.append(E/(2*(1+nu)))
+
+                self.lmbda.append((nu*E)/((1+nu)*(1-2*nu)))
+
+            # Gets the number of realizations
+
+            self.n_material_realizations = len(self.mu)
+
+            # Converts the Lamé parameters to tensors [n_realizations,
+            # 1, 1]
+
+            self.mu = tf.reshape(tf.constant(self.mu, dtype=
+            mesh_data_class.dtype), [self.n_material_realizations, 1, 1])
+
+            self.lmbda = tf.reshape(tf.constant(self.lmbda, dtype=
+            mesh_data_class.dtype), [self.n_material_realizations, 1, 1])
+
+        # Otherwise, if it is a dictionary
+
+        elif isinstance(material_properties, dict):
         
-        # Gets the material parameters
+            # Gets the material parameters
 
-        E = material_properties["E"]
+            E = material_properties["E"]
 
-        nu = material_properties["nu"]
+            nu = material_properties["nu"]
 
-        # Evaluates the Lamé parameters
+            # Evaluates the Lamé parameters
 
-        self.mu = tf.constant(E/(2*(1+nu)), dtype=mesh_data_class.dtype)
+            self.mu = E/(2*(1+nu))
 
-        self.lmbda = tf.constant((nu*E)/((1+nu)*(1-2*nu)), dtype=
-        mesh_data_class.dtype)
+            self.lmbda = (nu*E)/((1+nu)*(1-2*nu))
+
+            # Gets the number of realizations
+
+            self.n_material_realizations = 0
+
+            # Converts the Lamé parameters to tensors [0]
+
+            self.mu = tf.constant(self.mu, dtype=mesh_data_class.dtype)
+
+            self.lmbda = tf.constant(self.lmbda, dtype=
+            mesh_data_class.dtype)
+
+        else:
+
+            raise TypeError("'material_properties' in 'NeoHookean' con"+
+            "stitutive model class must be a list for realizations wit"+
+            "h different material parameters or a dictionary, for a si"+
+            "ngle value of material parameters across the realizations"+
+            " of the BVP")
 
         # Initializes the identity tensor attribute that the code will
         # automatically fill it later
 
         self.identity_tensor = None
 
-    # Defines a function to evaluate the free energy density
+    # Defines a function to evaluate the free energy density. F, the de-
+    # formation energy, is a tensor [n_realizations, n_elements, n_qua-
+    # drature_points, 3, 3]
 
     @tf.function
     def strain_energy(self, F):
@@ -59,16 +126,24 @@ class NeoHookean:
         # Computes the transpose of the inverse of the deformation gra-
         # dient. Transposes only the two last indices
 
-        F_inv_transposed = get_inverse(tf.transpose(F, perm=[0, 1, 3, 2
-        ]), self.identity_tensor)
+        F_inv_transposed = get_inverse(tf.transpose(F, perm=[0, 1, 2, 4, 
+        3]), self.identity_tensor)
 
         # Computes the jacobian
 
         J = tf.linalg.det(F)
 
         # Evaluates the analytical expression for the first Piola-
-        # Kirchhoff stress tensor as a tensor [n_elements, 
-        # n_quadrature_points, 3, 3]
+        # Kirchhoff stress tensor as a tensor [n_realizations, n_ele-
+        # ments, n_quadrature_points, 3, 3]
 
-        return ((self.mu*F)+tf.einsum('eq,eqij->eqij', ((self.lmbda*
-        tf.math.log(J))-self.mu), F_inv_transposed))
+        #return ((self.mu*F)+tf.einsum('peq,peqij->peqij', ((self.lmbda*
+        #tf.math.log(J))-self.mu), F_inv_transposed))
+
+        # Adds two dimensions at the end to make this tensor [n_realiza-
+        # tions, n_elements, n_quadrature_points, 1, 1]
+
+        scalar_coefficient = tf.expand_dims(tf.expand_dims((self.lmbda*
+        tf.math.log(J))-self.mu, axis=-1), axis=-1)
+
+        return (self.mu*F)+(scalar_coefficient*F_inv_transposed)

@@ -12,6 +12,10 @@ class DirichletBoundaryConditions:
 
     def __init__(self, vector_of_parameters, boundary_conditions_dict, 
     mesh_dict, boundary_physical_groups_dict, time):
+        
+        # Gets the number of batched BVP instances
+
+        self.n_realizations = vector_of_parameters.shape[0]
 
         # Initializes a list of instances of classes that apply Dirichlet
         # boundary conditions
@@ -112,7 +116,8 @@ class DirichletBoundaryConditions:
 
             self.BCs_classes.append(available_BCs_classes[
             boundary_condition["BC case"]](mesh_data, boundary_condition,
-            vector_of_parameters, physical_group, time))
+            vector_of_parameters, physical_group, time, 
+            self.n_realizations))
 
         # Gets the number of boundary conditions
 

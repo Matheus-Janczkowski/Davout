@@ -75,6 +75,283 @@ must_have_all_keys=False, fill_in_keys=False):
                 raise KeyError("The dictionary "+str(dictionary_location
                 )+" has the key '"+str(current_key)+"', but it is not "+
                 "in the list of master keys")
+            
+# Defines a function to verify optional and obligatory keys in a given
+# dictionary
+
+def verify_obligatory_and_optional_keys(dictionary: dict, 
+obligatory_keys: (list | dict), optional_keys: (list | dict), 
+dictionary_variable_name: str, location: str, check_not_expected_keys=
+True):
+    
+    """
+    Function to verify if a dictionary has all the obligatory keys, and
+    if any other key not listed in obligatory or optional keys was given.
+    
+    dictionary: asserted dictionary
+    
+    obligatory_keys: list of obligatory keys. It can be either a simple 
+    list such as [key1, key2, ..., keyn], or a dictionary with a key for 
+    description and type {key1: {"description": description_1, "type":
+    type1}, ...]
+    
+    optional_keys: list of optional_keys. It can be either a simple list
+    such as [key1, key2, ..., keyn], or a dictionary with a key for 
+    description and type {key1: {"description": description_1, "type":
+    type1}, ...]
+    
+    dictionary_variable_name: name of the variable that possess that 
+    dictionary
+    
+    location: function or class name where this dictionary is processed
+    
+    check_not_expected_keys: flag to tell if this function is to verify
+    if keys in the dictionary are not in the list of obligatory or 
+    optional keys. The default value is True"""
+
+    # Verifies if dictionary is indeed a dictionary
+
+    if not isinstance(dictionary, dict):
+
+        raise TypeError("'"+str(dictionary_variable_name)+"' in '"+str(
+        location)+"' must be a dictionary. Currently it is:\n"+str(
+        dictionary)+"\nwhose type is: "+str(type(dictionary)))
+    
+    # Initializes a set of inspected keys
+
+    inspected_keys = set()
+
+    # Verifies if obligatory keys is a dictionary
+
+    if isinstance(obligatory_keys, dict):
+    
+        # Verifies if any of the obligatory key is not there
+
+        for key, info_dict in obligatory_keys.items():
+                
+            # Verifies if the key is there
+
+            if not (key in dictionary):
+
+                # Gets a string with the list of obligatory and optional 
+                # keys
+
+                available_keys = list_keys(obligatory_keys, 
+                optional_keys)
+
+                raise ValueError("Key '"+str(key)+"' was not found in "+
+                "'"+str(dictionary_variable_name)+"' dictionary at '"+
+                str(location)+"'. However, that key is obligatory. Che"+
+                "ck the available keys:"+available_keys)
+            
+            # Verifies the type of the associated value
+
+            elif "type" in info_dict:
+
+                # Gets the necessary type
+
+                value_type = info_dict["type"]
+
+                # Gets the associated value in the given dictionary
+
+                value = dictionary[key]
+
+                # Verifies the type
+
+                if not isinstance(value, value_type):
+
+                    # Gets a string with the list of obligatory and op-
+                    # tional keys
+
+                    available_keys = list_keys(obligatory_keys, 
+                    optional_keys)
+
+                    raise TypeError("The value associated with key '"+
+                    str(key)+"' in dictionary '"+str(
+                    dictionary_variable_name)+"' at '"+str(location)+
+                    "' has type "+str(type(value))+", whereas it must "+
+                    "have type '"+str(value_type)+"'. Check the availa"+
+                    "ble keys and their types:")
+                
+            # If nothing happened, updates the set of verified keys
+
+            inspected_keys.add(key)
+
+    # Otherwise
+
+    else:
+    
+        # Verifies if any of the obligatory key is not there
+
+        for key_element in obligatory_keys:
+                
+            # Verifies if the key in there
+
+            if not (key_element in dictionary):
+
+                # Gets a string with the list of obligatory and optional 
+                # keys
+
+                available_keys = list_keys(obligatory_keys, 
+                optional_keys)
+
+                raise ValueError("Key '"+str(key_element)+"' was not f"+
+                "ound in '"+str(dictionary_variable_name)+"' dictionar"+
+                "y at '"+str(location)+"'. However, that key is obliga"+
+                "tory. Check the available keys:"+available_keys)
+                
+            # Otherwise, updates the set of verified keys
+
+            else:
+
+                inspected_keys.add(key_element)
+
+    # Gets a list of optional keys
+
+    optional_keys_list = []
+
+    flag_check_type = False
+
+    if isinstance(optional_keys, dict):
+
+        optional_keys_list = list(optional_keys.keys())
+
+        flag_check_type = True
+
+    else:
+
+        optional_keys_list = optional_keys
+        
+    # Verifies if any of the keys in the dictionary is not in the lists 
+    # of obligatory or optional keys
+
+    if check_not_expected_keys:
+
+        # Iterates through the keys that were not inspect yet
+
+        for key in (set(dictionary.keys())-inspected_keys):
+
+            # Verifies if they are in the list of optional keys
+
+            if not (key in optional_keys_list):
+
+                # Gets a string with the list of obligatory and optional
+                # keys
+
+                available_keys = list_keys(obligatory_keys, 
+                optional_keys)
+
+                raise ValueError("Key '"+str(key)+"' is not a valid ke"+
+                "y for the dictionary '"+str(dictionary_variable_name)+
+                "' at '"+str(location)+"'. Check the available keys:"+
+                available_keys)
+            
+            # Verifies the type of the associated value if needed
+
+            elif flag_check_type:
+
+                # Gets the value and the required type
+
+                value_type = optional_keys[key]["type"]
+
+                value = dictionary[key]
+
+                # Compares them
+
+                if not isinstance(value, value_type):
+
+                    # Gets a string with the list of obligatory and op-
+                    # tional keys
+
+                    available_keys = list_keys(obligatory_keys, 
+                    optional_keys)
+
+                    raise TypeError("The value associated with key '"+
+                    str(key)+"' in dictionary '"+str(
+                    dictionary_variable_name)+"' at '"+str(location)+
+                    "' has type "+str(type(value))+", whereas it must "+
+                    "have type '"+str(value_type)+"'. Check the availa"+
+                    "ble keys and their types:")
+            
+# Defines a function to list the keys in a string for error messageing
+
+def list_keys(obligatory_keys, optional_keys):
+
+    # Gets the list of available keys
+
+    available_keys = "\n\nObligatory keys:"
+
+    # Verifies if the obligatory keys are in fact a dictionary
+
+    if isinstance(obligatory_keys, dict):
+
+        for key, key_info in obligatory_keys.items():
+
+            # Adds the key name
+
+            available_keys += ("\n\n'"+str(key)+"'")
+
+            # Verifies if type is given
+
+            if "type" in key_info:
+
+                available_keys += ("\nType: "+str(key_info["type"]))
+
+            # Verifies if a description is given
+
+            if "description" in key_info:
+
+                available_keys += ("\nDescription:\n"+str(key_info["de"+
+                "scription"]))
+
+    # Otherwise, if it is a plain list
+
+    else:
+
+        for key in obligatory_keys:
+
+            # Adds the key name and its description
+
+            available_keys += "\n'"+str(key)+"'"
+
+    # Adds the optional keys
+
+    available_keys += "\n\nOptional keys:"
+
+    if isinstance(optional_keys, dict):
+
+        for key, key_info in optional_keys.items():
+
+            # Adds the key name
+
+            available_keys += ("\n\n'"+str(key)+"'")
+
+            # Verifies if type is given
+
+            if "type" in key_info:
+
+                available_keys += ("\nType: "+str(key_info["type"]))
+
+            # Verifies if a description is given
+
+            if "description" in key_info:
+
+                available_keys += ("\nDescription:\n"+str(key_info["de"+
+                "scription"]))
+
+    # Otherwise, if it is a plain list
+
+    else:
+
+        for key in optional_keys:
+
+            # Adds the key name and its description
+
+            available_keys += "\n'"+str(key)+"'"
+
+    # Returns the string
+
+    return available_keys
 
 ########################################################################
 #                           Key manipulation                           #

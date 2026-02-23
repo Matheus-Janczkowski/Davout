@@ -7,6 +7,8 @@ from ..tool_box import parametric_curves_tools
 
 from ...PythonicUtilities.package_tools import load_classes_from_module
 
+from ...PythonicUtilities.dictionary_tools import verify_obligatory_and_optional_keys
+
 ########################################################################
 #                             Fixed support                            #
 ########################################################################
@@ -17,7 +19,7 @@ from ...PythonicUtilities.package_tools import load_classes_from_module
 class FixedSupportDirichletBC:
 
     def __init__(self, mesh_data_class, dirichlet_information, 
-    vector_of_parameters, physical_group_name, time):
+    vector_of_parameters, physical_group_name, time, n_realizations):
         
         # Recovers the tensor of DOFs per element [n_element, n_nodes,
         # n_dofs_per_node], and flattens it to [number_of_dofs, 1]
@@ -38,13 +40,84 @@ class FixedSupportDirichletBC:
 
         # Stacks and flattens the tensor of DOFs
 
-        self.dofs_per_element = tf.reshape(tf.stack(
-        self.dofs_per_element, axis=0), (-1,1))
+        #self.dofs_per_element = tf.reshape(tf.stack(
+        #self.dofs_per_element, axis=0), (-1,1))
 
         # Creates a null tensor of shape [n_dofs]
 
-        self.null_tensor = tf.zeros((self.dofs_per_element.shape[0],), 
-        dtype=mesh_data_class.dtype)
+        #self.null_tensor = tf.zeros((self.dofs_per_element.shape[0],), 
+        #dtype=mesh_data_class.dtype)
+
+        # Verifies the keys of the dictionary of boundary condition in-
+        # formation
+
+        verify_obligatory_and_optional_keys(dirichlet_information, ["B"+
+        "C case"], {"list of realizations with this BC": {"type": list}}, 
+        "dirichlet_information", "FixedSupportDirichletBC")
+
+        # Verifies if the user has given any list of realizations that
+        # do have this boundary condition
+
+        realizations_range = None
+
+        if "list of realizations with this BC" in dirichlet_information:
+
+            realizations_range = dirichlet_information["list of realiz"+
+            "ations with this BC"]
+            
+            # Transforms it to an integer tensor
+
+            realizations_range = tf.constant(realizations_range, dtype=
+            mesh_data_class.integer_dtype)
+
+        # Otherwise, creates a simple range
+
+        else:
+
+            realizations_range = tf.range(n_realizations, dtype=
+            mesh_data_class.integer_dtype)
+
+        # Stack all fixed DOFs into [n_fixed_dofs]
+
+        self.dofs_per_element = tf.reshape(tf.stack(
+        self.dofs_per_element, axis=0), [-1])
+
+        self.n_fixed_dofs = tf.shape(self.dofs_per_element)[0]
+
+        self.n_selected_realizations = tf.shape(realizations_range)[0]
+
+        # Verifies if the maximum realization number is within bounds to
+        # the global number of realizations
+
+        tf.debugging.assert_less(tf.reduce_max(realizations_range),
+        n_realizations, message="The maximum realization index in 'Fix"+
+        "edSupportDirichletBC' is bigger than the provided global numb"+
+        "er of realizations, which is "+str(n_realizations))
+
+        # Precomputes thes zeros to write into the vector of parameters,
+        # the shape of this tensor is first [n_realizations, 
+        # n_fixed_dofs], then, [n_realizations*n_fixed_dofs]
+
+        self.zero_updates = tf.reshape(tf.zeros([
+        self.n_selected_realizations, self.n_fixed_dofs], dtype=
+        mesh_data_class.dtype), [-1])
+
+        # Broadcasts DOF indices along the realizations axis
+
+        dofs_indices = tf.broadcast_to(self.dofs_per_element[None, :], [
+        self.n_selected_realizations, self.n_fixed_dofs])
+
+        # Broadcasts the realization indices to make pairs with DOF in-
+        # dices
+
+        realization_indices = tf.broadcast_to(realizations_range[:, None
+        ], [self.n_selected_realizations, self.n_fixed_dofs])
+
+        # Stacks indices for scatter_nd_update: [n_realizations, 
+        # n_fixed_dofs, 2]
+
+        self.scatter_indices = tf.reshape(tf.stack([realization_indices, 
+        dofs_indices], axis=-1), [-1, 2])
 
     # Defines a function to apply such boundary conditions
 
@@ -53,8 +126,11 @@ class FixedSupportDirichletBC:
 
         # Assigns values to the vector of parameters in place
 
-        vector_of_parameters.scatter_nd_update(self.dofs_per_element, 
-        self.null_tensor)
+        #vector_of_parameters.scatter_nd_update(self.dofs_per_element, 
+        #self.null_tensor)
+
+        vector_of_parameters.scatter_nd_update(self.scatter_indices,
+        self.zero_updates)
 
 ########################################################################
 #                    Prescribed value and direction                    #
@@ -66,87 +142,104 @@ class FixedSupportDirichletBC:
 class PrescribedDirichletBC:
 
     def __init__(self, mesh_data_class, dirichlet_information, 
-    vector_of_parameters, physical_group_name, time):
+    vector_of_parameters, physical_group_name, time, n_realizations):
         
         # Gets the available parametric curves
 
         available_parametric_curves = load_classes_from_module(
         parametric_curves_tools, return_dictionary_of_classes=True)
-        
-        # Verifies if the dictionary of information has the key for the 
-        # DOFs to be prescribed
 
-        if not ("degrees_ofFreedomList" in dirichlet_information):
+        # Verifies the dictionary keys
 
-            raise KeyError("The dictionary of information for 'Prescri"+
-            "bedDirichletBC' at physical group '"+str(physical_group_name
-            )+"' does not have the key 'degrees_ofFreedomList' whose v"+
-            "alue is a list of an integer with the local indices of th"+
-            "e degrees of freedom to be prescribed (the first index is"+
-            " 0)")
+        verify_obligatory_and_optional_keys(dirichlet_information, {"d"+
+        "egrees_ofFreedomList": {"description": "list of integers with"+
+        " the local indices of the degrees of freedom to be prescribed"+
+        " (the first index is 0), at physical group '"+str(
+        physical_group_name)+"'"}, 
+        "end_point": {"type": list, "description": "list of a value co"+
+        "rresponding to the final time at the first component and a li"+
+        "st of prescribed values at the second component. At physical "+
+        "group '"+str(physical_group_name)+"'"}}, {"list of realizatio"+
+        "ns with this BC": {"type": list}}, "dirichlet_information", 
+        "PrescribedDirichletBC")
+
+        # Verifies if the user has given any list of realizations that
+        # do have this boundary condition
+
+        realizations_range = None
+
+        if "list of realizations with this BC" in dirichlet_information:
+
+            realizations_range = dirichlet_information["list of realiz"+
+            "ations with this BC"]
+            
+            # Transforms it to an integer tensor
+
+            realizations_range = tf.constant(realizations_range, dtype=
+            mesh_data_class.integer_dtype)
+
+        # Otherwise, creates a simple range
+
+        else:
+
+            realizations_range = tf.range(n_realizations, dtype=
+            mesh_data_class.integer_dtype)
+
+        # Gets the number of selected realizations
+
+        self.n_selected_realizations = tf.shape(realizations_range)[0]
+
+        # Verifies if the maximum realization number is within bounds to
+        # the global number of realizations
+
+        tf.debugging.assert_less(tf.reduce_max(realizations_range),
+        n_realizations, message="The maximum realization index in 'Pre"+
+        "scribedDirichletBC' is bigger than the provided global number"+
+        " of realizations, which is "+str(n_realizations))
+
+        # Gets the keys
         
         prescribed_dofs_list = dirichlet_information["degrees_ofFreedo"+
         "mList"]
-        
-        # Verifies if the dictionary of information has the key for the 
-        # values of the DOFs to be prescribed
-
-        if not ("end_point" in dirichlet_information):
-
-            raise KeyError("The dictionary of information for 'Prescri"+
-            "bedDirichletBC' at physical group '"+str(physical_group_name
-            )+"' does not have the key 'end_point', whose value is a l"+
-            "ist of a value corresponding to the final time at the fir"+
-            "st component and a list of prescribed values at the secon"+
-            "d component")
         
         value_prescription = dirichlet_information["end_point"]
 
         final_time = None
 
-        # Verifies if the value description is a list
+        # Verifies if the value description is a list with the proper
+        # size
 
-        if not isinstance(value_prescription, list):
+        if len(value_prescription)!=2:
 
             raise TypeError("'end_point' provided to 'PrescribedDirich"+
             "letBC' at physical group '"+str(physical_group_name)+"' i"+
-            "s not a list. It must be a list with the final time at th"+
-            "e first component and a list of prescribed values at the "+
-            "second component. Currently it is: "+str(value_prescription))
+            "s a list with length different than 2. It must be a list "+
+            "with the final time at the first component and a list of "+
+            "prescribed values at the second component. Currently it i"+
+            "s: "+str(value_prescription))
         
-        else:
+        # Gets the final time
 
-            if len(value_prescription)!=2:
+        final_time = value_prescription[0]
 
-                raise TypeError("'end_point' provided to 'PrescribedDi"+
-                "richletBC' at physical group '"+str(physical_group_name
-                )+"' is a list with length different than 2. It must b"+
-                "e a list with the final time at the first component a"+
-                "nd a list of prescribed values at the second componen"+
-                "t. Currently it is: "+str(value_prescription))
-            
-            # Gets the final time
+        # Verifies if the second component is a list or an float
 
-            final_time = value_prescription[0]
+        if isinstance(value_prescription[1], float):
 
-            # Verifies if the second component is a list or an float
+            value_prescription[1] = [value_prescription[1]]
 
-            if isinstance(value_prescription[1], float):
+        if not isinstance(value_prescription[1], list):
 
-                value_prescription[1] = [value_prescription[1]]
+            raise TypeError("'end_point' provided to 'PrescribedDirich"+
+            "letBC' at physical group '"+str(physical_group_name)+"' h"+
+            "as its second component not as a list. It must be a list "+
+            "prescribed values at the second component, and they must "+
+            "correspond to the list of prescribed DOFs. Currently it i"+
+            "s: "+str(value_prescription[1]))
+        
+        # Transforms the value prescription to its second component
 
-            if not isinstance(value_prescription[1], list):
-
-                raise TypeError("'end_point' provided to 'PrescribedDi"+
-                "richletBC' at physical group '"+str(physical_group_name
-                )+"' has its second component not as a list. It must b"+
-                "e a list prescribed values at the second component, a"+
-                "nd they must correspond to the list of prescribed DOF"+
-                "s. Currently it is: "+str(value_prescription[1]))
-            
-            # Transforms the value prescription to its second component
-
-            value_prescription = value_prescription[1]
+        value_prescription = value_prescription[1]
 
         # Verifies if the list of prescribed DOFs is an integer
 
@@ -280,24 +373,74 @@ class PrescribedDirichletBC:
         # Stacks the list of prescribed DOFs back into a tensor, and re-
         # shapes it to a flat tensor
 
-        self.prescribed_dofs = tf.reshape(tf.stack(dofs_list, axis=0), (
-        -1,1))
-        
+        #self.prescribed_dofs = tf.reshape(tf.stack(dofs_list, axis=0), (
+        #-1,1))
+
+        prescribed_dofs = tf.reshape(tf.stack(dofs_list, axis=0), [
+        -1])
+
+        self.n_prescribed_dofs = tf.shape(prescribed_dofs)[0]
+
+        # Broadcasts the DOFs indices to account for the realizations
+
+        dofs_indices = tf.broadcast_to(prescribed_dofs[None, :], [
+        self.n_selected_realizations, self.n_prescribed_dofs])
+
+        # Broadcasts the realizations indices
+
+        realization_indices = tf.broadcast_to(realizations_range[:, None
+        ], [self.n_selected_realizations, self.n_prescribed_dofs])
+
+        # Builds the scatter indices tensor by concatenating realization
+        # and DOF index informations
+
+        self.scatter_indices = tf.reshape(tf.stack([realization_indices, 
+        dofs_indices], axis=-1), [-1, 2])
+                
         # Stacks the list of prescribed values in the same fashion
 
-        self.prescribed_values = tf.Variable(tf.reshape(tf.stack(
-        [load_instance() for load_instance in (
-        self.list_of_load_instances)], axis=0), (-1,)))
+        #self.prescribed_values = tf.Variable(tf.reshape(tf.stack(
+        #[load_instance() for load_instance in (
+        #self.list_of_load_instances)], axis=0), (-1,)))
+
+        # Gets the values by calling the loading classes
+
+        values = tf.reshape(tf.stack([load_instance() for (
+        load_instance) in self.list_of_load_instances], axis=0), [-1])
+
+        # Broadcasts the values across realizations
+
+        values = tf.broadcast_to(values[None, :], [
+        self.n_selected_realizations, self.n_prescribed_dofs])
+
+        # Creates a variable for the prescribed values
+
+        self.prescribed_values = tf.Variable(tf.reshape(values, [-1]))
 
     # Defines a function to update loads
 
+    @tf.function
     def update_load_curve(self):
         
         # Stacks the list of prescribed values in the same fashion
 
-        self.prescribed_values.assign(tf.reshape(tf.stack(
-        [load_instance() for load_instance in (
-        self.list_of_load_instances)], axis=0), (-1,)))
+        #self.prescribed_values.assign(tf.reshape(tf.stack(
+        #[load_instance() for load_instance in (
+        #self.list_of_load_instances)], axis=0), (-1,)))
+
+        # Gets the values by calling the loading classes
+
+        values = tf.reshape(tf.stack([load_instance() for (
+        load_instance) in self.list_of_load_instances], axis=0), [-1])
+
+        # Broadcasts the values across realizations
+
+        values = tf.broadcast_to(values[None, :], [
+        self.n_selected_realizations, self.n_prescribed_dofs])
+
+        # Creates a variable for the prescribed values
+
+        self.prescribed_values.assign(tf.reshape(values, [-1]))
 
     # Defines a function to apply such boundary conditions
 
@@ -306,5 +449,8 @@ class PrescribedDirichletBC:
 
         # Assigns values to the vector of parameters in place
 
-        vector_of_parameters.scatter_nd_update(self.prescribed_dofs, 
+        #vector_of_parameters.scatter_nd_update(self.prescribed_dofs, 
+        #self.prescribed_values)
+
+        vector_of_parameters.scatter_nd_update(self.scatter_indices, 
         self.prescribed_values)

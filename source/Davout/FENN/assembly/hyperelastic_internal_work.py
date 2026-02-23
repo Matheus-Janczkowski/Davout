@@ -19,6 +19,10 @@ class CompressibleInternalWorkReferenceConfiguration:
     def __init__(self, vector_of_parameters, constitutive_models_dict, 
     mesh_dict, domain_physical_groups_dict):
         
+        # Gets the number of batched BVP instances
+
+        self.n_realizations = vector_of_parameters.shape[0]
+        
         # Initializes the list of instances of the class to compute the
         # deformation gradient 
 
@@ -69,6 +73,22 @@ class CompressibleInternalWorkReferenceConfiguration:
             # Gets the first element type
 
             mesh_data = mesh_dict[physical_group_tag]
+
+            # Verifies if the number of realizations given is consistent
+            # with the global number of realizations. If the number of 
+            # realization of the material parameters are zero, it is no
+            # problem
+
+            if (constitutive_class.n_material_realizations!=0 and (
+            self.n_realizations!=constitutive_class.n_material_realizations)):
+
+                raise ValueError("The number of realizations of tracti"+
+                "ons in 'CompressibleInternalWorkReferenceConfiguratio"+
+                "n' in the constitutive model at physical group '"+str(
+                physical_group)+"' is "+str(
+                constitutive_class.n_material_realizations)+"; whereas"+
+                " the global number of realizations is "+str(
+                self.n_realizations)+". They must be the same")
 
             # Gets the identity tensor for the mesh within this physical
             # group
@@ -132,8 +152,10 @@ class CompressibleInternalWorkReferenceConfiguration:
 
         for i in range(self.n_materials):
 
-            # Gets the batched tensor [n_elements, n_quadrature_points,
-            # 3, 3] of the first Piola-Kirchhoff stress
+            # Gets the batched tensor [n_realizations, n_elements, 
+            # n_quadrature_points, 3, 3] of the deformation gradient and,
+            # then, calculates the first Piola-Kirchhoff stress as [
+            # n_realizations, n_elements, n_quadrature_points, 3, 3]
 
             P = self.first_piola_kirchhoff_list[i](self.deformation_gradient_list[
             i].compute_batched_deformation_gradient())
@@ -142,13 +164,13 @@ class CompressibleInternalWorkReferenceConfiguration:
             # vatives of the shape functions multiplied by the integra-
             # tion measure to get the integration of the internal work 
             # of the variational form. Then, sums over the quadrature 
-            # points, that are the second dimension (index 1 in python 
+            # points, that are the third dimension (index 2 in python 
             # convention).
-            # The result is a tensor [n_elements,  n_nodes, 
-            # n_physical_dimensions]
+            # The result is a tensor [n_realizations, n_elements, 
+            # n_nodes, n_physical_dimensions]
 
-            internal_work = tf.reduce_sum(tf.einsum('eqij,eqnj->eqni', 
-            P, self.variation_gradient_dx[i]), axis=1)
+            internal_work = tf.reduce_sum(tf.einsum('peqij,eqnj->peqni', 
+            P, self.variation_gradient_dx[i]), axis=2)
 
             # Adds the contribution of this physical group to the global
             # residual vector. Uses the own tensor of DOF indexing to

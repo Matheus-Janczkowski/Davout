@@ -99,6 +99,17 @@ class TractionVectorOnSurface:
 
         if self.batching_number:
 
+            # Verifies if the number of realizations given is consistent
+            # witht the global number of realizations
+
+            if self.batching_number!=n_realizations:
+
+                raise ValueError("The number of realizations of tracti"+
+                "ons in 'TractionVectorOnSurface' is "+str(
+                self.batching_number)+" whereas the global number of r"+
+                "ealizations is "+str(n_realizations)+". They must be "+
+                "the same")
+
             # The current tensor is [3, n_realizations], but the indices
             # must be permutated to make it [n_realizations, 3]
 
@@ -132,8 +143,6 @@ class TractionVectorOnSurface:
 
         # Gets the number of elements and the number of quadrature points
         # to create the traction tensor
-
-        # TODO change the traction to [n_realizations, 3]
 
         return tf.broadcast_to(self.traction_vector, [
         self.n_realizations, self.surface_mesh_data.number_elements, 
@@ -245,6 +254,17 @@ class FirstPiolaKirchhoffOnSurface:
 
         if self.batching_number:
 
+            # Verifies if the number of realizations given is consistent
+            # witht the global number of realizations
+
+            if self.batching_number!=n_realizations:
+
+                raise ValueError("The number of realizations of tracti"+
+                "ons in 'FirstPiolaKirchhoffOnSurface' is "+str(
+                self.batching_number)+" whereas the global number of r"+
+                "ealizations is "+str(n_realizations)+". They must be "+
+                "the same")
+
             # The current tensor is [3,3,n_realizations], but the indi-
             # ces must be permutated to make it [n_realizations, 3, 3]
 
@@ -293,8 +313,6 @@ class FirstPiolaKirchhoffOnSurface:
         # sult is [n_realizations, n_elements, n_quadrature_points, n_
         # dimensions]
 
-        # TODO change the traction to [n_realizations, 3]
-
         return tf.broadcast_to(tf.expand_dims(tf.einsum('ij,eqj->eqi', 
         self.prescribed_first_piola_kirchhoff, 
         self.surface_mesh_data.normal_vector), axis=0), [
@@ -312,8 +330,6 @@ class FirstPiolaKirchhoffOnSurface:
         # sor of normal vectors of the mesh. But broadcasts it. The re-
         # sult is [n_realizations, n_elements, n_quadrature_points, n_
         # dimensions]
-
-        # TODO change the traction to [n_realizations, 3]
 
         return tf.einsum('pij,eqj->peqi', 
         self.prescribed_first_piola_kirchhoff, 

@@ -163,8 +163,6 @@ class ReferentialTractionWork:
             # on). The result is a tensor [n_realizations, n_elements, 
             # n_nodes, n_physical_dimensions]
 
-            # TODO change the traction tensor to [n_realizations, n_physical_dimensions]
-
             external_work = tf.reduce_sum(tf.einsum('peqi,eqn->peqni', 
             self.traction_classes[i].traction_tensor,
             self.variation_field_ds[i]), axis=2)

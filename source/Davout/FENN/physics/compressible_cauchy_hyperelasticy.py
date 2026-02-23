@@ -28,7 +28,7 @@ class CompressibleHyperelasticity:
         # Initializes the global residual vector as a null variable
 
         self.global_residual_vector = tf.Variable(tf.zeros([
-        self.global_number_dofs], dtype=self.dtype))
+        n_realizations, self.global_number_dofs], dtype=self.dtype))
 
         # Initializes the vector of parameters of the FEM approximation
         # of the field using the global number of DOFs
