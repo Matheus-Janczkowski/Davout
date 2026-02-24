@@ -111,7 +111,8 @@ glyph=None, glyph_scale=None, display_reference_configuration="True",
 clip=None, clip_plane_origin=None, clip_plane_normal_vector=None,
 set_camera_interactively=None, background_color=None, 
 legend_bar_font_color=None, color_bar_min_value=None, 
-color_bar_max_value=None, read_camera_settings_dictionary=None):
+color_bar_max_value=None, read_camera_settings_dictionary=None,
+clip_marker_size=None, legend_bar_visibility=None):
     
     # Instantiates the class of fonts
 
@@ -491,6 +492,59 @@ color_bar_max_value=None, read_camera_settings_dictionary=None):
         display_dictionary["clip"] = {"object": display, "number of co"+
         "mponents": number_of_components, "representation":
         representation_type, "get scalar bar from": True}
+
+        # Creates a point to highlight the plane origin point
+
+        point = PointSource()
+
+        point.Center = clip_plane_origin
+
+        point.NumberOfPoints = 1
+
+        # Applies a glyph filter to highlight it as a large sphere
+
+        glyph = Glyph(Input=point)
+
+        glyph.GlyphType = 'Sphere'
+
+        # Verifies if the marker size has been given by the user
+
+        if clip_marker_size:
+
+            # Tries to convert the to a float
+
+            try:
+
+                clip_marker_size = float(clip_marker_size)
+
+            except:
+
+                raise ValueError("Could not convert 'clip_marker_size'"+
+                " to float in 'frozen_snapshots'. The current value is"+
+                ": "+str(clip_marker_size))
+            
+        else:
+
+            # Gets the size from the bounding box
+
+            bounds = active_data.GetDataInformation().GetBounds()
+            
+            length = max(bounds[1]-bounds[0], bounds[3]-bounds[2], 
+            bounds[5]-bounds[4])
+
+            clip_marker_size = 0.1*length
+
+        # Adjust the sphere size
+
+        glyph.GlyphType.Radius = clip_marker_size
+
+        # Displays it
+
+        display = Show(glyph, renderView)
+
+        # Makes its color red
+
+        display.DiffuseColor = [1.0, 0.0, 0.0]
 
     ####################################################################
     #                         Additive filters                         #
@@ -1007,114 +1061,6 @@ color_bar_max_value=None, read_camera_settings_dictionary=None):
 
         size_in_pixels = str(settings_dict['size_in_pixels'])
 
-    # Sets the position of the legend
-
-    if legend_bar_position:
-
-        # Verifies if it is a list
-
-        if (legend_bar_position[0]!="[" or legend_bar_position[-1]!="]"):
-
-            raise TypeError("'legend_bar_position' in 'frozen_snapshot"+
-            "s' must be a list of 2 components---[0.0,0.0] means left-"+
-            "bottom, whereas [1.0, 1.0] means right-top. Currently, it"+
-            " is: "+str(legend_bar_position)+"; whose type is: "+str(
-            type(legend_bar_position)))
-        
-        # Converts the argument to a list and sets the parameter
-
-        legend_bar_position = string_tools.string_toList(
-        legend_bar_position)
-
-        scalarBar = GetScalarBar(LookupTable, renderView)
-
-        scalarBar.Position = legend_bar_position
-
-    # Sets the size of the legend
-
-    if legend_bar_length:
-
-        try:
-
-            legend_bar_length = float(legend_bar_length)
-
-        except:
-
-            raise ValueError("Could not convert 'legend_bar_length' to"+
-            " float in 'frozen_snapshots'. The current value is: "+str(
-            legend_bar_length))
-        
-        # Sets the length
-
-        scalarBar = GetScalarBar(LookupTable, renderView)
-
-        scalarBar.ScalarBarLength = legend_bar_length 
-
-    # Sets the font of the legend
-
-    if legend_bar_font:
-
-        # Gets the font from the class
-
-        retrieved_font = font_class(legend_bar_font)
-
-        # If the retrieved font is a list, it has a font file attached
-        # to it
-
-        if isinstance(retrieved_font, list):
-
-            scalarBar.TitleFontFamily = retrieved_font[0]
-
-            scalarBar.LabelFontFamily = retrieved_font[0]
-
-            # Gets the file
-
-            scalarBar.TitleFontFile = retrieved_font[1]
-
-            scalarBar.LabelFontFile = retrieved_font[1]
-
-        # Otherwise, it is the name of a font already owned by ParaView
-
-        else:
-
-            scalarBar.TitleFontFamily = retrieved_font
-
-            scalarBar.LabelFontFamily = retrieved_font
-
-    # Sets the color 
-
-    if legend_bar_font_color:
-
-        if (legend_bar_font_color[0]!="[" or legend_bar_font_color[-1]!=
-        "]"):
-
-            raise TypeError("'legend_bar_font_color' in 'frozen_snapsh"+
-            "ots' must be a list of 3 components of RGB values---[0.0,"+
-            " 0.0, 0.0] means black; [1.0, 1.0, 1.0] means white. Curr"+
-            "ently, it is: "+str(legend_bar_font_color)+"; whose type "+
-            "is: "+str(type(legend_bar_font_color)))
-        
-        # Converts the argument to a list and sets the parameter
-
-        legend_bar_font_color = string_tools.string_toList(
-        legend_bar_font_color)
-
-        scalarBar.TitleColor = legend_bar_font_color
-
-        scalarBar.LabelColor = legend_bar_font_color
-
-    # Otherwise, if a font file is given
-
-    elif legend_bar_font_file:
-
-        scalarBar.TitleFontFamily = "File"
-
-        scalarBar.LabelFontFamily = "File"
-
-        scalarBar.TitleFontFile = legend_bar_font_file
-
-        scalarBar.LabelFontFile = legend_bar_font_file
-
     # Sets camera position in space
 
     if camera_position or (zoom_factor is not None):
@@ -1290,6 +1236,124 @@ color_bar_max_value=None, read_camera_settings_dictionary=None):
         # Sets the size
 
         renderView.ViewSize = size_in_pixels
+
+    # Sets the position of the legend
+
+    if legend_bar_position:
+
+        # Verifies if it is a list
+
+        if (legend_bar_position[0]!="[" or legend_bar_position[-1]!="]"):
+
+            raise TypeError("'legend_bar_position' in 'frozen_snapshot"+
+            "s' must be a list of 2 components---[0.0,0.0] means left-"+
+            "bottom, whereas [1.0, 1.0] means right-top. Currently, it"+
+            " is: "+str(legend_bar_position)+"; whose type is: "+str(
+            type(legend_bar_position)))
+        
+        # Converts the argument to a list and sets the parameter
+
+        legend_bar_position = string_tools.string_toList(
+        legend_bar_position)
+
+        scalarBar = GetScalarBar(LookupTable, renderView)
+
+        scalarBar.Position = legend_bar_position
+
+    # Sets the size of the legend
+
+    if legend_bar_length:
+
+        try:
+
+            legend_bar_length = float(legend_bar_length)
+
+        except:
+
+            raise ValueError("Could not convert 'legend_bar_length' to"+
+            " float in 'frozen_snapshots'. The current value is: "+str(
+            legend_bar_length))
+        
+        # Sets the length
+
+        scalarBar = GetScalarBar(LookupTable, renderView)
+
+        scalarBar.ScalarBarLength = legend_bar_length 
+
+    # Sets the font of the legend
+
+    if legend_bar_font:
+
+        # Gets the font from the class
+
+        retrieved_font = font_class(legend_bar_font)
+
+        # If the retrieved font is a list, it has a font file attached
+        # to it
+
+        if isinstance(retrieved_font, list):
+
+            scalarBar.TitleFontFamily = retrieved_font[0]
+
+            scalarBar.LabelFontFamily = retrieved_font[0]
+
+            # Gets the file
+
+            scalarBar.TitleFontFile = retrieved_font[1]
+
+            scalarBar.LabelFontFile = retrieved_font[1]
+
+        # Otherwise, it is the name of a font already owned by ParaView
+
+        else:
+
+            scalarBar.TitleFontFamily = retrieved_font
+
+            scalarBar.LabelFontFamily = retrieved_font
+
+    # Sets the color 
+
+    if legend_bar_font_color:
+
+        if (legend_bar_font_color[0]!="[" or legend_bar_font_color[-1]!=
+        "]"):
+
+            raise TypeError("'legend_bar_font_color' in 'frozen_snapsh"+
+            "ots' must be a list of 3 components of RGB values---[0.0,"+
+            " 0.0, 0.0] means black; [1.0, 1.0, 1.0] means white. Curr"+
+            "ently, it is: "+str(legend_bar_font_color)+"; whose type "+
+            "is: "+str(type(legend_bar_font_color)))
+        
+        # Converts the argument to a list and sets the parameter
+
+        legend_bar_font_color = string_tools.string_toList(
+        legend_bar_font_color)
+
+        scalarBar.TitleColor = legend_bar_font_color
+
+        scalarBar.LabelColor = legend_bar_font_color
+
+    # Otherwise, if a font file is given
+
+    elif legend_bar_font_file:
+
+        scalarBar.TitleFontFamily = "File"
+
+        scalarBar.LabelFontFamily = "File"
+
+        scalarBar.TitleFontFile = legend_bar_font_file
+
+        scalarBar.LabelFontFile = legend_bar_font_file
+
+    # If the legend bar is to be invisible
+
+    if legend_bar_visibility=="False":
+
+        # Hides the legend bar
+
+        scalarBar = GetScalarBar(LookupTable, renderView)
+        
+        scalarBar.Visibility = 0
 
     # Verifies if a resolution ratio has been provided
 

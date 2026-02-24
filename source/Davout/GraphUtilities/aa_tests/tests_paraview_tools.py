@@ -229,7 +229,7 @@ class TestParaView():
         [0.0, 0.0, 0.0], set_camera_interactively=False, 
         color_bar_min_value=0.1, color_bar_max_value=0.6,
         output_imageFileName="magnitude_with_color_bounds.png", output_path=self.output_path,
-        read_camera_settings_dictionary=True)
+        read_camera_settings_dictionary=True, legend_bar_visibility=True)
 
 # Runs all tests
 
