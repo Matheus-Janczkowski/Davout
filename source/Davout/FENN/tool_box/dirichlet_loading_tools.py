@@ -5,6 +5,8 @@ import tensorflow as tf
 
 from ..tool_box import parametric_curves_tools
 
+from ..tool_box.mesh_info_tools import get_boundary_info_from_mesh_data_class
+
 from ...PythonicUtilities.package_tools import load_classes_from_module
 
 from ...PythonicUtilities.dictionary_tools import verify_obligatory_and_optional_keys
@@ -20,6 +22,22 @@ class FixedSupportDirichletBC:
 
     def __init__(self, mesh_data_class, dirichlet_information, 
     vector_of_parameters, physical_group_name, time, n_realizations):
+
+        # Verifies the keys of the dictionary of boundary condition in-
+        # formation
+
+        verify_obligatory_and_optional_keys(dirichlet_information, ["B"+
+        "C case", "field name"], {"list of realizations with this BC": {
+        "type": list}}, "dirichlet_information", "FixedSupportDirichle"+
+        "tBC")
+        
+        # Gets information from the mesh data class, such as numerical
+        # types and DOFs indices
+        
+        (integer_dtype, float_dtype, mesh_data, physical_group_tag
+        ) = get_boundary_info_from_mesh_data_class(mesh_data_class, 
+        physical_group_name, "Dirichlet boundary conditions", "Dirichl"+
+        "etBoundaryConditions", dirichlet_information["field name"])
         
         # Recovers the tensor of DOFs per element [n_element, n_nodes,
         # n_dofs_per_node], and flattens it to [number_of_dofs, 1]
@@ -34,26 +52,9 @@ class FixedSupportDirichletBC:
             # elements and nodes)
 
             unique_tensor_dofs, _ = tf.unique(tf.reshape(
-            mesh_data_class.dofs_per_element[..., dof], (-1,)))
+            mesh_data.dofs_per_element[..., dof], (-1,)))
 
             self.dofs_per_element.append(unique_tensor_dofs)
-
-        # Stacks and flattens the tensor of DOFs
-
-        #self.dofs_per_element = tf.reshape(tf.stack(
-        #self.dofs_per_element, axis=0), (-1,1))
-
-        # Creates a null tensor of shape [n_dofs]
-
-        #self.null_tensor = tf.zeros((self.dofs_per_element.shape[0],), 
-        #dtype=mesh_data_class.dtype)
-
-        # Verifies the keys of the dictionary of boundary condition in-
-        # formation
-
-        verify_obligatory_and_optional_keys(dirichlet_information, ["B"+
-        "C case"], {"list of realizations with this BC": {"type": list}}, 
-        "dirichlet_information", "FixedSupportDirichletBC")
 
         # Verifies if the user has given any list of realizations that
         # do have this boundary condition
@@ -68,14 +69,14 @@ class FixedSupportDirichletBC:
             # Transforms it to an integer tensor
 
             realizations_range = tf.constant(realizations_range, dtype=
-            mesh_data_class.integer_dtype)
+            integer_dtype)
 
         # Otherwise, creates a simple range
 
         else:
 
             realizations_range = tf.range(n_realizations, dtype=
-            mesh_data_class.integer_dtype)
+            integer_dtype)
 
         # Stack all fixed DOFs into [n_fixed_dofs]
 
@@ -100,7 +101,7 @@ class FixedSupportDirichletBC:
 
         self.zero_updates = tf.reshape(tf.zeros([
         self.n_selected_realizations, self.n_fixed_dofs], dtype=
-        mesh_data_class.dtype), [-1])
+        float_dtype), [-1])
 
         # Broadcasts DOF indices along the realizations axis
 
@@ -126,9 +127,6 @@ class FixedSupportDirichletBC:
 
         # Assigns values to the vector of parameters in place
 
-        #vector_of_parameters.scatter_nd_update(self.dofs_per_element, 
-        #self.null_tensor)
-
         vector_of_parameters.scatter_nd_update(self.scatter_indices,
         self.zero_updates)
 
@@ -143,11 +141,6 @@ class PrescribedDirichletBC:
 
     def __init__(self, mesh_data_class, dirichlet_information, 
     vector_of_parameters, physical_group_name, time, n_realizations):
-        
-        # Gets the available parametric curves
-
-        available_parametric_curves = load_classes_from_module(
-        parametric_curves_tools, return_dictionary_of_classes=True)
 
         # Verifies the dictionary keys
 
@@ -157,7 +150,9 @@ class PrescribedDirichletBC:
         " (the first index is 0), at physical group '"+str(
         physical_group_name)+"'"}, 
         "BC case": {"description": "key to store the name of the class"+
-        " to apply a particular boundary condition"}, 
+        " to apply a particular boundary condition"},
+        "field name": {"type": str, "description": "key to store the n"+
+        "ame of the field to which the BC must be applied"},
         "end_point": {"type": list, "description": "list of a value co"+
         "rresponding to the final time at the first component and a li"+
         "st of prescribed values at the second component. At physical "+
@@ -166,6 +161,19 @@ class PrescribedDirichletBC:
         "load_function": {"type": str, "description": "name of the par"+
         "ametric curve to generate load steps"}}, "dirichlet_informati"+
         "on", "PrescribedDirichletBC")
+        
+        # Gets information from the mesh data class, such as numerical
+        # types and DOFs indices
+        
+        (integer_dtype, float_dtype, mesh_data, physical_group_tag
+        ) = get_boundary_info_from_mesh_data_class(mesh_data_class, 
+        physical_group_name, "Dirichlet boundary conditions", "Dirichl"+
+        "etBoundaryConditions", dirichlet_information["field name"])
+        
+        # Gets the available parametric curves
+
+        available_parametric_curves = load_classes_from_module(
+        parametric_curves_tools, return_dictionary_of_classes=True)
 
         # Verifies if the user has given any list of realizations that
         # do have this boundary condition
@@ -180,14 +188,14 @@ class PrescribedDirichletBC:
             # Transforms it to an integer tensor
 
             realizations_range = tf.constant(realizations_range, dtype=
-            mesh_data_class.integer_dtype)
+            integer_dtype)
 
         # Otherwise, creates a simple range
 
         else:
 
             realizations_range = tf.range(n_realizations, dtype=
-            mesh_data_class.integer_dtype)
+            integer_dtype)
 
         # Gets the number of selected realizations
 
@@ -351,7 +359,7 @@ class PrescribedDirichletBC:
                 # index. But gets just one occurence of each DOF
 
                 unique_tensor_dofs, _ = tf.unique(tf.reshape(
-                mesh_data_class.dofs_per_element[..., dof], (-1,)))
+                mesh_data.dofs_per_element[..., dof], (-1,)))
 
                 dofs_list.append(unique_tensor_dofs)
 
@@ -359,7 +367,7 @@ class PrescribedDirichletBC:
                 # plied by the tensor already
 
                 load_class_instance = load_class(time, value*tf.ones(
-                unique_tensor_dofs.shape, dtype=mesh_data_class.dtype), 
+                unique_tensor_dofs.shape, dtype=float_dtype), 
                 final_time)
 
                 # Updates the value and appends this instance to a load
@@ -452,9 +460,6 @@ class PrescribedDirichletBC:
     def apply(self, vector_of_parameters):
 
         # Assigns values to the vector of parameters in place
-
-        #vector_of_parameters.scatter_nd_update(self.prescribed_dofs, 
-        #self.prescribed_values)
 
         vector_of_parameters.scatter_nd_update(self.scatter_indices, 
         self.prescribed_values)

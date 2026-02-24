@@ -1,6 +1,8 @@
 # Routine to dispatch and instantiate finite element classes given the 
 # tag read by the mesh reader
 
+import tensorflow as tf
+
 from ..finite_elements import volume_elements
 
 from ..finite_elements import surface_elements
@@ -72,7 +74,7 @@ class DomainElements:
     # Defines a function to instantiate the finite element class
 
     def dispatch_element(self, tag, connectivities, physical_group_tag,
-    dtype):
+    dtype, integer_dtype):
 
         # Calls the template function to perform this
 
@@ -82,7 +84,7 @@ class DomainElements:
         self.finite_elements_classes, self.nodes_coordinates, 
         self.quadrature_degree, self.elements_dictionaries, "domain", 
         self.dofs_counter, dofs_node_dict=self.dofs_node_dict,
-        flag_building_dofs_dict=True)
+        flag_building_dofs_dict=True, integer_dtype=integer_dtype)
 
 ########################################################################
 #                           Boundary elements                          #
@@ -152,7 +154,7 @@ class BoundaryElements:
     # Defines a function to dispatch each element class 
 
     def dispatch_element(self, tag, connectivities, physical_group_tag,
-    dtype):
+    dtype, integer_dtype):
 
         # Calls the template function to perform this
 
@@ -161,7 +163,8 @@ class BoundaryElements:
         self.finite_elements_classes, self.nodes_coordinates, 
         self.quadrature_degree, self.elements_dictionaries, "boundary", 
         0, self.dofs_node_dict, flag_building_dofs_dict=False, 
-        suitable_boundary_elements=self.suitable_boundary_elements)
+        suitable_boundary_elements=self.suitable_boundary_elements,
+        integer_dtype=integer_dtype)
 
 ########################################################################
 #              Element dispatching and class instantiation             #
@@ -173,7 +176,7 @@ def dispatch_element_template(tag, connectivities, physical_group_tag,
 dtype, element_per_field, finite_elements_classes, nodes_coordinates,
 quadrature_degree, elements_dictionaries, region_name, dofs_counter, 
 dofs_node_dict, flag_building_dofs_dict=True, suitable_boundary_elements=
-None):
+None, integer_dtype=tf.int32):
 
     # Iterates through the fields to add an empty list with a sublist
     # for each dimension (each DOF in the node)
@@ -344,7 +347,8 @@ None):
         elements_dictionaries[field_name][physical_group_tag
         ] = element_class(element_nodes_coordinates, nodes_in_elements, 
         polynomial_degree=element_info["polynomial degree"], 
-        quadrature_degree=quadrature_degree, dtype=dtype)
+        quadrature_degree=quadrature_degree, dtype=dtype, integer_dtype=
+        integer_dtype)
 
     return elements_dictionaries, dofs_counter, dofs_node_dict
 

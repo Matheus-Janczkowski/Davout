@@ -8,7 +8,7 @@ from ..finite_elements.elements_manager import DomainElements, BoundaryElements
 # outputs the updated mesh data class
 
 def dispatch_region_elements(mesh_data_class, element_per_field, dtype,
-region):
+region, integer_dtype):
 
     # Instantiates the class with the dictionary of finite elements 
     # classes
@@ -78,7 +78,7 @@ region):
             # ments and dispatches the class of this element
 
             region_finite_elements.dispatch_element(element_type, 
-            connectivities, physical_group_tag, dtype)
+            connectivities, physical_group_tag, dtype, integer_dtype)
 
     # Stores the global number of DOFs if the current region is the do-
     # main

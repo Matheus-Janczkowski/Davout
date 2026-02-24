@@ -99,8 +99,9 @@ class TestANNTools(unittest.TestCase):
 
         boundary_conditions_dict = {"top": {"BC case": "PrescribedDiri"+
         "chletBC", "load_function": "linear", "degrees_ofFreedomList": 2,
-        "end_point": [1.0, dirichlet_load]}, "bottom": {"BC case": "Fi"+
-        "xedSupportDirichletBC"}}
+        "end_point": [1.0, dirichlet_load], "field name": "Displacement"
+        }, "bottom": {"BC case": "FixedSupportDirichletBC", "field nam"+
+        "e": "Displacement"}}
 
         # Sets the dictionary of constitutive models
 
@@ -318,8 +319,9 @@ class TestANNTools(unittest.TestCase):
 
         boundary_conditions_dict = {"top": {"BC case": "PrescribedDiri"+
         "chletBC", "load_function": "linear", "degrees_ofFreedomList": 2,
-        "end_point": [1.0, dirichlet_load]}, "bottom": {"BC case": "Fi"+
-        "xedSupportDirichletBC"}}
+        "end_point": [1.0, dirichlet_load], "field name": "Displacemen"+
+        "t"}, "bottom": {"BC case": "FixedSupportDirichletBC", "field "+
+        "name": "Displacement"}}
 
         # Sets the dictionary of constitutive models
 

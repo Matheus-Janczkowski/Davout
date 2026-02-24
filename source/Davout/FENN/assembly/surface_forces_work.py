@@ -12,8 +12,19 @@ from ..tool_box import neumann_loading_tools
 
 class ReferentialTractionWork:
 
-    def __init__(self, vector_of_parameters, traction_dict, mesh_dict,
-    boundary_physical_groups_dict):
+    def __init__(self, vector_of_parameters, traction_dict, 
+    mesh_data_class):
+        
+        # Recovers the dictionary of finite elements in the boundary 
+        # concerned with the displacement field
+
+        mesh_dict = mesh_data_class.boundary_elements["Displacement"]
+
+        # Recovers the dictionary of physical groups names to their nu-
+        # merical tags
+
+        boundary_physical_groups_dict = (
+        mesh_data_class.boundary_physicalGroupsNameToTag)
         
         # Gets the number of batched BVP instances
 

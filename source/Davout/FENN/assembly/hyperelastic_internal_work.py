@@ -17,7 +17,18 @@ from ..tool_box.constitutive_tools import DeformationGradient
 class CompressibleInternalWorkReferenceConfiguration:
 
     def __init__(self, vector_of_parameters, constitutive_models_dict, 
-    mesh_dict, domain_physical_groups_dict):
+    mesh_data_class):
+        
+        # Recovers the dictionary of elements in the domain concerned
+        # with the displacement field
+        
+        mesh_dict = mesh_data_class.domain_elements["Displacement"] 
+
+        # Recovers the dictionary of physical groups names to their nu-
+        # merical tags
+        
+        domain_physical_groups_dict = (
+        mesh_data_class.domain_physicalGroupsNameToTag)
         
         # Gets the number of batched BVP instances
 

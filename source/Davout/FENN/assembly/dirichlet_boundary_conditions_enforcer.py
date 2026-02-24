@@ -11,7 +11,7 @@ from ..tool_box import dirichlet_loading_tools
 class DirichletBoundaryConditions:
 
     def __init__(self, vector_of_parameters, boundary_conditions_dict, 
-    mesh_dict, boundary_physical_groups_dict, time):
+    mesh_data_class, time):
         
         # Gets the number of batched BVP instances
 
@@ -42,35 +42,6 @@ class DirichletBoundaryConditions:
         # Iterates through the dictionary of boundary conditions
 
         for physical_group, boundary_condition in boundary_conditions_dict.items():
-            
-            # Gets the physical group tag
-
-            physical_group_tag = None 
-
-            if not (physical_group in boundary_physical_groups_dict):
-
-                raise NameError("The physical group name '"+str(
-                physical_group)+"' in the dictionary of Dirichlet boun"+
-                "dary conditions is not a valid physical group name. C"+
-                "heck the available names:\n"+str(list(
-                boundary_physical_groups_dict.keys())))
-            
-            else:
-
-                physical_group_tag = boundary_physical_groups_dict[
-                physical_group]
-
-            # Gets the instance of the mesh data
-
-            if isinstance(mesh_dict[physical_group_tag], dict):
-
-                raise NotImplementedError("Multiple element types per "+
-                "physical group has not yet been updated to compute Di"+
-                "richletBoundaryConditions")
-            
-            # Gets the first element type
-
-            mesh_data = mesh_dict[physical_group_tag]
 
             # Checks if the boundary condition is a dictionary
 
@@ -115,9 +86,9 @@ class DirichletBoundaryConditions:
             # Instantiates and adds the class with the mesh data
 
             self.BCs_classes.append(available_BCs_classes[
-            boundary_condition["BC case"]](mesh_data, boundary_condition,
-            vector_of_parameters, physical_group, time, 
-            self.n_realizations))
+            boundary_condition["BC case"]](mesh_data_class, 
+            boundary_condition, vector_of_parameters, physical_group, 
+            time, self.n_realizations))
 
         # Gets the number of boundary conditions
 

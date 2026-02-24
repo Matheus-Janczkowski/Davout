@@ -16,7 +16,7 @@ class MshMeshData:
 
     def __init__(self, nodes_coordinates, domain_physicalGroupsNameToTag,
     boundary_physicalGroupsNameToTag, domain_connectivities, 
-    boundary_connectivities, quadrature_degree, dtype, 
+    boundary_connectivities, quadrature_degree, dtype, integer_dtype,
     global_number_dofs=None, domain_elements=None, boundary_elements=
     None, dofs_node_dict=None):
     
@@ -33,6 +33,8 @@ class MshMeshData:
         self.quadrature_degree = quadrature_degree
 
         self.dtype = dtype
+
+        self.integer_dtype = integer_dtype
 
         self.global_number_dofs = global_number_dofs
 
@@ -61,10 +63,48 @@ class GmshVersions:
         "$EndPhysicalNames"], "nodes": ["$Nodes", "$EndNodes"], "eleme"+
         "nts": ["$Elements", "$EndElements"]}
 
-# Defines a function to read a mesh .msh
+# Defines a function to read a mesh .msh or a list of them
 
 def read_msh_mesh(file_name, quadrature_degree, elements_per_field, 
-parent_directory=None, verbose=False, dtype=tf.float32):
+parent_directory=None, verbose=False, dtype=tf.float32, integer_dtype=
+tf.int32):
+    
+    # Verifies if file name is a list
+
+    if isinstance(file_name, list):
+
+        # Initializes a list of instances of the mesh data class
+
+        meshes_list = []
+
+        # Iterates through the list of file names
+
+        for file in file_name:
+    
+            # Calls the reader function and appends the mesh data class 
+            # instance
+
+            meshes_list.append(reader_msh_mesh(file, quadrature_degree, 
+            elements_per_field, parent_directory=parent_directory, 
+            verbose=verbose, dtype=dtype, integer_dtype=integer_dtype))
+
+        # Returns the list
+
+        return meshes_list
+    
+    # Otherwise, reads the single mesh
+
+    else:
+
+        return reader_msh_mesh(file_name, quadrature_degree, 
+        elements_per_field, parent_directory=parent_directory, verbose=
+        verbose, dtype=dtype, integer_dtype=integer_dtype)
+
+# Defines a function to read a single mesh .msh
+
+def reader_msh_mesh(file_name, quadrature_degree, elements_per_field, 
+parent_directory=None, verbose=False, dtype=tf.float32, integer_dtype=
+tf.int32):
 
     # If the parent directory is None, get the parent path of the file 
     # where this function has been called
@@ -72,7 +112,7 @@ parent_directory=None, verbose=False, dtype=tf.float32):
     if parent_directory is None:
 
         parent_directory = get_parent_path_of_file(
-        function_calls_to_retrocede=2)
+        function_calls_to_retrocede=3)
 
     # Takes out the file termination, and adds the correct .msh
 
@@ -165,7 +205,7 @@ parent_directory=None, verbose=False, dtype=tf.float32):
     mesh_data_class = MshMeshData(nodes_coordinates, 
     domain_physicalGroupsNameToTag, boundary_physicalGroupsNameToTag, 
     domain_connectivities, boundary_connectivities, quadrature_degree,
-    dtype)
+    dtype, integer_dtype)
 
     # Dispatches the elements of the domain. Generates a dictionary of
     # physical group tag whose values are dictionaries of element types
@@ -173,7 +213,7 @@ parent_directory=None, verbose=False, dtype=tf.float32):
     start_time = time()
 
     mesh_data_class = dispatch_region_elements(mesh_data_class,
-    elements_per_field, dtype, "domain")
+    elements_per_field, dtype, "domain", integer_dtype)
 
     domain_dispatching_reading_time = time()-start_time
 
@@ -182,7 +222,7 @@ parent_directory=None, verbose=False, dtype=tf.float32):
     start_time = time()
 
     mesh_data_class = dispatch_region_elements(mesh_data_class,
-    elements_per_field, dtype, "boundary")
+    elements_per_field, dtype, "boundary", integer_dtype)
 
     boundary_dispatching_reading_time = time()-start_time
 
