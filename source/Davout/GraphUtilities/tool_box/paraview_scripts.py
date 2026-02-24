@@ -54,6 +54,17 @@ sys.modules["file_tools"] = file_tools
 
 specifications.loader.exec_module(file_tools)
 
+# Imports collage classes
+
+specifications = util.spec_from_file_location("file_tools", 
+broken_path[1]/"tool_box"/"collage_classes.py")
+
+collage_classes = util.module_from_spec(specifications)
+
+sys.modules["collage_classes"] = collage_classes
+
+specifications.loader.exec_module(collage_classes)
+
 ########################################################################
 #                              Fonts class                             #
 ########################################################################
@@ -112,11 +123,16 @@ clip=None, clip_plane_origin=None, clip_plane_normal_vector=None,
 set_camera_interactively=None, background_color=None, 
 legend_bar_font_color=None, color_bar_min_value=None, 
 color_bar_max_value=None, read_camera_settings_dictionary=None,
-clip_marker_size=None, legend_bar_visibility=None):
+clip_marker_size=None, clip_marker_color=None, legend_bar_visibility=
+None):
     
     # Instantiates the class of fonts
 
     font_class = FontsClass()
+
+    # Instantiates the class of colors
+
+    colors_class = collage_classes.ColorMiscellany()
 
     # Resets session
 
@@ -233,11 +249,6 @@ clip_marker_size=None, legend_bar_visibility=None):
         
         else:
 
-            # Sets a dictionary of pre-made colors
-
-            colors_dictionary = {"white": [1.0, 1.0, 1.0], "black": [0.0, 
-            0.0, 0.0], "dark gray": [0.1, 0.1, 0.1]}
-
             # Verifies if it is a list
 
             if (background_color[0]=="[" and background_color[-1]=="]"):
@@ -247,33 +258,11 @@ clip_marker_size=None, legend_bar_visibility=None):
                 background_color = string_tools.string_toList(
                 background_color)
 
-            elif background_color in colors_dictionary:
-
-                # Gets the values from the dictionary
-
-                background_color = colors_dictionary[background_color]
-
             else:
 
-                available_names = ""
+                # Gets the values from the class of colors
 
-                for name in colors_dictionary.keys():
-
-                    available_names += "\n'"+name+"'"
-
-                available_palettes = ""
-
-                for name in color_palettes:
-
-                    available_palettes += "\n'"+name+"'"
-
-                raise TypeError("'background_color' in 'frozen_snapsho"+
-                "ts' must be:\n\na list of 3 components of RGB values-"+
-                "--[0.0, 0.0, 0.0] means black; [1.0, 1.0, 1.0] means "+
-                "white;\n\nor it can be one of the available names:"+
-                available_names+";\n\nor it can be one of the palletes"+
-                ":"+available_palettes+".\n\n"+"Currently, it is: "+str(
-                background_color))
+                background_color = colors_class(background_color)
             
             # Sets the color 
 
@@ -542,9 +531,23 @@ clip_marker_size=None, legend_bar_visibility=None):
 
         display = Show(glyph, renderView)
 
-        # Makes its color red
+        # Verifies if the color of the marker has been given
 
-        display.DiffuseColor = [1.0, 0.0, 0.0]
+        if clip_marker_color:
+
+            # Gets the RGB value from the colors class
+
+            clip_marker_color = colors_class(clip_marker_color)
+
+        else:
+
+            # Makes it red per default
+
+            clip_marker_color = [1.0, 0.0, 0.0]
+
+        # Sets the color to the sphere
+
+        display.DiffuseColor = clip_marker_color
 
     ####################################################################
     #                         Additive filters                         #
@@ -619,17 +622,15 @@ clip_marker_size=None, legend_bar_visibility=None):
 
         # Verifies if it is a list
 
-        if (axes_color[0]!="[" or axes_color[-1]!="]"):
-
-            raise TypeError("'axes_color' in 'frozen_snapshots' must b"+
-            "e a list of 3 components of RGB values---[0.0, 0.0, 0.0] "+
-            "means black; [1.0, 1.0, 1.0] means white. Currently, it i"+
-            "s: "+str(axes_color)+"; whose type is: "+str(type(
-            axes_color)))
+        if (axes_color[0]=="[" and axes_color[-1]=="]"):
         
-        # Converts the argument to a list and sets the parameter
+            # Converts the argument to a list and sets the parameter
 
-        axes_color = string_tools.string_toList(axes_color)
+            axes_color = string_tools.string_toList(axes_color)
+        
+        else:
+
+            axes_color = colors_class(axes_color)
 
         renderView.OrientationAxesXColor = axes_color
 
@@ -1239,6 +1240,10 @@ clip_marker_size=None, legend_bar_visibility=None):
 
     # Sets the position of the legend
 
+    Render()
+
+    scalarBar = GetScalarBar(LookupTable, renderView)
+
     if legend_bar_position:
 
         # Verifies if it is a list
@@ -1256,13 +1261,13 @@ clip_marker_size=None, legend_bar_visibility=None):
         legend_bar_position = string_tools.string_toList(
         legend_bar_position)
 
-        scalarBar = GetScalarBar(LookupTable, renderView)
-
         # Disables automatic formatting
 
         scalarBar.AutomaticLabelFormat = 0
 
         scalarBar.AutoOrient = 0
+
+        scalarBar.WindowLocation = 'Any Location'
 
         # Then sets the position
 
@@ -1283,8 +1288,6 @@ clip_marker_size=None, legend_bar_visibility=None):
             legend_bar_length))
         
         # Sets the length
-
-        scalarBar = GetScalarBar(LookupTable, renderView)
 
         scalarBar.ScalarBarLength = legend_bar_length 
 
@@ -1319,29 +1322,7 @@ clip_marker_size=None, legend_bar_visibility=None):
 
             scalarBar.LabelFontFamily = retrieved_font
 
-    # Sets the color 
-
-    if legend_bar_font_color:
-
-        if (legend_bar_font_color[0]!="[" or legend_bar_font_color[-1]!=
-        "]"):
-
-            raise TypeError("'legend_bar_font_color' in 'frozen_snapsh"+
-            "ots' must be a list of 3 components of RGB values---[0.0,"+
-            " 0.0, 0.0] means black; [1.0, 1.0, 1.0] means white. Curr"+
-            "ently, it is: "+str(legend_bar_font_color)+"; whose type "+
-            "is: "+str(type(legend_bar_font_color)))
-        
-        # Converts the argument to a list and sets the parameter
-
-        legend_bar_font_color = string_tools.string_toList(
-        legend_bar_font_color)
-
-        scalarBar.TitleColor = legend_bar_font_color
-
-        scalarBar.LabelColor = legend_bar_font_color
-
-    # Otherwise, if a font file is given
+    # If a font file is given
 
     elif legend_bar_font_file:
 
@@ -1353,13 +1334,31 @@ clip_marker_size=None, legend_bar_visibility=None):
 
         scalarBar.LabelFontFile = legend_bar_font_file
 
+    # Sets the color 
+
+    if legend_bar_font_color:
+
+        if (legend_bar_font_color[0]=="[" and legend_bar_font_color[-1
+        ]=="]"):
+        
+            # Converts the argument to a list and sets the parameter
+
+            legend_bar_font_color = string_tools.string_toList(
+            legend_bar_font_color)
+        
+        else:
+
+            legend_bar_font_color = colors_class(legend_bar_font_color)
+
+        scalarBar.TitleColor = legend_bar_font_color
+
+        scalarBar.LabelColor = legend_bar_font_color
+
     # If the legend bar is to be invisible
 
     if legend_bar_visibility=="False":
 
         # Hides the legend bar
-
-        scalarBar = GetScalarBar(LookupTable, renderView)
         
         scalarBar.Visibility = 0
 

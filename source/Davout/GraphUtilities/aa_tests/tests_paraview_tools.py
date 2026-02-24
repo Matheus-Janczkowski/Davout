@@ -101,14 +101,14 @@ class TestParaView():
         
         paraview_tools.frozen_snapshots(self.file_name, self.field_name, 
         input_path=self.input_path, time=1.0, representation_type=
-        "Surface With Edges", axes_color=[0.0, 0.0, 0.0], 
+        "Surface With Edges", axes_color="black", 
         zoom_factor=1.0, component_to_plot="2", 
         warp_by_vector=True, resolution_ratio=10, clip=True, 
         clip_plane_origin=[0.15, 0.5, 0.1], clip_plane_normal_vector=
         [1.0, 1.0, 1.0], background_color="WhiteBackground", 
         display_reference_configuration=False, 
         transparent_background=True, legend_bar_font_color=
-        [0.0, 0.0, 0.0], set_camera_interactively=False, 
+        "black", set_camera_interactively=False, 
         output_imageFileName="warp_and_clip.png", output_path=self.output_path,
         camera_position=[-2.2202601190413063, 2.7845260002185928, 2.412838032797255],
         camera_focal_point=[0.500121318497246, 0.8894379799910188, 0.03488656665544461],
@@ -118,7 +118,7 @@ class TestParaView():
         legend_bar_position=[0.6048594377510041, 0.09555555555555562],
         legend_bar_length=0.7344444444444449,
         size_in_pixels={'aspect ratio': 1.0, 'pixels in width': 400},
-        clip_marker_size=0.2)
+        clip_marker_size=0.2, clip_marker_color="black")
 
     def test_glyph(self):
 
@@ -133,13 +133,13 @@ class TestParaView():
         
         paraview_tools.frozen_snapshots(self.file_name, self.field_name, 
         input_path=self.input_path, time=1.0, representation_type=
-        "Surface With Edges", axes_color=[0.0, 0.0, 0.0], 
+        "Surface With Edges", axes_color="black", 
         zoom_factor=1.0, component_to_plot="2", 
         resolution_ratio=10, glyph=True, glyph_scale=0.3, 
         background_color="WhiteBackground", 
         display_reference_configuration=False, 
         transparent_background=True, legend_bar_font_color=
-        [0.0, 0.0, 0.0], set_camera_interactively=False, 
+        "black", set_camera_interactively=False, 
         output_imageFileName="glyph.png", output_path=self.output_path,
         camera_position=[-2.2202601190413063, 2.7845260002185928, 2.412838032797255],
         camera_focal_point=[0.500121318497246, 0.8894379799910188, 0.03488656665544461],
@@ -163,13 +163,13 @@ class TestParaView():
         
         paraview_tools.frozen_snapshots(self.file_name, self.field_name, 
         input_path=self.input_path, time=1.0, representation_type=
-        "Surface With Edges", axes_color=[0.0, 0.0, 0.0], 
+        "Surface With Edges", axes_color="black", 
         zoom_factor=1.0, component_to_plot="2", 
         warp_by_vector=True, resolution_ratio=10, glyph=True, 
         glyph_scale=0.3, background_color="WhiteBackground", 
         display_reference_configuration=False, 
         transparent_background=True, legend_bar_font_color=
-        [0.0, 0.0, 0.0], set_camera_interactively=False, 
+        "black", set_camera_interactively=False, 
         output_imageFileName="warp_and_glyph.png", output_path=self.output_path,
         camera_position=[-2.2202601190413063, 2.7845260002185928, 2.412838032797255],
         camera_focal_point=[0.500121318497246, 0.8894379799910188, 0.03488656665544461],
@@ -193,12 +193,12 @@ class TestParaView():
         
         paraview_tools.frozen_snapshots(self.file_name, self.field_name, 
         input_path=self.input_path, time=1.0, representation_type=
-        "Surface With Edges", axes_color=[0.0, 0.0, 0.0], 
+        "Surface With Edges", axes_color="black", 
         legend_bar_font="Times", zoom_factor=1.0, component_to_plot="Magnitude", 
         warp_by_vector=True, resolution_ratio=10, background_color=
         "WhiteBackground", display_reference_configuration=False, 
         transparent_background=True, legend_bar_font_color=
-        [0.0, 0.0, 0.0], set_camera_interactively=False, 
+        "black", set_camera_interactively=False, 
         output_imageFileName="magnitude_plot.png", output_path=self.output_path,
         camera_position=[-2.2202601190413063, 2.7845260002185928, 2.412838032797255],
         camera_focal_point=[0.500121318497246, 0.8894379799910188, 0.03488656665544461],
@@ -222,12 +222,12 @@ class TestParaView():
         
         paraview_tools.frozen_snapshots(self.file_name, self.field_name, 
         input_path=self.input_path, time=1.0, representation_type=
-        "Surface With Edges", axes_color=[0.0, 0.0, 0.0], 
+        "Surface With Edges", axes_color="black", 
         legend_bar_font="latex", zoom_factor=1.0, component_to_plot="Magnitude", 
         warp_by_vector=True, resolution_ratio=10, background_color=
         "WhiteBackground", display_reference_configuration=False, 
         transparent_background=True, legend_bar_font_color=
-        [0.0, 0.0, 0.0], set_camera_interactively=False, 
+        "black", set_camera_interactively=False, 
         color_bar_min_value=0.1, color_bar_max_value=0.6,
         output_imageFileName="magnitude_with_color_bounds.png", output_path=self.output_path,
         read_camera_settings_dictionary=True, legend_bar_visibility=True)

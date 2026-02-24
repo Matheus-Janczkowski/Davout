@@ -165,8 +165,8 @@ class CompressibleInternalWorkReferenceConfiguration:
         # Stacks them both to form a concatenation (cartesian product of
         # realization and DOFs indices)
 
-        self.updates_indices = tf.stack([realization_indices,
-        dofs_indices], axis=-1)
+        self.updates_indices.append(tf.stack([realization_indices,
+        dofs_indices], axis=-1))
 
     # Defines a function to assemble the residual vector
 

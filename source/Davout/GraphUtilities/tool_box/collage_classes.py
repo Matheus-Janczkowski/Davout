@@ -25,7 +25,8 @@ class ColorMiscellany:
         0.576], "grey 4": [0.569, 0.435, 0.435], "grey 5": [0.424, 0.325, 
         0.325], "yellow 1": [1.0, 0.902, 0.835], "yellow 2": [1.0, 0.8, 
         0.667], "yellow 3": [1.0, 0.702, 0.502], "yellow 4": [1.0, 0.6, 
-        0.333], "yellow 5": [1.0, 0.498, 0.165], "transparent": [1.0, 0.835, 0.835, 0.01]}
+        0.333], "yellow 5": [1.0, 0.498, 0.165], "transparent": [1.0, 
+        0.835, 0.835, 0.01], "dark gray": [0.1, 0.1, 0.1]}
 
     # Defines a function to get the color
 

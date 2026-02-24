@@ -29,7 +29,8 @@ None, clip_plane_origin=None, clip_plane_normal_vector=None,
 set_camera_interactively=None, background_color=None, 
 legend_bar_font_color=None, color_bar_min_value=None, 
 color_bar_max_value=None, read_camera_settings_dictionary=None, 
-clip_marker_size=None, legend_bar_visibility=None):
+clip_marker_size=None, legend_bar_visibility=None, clip_marker_color=
+None):
     
     # Gets the path to the module where function LOCAL_frozenSnapshots is
 
@@ -65,7 +66,8 @@ clip_marker_size=None, legend_bar_visibility=None):
     "ue": color_bar_min_value, "color_bar_max_value": 
     color_bar_max_value, "read_camera_settings_dictionary": 
     read_camera_settings_dictionary, "clip_marker_size": 
-    clip_marker_size, "legend_bar_visibility": legend_bar_visibility},
+    clip_marker_size, "legend_bar_visibility": legend_bar_visibility,
+    "clip_marker_color": clip_marker_color},
     execution_rootPath=execution_rootPath, run_as_module=False,
     LIBGL_ALWAYS_SOFTWARE=LIBGL_ALWAYS_SOFTWARE, 
     extra_execution_arguments=extra_execution_arguments)

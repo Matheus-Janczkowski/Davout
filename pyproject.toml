@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "Davout"
-version = "0.1.0.dev106"
+version = "0.1.0.dev110"
 description = "Scientific computing utilities combining FEM, ANN and tooling"
 readme = "README.md"
 authors = [
