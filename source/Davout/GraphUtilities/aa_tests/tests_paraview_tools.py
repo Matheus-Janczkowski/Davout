@@ -117,7 +117,8 @@ class TestParaView():
         camera_rotation=[0.0, 0.0, 0.0],
         legend_bar_position=[0.6048594377510041, 0.09555555555555562],
         legend_bar_length=0.7344444444444449,
-        size_in_pixels={'aspect ratio': 1.0, 'pixels in width': 400})
+        size_in_pixels={'aspect ratio': 1.0, 'pixels in width': 400},
+        clip_marker_size=0.2)
 
     def test_glyph(self):
 
