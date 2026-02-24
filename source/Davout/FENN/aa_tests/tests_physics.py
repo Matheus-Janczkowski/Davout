@@ -201,14 +201,14 @@ class TestANNTools(unittest.TestCase):
         # the node numbering of GMSH
 
         dofs_fenics_from_gmsh_nodes = np.array([dofs_finder(
-        *node_coordinates).tolist() for node_coordinates in (
+        *node_coordinates) for node_coordinates in (
         mesh_data_class.nodes_coordinates)])
 
         # Assembles the residual vector and stores as a list
 
         assembled_residual = assemble(internal_work-external_work)
 
-        residual_vector_fenics = np.zeros(residual_vector.shape[0])
+        residual_vector_fenics = np.zeros(residual_vector.shape[1])
 
         for dof_number, dof_value in enumerate(assembled_residual):
 
@@ -231,21 +231,23 @@ class TestANNTools(unittest.TestCase):
 
         n_nonzero_components = 0
 
-        for i in range(len(residual_vector)):
+        for i in range(residual_vector.shape[1]):
 
-            if abs(residual_vector[i])>1E-5:
+            if abs(residual_vector[0,i])>1E-5:
 
                 n_nonzero_components += 1
 
             print("FENN: residual_vector["+str(i)+"]="+str(
-            residual_vector[i])+";            FEniCS: residual_vector["+
-            str(i)+"]="+str(residual_vector_fenics[i]))
+            residual_vector[0,i])+";            FEniCS: residual_vecto"+
+            "r["+str(i)+"]="+str(residual_vector_fenics[i]))
 
         print("\nThe FEniCS residual vector has a length of "+str(len(
         assembled_residual)))
 
-        print("The FENN residual vector has a length of "+str(len(
-        residual_vector)))
+        print("The FENN residual vector has a shape of "+str(
+        residual_vector.shape)+"\nwhere the first value tells the numb"+
+        "er tells the number of realizations of the BVP and the second"+
+        " one tells the number of DOFs")
 
         print("\nThere are "+str(n_nonzero_components)+" non-zero comp"+
         "onents in the residual vector calculated by FENN")
@@ -259,7 +261,9 @@ class TestANNTools(unittest.TestCase):
         "on time                        #\n###########################"+
         "#############################################\n")
 
-        return None
+        # Stops this function from running
+        # 
+        # return None
 
         start_time = time()
 

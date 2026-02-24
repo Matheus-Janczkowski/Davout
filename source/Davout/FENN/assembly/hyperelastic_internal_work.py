@@ -40,6 +40,11 @@ class CompressibleInternalWorkReferenceConfiguration:
 
         self.variation_gradient_dx = []
 
+        # Creates a list of indices to update the global residual vector
+        # across the different realizations of the BVP 
+
+        self.updates_indices = []
+
         # Iterates through the dictionary of constitutive models
 
         for physical_group, constitutive_class in (
@@ -123,6 +128,36 @@ class CompressibleInternalWorkReferenceConfiguration:
             self.variation_gradient_dx.append(tf.einsum('eqnj,eq->eqnj',
             mesh_data.shape_functions_derivatives, mesh_data.dx))
 
+            # Creates the indices for updating the global residual vector
+            # batched along the different realizations of the BVP
+
+            # Creates the realizations indices and expands for broadcas-
+            # ting
+
+            realization_indices = tf.range(self.n_realizations, dtype=
+            mesh_data.integer_dtype)[:, None, None, None]
+
+            # Broadcasts to match the realizations dimension as the 
+            # trailing dimension
+
+            realization_indices = tf.broadcast_to(realization_indices, [
+            self.n_realizations, tf.shape(mesh_data.dofs_per_element)[0
+            ], tf.shape(mesh_data.dofs_per_element)[1], tf.shape(
+            mesh_data.dofs_per_element)[2]])
+
+            # Expands DOF indices and broadcasts to the realization di-
+            # mension
+
+            dofs_indices = tf.broadcast_to(tf.expand_dims(
+            mesh_data.dofs_per_element, axis=0), tf.shape(
+            realization_indices))
+
+            # Stacks them both to form a concatenation (cartesian product 
+            # of realization and DOFs indices)
+
+            self.updates_indices.append(tf.stack([realization_indices,
+            dofs_indices], axis=-1))
+
         # Gets the number of materials
 
         self.n_materials = len(self.first_piola_kirchhoff_list)
@@ -142,31 +177,6 @@ class CompressibleInternalWorkReferenceConfiguration:
 
         self.deformation_gradient_list = tuple(
         self.deformation_gradient_list)
-
-        # Creates the realizations indices and expands for broadcasting
-
-        realization_indices = tf.range(self.n_realizations, dtype=
-        mesh_data.integer_dtype)[:, None, None, None]
-
-        # Broadcasts to match the realizations dimension as the trailing
-        # dimension
-
-        realization_indices = tf.broadcast_to(realization_indices, [
-        self.n_realizations, tf.shape(mesh_data.dofs_per_element)[0],
-        tf.shape(mesh_data.dofs_per_element)[1], tf.shape(
-        mesh_data.dofs_per_element)[2]])
-
-        # Expands DOF indices and broadcasts to the realization dimension
-
-        dofs_indices = tf.broadcast_to(tf.expand_dims(
-        mesh_data.dofs_per_element, axis=0), tf.shape(
-        realization_indices))
-
-        # Stacks them both to form a concatenation (cartesian product of
-        # realization and DOFs indices)
-
-        self.updates_indices.append(tf.stack([realization_indices,
-        dofs_indices], axis=-1))
 
     # Defines a function to assemble the residual vector
 
@@ -204,6 +214,9 @@ class CompressibleInternalWorkReferenceConfiguration:
             # tensor_scatter_nd_add. Performs this change in place, as
             # global_residual_vector is a variable
 
-            global_residual_vector.scatter_nd_add(tf.expand_dims(
-            self.deformation_gradient_list[i].indexing_dofs_tensor, axis=
-            -1), internal_work)
+            #global_residual_vector.scatter_nd_add(tf.expand_dims(
+            #self.deformation_gradient_list[i].indexing_dofs_tensor, axis=
+            #-1), internal_work)
+
+            global_residual_vector.scatter_nd_add(self.updates_indices[i], 
+            internal_work)
