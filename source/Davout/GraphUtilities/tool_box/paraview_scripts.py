@@ -1258,6 +1258,14 @@ clip_marker_size=None, legend_bar_visibility=None):
 
         scalarBar = GetScalarBar(LookupTable, renderView)
 
+        # Disables automatic formatting
+
+        scalarBar.AutomaticLabelFormat = 0
+
+        scalarBar.AutoOrient = 0
+
+        # Then sets the position
+
         scalarBar.Position = legend_bar_position
 
     # Sets the size of the legend

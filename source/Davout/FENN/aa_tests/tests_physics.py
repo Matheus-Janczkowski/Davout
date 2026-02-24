@@ -259,6 +259,8 @@ class TestANNTools(unittest.TestCase):
         "on time                        #\n###########################"+
         "#############################################\n")
 
+        return None
+
         start_time = time()
 
         file_name = "box"

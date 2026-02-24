@@ -156,12 +156,16 @@ class PrescribedDirichletBC:
         " the local indices of the degrees of freedom to be prescribed"+
         " (the first index is 0), at physical group '"+str(
         physical_group_name)+"'"}, 
+        "BC case": {"description": "key to store the name of the class"+
+        " to apply a particular boundary condition"}, 
         "end_point": {"type": list, "description": "list of a value co"+
         "rresponding to the final time at the first component and a li"+
         "st of prescribed values at the second component. At physical "+
         "group '"+str(physical_group_name)+"'"}}, {"list of realizatio"+
-        "ns with this BC": {"type": list}}, "dirichlet_information", 
-        "PrescribedDirichletBC")
+        "ns with this BC": {"type": list},
+        "load_function": {"type": str, "description": "name of the par"+
+        "ametric curve to generate load steps"}}, "dirichlet_informati"+
+        "on", "PrescribedDirichletBC")
 
         # Verifies if the user has given any list of realizations that
         # do have this boundary condition

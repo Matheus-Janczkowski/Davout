@@ -93,7 +93,7 @@ class CompressibleInternalWorkReferenceConfiguration:
             # Gets the identity tensor for the mesh within this physical
             # group
 
-            identity_tensor = tf.eye(3, batch_shape=[
+            identity_tensor = tf.eye(3, batch_shape=[self.n_realizations,
             mesh_data.number_elements, mesh_data.number_quadrature_points
             ], dtype=mesh_data.dtype)
 
@@ -142,6 +142,31 @@ class CompressibleInternalWorkReferenceConfiguration:
 
         self.deformation_gradient_list = tuple(
         self.deformation_gradient_list)
+
+        # Creates the realizations indices and expands for broadcasting
+
+        realization_indices = tf.range(self.n_realizations, dtype=
+        mesh_data.integer_dtype)[:, None, None, None]
+
+        # Broadcasts to match the realizations dimension as the trailing
+        # dimension
+
+        realization_indices = tf.broadcast_to(realization_indices, [
+        self.n_realizations, tf.shape(mesh_data.dofs_per_element)[0],
+        tf.shape(mesh_data.dofs_per_element)[1], tf.shape(
+        mesh_data.dofs_per_element)[2]])
+
+        # Expands DOF indices and broadcasts to the realization dimension
+
+        dofs_indices = tf.broadcast_to(tf.expand_dims(
+        mesh_data.dofs_per_element, axis=0), tf.shape(
+        realization_indices))
+
+        # Stacks them both to form a concatenation (cartesian product of
+        # realization and DOFs indices)
+
+        self.updates_indices = tf.stack([realization_indices,
+        dofs_indices], axis=-1)
 
     # Defines a function to assemble the residual vector
 
