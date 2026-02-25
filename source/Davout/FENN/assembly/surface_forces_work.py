@@ -15,7 +15,7 @@ from ..tool_box.mesh_info_tools import get_boundary_info_from_mesh_data_class
 class ReferentialTractionWork:
 
     def __init__(self, n_realizations, traction_dict, 
-    mesh_data_class, field_name):
+    mesh_data_class, field_name, time):
         
         # Gets the number of batched BVP instances
 
@@ -108,7 +108,7 @@ class ReferentialTractionWork:
 
             self.traction_classes.append(available_traction_classes[
             traction_vector["load case"]](mesh_data, traction_vector,
-            physical_group, self.n_realizations, mesh_common_info))
+            physical_group, self.n_realizations, mesh_common_info, time))
 
             # Verifies if there are multiple realizations of the mesh
 

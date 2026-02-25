@@ -66,7 +66,7 @@ class CompressibleHyperelasticity:
 
         self.traction_work_variation = ReferentialTractionWork(
         n_realizations, traction_dictionary, mesh_data_class, "D"+
-        "isplacement")
+        "isplacement", self.time)
 
         # Saves the vector of parameters if needed
 
@@ -79,7 +79,11 @@ class CompressibleHyperelasticity:
     # Defines a function to update and to apply all boundary conditions
 
     @tf.function
-    def apply_all_boundary_conditions(self, vector_of_parameters):
+    def apply_all_boundary_conditions(self, vector_of_parameters, time):
+
+        # Updates time
+
+        self.time.assign(time)
 
         # Updates all load curves
 

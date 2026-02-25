@@ -15,7 +15,8 @@ from .tensorflow_utilities import convert_object_to_tensor
 class TractionVectorOnSurface:
 
     def __init__(self, surface_mesh_data, traction_information, 
-    physical_group_name, n_realizations, mesh_realizations_common_info):
+    physical_group_name, n_realizations, mesh_realizations_common_info,
+    time):
         
         # Gets the number of batched BVP instances
 
@@ -165,7 +166,7 @@ class FirstPiolaKirchhoffOnSurface:
 
     def __init__(self, surface_mesh_data, 
     prescribed_first_piola_kirchhoff_info, physical_group_name, 
-    n_realizations, mesh_realizations_common_info):
+    n_realizations, mesh_realizations_common_info, time):
         
         # Gets the number of batched BVP instances
 
@@ -279,21 +280,68 @@ class FirstPiolaKirchhoffOnSurface:
 
             self.prescribed_first_piola_kirchhoff = tf.transpose(
             self.prescribed_first_piola_kirchhoff, perm=[2,0,1])
+            
+            # If there are multiple realizations of the mesh, one paired
+            # with each realization of P
 
-            # Defines the proper function to compute the traction as the
-            # one that contracts the surface normal with the multiple P
-            # tensors
+            if isinstance(self.surface_mesh_data, list):
 
-            self.appropriate_computation = self.compute_traction_for_batched_value
+                # Stacks the normal vectors of all mesh instances
+
+                self.stacked_normal_vectors = tf.stack([
+                surface_mesh_instance.normal_vector for (
+                surface_mesh_instance) in self.surface_mesh_data], axis=
+                0)
+
+                # Defines the proper function to compute the traction as
+                # the one that contracts the surface normal with the 
+                # multiple P tensors
+
+                self.appropriate_computation = (
+                self.compute_multiple_tractions_multiple_meshes)
+
+            # Otherwise, if the same mesh is to be used with all realiza-
+            # tions of P
+
+            else:
+
+                # Defines the proper function to compute the traction as
+                # the one that contracts the surface normal with the 
+                # multiple P tensors
+
+                self.appropriate_computation = (
+                self.compute_multiple_tractions_single_mesh)
 
         # Otherwise, just mounts it
 
         else:
 
-            # Defines the proper function to compute the traction as the
-            # one that broadcasts a single P to multiple BVPs
+            # If there are multiple realizations of the mesh
 
-            self.appropriate_computation = self.compute_traction_for_single_value
+            if isinstance(self.surface_mesh_data, list):
+
+                # Stacks the normal vectors of all mesh instances
+
+                self.stacked_normal_vectors = tf.stack([
+                surface_mesh_instance.normal_vector for (
+                surface_mesh_instance) in self.surface_mesh_data], axis=
+                0)
+
+                # Defines the proper function to compute the traction as 
+                # the one that broadcasts a single P to multiple BVPs
+
+                self.appropriate_computation = (
+                self.compute_single_traction_multiple_meshes)
+
+            # Otherwise, just takes the same mesh
+
+            else:
+
+                # Defines the proper function to compute the traction as 
+                # the one that broadcasts a single P to multiple BVPs
+
+                self.appropriate_computation = (
+                self.compute_single_traction_single_mesh)
         
         # Calls the method to build the traction tensor
 
@@ -313,10 +361,10 @@ class FirstPiolaKirchhoffOnSurface:
     
     # Defines a function to compute the traction where a single instance
     # of prescribed first Piola-Kirchhoff is used for all realizations 
-    # of the BVP
+    # of the BVP. Besides the mesh is the same for all realizations
 
     @tf.function
-    def compute_traction_for_single_value(self):
+    def compute_single_traction_single_mesh(self):
 
         # Contracts the first Piola-Kirchhoff stress tensor with the ten-
         # sor of normal vectors of the mesh. But broadcasts it. The re-
@@ -331,10 +379,11 @@ class FirstPiolaKirchhoffOnSurface:
     
     # Defines a function to compute the traction where multiple instan-
     # ces of prescribed first Piola-Kirchhoff were given. Each corres-
-    # ponding to a realization of the BVP
+    # ponding to a realization of the BVP. Besides the mesh is the same 
+    # for all realizations
 
     @tf.function
-    def compute_traction_for_batched_value(self, vector_of_parameters):
+    def compute_multiple_tractions_single_mesh(self):
 
         # Contracts the first Piola-Kirchhoff stress tensor with the ten-
         # sor of normal vectors of the mesh. But broadcasts it. The re-
@@ -344,3 +393,36 @@ class FirstPiolaKirchhoffOnSurface:
         return tf.einsum('pij,eqj->peqi', 
         self.prescribed_first_piola_kirchhoff, 
         self.surface_mesh_data.normal_vector)
+    
+    # Defines a function to compute the traction where a single instance
+    # of prescribed first Piola-Kirchhoff is used for all realizations 
+    # of the BVP. However, there are multiple realizations of the mesh
+
+    @tf.function
+    def compute_single_traction_multiple_meshes(self):
+
+        # Contracts the first Piola-Kirchhoff stress tensor with the ten-
+        # sor of normal vectors of the mesh. But broadcasts it. The re-
+        # sult is [n_realizations, n_elements, n_quadrature_points, n_
+        # dimensions]
+
+        return tf.einsum('ij,peqj->peqi', 
+        self.prescribed_first_piola_kirchhoff, 
+        self.stacked_normal_vectors)
+    
+    # Defines a function to compute the traction where multiple instan-
+    # ces of prescribed first Piola-Kirchhoff were given. Each corres-
+    # ponding to a realization of the BVP. However, there are multiple 
+    # realizations of the mesh
+
+    @tf.function
+    def compute_multiple_tractions_multiple_meshes(self):
+
+        # Contracts the first Piola-Kirchhoff stress tensor with the ten-
+        # sor of normal vectors of the mesh. But broadcasts it. The re-
+        # sult is [n_realizations, n_elements, n_quadrature_points, n_
+        # dimensions]
+
+        return tf.einsum('pij,peqj->peqi', 
+        self.prescribed_first_piola_kirchhoff, 
+        self.stacked_normal_vectors)
