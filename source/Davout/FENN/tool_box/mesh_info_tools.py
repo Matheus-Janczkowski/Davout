@@ -2,6 +2,27 @@
 
 from ..tool_box.mesh_tools import MshMeshData
 
+# Defines a class to store information gathered from different instances
+# of the mesh data class. This information, however, must be equal all
+# over the different meshes, in different realizations
+
+class MeshRealizationsCommonInfo:
+
+    def __init__(self, float_dtype, integer_dtype, dofs_per_element, 
+    number_elements, number_quadrature_points, shape_functions_tensor):
+        
+        self.float_dtype = float_dtype
+        
+        self.integer_dtype = integer_dtype
+        
+        self.dofs_per_element = dofs_per_element
+        
+        self.number_elements = number_elements
+        
+        self.number_quadrature_points = number_quadrature_points
+
+        self.shape_functions_tensor = shape_functions_tensor
+
 ########################################################################
 #                             Verification                             #
 ########################################################################
@@ -137,7 +158,27 @@ physical_group_name, dictionary_name, class_name, field_name):
 
     physical_group_tag = None
 
-    mesh_dict = None
+    # Initializes the tensor of DOF indices per element
+
+    dofs_per_element = None
+
+    # Initializes the numbers of elements and of quadrature points common
+    # to all meshes
+
+    number_elements = None 
+
+    number_quadrature_points = None
+
+    # Initializes the object with information of the finite element class
+    # for this physical group
+    
+    mesh_data = None
+
+    # Initializes the tensor of shape functions (Lagrangian shape func-
+    # tions, for they do not depend upon geometric parameters of the fi-
+    # nite element)
+
+    shape_functions_tensor = None
 
     # Verifies if multiple meshes were given
 
@@ -158,10 +199,10 @@ physical_group_name, dictionary_name, class_name, field_name):
             "nary of domain elements the key for the '"+str(field_name)+
             "' field")
         
-        # Recovers the dictionary of elements in the domain concerned
-        # with displacement field from the first mesh
+        # Initializes a list to store the element types concerned with
+        # the required field at the current physical group
         
-        mesh_dict = mesh_data_class[0].domain_elements[field_name]
+        mesh_data = []
         
         # Recovers the dictionary of physical groups names to their nu-
         # merical tags
@@ -220,6 +261,38 @@ physical_group_name, dictionary_name, class_name, field_name):
                 "for the "+str(index+1)+"-th mesh. Whereas the tag for"+
                 " the first mesh is "+str(physical_group_tag)+". The t"+
                 "ags must be the same across meshes")
+            
+            # Appends the domain elements dictionary of this mesh
+
+            domain_elements_dict = mesh.domain_elements[field_name]
+            
+            # Verifies if this dictionary of domain elements has more 
+            # than one element type
+
+            if isinstance(domain_elements_dict[physical_group_tag], 
+            dict):
+
+                raise NotImplementedError("Multiple element types per "+
+                "physical group has not yet been updated to compute "+
+                str(class_name))
+                
+            # Gets the elements defined for this physical group
+
+            mesh_data.append(domain_elements_dict[physical_group_tag])
+
+        # Gets the tensor of DOFs per element from the first mesh, since
+        # all meshes share the same connectivities and DOF enumeration
+        # anyway
+
+        dofs_per_element = mesh_data[0].dofs_per_element
+
+        # Gathers other common information to all meshes
+
+        number_elements = mesh_data[0].number_elements
+
+        number_quadrature_points = mesh_data[0].number_quadrature_points
+
+        shape_functions_tensor = mesh_data[0].shape_functions_tensor
 
     # Otherwise, if it is a single mesh
 
@@ -266,18 +339,38 @@ physical_group_name, dictionary_name, class_name, field_name):
             physical_group_tag = domain_physical_groups_dict[
             physical_group_name]
 
-    # Gets the instance of the mesh data
+        # Gets the instance of the mesh data
 
-    if isinstance(mesh_dict[physical_group_tag], dict):
+        if isinstance(mesh_dict[physical_group_tag], dict):
 
-        raise NotImplementedError("Multiple element types per physical"+
-        " group has not yet been updated to compute "+str(class_name))
-            
-    # Gets the first element type
+            raise NotImplementedError("Multiple element types per phys"+
+            "ical group has not yet been updated to compute "+str(
+            class_name))
+                
+        # Gets the elements defined for this physical group
 
-    mesh_data = mesh_dict[physical_group_tag]
+        mesh_data = mesh_dict[physical_group_tag]
 
-    return (integer_dtype, float_dtype, mesh_data, physical_group_tag)
+        # Gets the tensor of DOFs per element from this mesh
+
+        dofs_per_element = mesh_data.dofs_per_element
+
+        # Gathers other mesh information
+
+        number_elements = mesh_data.number_elements
+
+        number_quadrature_points = mesh_data.number_quadrature_points
+
+        shape_functions_tensor = mesh_data.shape_functions_tensor
+
+    # Creates an instance of the class for common information across 
+    # mesh realizations
+
+    mesh_common_info = MeshRealizationsCommonInfo(float_dtype, 
+    integer_dtype, dofs_per_element, number_elements, 
+    number_quadrature_points, shape_functions_tensor)
+
+    return (mesh_data, physical_group_tag, mesh_common_info)
 
 ########################################################################
 #                           Boundary elements                          #
@@ -299,7 +392,27 @@ physical_group_name, dictionary_name, class_name, field_name):
 
     physical_group_tag = None
 
-    mesh_dict = None
+    # Initializes the tensor of DOF indices per element
+
+    dofs_per_element = None
+
+    # Initializes the numbers of elements and of quadrature points common
+    # to all meshes
+
+    number_elements = None 
+
+    number_quadrature_points = None
+
+    # Initializes the object with information of the finite element class
+    # for this physical group
+    
+    mesh_data = None
+
+    # Initializes the tensor of shape functions (Lagrangian shape func-
+    # tions, for they do not depend upon geometric parameters of the fi-
+    # nite element)
+
+    shape_functions_tensor = None
 
     # Verifies if multiple meshes were given
 
@@ -320,10 +433,10 @@ physical_group_name, dictionary_name, class_name, field_name):
             "nary of boundary elements the key for the '"+str(field_name
             )+"' field")
         
-        # Recovers the dictionary of elements in the boundary concerned
-        # with displacement field from the first mesh
+        # Initializes a list to store the element types concerned with
+        # the required field at the current physical group
         
-        mesh_dict = mesh_data_class[0].boundary_elements[field_name]
+        mesh_data = []
         
         # Recovers the dictionary of physical groups names to their nu-
         # merical tags
@@ -382,6 +495,38 @@ physical_group_name, dictionary_name, class_name, field_name):
                 "for the "+str(index+1)+"-th mesh. Whereas the tag for"+
                 " the first mesh is "+str(physical_group_tag)+". The t"+
                 "ags must be the same across meshes")
+            
+            # Appends the boundary elements dictionary of this mesh
+
+            boundary_elements_dict = mesh.boundary_elements[field_name]
+            
+            # Verifies if this dictionary of boundary elements has more 
+            # than one element type
+
+            if isinstance(boundary_elements_dict[physical_group_tag], 
+            dict):
+
+                raise NotImplementedError("Multiple element types per "+
+                "physical group has not yet been updated to compute "+
+                str(class_name))
+                
+            # Gets the elements defined for this physical group
+
+            mesh_data.append(boundary_elements_dict[physical_group_tag])
+
+        # Gets the tensor of DOFs per element from the first mesh, since
+        # all meshes share the same connectivities and DOF enumeration
+        # anyway
+
+        dofs_per_element = mesh_data[0].dofs_per_element
+
+        # Gathers other common information to all meshes
+
+        number_elements = mesh_data[0].number_elements
+
+        number_quadrature_points = mesh_data[0].number_quadrature_points
+
+        shape_functions_tensor = mesh_data[0].shape_functions_tensor
 
     # Otherwise, if it is a single mesh
 
@@ -428,19 +573,35 @@ physical_group_name, dictionary_name, class_name, field_name):
             physical_group_tag = boundary_physical_groups_dict[
             physical_group_name]
 
-    # Gets the instance of the mesh data
+        # Gets the instance of the mesh data
 
-    if isinstance(mesh_dict[physical_group_tag], dict):
+        if isinstance(mesh_dict[physical_group_tag], dict):
 
-        raise NotImplementedError("Multiple element types per physical"+
-        " group has not yet been updated to compute "+str(class_name))
-            
-    # Gets the first element type
+            raise NotImplementedError("Multiple element types per phys"+
+            "ical group has not yet been updated to compute "+str(
+            class_name))
+                
+        # Gets the elements defined for this physical group
 
-    mesh_data = mesh_dict[physical_group_tag]
+        mesh_data = mesh_dict[physical_group_tag]
 
-    # Gets the tensor of DOFs per element directly from the mesh
+        # Gets the tensor of DOFs per element from this mesh
 
-    dofs_per_element = mesh_data.dofs_per_element
+        dofs_per_element = mesh_data.dofs_per_element
 
-    return (integer_dtype, float_dtype, mesh_data, physical_group_tag)
+        # Gathers other mesh information
+
+        number_elements = mesh_data.number_elements
+
+        number_quadrature_points = mesh_data.number_quadrature_points
+
+        shape_functions_tensor = mesh_data.shape_functions_tensor
+
+    # Creates an instance of the class for common information across 
+    # mesh realizations
+
+    mesh_common_info = MeshRealizationsCommonInfo(float_dtype, 
+    integer_dtype, dofs_per_element, number_elements, 
+    number_quadrature_points, shape_functions_tensor)
+
+    return (mesh_data, physical_group_tag, mesh_common_info)

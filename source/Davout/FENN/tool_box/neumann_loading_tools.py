@@ -15,7 +15,8 @@ from .tensorflow_utilities import convert_object_to_tensor
 class TractionVectorOnSurface:
 
     def __init__(self, surface_mesh_data, traction_information, 
-    vector_of_parameters, physical_group_name, n_realizations):
+    vector_of_parameters, physical_group_name, n_realizations,
+    mesh_realizations_common_info):
         
         # Gets the number of batched BVP instances
 
@@ -24,6 +25,8 @@ class TractionVectorOnSurface:
         # Saves the given information
 
         self.surface_mesh_data = surface_mesh_data
+
+        self.mesh_realizations_common_info = mesh_realizations_common_info
 
         # Initializes the traction vector
 
@@ -93,7 +96,7 @@ class TractionVectorOnSurface:
         # Converts traction vector to a tensor
 
         self.traction_vector = convert_object_to_tensor(traction_vector,
-        surface_mesh_data.dtype)
+        mesh_realizations_common_info.float_dtype)
 
         # If batching mode is on, unravels the tensor
 
@@ -145,8 +148,9 @@ class TractionVectorOnSurface:
         # to create the traction tensor
 
         return tf.broadcast_to(self.traction_vector, [
-        self.n_realizations, self.surface_mesh_data.number_elements, 
-        self.surface_mesh_data.number_quadrature_points, 3])
+        self.n_realizations, 
+        self.mesh_realizations_common_info.number_elements, 
+        self.mesh_realizations_common_info.number_quadrature_points, 3])
 
 ########################################################################
 #                       Prescribed stress tensor                       #
@@ -159,7 +163,7 @@ class FirstPiolaKirchhoffOnSurface:
 
     def __init__(self, surface_mesh_data, 
     prescribed_first_piola_kirchhoff_info, vector_of_parameters,
-    physical_group_name, n_realizations):
+    physical_group_name, n_realizations, mesh_realizations_common_info):
         
         # Gets the number of batched BVP instances
 
@@ -168,6 +172,8 @@ class FirstPiolaKirchhoffOnSurface:
         # Saves the given information
 
         self.surface_mesh_data = surface_mesh_data
+
+        self.mesh_realizations_common_info = mesh_realizations_common_info
 
         # Initializes the list of prescribed first Piola-Kirchhoff stress
         # tensor
@@ -248,7 +254,8 @@ class FirstPiolaKirchhoffOnSurface:
         # a tensor
 
         self.prescribed_first_piola_kirchhoff = convert_object_to_tensor(
-        prescribed_first_piola_kirchhoff, surface_mesh_data.dtype)
+        prescribed_first_piola_kirchhoff, 
+        mesh_realizations_common_info.float_dtype)
 
         # If batching mode is on, unravels the tensor
 
@@ -317,7 +324,7 @@ class FirstPiolaKirchhoffOnSurface:
         self.prescribed_first_piola_kirchhoff, 
         self.surface_mesh_data.normal_vector), axis=0), [
         self.n_realizations, 
-        *self.surface_mesh_data.dofs_per_element.shape])
+        *self.mesh_realizations_common_info.dofs_per_element.shape])
     
     # Defines a function to compute the traction where multiple instan-
     # ces of prescribed first Piola-Kirchhoff were given. Each corres-

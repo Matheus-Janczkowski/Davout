@@ -55,8 +55,8 @@ class CompressibleInternalWorkReferenceConfiguration:
             # Gets necessary information from the mesh data class, such
             # as the dictionary of domain finite elements
 
-            (integer_dtype, float_dtype, mesh_data, physical_group_tag
-            ) = get_volume_info_from_mesh_data_class(mesh_data_class,
+            (mesh_data, physical_group_tag, mesh_common_info
+            ) = get_volume_info_from_mesh_data_class(mesh_data_class, 
             physical_group, "constitutive models", "CompressibleIntern"+
             "alWorkReferenceConfiguration", "Displacement")
 
@@ -80,8 +80,9 @@ class CompressibleInternalWorkReferenceConfiguration:
             # group
 
             identity_tensor = tf.eye(3, batch_shape=[self.n_realizations,
-            mesh_data.number_elements, mesh_data.number_quadrature_points
-            ], dtype=mesh_data.dtype)
+            mesh_common_info.number_elements, 
+            mesh_common_info.number_quadrature_points], dtype=
+            mesh_common_info.float_dtype)
 
             # Puts the identity tensor into the constitutive model class 
             # if it has the attribute
@@ -94,7 +95,7 @@ class CompressibleInternalWorkReferenceConfiguration:
             # ent
 
             self.deformation_gradient_list.append(DeformationGradient(
-            vector_of_parameters, mesh_data.dofs_per_element, 
+            vector_of_parameters, mesh_common_info.dofs_per_element, 
             mesh_data.shape_functions_derivatives, identity_tensor))
 
             # Adds the function to evaluate the first Piola-Kirchhoff 
@@ -116,21 +117,22 @@ class CompressibleInternalWorkReferenceConfiguration:
             # ting
 
             realization_indices = tf.range(self.n_realizations, dtype=
-            mesh_data.integer_dtype)[:, None, None, None]
+            mesh_common_info.integer_dtype)[:, None, None, None]
 
             # Broadcasts to match the realizations dimension as the 
             # trailing dimension
 
             realization_indices = tf.broadcast_to(realization_indices, [
-            self.n_realizations, tf.shape(mesh_data.dofs_per_element)[0
-            ], tf.shape(mesh_data.dofs_per_element)[1], tf.shape(
-            mesh_data.dofs_per_element)[2]])
+            self.n_realizations, tf.shape(
+            mesh_common_info.dofs_per_element)[0], tf.shape(
+            mesh_common_info.dofs_per_element)[1], tf.shape(
+            mesh_common_info.dofs_per_element)[2]])
 
             # Expands DOF indices and broadcasts to the realization di-
             # mension
 
             dofs_indices = tf.broadcast_to(tf.expand_dims(
-            mesh_data.dofs_per_element, axis=0), tf.shape(
+            mesh_common_info.dofs_per_element, axis=0), tf.shape(
             realization_indices))
 
             # Stacks them both to form a concatenation (cartesian product 

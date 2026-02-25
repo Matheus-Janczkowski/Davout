@@ -34,7 +34,7 @@ class FixedSupportDirichletBC:
         # Gets information from the mesh data class, such as numerical
         # types and DOFs indices
         
-        (integer_dtype, float_dtype, mesh_data, physical_group_tag
+        (mesh_data, physical_group_tag, mesh_common_info
         ) = get_boundary_info_from_mesh_data_class(mesh_data_class, 
         physical_group_name, "Dirichlet boundary conditions", "Dirichl"+
         "etBoundaryConditions", dirichlet_information["field name"])
@@ -52,7 +52,7 @@ class FixedSupportDirichletBC:
             # elements and nodes)
 
             unique_tensor_dofs, _ = tf.unique(tf.reshape(
-            mesh_data.dofs_per_element[..., dof], (-1,)))
+            mesh_common_info.dofs_per_element[..., dof], (-1,)))
 
             self.dofs_per_element.append(unique_tensor_dofs)
 
@@ -69,14 +69,14 @@ class FixedSupportDirichletBC:
             # Transforms it to an integer tensor
 
             realizations_range = tf.constant(realizations_range, dtype=
-            integer_dtype)
+            mesh_common_info.integer_dtype)
 
         # Otherwise, creates a simple range
 
         else:
 
             realizations_range = tf.range(n_realizations, dtype=
-            integer_dtype)
+            mesh_common_info.integer_dtype)
 
         # Stack all fixed DOFs into [n_fixed_dofs]
 
@@ -101,7 +101,7 @@ class FixedSupportDirichletBC:
 
         self.prescribed_values = tf.reshape(tf.zeros([
         self.n_selected_realizations, self.n_fixed_dofs], dtype=
-        float_dtype), [-1])
+        mesh_common_info.float_dtype), [-1])
 
         # Broadcasts DOF indices along the realizations axis
 
@@ -162,7 +162,7 @@ class PrescribedDirichletBC:
         # Gets information from the mesh data class, such as numerical
         # types and DOFs indices
         
-        (integer_dtype, float_dtype, mesh_data, physical_group_tag
+        (mesh_data, physical_group_tag, mesh_common_info
         ) = get_boundary_info_from_mesh_data_class(mesh_data_class, 
         physical_group_name, "Dirichlet boundary conditions", "Dirichl"+
         "etBoundaryConditions", dirichlet_information["field name"])
@@ -185,14 +185,14 @@ class PrescribedDirichletBC:
             # Transforms it to an integer tensor
 
             realizations_range = tf.constant(realizations_range, dtype=
-            integer_dtype)
+            mesh_common_info.integer_dtype)
 
         # Otherwise, creates a simple range
 
         else:
 
             realizations_range = tf.range(n_realizations, dtype=
-            integer_dtype)
+            mesh_common_info.integer_dtype)
 
         # Gets the number of selected realizations
 
@@ -356,7 +356,7 @@ class PrescribedDirichletBC:
                 # index. But gets just one occurence of each DOF
 
                 unique_tensor_dofs, _ = tf.unique(tf.reshape(
-                mesh_data.dofs_per_element[..., dof], (-1,)))
+                mesh_common_info.dofs_per_element[..., dof], (-1,)))
 
                 dofs_list.append(unique_tensor_dofs)
 
@@ -364,8 +364,8 @@ class PrescribedDirichletBC:
                 # plied by the tensor already
 
                 load_class_instance = load_class(time, value*tf.ones(
-                unique_tensor_dofs.shape, dtype=float_dtype), 
-                final_time)
+                unique_tensor_dofs.shape, dtype=
+                mesh_common_info.float_dtype), final_time)
 
                 # Updates the value and appends this instance to a load
                 # instances list

@@ -59,8 +59,8 @@ class ReferentialTractionWork:
             # Gets necessary information from the mesh data class, such
             # as the dictionary of boundary finite elements
 
-            (integer_dtype, float_dtype, mesh_data, physical_group_tag
-            ) = get_boundary_info_from_mesh_data_class(mesh_data_class,
+            (mesh_data, physical_group_tag, mesh_common_info
+            ) = get_boundary_info_from_mesh_data_class(mesh_data_class, 
             physical_group, "Neumann boundary conditions", "Referentia"+
             "lTractionWork", field_name)
 
@@ -108,7 +108,8 @@ class ReferentialTractionWork:
 
             self.traction_classes.append(available_traction_classes[
             traction_vector["load case"]](mesh_data, traction_vector,
-            vector_of_parameters, physical_group, self.n_realizations))
+            vector_of_parameters, physical_group, self.n_realizations,
+            mesh_common_info))
 
             # Gets the shape functions multiplied by the surface inte-
             # gration measure. Uses the attribute dx, because the el-
@@ -116,7 +117,7 @@ class ReferentialTractionWork:
             # dx
 
             self.variation_field_ds.append(tf.einsum('qn,eq->eqn',
-            mesh_data.shape_functions_tensor, mesh_data.dx))
+            mesh_common_info.shape_functions_tensor, mesh_data.dx))
 
             # Creates the indices for updating the global residual vector
             # batched along the different realizations of the BVP
@@ -125,21 +126,22 @@ class ReferentialTractionWork:
             # ting
 
             realization_indices = tf.range(self.n_realizations, dtype=
-            mesh_data.integer_dtype)[:, None, None, None]
+            mesh_common_info.integer_dtype)[:, None, None, None]
 
             # Broadcasts to match the realizations dimension as the 
             # trailing dimension
 
             realization_indices = tf.broadcast_to(realization_indices, [
-            self.n_realizations, tf.shape(mesh_data.dofs_per_element)[0
-            ], tf.shape(mesh_data.dofs_per_element)[1], tf.shape(
-            mesh_data.dofs_per_element)[2]])
+            self.n_realizations, tf.shape(
+            mesh_common_info.dofs_per_element)[0], tf.shape(
+            mesh_common_info.dofs_per_element)[1], tf.shape(
+            mesh_common_info.dofs_per_element)[2]])
 
             # Expands DOF indices and broadcasts to the realization di-
             # mension
 
             dofs_indices = tf.broadcast_to(tf.expand_dims(
-            mesh_data.dofs_per_element, axis=0), tf.shape(
+            mesh_common_info.dofs_per_element, axis=0), tf.shape(
             realization_indices))
 
             # Stacks them both to form a concatenation (cartesian product 
