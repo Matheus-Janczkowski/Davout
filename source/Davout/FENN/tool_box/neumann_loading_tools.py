@@ -15,8 +15,7 @@ from .tensorflow_utilities import convert_object_to_tensor
 class TractionVectorOnSurface:
 
     def __init__(self, surface_mesh_data, traction_information, 
-    vector_of_parameters, physical_group_name, n_realizations,
-    mesh_realizations_common_info):
+    physical_group_name, n_realizations, mesh_realizations_common_info):
         
         # Gets the number of batched BVP instances
 
@@ -142,7 +141,7 @@ class TractionVectorOnSurface:
     # meters
 
     @tf.function
-    def compute_traction(self):
+    def compute_traction(self, vector_of_parameters):
 
         # Gets the number of elements and the number of quadrature points
         # to create the traction tensor
@@ -162,8 +161,8 @@ class TractionVectorOnSurface:
 class FirstPiolaKirchhoffOnSurface:
 
     def __init__(self, surface_mesh_data, 
-    prescribed_first_piola_kirchhoff_info, vector_of_parameters,
-    physical_group_name, n_realizations, mesh_realizations_common_info):
+    prescribed_first_piola_kirchhoff_info, physical_group_name, 
+    n_realizations, mesh_realizations_common_info):
         
         # Gets the number of batched BVP instances
 
@@ -331,7 +330,7 @@ class FirstPiolaKirchhoffOnSurface:
     # ponding to a realization of the BVP
 
     @tf.function
-    def compute_traction_for_batched_value(self):
+    def compute_traction_for_batched_value(self, vector_of_parameters):
 
         # Contracts the first Piola-Kirchhoff stress tensor with the ten-
         # sor of normal vectors of the mesh. But broadcasts it. The re-

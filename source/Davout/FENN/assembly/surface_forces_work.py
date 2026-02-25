@@ -14,12 +14,12 @@ from ..tool_box.mesh_info_tools import get_boundary_info_from_mesh_data_class
 
 class ReferentialTractionWork:
 
-    def __init__(self, vector_of_parameters, traction_dict, 
+    def __init__(self, n_realizations, traction_dict, 
     mesh_data_class, field_name):
         
         # Gets the number of batched BVP instances
 
-        self.n_realizations = vector_of_parameters.shape[0]
+        self.n_realizations = n_realizations
 
         # Creates a list of the variation of the primal field at the 
         # surfaces multiplied by the surface integration measure
@@ -108,8 +108,7 @@ class ReferentialTractionWork:
 
             self.traction_classes.append(available_traction_classes[
             traction_vector["load case"]](mesh_data, traction_vector,
-            vector_of_parameters, physical_group, self.n_realizations,
-            mesh_common_info))
+            physical_group, self.n_realizations, mesh_common_info))
 
             # Verifies if there are multiple realizations of the mesh
 
@@ -240,14 +239,15 @@ class ReferentialTractionWork:
     # Defines a function to update the loads
 
     @tf.function
-    def update_boundary_conditions(self):
+    def update_boundary_conditions(self, vector_of_parameters):
 
         # Iterates through the loaded surfaces to update the calculation
         # of the traction tensor
 
         for i in range(self.n_surfaces_under_load):
 
-            self.traction_classes[i].compute_traction()
+            self.traction_classes[i].compute_traction(
+            vector_of_parameters)
 
         # Iterates through the loaded surfaces to stack all external work
         # at once

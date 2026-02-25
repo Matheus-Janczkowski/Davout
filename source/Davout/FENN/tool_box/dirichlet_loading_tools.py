@@ -21,7 +21,7 @@ from ...PythonicUtilities.dictionary_tools import verify_obligatory_and_optional
 class FixedSupportDirichletBC:
 
     def __init__(self, mesh_data_class, dirichlet_information, 
-    vector_of_parameters, physical_group_name, time, n_realizations):
+    physical_group_name, time, n_realizations):
 
         # Verifies the keys of the dictionary of boundary condition in-
         # formation
@@ -137,7 +137,7 @@ class FixedSupportDirichletBC:
 class PrescribedDirichletBC:
 
     def __init__(self, mesh_data_class, dirichlet_information, 
-    vector_of_parameters, physical_group_name, time, n_realizations):
+    physical_group_name, time, n_realizations):
 
         # Verifies the dictionary keys
 

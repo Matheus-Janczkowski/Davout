@@ -11,7 +11,7 @@ from ..tool_box import dirichlet_loading_tools
 class DirichletBoundaryConditions:
 
     def __init__(self, vector_of_parameters, boundary_conditions_dict, 
-    mesh_data_class, time):
+    mesh_data_class, time, apply_BCs_at_initialization=False):
         
         # Gets the number of batched BVP instances
 
@@ -87,8 +87,8 @@ class DirichletBoundaryConditions:
 
             self.BCs_classes.append(available_BCs_classes[
             boundary_condition["BC case"]](mesh_data_class, 
-            boundary_condition, vector_of_parameters, physical_group, 
-            time, self.n_realizations))
+            boundary_condition, physical_group, time, 
+            self.n_realizations))
 
         # Gets the number of boundary conditions
 
@@ -119,7 +119,9 @@ class DirichletBoundaryConditions:
 
         # Applies boundary conditions using the initial information
 
-        self.apply_boundary_conditions(vector_of_parameters)
+        if apply_BCs_at_initialization:
+
+            self.apply_boundary_conditions(vector_of_parameters)
 
     # Defines a function to update the loads
 
@@ -150,6 +152,8 @@ class DirichletBoundaryConditions:
 
         vector_of_parameters.scatter_nd_update(self.all_indices, 
         self.all_values)
+
+        return vector_of_parameters
 
         # TODO alter scatter_nd_update to tensor_scatter_nd_update to
         # return vector_of_parameters instead of modifying it in place

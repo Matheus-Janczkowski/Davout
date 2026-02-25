@@ -17,7 +17,8 @@ class CompressibleHyperelasticity:
 
     def __init__(self, mesh_data_class, constitutive_models_dict, 
     vector_of_parameters=None, traction_dictionary=None, 
-    boundary_conditions_dict=None, time=0.0, n_realizations=1):
+    boundary_conditions_dict=None, time=0.0, n_realizations=1, 
+    save_vector_of_parameters_in_class=True):
         
         # Verifies if there are realizations of the mesh and gathers im-
         # portant information, such as global number of DOFs and numeri-
@@ -41,34 +42,55 @@ class CompressibleHyperelasticity:
 
         if vector_of_parameters is None:
 
-            self.vector_of_parameters = tf.Variable(tf.zeros([
-            n_realizations, self.global_number_dofs], dtype=self.dtype))
+            vector_of_parameters = tf.Variable(tf.zeros([n_realizations, 
+            self.global_number_dofs], dtype=self.dtype))
         
         # Instantiates the class to enforce Dirichlet boundary conditions
 
         self.BCs_class = DirichletBoundaryConditions(
-        self.vector_of_parameters, boundary_conditions_dict, 
-        mesh_data_class, self.time)
+        vector_of_parameters, boundary_conditions_dict, mesh_data_class, 
+        self.time, apply_BCs_at_initialization=
+        save_vector_of_parameters_in_class)
         
         # Instantiates the class to compute the parcel of the residual
         # vector due to the variation of the internal work
 
         self.internal_work_variation = CompressibleInternalWorkReferenceConfiguration(
-        self.vector_of_parameters, constitutive_models_dict, 
-        mesh_data_class)
+        n_realizations, constitutive_models_dict, mesh_data_class)
 
         # Instantiates the class to compute the parcel of the residual
         # vector due to the variation of the external work made by the
         # surface tractions
 
         self.traction_work_variation = ReferentialTractionWork(
-        self.vector_of_parameters, traction_dictionary, mesh_data_class,
-        "Displacement")
+        n_realizations, traction_dictionary, mesh_data_class, "D"+
+        "isplacement")
+
+        # Saves the vector of parameters if needed
+
+        if save_vector_of_parameters_in_class:
+
+            self.vector_of_parameters = vector_of_parameters
+
+    # Defines a function to update and to apply all boundary conditions
+
+    @tf.function
+    def apply_all_boundary_conditions(self, vector_of_parameters):
+
+        # Updates all load curves
+
+        self.BCs_class.update_boundary_conditions()
+
+        # Applies all boundary conditions and returns the vector of pa-
+        # rameters
+
+        return self.BCs_class.apply_boundary_conditions(
+        vector_of_parameters)
 
     # Defines a function to compute the residual vector
 
     @tf.function
-    def evaluate_residual_vector(self):
+    def evaluate_residual_vector(self, vector_of_parameters):
 
         # Nullifies the residual for this evaluation
 
@@ -78,7 +100,7 @@ class CompressibleHyperelasticity:
         # Adds the parcel of the variation of the internal work
 
         self.internal_work_variation.assemble_residual_vector(
-        self.global_residual_vector)
+        self.global_residual_vector, vector_of_parameters)
 
         # Adds the parcel of the variation of the work due to surface 
         # tractions

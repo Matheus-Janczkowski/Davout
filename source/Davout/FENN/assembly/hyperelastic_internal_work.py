@@ -18,12 +18,12 @@ from ..tool_box.mesh_info_tools import get_volume_info_from_mesh_data_class
 
 class CompressibleInternalWorkReferenceConfiguration:
 
-    def __init__(self, vector_of_parameters, constitutive_models_dict, 
+    def __init__(self, n_realizations, constitutive_models_dict, 
     mesh_data_class):
         
         # Gets the number of batched BVP instances
 
-        self.n_realizations = vector_of_parameters.shape[0]
+        self.n_realizations = n_realizations
         
         # Initializes the list of instances of the class to compute the
         # deformation gradient 
@@ -101,8 +101,8 @@ class CompressibleInternalWorkReferenceConfiguration:
             # ent
 
             self.deformation_gradient_list.append(DeformationGradient(
-            vector_of_parameters, mesh_common_info.dofs_per_element, 
-            mesh_data, identity_tensor))
+            mesh_common_info.dofs_per_element, mesh_data, 
+            identity_tensor))
 
             # If there are multiple realizations of the mesh, the tensor
             # of derivatives of the shape functions must be taken for
@@ -220,7 +220,8 @@ class CompressibleInternalWorkReferenceConfiguration:
     # Defines a function to assemble the residual vector
 
     @tf.function
-    def assemble_residual_vector(self, global_residual_vector):
+    def assemble_residual_vector(self, global_residual_vector,
+    vector_of_parameters):
 
         # Iterates through the physical groups
 
@@ -231,8 +232,9 @@ class CompressibleInternalWorkReferenceConfiguration:
             # then, calculates the first Piola-Kirchhoff stress as [
             # n_realizations, n_elements, n_quadrature_points, 3, 3]
 
-            P = self.first_piola_kirchhoff_list[i](self.deformation_gradient_list[
-            i].compute_batched_deformation_gradient())
+            P = self.first_piola_kirchhoff_list[i](
+            self.deformation_gradient_list[i
+            ].compute_batched_deformation_gradient(vector_of_parameters))
 
             # Contracts the first Piola-Kirchhoff stress with the deri-
             # vatives of the shape functions multiplied by the integra-
