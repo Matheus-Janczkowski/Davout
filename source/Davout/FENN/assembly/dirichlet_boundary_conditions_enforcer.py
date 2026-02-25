@@ -98,19 +98,58 @@ class DirichletBoundaryConditions:
 
         self.BCs_classes = tuple(self.BCs_classes)
 
+        # Stacks all tensors of DOF indices of all BC classes
+        
+        self.all_indices = tf.concat([bc.scatter_indices for bc in (
+        self.BCs_classes)], axis=0)
+
+        # Iterates through the boundary conditions to update the loads
+
+        for BC_class in self.BCs_classes:
+
+            # Calls the method of the class to update the tensor with 
+            # the prescribed values
+
+            BC_class.update_load_curve()
+
+        # Stacks all prescribed values of all BC classes into a variable
+
+        self.all_values = tf.Variable(tf.concat([(bc.prescribed_values
+        ) for bc in self.BCs_classes], axis=0))
+
         # Applies boundary conditions using the initial information
 
         self.apply_boundary_conditions(vector_of_parameters)
+
+    # Defines a function to update the loads
+
+    @tf.function
+    def update_boundary_conditions(self):
+
+        # Iterates through the boundary conditions
+
+        for BC_class in self.BCs_classes:
+
+            # Calls the method of the class to update the tensor with 
+            # the prescribed values
+
+            BC_class.update_load_curve()
+
+        # Stacks all prescribed values of all BC classes
+
+        self.all_values.assign(tf.concat([bc.prescribed_values for (bc
+        ) in self.BCs_classes], axis=0))
 
     # Defines a function to apply boundary conditions
 
     @tf.function
     def apply_boundary_conditions(self, vector_of_parameters):
 
-        # Iterates through the boundary conditions
+        # Updates the vector of parameters in place with the stacked 
+        # tensors of indices and of prescribed values
 
-        for BC_class in self.BCs_classes:
+        vector_of_parameters.scatter_nd_update(self.all_indices, 
+        self.all_values)
 
-            # Uses the method apply
-
-            BC_class.apply(vector_of_parameters)
+        # TODO alter scatter_nd_update to tensor_scatter_nd_update to
+        # return vector_of_parameters instead of modifying it in place

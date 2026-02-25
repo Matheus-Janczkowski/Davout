@@ -99,7 +99,7 @@ class FixedSupportDirichletBC:
         # the shape of this tensor is first [n_realizations, 
         # n_fixed_dofs], then, [n_realizations*n_fixed_dofs]
 
-        self.zero_updates = tf.reshape(tf.zeros([
+        self.prescribed_values = tf.reshape(tf.zeros([
         self.n_selected_realizations, self.n_fixed_dofs], dtype=
         float_dtype), [-1])
 
@@ -120,15 +120,12 @@ class FixedSupportDirichletBC:
         self.scatter_indices = tf.reshape(tf.stack([realization_indices, 
         dofs_indices], axis=-1), [-1, 2])
 
-    # Defines a function to apply such boundary conditions
+    # Defines a function to update loads
 
     @tf.function
-    def apply(self, vector_of_parameters):
+    def update_load_curve(self):
 
-        # Assigns values to the vector of parameters in place
-
-        vector_of_parameters.scatter_nd_update(self.scatter_indices,
-        self.zero_updates)
+        pass
 
 ########################################################################
 #                    Prescribed value and direction                    #
@@ -385,9 +382,6 @@ class PrescribedDirichletBC:
         # Stacks the list of prescribed DOFs back into a tensor, and re-
         # shapes it to a flat tensor
 
-        #self.prescribed_dofs = tf.reshape(tf.stack(dofs_list, axis=0), (
-        #-1,1))
-
         prescribed_dofs = tf.reshape(tf.stack(dofs_list, axis=0), [
         -1])
 
@@ -411,10 +405,6 @@ class PrescribedDirichletBC:
                 
         # Stacks the list of prescribed values in the same fashion
 
-        #self.prescribed_values = tf.Variable(tf.reshape(tf.stack(
-        #[load_instance() for load_instance in (
-        #self.list_of_load_instances)], axis=0), (-1,)))
-
         # Gets the values by calling the loading classes
 
         values = tf.reshape(tf.stack([load_instance() for (
@@ -433,12 +423,6 @@ class PrescribedDirichletBC:
 
     @tf.function
     def update_load_curve(self):
-        
-        # Stacks the list of prescribed values in the same fashion
-
-        #self.prescribed_values.assign(tf.reshape(tf.stack(
-        #[load_instance() for load_instance in (
-        #self.list_of_load_instances)], axis=0), (-1,)))
 
         # Gets the values by calling the loading classes
 
@@ -453,13 +437,3 @@ class PrescribedDirichletBC:
         # Creates a variable for the prescribed values
 
         self.prescribed_values.assign(tf.reshape(values, [-1]))
-
-    # Defines a function to apply such boundary conditions
-
-    @tf.function
-    def apply(self, vector_of_parameters):
-
-        # Assigns values to the vector of parameters in place
-
-        vector_of_parameters.scatter_nd_update(self.scatter_indices, 
-        self.prescribed_values)

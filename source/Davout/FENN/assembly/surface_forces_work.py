@@ -163,41 +163,68 @@ class ReferentialTractionWork:
 
         self.traction_classes = tuple(self.traction_classes)
 
+        # Stacks all tensors of DOF indices of all traction classes
+        
+        self.all_indices = tf.concat(self.updates_indices, axis=0)
+
+        # Iterates through the loaded surfaces to stack all external work
+        # at once
+
+        # Contracts the referential traction vector with the shape func-
+        # tions multiplied by the integration measure to get the inte-
+        # gration of the variation of the external work due to surface
+        # tractions. Then, sums over the quadrature points, that are the
+        # second dimension (index 1 in python convention). The result is 
+        # a tensor [n_realizations, n_elements, n_nodes, 
+        # n_physical_dimensions]
+
+        self.all_external_work = tf.Variable(tf.concat([-tf.reduce_sum(
+        tf.einsum('peqi,eqn->peqni', self.traction_classes[i
+        ].traction_tensor, self.variation_field_ds[i]), axis=2) for (i
+        ) in range(self.n_surfaces_under_load)], axis=0))
+
+    # Defines a function to update the loads
+
+    @tf.function
+    def update_boundary_conditions(self):
+
+        # Iterates through the loaded surfaces to update the calculation
+        # of the traction tensor
+
+        for i in range(self.n_surfaces_under_load):
+
+            self.traction_classes[i].compute_traction()
+
+        # Iterates through the loaded surfaces to stack all external work
+        # at once
+
+        # Contracts the referential traction vector with the shape func-
+        # tions multiplied by the integration measure to get the inte-
+        # gration of the variation of the external work due to surface
+        # tractions. Then, sums over the quadrature points, that are the
+        # second dimension (index 1 in python convention). The result is 
+        # a tensor [n_realizations, n_elements, n_nodes, 
+        # n_physical_dimensions]
+
+        self.all_external_work.assign(tf.concat([-tf.reduce_sum(
+        tf.einsum('peqi,eqn->peqni', self.traction_classes[i
+        ].traction_tensor, self.variation_field_ds[i]), axis=2) for (i
+        ) in range(self.n_surfaces_under_load)], axis=0))
+
     # Defines a function to assemble the residual vector
 
     @tf.function
     def assemble_residual_vector(self, global_residual_vector):
+        
+        # Adds the contribution of this physical group to the global re-
+        # sidual vector. Uses the own tensor of DOF indexing to scatter
+        # the local residual. Another dimension was added to the indexing 
+        # tensor to make it compatible with tensorflow 
+        # tensor_scatter_nd_add. Performs this change in place, as 
+        # global_residual_vector is a variable
+        
+        global_residual_vector.scatter_nd_add(self.all_indices,
+        self.all_external_work)
 
-        # Iterates through the physical groups of the surfaces under load
-
-        for i in range(self.n_surfaces_under_load):
-
-            # Contracts the referential traction vector with the shape 
-            # functions multiplied by the integration measure to get the 
-            # integration of the variation of the external work due to 
-            # surface tractions. Then, sums over the quadrature points, 
-            # that are the second dimension (index 1 in python conventi-
-            # on). The result is a tensor [n_realizations, n_elements, 
-            # n_nodes, n_physical_dimensions]
-
-            external_work = tf.reduce_sum(tf.einsum('peqi,eqn->peqni', 
-            self.traction_classes[i].traction_tensor,
-            self.variation_field_ds[i]), axis=2)
-
-            # Adds the contribution of this physical group to the global
-            # residual vector. Uses the own tensor of DOF indexing to
-            # scatter the local residual. Another dimension was added to
-            # the indexing tensor to make it compatible with tensorflow
-            # tensor_scatter_nd_add. Performs this change in place, as
-            # global_residual_vector is a variable
-
-            #dofs_per_element = self.traction_classes[i
-            #].surface_mesh_data.dofs_per_element
-
-            #global_residual_vector.scatter_nd_add(tf.broadcast_to(
-            #tf.expand_dims(dofs_per_element, axis=0), [
-            #self.n_realizations, *dofs_per_element.shape]), 
-            #-external_work)
-
-            global_residual_vector.scatter_nd_add(self.updates_indices[i
-            ], -external_work)
+        # TODO: update this function to return global residual vector 
+        # instead of modifying it in place

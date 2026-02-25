@@ -195,9 +195,5 @@ class CompressibleInternalWorkReferenceConfiguration:
             # tensor_scatter_nd_add. Performs this change in place, as
             # global_residual_vector is a variable
 
-            #global_residual_vector.scatter_nd_add(tf.expand_dims(
-            #self.deformation_gradient_list[i].indexing_dofs_tensor, axis=
-            #-1), internal_work)
-
             global_residual_vector.scatter_nd_add(self.updates_indices[i], 
             internal_work)
