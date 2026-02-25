@@ -125,11 +125,18 @@ class TestANNTools(unittest.TestCase):
         residual_class = CompressibleHyperelasticity(mesh_data_class,
         constitutive_models, traction_dictionary=traction_dictionary, 
         boundary_conditions_dict=boundary_conditions_dict, time=
-        current_time)
+        current_time, save_vector_of_parameters_in_class=True)
+
+        # Gets the vector of parameters and the global residual vector
+
+        vector_of_parameters = residual_class.vector_of_parameters
+
+        global_residual_vector = residual_class.global_residual_vector
 
         # Evaluates the residual
 
-        residual_vector = residual_class.evaluate_residual_vector()
+        residual_vector = residual_class.evaluate_residual_vector(
+        vector_of_parameters, global_residual_vector)
 
         ################################################################
         #                            FEniCS                            #
@@ -344,25 +351,35 @@ class TestANNTools(unittest.TestCase):
 
         residual_class = CompressibleHyperelasticity(mesh_data_class,
         constitutive_models, traction_dictionary=traction_dictionary, 
-        boundary_conditions_dict=boundary_conditions_dict, time=1.0)
+        boundary_conditions_dict=boundary_conditions_dict, time=1.0, 
+        save_vector_of_parameters_in_class=True)
+
+        # Gets the vector of parameters and the global residual vector
+
+        vector_of_parameters = residual_class.vector_of_parameters
+
+        global_residual_vector = residual_class.global_residual_vector
 
         final_time_creation = time()
 
         # Evaluates the residual
 
-        residual_vector = residual_class.evaluate_residual_vector()
+        residual_vector = residual_class.evaluate_residual_vector(
+        vector_of_parameters, global_residual_vector)
 
         first_residual_evaluation = time()
 
         # Evaluates the residual again
 
-        residual_vector = residual_class.evaluate_residual_vector()
+        residual_vector = residual_class.evaluate_residual_vector(
+        vector_of_parameters, global_residual_vector)
 
         second_residual_evaluation = time()
 
         # Evaluates the residual again
 
-        residual_vector = residual_class.evaluate_residual_vector()
+        residual_vector = residual_class.evaluate_residual_vector(
+        vector_of_parameters, global_residual_vector)
 
         third_residual_evaluation = time()
 

@@ -132,9 +132,12 @@ class TractionVectorOnSurface:
             self.traction_vector = tf.reshape(self.traction_vector, [1, 
             1, 1, 3])
         
-        # Calls the method to build the traction tensor
+        # Calls the method to build the traction tensor if required
 
-        self.traction_tensor = self.compute_traction()
+        self.traction_tensor = tf.Variable(tf.broadcast_to(
+        self.traction_vector, [self.n_realizations, 
+        self.mesh_realizations_common_info.number_elements, 
+        self.mesh_realizations_common_info.number_quadrature_points, 3]))
         
     # Defines a function to build the traction [n_elements, 
     # n_quadrature_points, 3] with the first ever given vector of para-
@@ -146,10 +149,10 @@ class TractionVectorOnSurface:
         # Gets the number of elements and the number of quadrature points
         # to create the traction tensor
 
-        return tf.broadcast_to(self.traction_vector, [
-        self.n_realizations, 
+        self.traction_tensor.assign(tf.broadcast_to(self.traction_vector, 
+        [self.n_realizations, 
         self.mesh_realizations_common_info.number_elements, 
-        self.mesh_realizations_common_info.number_quadrature_points, 3])
+        self.mesh_realizations_common_info.number_quadrature_points, 3]))
 
 ########################################################################
 #                       Prescribed stress tensor                       #
@@ -294,18 +297,19 @@ class FirstPiolaKirchhoffOnSurface:
         
         # Calls the method to build the traction tensor
 
-        self.traction_tensor = self.compute_traction()
+        self.traction_tensor = tf.Variable(self.appropriate_computation(
+        ))
         
     # Defines a function to build the traction [n_realizations, n_ele-
     # ments, n_quadrature_points, 3] with the first ever given vector of 
     # parameters
 
     @tf.function
-    def compute_traction(self):
+    def compute_traction(self, vector_of_parameters):
 
         # Computes the chosen function
 
-        return self.appropriate_computation()
+        self.traction_tensor.assign(self.appropriate_computation())
     
     # Defines a function to compute the traction where a single instance
     # of prescribed first Piola-Kirchhoff is used for all realizations 

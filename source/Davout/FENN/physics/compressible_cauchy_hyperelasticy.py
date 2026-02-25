@@ -16,9 +16,9 @@ from ..tool_box.mesh_info_tools import verify_mesh_realizations
 class CompressibleHyperelasticity:
 
     def __init__(self, mesh_data_class, constitutive_models_dict, 
-    vector_of_parameters=None, traction_dictionary=None, 
-    boundary_conditions_dict=None, time=0.0, n_realizations=1, 
-    save_vector_of_parameters_in_class=True):
+    vector_of_parameters=None, global_residual_vector=None,
+    traction_dictionary=None, boundary_conditions_dict=None, time=0.0, 
+    n_realizations=1, save_vector_of_parameters_in_class=True):
         
         # Verifies if there are realizations of the mesh and gathers im-
         # portant information, such as global number of DOFs and numeri-
@@ -34,8 +34,10 @@ class CompressibleHyperelasticity:
 
         # Initializes the global residual vector as a null variable
 
-        self.global_residual_vector = tf.Variable(tf.zeros([
-        n_realizations, self.global_number_dofs], dtype=self.dtype))
+        if global_residual_vector is None:
+
+            global_residual_vector = tf.Variable(tf.zeros([
+            n_realizations, self.global_number_dofs], dtype=self.dtype))
 
         # Initializes the vector of parameters of the FEM approximation
         # of the field using the global number of DOFs
@@ -72,6 +74,8 @@ class CompressibleHyperelasticity:
 
             self.vector_of_parameters = vector_of_parameters
 
+            self.global_residual_vector = global_residual_vector
+
     # Defines a function to update and to apply all boundary conditions
 
     @tf.function
@@ -81,31 +85,39 @@ class CompressibleHyperelasticity:
 
         self.BCs_class.update_boundary_conditions()
 
-        # Applies all boundary conditions and returns the vector of pa-
-        # rameters
+        # Applies all boundary conditions
 
-        return self.BCs_class.apply_boundary_conditions(
+        self.BCs_class.apply_boundary_conditions(vector_of_parameters)
+
+        # Reevaluates the Neumann boundary conditions
+
+        self.traction_work_variation.update_boundary_conditions(
         vector_of_parameters)
+
+        # Returns the vector of parameters
+
+        return vector_of_parameters
 
     # Defines a function to compute the residual vector
 
     @tf.function
-    def evaluate_residual_vector(self, vector_of_parameters):
+    def evaluate_residual_vector(self, vector_of_parameters, 
+    global_residual_vector):
 
         # Nullifies the residual for this evaluation
 
-        self.global_residual_vector.assign(tf.zeros_like(
-        self.global_residual_vector))
+        global_residual_vector.assign(tf.zeros_like(
+        global_residual_vector))
 
         # Adds the parcel of the variation of the internal work
 
         self.internal_work_variation.assemble_residual_vector(
-        self.global_residual_vector, vector_of_parameters)
+        global_residual_vector, vector_of_parameters)
 
         # Adds the parcel of the variation of the work due to surface 
         # tractions
 
         self.traction_work_variation.assemble_residual_vector(
-        self.global_residual_vector)
+        global_residual_vector)
 
-        return self.global_residual_vector
+        return global_residual_vector

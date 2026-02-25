@@ -152,8 +152,3 @@ class DirichletBoundaryConditions:
 
         vector_of_parameters.scatter_nd_update(self.all_indices, 
         self.all_values)
-
-        return vector_of_parameters
-
-        # TODO alter scatter_nd_update to tensor_scatter_nd_update to
-        # return vector_of_parameters instead of modifying it in place

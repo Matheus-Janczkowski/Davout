@@ -278,6 +278,3 @@ class ReferentialTractionWork:
         
         global_residual_vector.scatter_nd_add(self.all_indices,
         self.all_external_work)
-
-        # TODO: update this function to return global residual vector 
-        # instead of modifying it in place
