@@ -111,13 +111,44 @@ class ReferentialTractionWork:
             vector_of_parameters, physical_group, self.n_realizations,
             mesh_common_info))
 
-            # Gets the shape functions multiplied by the surface inte-
-            # gration measure. Uses the attribute dx, because the el-
-            # ement is 2D, thus the ds for the 3D mesh is the element's
-            # dx
+            # Verifies if there are multiple realizations of the mesh
 
-            self.variation_field_ds.append(tf.einsum('qn,eq->eqn',
-            mesh_common_info.shape_functions_tensor, mesh_data.dx))
+            if isinstance(mesh_data, list):
+
+                # Gets the shape functions multiplied by the surface in-
+                # tegration measure. Uses the attribute dx, because the 
+                # element is 2D, thus the ds for the 3D mesh is the ele-
+                # ment's dx.
+                # Note, however, that, in this case, the integration
+                # measure must be stacked together to include the reali-
+                # zations dimension
+
+                self.variation_field_ds.append(tf.einsum('qn,peq->peqn',
+                mesh_common_info.shape_functions_tensor, tf.stack([
+                mesh_data_instance.dx for mesh_data_instance in (
+                mesh_data)], axis=0)))
+
+                # Selects the approapriate function to contract the 
+                # traction tensor with the variation of the field
+
+                self.appropiate_contraction = self.contract_multiple_meshes
+
+            # Otherwise, there a single instance of the mesh
+
+            else:
+
+                # Gets the shape functions multiplied by the surface in-
+                # tegration measure. Uses the attribute dx, because the 
+                # element is 2D, thus the ds for the 3D mesh is the ele-
+                # ment's dx
+
+                self.variation_field_ds.append(tf.einsum('qn,eq->eqn',
+                mesh_common_info.shape_functions_tensor, mesh_data.dx))
+
+                # Selects the approapriate function to contract the 
+                # traction tensor with the variation of the field
+
+                self.appropiate_contraction = self.contract_single_mesh
 
             # Creates the indices for updating the global residual vector
             # batched along the different realizations of the BVP
@@ -156,7 +187,9 @@ class ReferentialTractionWork:
 
         # Stacks the shape functions multiplied by the integration mea-
         # sure into a tensor [n_physical_groups, n_elements, 
-        # n_quadrature_points, n_nodes]
+        # n_quadrature_points, n_nodes] or [n_physical_groups, 
+        # n_realizations, n_elements, n_quadrature_points, n_nodes] in 
+        # case of multiple realizations of the mesh
 
         self.variation_field_ds = tf.stack(self.variation_field_ds,
         axis=0)
@@ -180,10 +213,29 @@ class ReferentialTractionWork:
         # a tensor [n_realizations, n_elements, n_nodes, 
         # n_physical_dimensions]
 
-        self.all_external_work = tf.Variable(tf.concat([-tf.reduce_sum(
-        tf.einsum('peqi,eqn->peqni', self.traction_classes[i
-        ].traction_tensor, self.variation_field_ds[i]), axis=2) for (i
-        ) in range(self.n_surfaces_under_load)], axis=0))
+        self.all_external_work = tf.Variable(tf.concat([
+        self.appropiate_contraction(i) for i in range(
+        self.n_surfaces_under_load)], axis=0))
+
+    # Defines a function to contract the traction tensor with the varia-
+    # tion of the field if the mesh is the same across all realizations
+
+    @tf.function
+    def contract_single_mesh(self, i):
+
+        return -tf.reduce_sum(tf.einsum('peqi,eqn->peqni', 
+        self.traction_classes[i].traction_tensor, 
+        self.variation_field_ds[i]), axis=2)
+
+    # Defines a function to contract the traction tensor with the varia-
+    # tion of the field if there are multiple realizations of the mesh
+
+    @tf.function
+    def contract_multiple_meshes(self, i):
+
+        return -tf.reduce_sum(tf.einsum('peqi,peqn->peqni', 
+        self.traction_classes[i].traction_tensor, 
+        self.variation_field_ds[i]), axis=2)
 
     # Defines a function to update the loads
 
@@ -208,10 +260,9 @@ class ReferentialTractionWork:
         # a tensor [n_realizations, n_elements, n_nodes, 
         # n_physical_dimensions]
 
-        self.all_external_work.assign(tf.concat([-tf.reduce_sum(
-        tf.einsum('peqi,eqn->peqni', self.traction_classes[i
-        ].traction_tensor, self.variation_field_ds[i]), axis=2) for (i
-        ) in range(self.n_surfaces_under_load)], axis=0))
+        self.all_external_work.assign(tf.concat([
+        self.appropiate_contraction(i) for i in range(
+        self.n_surfaces_under_load)], axis=0))
 
     # Defines a function to assemble the residual vector
 

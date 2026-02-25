@@ -91,24 +91,60 @@ class CompressibleInternalWorkReferenceConfiguration:
 
                 constitutive_class.identity_tensor = identity_tensor
 
-            # Instantiates the class to calculate the deformation gradi-
-            # ent
-
-            self.deformation_gradient_list.append(DeformationGradient(
-            vector_of_parameters, mesh_common_info.dofs_per_element, 
-            mesh_data.shape_functions_derivatives, identity_tensor))
-
             # Adds the function to evaluate the first Piola-Kirchhoff 
             # stress tensor
 
             self.first_piola_kirchhoff_list.append(
             constitutive_class.first_piola_kirchhoff)
 
-            # Adds the derivatives of the shape functions multiplied by
-            # the integration measure
+            # Instantiates the class to calculate the deformation gradi-
+            # ent
 
-            self.variation_gradient_dx.append(tf.einsum('eqnj,eq->eqnj',
-            mesh_data.shape_functions_derivatives, mesh_data.dx))
+            self.deformation_gradient_list.append(DeformationGradient(
+            vector_of_parameters, mesh_common_info.dofs_per_element, 
+            mesh_data, identity_tensor))
+
+            # If there are multiple realizations of the mesh, the tensor
+            # of derivatives of the shape functions must be taken for
+            # each mesh realization
+
+            if isinstance(mesh_data, list):
+
+                # Adds the derivatives of the shape functions multiplied 
+                # by the integration measure. Creates a tensor whose 
+                # first index is that of the realizations
+
+                self.variation_gradient_dx.append(tf.einsum('peqnj,peq'+
+                '->peqnj', tf.stack([
+                mesh_realization.shape_functions_derivatives for (
+                mesh_realization) in mesh_data], axis=0), tf.stack([
+                mesh_realization.dx for mesh_realization in mesh_data])))
+
+                # Sets the appropriate function to contract the first
+                # Piola-Kirchhoff stress tensor with the material gradi-
+                # ent of the variation field
+
+                self.appropriate_contraction = (
+                self.contract_multiple_meshes)
+
+            # Otherwise, takes the tensor of derivatives from the single
+            # mesh present
+
+            else:
+
+                # Adds the derivatives of the shape functions multiplied 
+                # by the integration measure
+
+                self.variation_gradient_dx.append(tf.einsum('eqnj,eq->'+
+                'eqnj', mesh_data.shape_functions_derivatives, 
+                mesh_data.dx))
+
+                # Sets the appropriate function to contract the first
+                # Piola-Kirchhoff stress tensor with the material gradi-
+                # ent of the variation field
+
+                self.appropriate_contraction = (
+                self.contract_single_mesh)
 
             # Creates the indices for updating the global residual vector
             # batched along the different realizations of the BVP
@@ -161,6 +197,26 @@ class CompressibleInternalWorkReferenceConfiguration:
         self.deformation_gradient_list = tuple(
         self.deformation_gradient_list)
 
+    # Defines a function to contract the first Piola-Kirchhoff stress 
+    # tensor with the material gradient of the variation field, in case
+    # of a single mesh realization
+
+    @tf.function
+    def contract_single_mesh(self, P, i):
+
+        return tf.reduce_sum(tf.einsum('peqij,eqnj->peqni', P, 
+        self.variation_gradient_dx[i]), axis=2)
+
+    # Defines a function to contract the first Piola-Kirchhoff stress 
+    # tensor with the material gradient of the variation field, in case
+    # of multiple mesh realizations
+
+    @tf.function
+    def contract_multiple_meshes(self, P, i):
+
+        return tf.reduce_sum(tf.einsum('peqij,peqnj->peqni', P, 
+        self.variation_gradient_dx[i]), axis=2)
+
     # Defines a function to assemble the residual vector
 
     @tf.function
@@ -187,8 +243,7 @@ class CompressibleInternalWorkReferenceConfiguration:
             # The result is a tensor [n_realizations, n_elements, 
             # n_nodes, n_physical_dimensions]
 
-            internal_work = tf.reduce_sum(tf.einsum('peqij,eqnj->peqni', 
-            P, self.variation_gradient_dx[i]), axis=2)
+            internal_work = self.appropriate_contraction(P, i)
 
             # Adds the contribution of this physical group to the global
             # residual vector. Uses the own tensor of DOF indexing to

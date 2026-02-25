@@ -68,12 +68,12 @@ class_name):
         # Verifies if the number of meshes is within bounds of the
         # number of given realizations
 
-        if len(mesh_data_class)>n_realizations:
+        if len(mesh_data_class)!=n_realizations:
 
             raise IndexError(str(len(mesh_data_class))+" meshes were p"+
             "rovided, but only "+str(n_realizations)+" realizations we"+
-            "re given. The number of meshes must be at most equal to t"+
-            "he number of realizations")
+            "re given. The number of meshes must be equal to the numbe"+
+            "r of realizations")
 
         # Gets the number of DOFs and the type from the first mesh 
     
