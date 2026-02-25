@@ -9,7 +9,7 @@ from ..assembly.surface_forces_work import ReferentialTractionWork
 
 from ..assembly.dirichlet_boundary_conditions_enforcer import DirichletBoundaryConditions
 
-from ..tool_box.mesh_tools import MshMeshData
+from ..tool_box.mesh_info_tools import verify_mesh_realizations
 
 # Defines a class that assembles the residual vector
 
@@ -19,101 +19,13 @@ class CompressibleHyperelasticity:
     vector_of_parameters=None, traction_dictionary=None, 
     boundary_conditions_dict=None, time=0.0, n_realizations=1):
         
-        # Verifies if mesh data class is an instance of the class of mesh
-        # data
+        # Verifies if there are realizations of the mesh and gathers im-
+        # portant information, such as global number of DOFs and numeri-
+        # cal types
 
-        if isinstance(mesh_data_class, MshMeshData):
-        
-            self.global_number_dofs = mesh_data_class.global_number_dofs
-
-            self.dtype = mesh_data_class.dtype
-
-            # Verifies if the domain elements have the field displacement
-
-            if not ("Displacement" in mesh_data_class.domain_elements):
-
-                raise NameError("There is no field named 'Displacement"+
-                "' in the mesh. Thus, it is not possible to compute Co"+
-                "mpressibleHyperelasticity")
-
-        # Otherwise, if it is a list, there will be a mesh for multiple
-        # realizations
-        
-        elif isinstance(mesh_data_class, list):
-
-            # Verifies if the number of meshes is within bounds of the
-            # number of given realizations
-
-            if len(mesh_data_class)>n_realizations:
-
-                raise IndexError(str(len(mesh_data_class))+" meshes we"+
-                "re provided, but only "+str(n_realizations)+" realiza"+
-                "tions were given. The number of meshes must be at mos"+
-                "t equal to the number of realizations")
-
-            # Gets the number of DOFs and the type from the first mesh 
-        
-            self.global_number_dofs = mesh_data_class[0
-            ].global_number_dofs
-
-            self.dtype = mesh_data_class[0].dtype
-
-            self.integer_dtype = mesh_data_class[0].integer_dtype
-
-            # Iterates through the other meshes to verify if the number 
-            # of DOFs and the float type are the same
-
-            for i in range(len(mesh_data_class)):
-
-                # Verifies the number of global DOFs
-
-                if mesh_data_class[i].global_number_dofs!=(
-                self.global_number_dofs):
-                    
-                    raise ValueError("The "+str(i+1)+"-th mesh has "+
-                    str(mesh_data_class[i].global_number_dofs)+" DOFs,"+
-                    " whereas the first mesh has "+str(
-                    self.global_number_dofs)+" DOFs. All meshes, acros"+
-                    "s all realizations must have the same number of D"+
-                    "OFs and the same conectivities")
-                
-                # Verifies the float type
-
-                if mesh_data_class[i].dtype!=self.dtype:
-                    
-                    raise ValueError("The "+str(i+1)+"-th mesh has dty"+
-                    "pe="+str(mesh_data_class[i].dtype)+", whereas the"+
-                    " first mesh has dtype="+str(self.dtype)+". All me"+
-                    "shes, across all realizations must have the same "+
-                    "numerical type dtype")
-                
-                # Verifies the integer type
-
-                if mesh_data_class[i].integer_dtype!=self.integer_dtype:
-                    
-                    raise ValueError("The "+str(i+1)+"-th mesh has int"+
-                    "eger_dtype="+str(mesh_data_class[i].integer_dtype)+
-                    ", whereas the first mesh has integer_dtype="+str(
-                    self.integer_dtype)+". All meshes, across all real"+
-                    "izations must have the same integer type")
-                
-                # Verifies if the domain elements have the field displa-
-                # cement
-
-                if not ("Displacement" in mesh_data_class[i
-                ].domain_elements):
-
-                    raise NameError("There is no field named 'Displace"+
-                    "ment' in the "+str(i+1)+"-th mesh. Thus, it is no"+
-                    "t possible to compute CompressibleHyperelasticity")
-                
-        # If it is not a list, throws an error
-
-        else:
-
-            raise TypeError("'mesh_data_class' in 'CompressibleHyperel"+
-            "asticity' is neither an instance of the class 'MshMeshDat"+
-            "a' neither is it a list")
+        (self.global_number_dofs, self.dtype, self.integer_dtype
+        ) = verify_mesh_realizations(mesh_data_class, n_realizations, 
+        "Displacement", "CompressibleHyperelasticity")
 
         # Creates a time object
 
@@ -150,7 +62,8 @@ class CompressibleHyperelasticity:
         # surface tractions
 
         self.traction_work_variation = ReferentialTractionWork(
-        self.vector_of_parameters, traction_dictionary, mesh_data_class)
+        self.vector_of_parameters, traction_dictionary, mesh_data_class,
+        "Displacement")
 
     # Defines a function to compute the residual vector
 

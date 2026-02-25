@@ -7,24 +7,15 @@ from ...PythonicUtilities.package_tools import load_classes_from_module
 
 from ..tool_box import neumann_loading_tools
 
+from ..tool_box.mesh_info_tools import get_boundary_info_from_mesh_data_class
+
 # Defines a class to compute the contribution to the residual vector due
 # to the surface tractions
 
 class ReferentialTractionWork:
 
     def __init__(self, vector_of_parameters, traction_dict, 
-    mesh_data_class):
-        
-        # Recovers the dictionary of finite elements in the boundary 
-        # concerned with the displacement field
-
-        mesh_dict = mesh_data_class.boundary_elements["Displacement"]
-
-        # Recovers the dictionary of physical groups names to their nu-
-        # merical tags
-
-        boundary_physical_groups_dict = (
-        mesh_data_class.boundary_physicalGroupsNameToTag)
+    mesh_data_class, field_name):
         
         # Gets the number of batched BVP instances
 
@@ -65,33 +56,13 @@ class ReferentialTractionWork:
 
         for physical_group, traction_vector in traction_dict.items():
             
-            # Gets the physical group tag
+            # Gets necessary information from the mesh data class, such
+            # as the dictionary of boundary finite elements
 
-            physical_group_tag = None 
-
-            if not (physical_group in boundary_physical_groups_dict):
-
-                raise NameError("The physical group name '"+str(
-                physical_group)+"' in the dictionary of tractions is n"+
-                "ot a valid physical group name. Check the available n"+
-                "ames:\n"+str(list(boundary_physical_groups_dict.keys())))
-            
-            else:
-
-                physical_group_tag = boundary_physical_groups_dict[
-                physical_group]
-
-            # Gets the instance of the mesh data
-
-            if isinstance(mesh_dict[physical_group_tag], dict):
-
-                raise NotImplementedError("Multiple element types per "+
-                "physical group has not yet been updated to compute Re"+
-                "ferentialTractionWork")
-            
-            # Gets the first element type
-
-            mesh_data = mesh_dict[physical_group_tag]
+            (integer_dtype, float_dtype, mesh_data, physical_group_tag
+            ) = get_boundary_info_from_mesh_data_class(mesh_data_class,
+            physical_group, "Neumann boundary conditions", "Referentia"+
+            "lTractionWork", field_name)
 
             # Checks if the traction vector is a dictionary
 

@@ -5,6 +5,8 @@ import tensorflow as tf
 
 from ..tool_box.constitutive_tools import DeformationGradient
 
+from ..tool_box.mesh_info_tools import get_volume_info_from_mesh_data_class
+
 ########################################################################
 #               Internal work in reference configuration               #
 ########################################################################
@@ -18,17 +20,6 @@ class CompressibleInternalWorkReferenceConfiguration:
 
     def __init__(self, vector_of_parameters, constitutive_models_dict, 
     mesh_data_class):
-        
-        # Recovers the dictionary of elements in the domain concerned
-        # with the displacement field
-        
-        mesh_dict = mesh_data_class.domain_elements["Displacement"] 
-
-        # Recovers the dictionary of physical groups names to their nu-
-        # merical tags
-        
-        domain_physical_groups_dict = (
-        mesh_data_class.domain_physicalGroupsNameToTag)
         
         # Gets the number of batched BVP instances
 
@@ -61,34 +52,13 @@ class CompressibleInternalWorkReferenceConfiguration:
         for physical_group, constitutive_class in (
         constitutive_models_dict.items()):
             
-            # Gets the physical group tag
+            # Gets necessary information from the mesh data class, such
+            # as the dictionary of domain finite elements
 
-            physical_group_tag = None 
-
-            if not (physical_group in domain_physical_groups_dict):
-
-                raise NameError("The physical group name '"+str(
-                physical_group)+"' in the dictionary of constitutive m"+
-                "odels is not a valid physical group name. Check the a"+
-                "vailable names:\n"+str(list(
-                domain_physical_groups_dict.keys())))
-            
-            else:
-
-                physical_group_tag = domain_physical_groups_dict[
-                physical_group]
-
-            # Gets the instance of the mesh data
-
-            if isinstance(mesh_dict[physical_group_tag], dict):
-
-                raise NotImplementedError("Multiple element types per "+
-                "physical group has not yet been updated to compute Co"+
-                "mpressibleInternalWorkReferenceConfiguration")
-            
-            # Gets the first element type
-
-            mesh_data = mesh_dict[physical_group_tag]
+            (integer_dtype, float_dtype, mesh_data, physical_group_tag
+            ) = get_volume_info_from_mesh_data_class(mesh_data_class,
+            physical_group, "constitutive models", "CompressibleIntern"+
+            "alWorkReferenceConfiguration", "Displacement")
 
             # Verifies if the number of realizations given is consistent
             # with the global number of realizations. If the number of 

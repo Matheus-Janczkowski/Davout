@@ -1,5 +1,122 @@
 # Routine to gather information across multiple meshes
 
+from ..tool_box.mesh_tools import MshMeshData
+
+########################################################################
+#                             Verification                             #
+########################################################################
+
+# Defines a function to verify if a mesh data class is a list with many
+# realizations of the same mesh or a single mesh instance
+
+def verify_mesh_realizations(mesh_data_class, n_realizations, field_name,
+class_name):
+
+    # Initializes the global number of DOFs and the numerical types
+
+    global_number_dofs = None 
+
+    dtype = None
+
+    integer_dtype = None
+
+    # Verifies if mesh data class is an instance of the class of mesh
+    # data
+
+    if isinstance(mesh_data_class, MshMeshData):
+    
+        global_number_dofs = mesh_data_class.global_number_dofs
+
+        dtype = mesh_data_class.dtype
+
+        integer_dtype = mesh_data_class.integer_dtype
+
+        # Verifies if the domain elements have the frequired field
+
+        if not (field_name in mesh_data_class.domain_elements):
+
+            raise NameError("There is no field named '"+str(field_name)+
+            "' in the mesh. Thus, it is not possible to assemble the c"+
+            "lass "+str(class_name))
+
+    # Otherwise, if it is a list, there will be a mesh for multiple
+    # realizations
+    
+    elif isinstance(mesh_data_class, list):
+
+        # Verifies if the number of meshes is within bounds of the
+        # number of given realizations
+
+        if len(mesh_data_class)>n_realizations:
+
+            raise IndexError(str(len(mesh_data_class))+" meshes were p"+
+            "rovided, but only "+str(n_realizations)+" realizations we"+
+            "re given. The number of meshes must be at most equal to t"+
+            "he number of realizations")
+
+        # Gets the number of DOFs and the type from the first mesh 
+    
+        global_number_dofs = mesh_data_class[0].global_number_dofs
+
+        dtype = mesh_data_class[0].dtype
+
+        integer_dtype = mesh_data_class[0].integer_dtype
+
+        # Iterates through the other meshes to verify if the number 
+        # of DOFs and the float type are the same
+
+        for i in range(len(mesh_data_class)):
+
+            # Verifies the number of global DOFs
+
+            if mesh_data_class[i].global_number_dofs!=(
+            global_number_dofs):
+                
+                raise ValueError("The "+str(i+1)+"-th mesh has "+
+                str(mesh_data_class[i].global_number_dofs)+" DOFs, whe"+
+                "reas the first mesh has "+str(global_number_dofs)+" D"+
+                "OFs. All meshes, across all realizations must have th"+
+                "e same number of DOFs and the same conectivities")
+            
+            # Verifies the float type
+
+            if mesh_data_class[i].dtype!=dtype:
+                
+                raise ValueError("The "+str(i+1)+"-th mesh has dtype="+
+                str(mesh_data_class[i].dtype)+", whereas the first mes"+
+                "h has dtype="+str(dtype)+". All meshes, across all re"+
+                "alizations must have the same numerical type dtype")
+            
+            # Verifies the integer type
+
+            if mesh_data_class[i].integer_dtype!=integer_dtype:
+                
+                raise ValueError("The "+str(i+1)+"-th mesh has integer"+
+                "_dtype="+str(mesh_data_class[i].integer_dtype)+", whe"+
+                "reas the first mesh has integer_dtype="+str(
+                integer_dtype)+". All meshes, across all realizations "+
+                "must have the same integer type")
+            
+            # Verifies if the domain elements have the required field
+
+            if not (field_name in mesh_data_class[i].domain_elements):
+
+                raise NameError("There is no field named '"+str(
+                field_name)+"' in the "+str(i+1)+"-th mesh. Thus, it i"+
+                "s not possible to assemble class "+str(class_name))
+            
+    # If it is not a list, throws an error
+
+    else:
+
+        raise TypeError("'mesh_data_class' in '"+str(class_name)+"' is"+
+        " neither an instance of the class 'MshMeshData' neither is it"+
+        " a list")
+    
+    # Returns the gathered information
+
+    return global_number_dofs, dtype, integer_dtype
+
 ########################################################################
 #                          Volumetric elements                         #
 ########################################################################
