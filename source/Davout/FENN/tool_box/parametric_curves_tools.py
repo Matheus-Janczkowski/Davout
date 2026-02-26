@@ -19,6 +19,7 @@ class linear:
         # Initializes the result and updates with the values initially
         # provided
 
+    @tf.function
     def __call__(self):
 
         return self.final_value*(self.current_time/self.final_time)

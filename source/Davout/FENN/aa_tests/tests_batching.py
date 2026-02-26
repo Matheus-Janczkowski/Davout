@@ -1,11 +1,5 @@
 # Routine to store tests for batching the FEM
 
-import unittest
-
-import tensorflow as tf
-
-from time import time
-
 import numpy as np
 
 from dolfin import assemble
@@ -26,21 +20,86 @@ from ...PythonicUtilities.path_tools import get_parent_path_of_file
 
 from ...PythonicUtilities.numpy_tools import get_rows_given_column_values
 
+from ...PythonicUtilities.testing_tools import run_class_of_tests
+
+# Defines a function to compare residual vectors provided by FENN against
+# those provided by FEniCS
+
+def compare_residual_vectors(residual_vector, residual_vector_fenics,
+assembled_residual, mesh_data_class, corresponding_realizations, 
+test_name):
+    
+    # COnverts the residual vector from tensorflow tensor to numpy array
+
+    residual_vector = residual_vector.numpy()
+
+    n_nonzero_components = 0
+
+    for i in range(residual_vector.shape[1]):
+
+        if np.linalg.norm(residual_vector[:,i])>1E-5:
+
+            n_nonzero_components += 1
+
+        print("FENN: residual_vector[:,"+str(i)+"]="+str(residual_vector[
+        :,i])+";            FEniCS: residual_vector["+str(i)+"]="+str(
+        residual_vector_fenics[i, corresponding_realizations]), flush=
+        True)
+
+    print("\nThe FEniCS residual vector has a length of "+str(len(
+    assembled_residual)), flush=True)
+
+    print("The FENN residual vector has a shape of "+str(
+    residual_vector.shape)+"\nwhere the first value tells the number t"+
+    "ells the number of realizations of the BVP and the second one tel"+
+    "ls the number of DOFs", flush=True)
+
+    print("\nThere are "+str(n_nonzero_components)+" non-zero componen"+
+    "ts in the residual vector calculated by FENN", flush=True)
+
+    # Reads the quantity of DOFs from the first element of mesh data 
+    # class for all meshes must share the same connectivity
+
+    print("\nThe read mesh has "+str(mesh_data_class[0
+    ].global_number_dofs)+" degrees of freedom in the '"+str(test_name)+
+    "' test", flush=True)
+
 # Defines a function to test the ANN tools methods
 
-class TestANNTools(unittest.TestCase):
+class TestANNTools:
 
-    def setUp(self):
+    def __init__(self):
+
+        ################################################################
+        #                Exterior (variable) parameters                #
+        ################################################################
+
+        self.length_x = [0.2, 0.3]
+        
+        self.length_y = [0.3, 0.4]
+        
+        self.length_z = [1.0, 1.1]
+
+        # Sets the base loads
+
+        self.base_dirichlet_load = [0.1, 0.2, 0.3]
+
+        self.base_neumann_load = [0.0E5, 1.0E5, 1.5E5]
+
+        self.base_current_time = 1.0
+
+        # Sets the base material properties
+
+        self.base_material_properties = [{"E": 1E6, "nu": 0.4}, {"E": 
+        2E6, "nu": 0.4}]
+
+        ################################################################
+        #                        Mesh generation                       #
+        ################################################################
 
         self.file_directory = get_parent_path_of_file()
 
         # Creates a box mesh 
-
-        self.length_x = [0.2]
-        
-        self.length_y = [0.3]
-        
-        self.length_z = [1.0]
 
         self.file_name = ["box_"+str(i+1) for i in range(len(
         self.length_x))]
@@ -78,19 +137,6 @@ class TestANNTools(unittest.TestCase):
 
         self.mesh_data_class = mesh_tools.read_msh_mesh(self.file_name, 
         self.quadrature_degree, self.elements_per_field, verbose=True)
-
-        # Sets the base loads
-
-        self.base_dirichlet_load = [0.1]
-
-        self.base_neumann_load = [0.0E5]
-
-        self.base_current_time = 1.0
-
-        # Sets the base material properties
-
-        self.base_material_properties = [{"E": 1E6, "nu": 0.4}, {"E": 
-        2E6, "nu": 0.4}]
 
         # Gets the number of variations per category
 
@@ -230,13 +276,11 @@ class TestANNTools(unittest.TestCase):
             functional_data_class)
 
             # Constructs a list of DOFs per node in FEniCS enumeration 
-            # using the node numbering of GMSH. Takes the first element 
-            # of mesh data class for all meshes must share the same con-
-            # nectivity
+            # using the node numbering of GMSH
 
             dofs_fenics_from_gmsh_nodes = np.array([dofs_finder(
             *node_coordinates) for node_coordinates in (
-            self.mesh_data_class[0].nodes_coordinates)])
+            self.mesh_data_class[mesh_counter].nodes_coordinates)])
 
             # Iterates over the Dirichlet boundary conditions
 
@@ -293,8 +337,8 @@ class TestANNTools(unittest.TestCase):
             dof_number)[0]
 
             # Gets the DOF number in the FENN numbering system using the
-            # node number. Takes the first element of mesh data class for 
-            # all meshes must share the same connectivity
+            # node number. Takes the first mesh for all meshes share the
+            # same connectivities
 
             dof_number_gmsh = self.mesh_data_class[0].dofs_node_dict[
             "Displacement"][dof_number_gmsh[0]][dof_number_gmsh[1]]
@@ -308,17 +352,7 @@ class TestANNTools(unittest.TestCase):
         print("\n#####################################################"+
         "###################\n#                  Tests batching materi"+
         "al parameters                  #\n###########################"+
-        "#############################################\n")
-
-        ################################################################
-        #                             FENN                             #
-        ################################################################
-
-        # Reads the quantity of DOFs from the first element of mesh data 
-        # class for all meshes must share the same connectivity
-
-        print("The read mesh has "+str(self.mesh_data_class[0
-        ].global_number_dofs)+" degrees of freedom\n")
+        "#############################################\n", flush=True)
 
         # Creates a dictionary to tell Dirichlet boundary conditions
 
@@ -364,10 +398,6 @@ class TestANNTools(unittest.TestCase):
         residual_vector = residual_class.evaluate_residual_vector(
         vector_of_parameters, global_residual_vector)
 
-        # Plots both to compare
-
-        residual_vector = residual_vector.numpy()
-
         # Finds the indices of the realizations whose Dirichlet and Neu-
         # mann boundary conditions are in the first set position. The 
         # combinations array has its columns related to:
@@ -379,32 +409,87 @@ class TestANNTools(unittest.TestCase):
         _, corresponding_realizations = get_rows_given_column_values(
         self.combinations, [0, 1, 2], [0, 0, 0])
 
-        n_nonzero_components = 0
+        compare_residual_vectors(residual_vector, 
+        self.residual_vector_fenics, self.assembled_residual, 
+        self.mesh_data_class, corresponding_realizations, "BATCHED MAT"+
+        "ERIAL PARAMETERS")
 
-        for i in range(residual_vector.shape[1]):
+    # Defines a function to test batching Dirichlet boundary conditions
 
-            if np.linalg.norm(residual_vector[:,i])>1E-5:
+    def test_batching_dirichlet_boundary_conditions(self):
 
-                n_nonzero_components += 1
+        print("\n#####################################################"+
+        "###################\n#         Tests batching material Dirich"+
+        "let boundary conditions        #\n###########################"+
+        "#############################################\n", flush=True)
 
-            print("FENN: residual_vector[:,"+str(i)+"]="+str(
-            residual_vector[:,i])+";            FEniCS: residual_vecto"+
-            "r["+str(i)+"]="+str(self.residual_vector_fenics[i, 
-            corresponding_realizations]))
+        # Creates a dictionary to tell Dirichlet boundary conditions
 
-        print("\nThe FEniCS residual vector has a length of "+str(len(
-        self.assembled_residual)))
+        boundary_conditions_dict = {"top": {"BC case": "PrescribedDiri"+
+        "chletBC", "load_function": "linear", "degrees_ofFreedomList": 2,
+        "end_point": [1.0, [self.base_dirichlet_load]], "field name": 
+        "Displacement"}, "bottom": {"BC case": "FixedSupportDirichletB"+
+        "C", "field name": "Displacement"}}
 
-        print("The FENN residual vector has a shape of "+str(
-        residual_vector.shape)+"\nwhere the first value tells the numb"+
-        "er tells the number of realizations of the BVP and the second"+
-        " one tells the number of DOFs")
+        # Sets the dictionary of constitutive models. Selects the first
+        # set of material parameters only
 
-        print("\nThere are "+str(n_nonzero_components)+" non-zero comp"+
-        "onents in the residual vector calculated by FENN")
+        material_properties = self.base_material_properties[0]
+
+        constitutive_models = dict()
+
+        for subdomain in range(self.n_subdomains_z):
+
+            constitutive_models["volume "+str(subdomain+1)] = NeoHookean(
+            material_properties, self.mesh_data_class[0])
+
+        # Sets the dictionary of traction classes
+
+        traction_dictionary = {"top": {"load case": "TractionVectorOnS"+
+        "urface", "amplitude_tractionX": 0.0, "amplitude_tractionY": 0.0, 
+        "amplitude_tractionZ": self.base_neumann_load[0]}}
+
+        # Instantiates the class to evaluate the residual vector. Se-
+        # lects the number of realizations as the number of Dirichlet
+        # loads
+
+        residual_class = CompressibleHyperelasticity(self.mesh_data_class[0],
+        constitutive_models, traction_dictionary=traction_dictionary, 
+        boundary_conditions_dict=boundary_conditions_dict, time=
+        self.base_current_time, save_vector_of_parameters_in_class=True,
+        n_realizations=len(self.base_dirichlet_load))
+
+        # Gets the vector of parameters and the global residual vector
+
+        vector_of_parameters = residual_class.vector_of_parameters
+
+        global_residual_vector = residual_class.global_residual_vector
+
+        # Evaluates the residual
+
+        residual_vector = residual_class.evaluate_residual_vector(
+        vector_of_parameters, global_residual_vector)
+
+        # Finds the indices of the realizations whose Dirichlet and Neu-
+        # mann boundary conditions are in the first set position. The 
+        # combinations array has its columns related to:
+        # 0. Mesh
+        # 1. Dirichlet boundary conditions
+        # 2. Neumann boundary conditions
+        # 3. Material parameters
+
+        _, corresponding_realizations = get_rows_given_column_values(
+        self.combinations, [0, 2, 3], [0, 0, 0])
+
+        compare_residual_vectors(residual_vector, 
+        self.residual_vector_fenics, self.assembled_residual, 
+        self.mesh_data_class, corresponding_realizations, "BATCHED DIR"+
+        "ICHLET BCs")
 
 # Runs all tests
 
 if __name__=="__main__":
 
-    unittest.main()
+    class_of_tests = TestANNTools()
+
+    run_class_of_tests(class_of_tests)

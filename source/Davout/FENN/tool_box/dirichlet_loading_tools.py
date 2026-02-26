@@ -3,6 +3,8 @@
 
 import tensorflow as tf
 
+import numpy as np
+
 from ..tool_box import parametric_curves_tools
 
 from ..tool_box.mesh_info_tools import get_boundary_info_from_mesh_data_class
@@ -171,6 +173,11 @@ class PrescribedDirichletBC:
 
         available_parametric_curves = load_classes_from_module(
         parametric_curves_tools, return_dictionary_of_classes=True)
+
+        # Initializes a flag to inform if batched values of prescribed BC
+        # have been provided
+
+        self.flag_batched_values = False
 
         # Verifies if the user has given any list of realizations that
         # do have this boundary condition
@@ -360,12 +367,68 @@ class PrescribedDirichletBC:
 
                 dofs_list.append(unique_tensor_dofs)
 
+                # Initializes the final tensor of values
+
+                final_value_tensor = None 
+
+                # Verifies if value is a list, which indicates multiple
+                # realizations
+
+                if isinstance(value, list) or isinstance(value, 
+                np.ndarray):
+                    
+                    # Updates the flag that informs there is batching
+
+                    self.flag_batched_values = True
+                    
+                    # Verifies if the number of realizations is consis-
+                    # tent
+
+                    if len(value)!=self.n_selected_realizations:
+
+                        raise IndexError("The prescribed value for 'Pr"+
+                        "escribedDirichletBC' at '"+str(
+                        physical_group_name)+"' is a list, but its len"+
+                        "gth is "+str(len(value))+", which is differen"+
+                        "t to the number of realizations, "+str(
+                        self.n_selected_realizations))
+                    
+                    # Stacks all realizations into a single tensor
+
+                    final_value_tensor = tf.stack([single_value*tf.ones(
+                    unique_tensor_dofs.shape, dtype=
+                    mesh_common_info.float_dtype) for single_value in (
+                    value)], axis=0)
+
+                # If this value is not a list, but the flag for batching
+                # is on, throws an error, because all values in a single
+                # BC must be batched if one is
+
+                elif self.flag_batched_values:
+
+                    raise ValueError("One or more of the values prescr"+
+                    "ibed to 'PrescribedDirichletBC' at '"+str(
+                    physical_group_name)+"' were batched, i.e. provide"+
+                    "d as a list. But the value prescribed to local DO"+
+                    "F "+str(dof)+" is not batched. This cannot be, if"+
+                    " one prescribed value is batched, all of them mus"+
+                    "t also be. If one Dirichlet BC is not meant to be"+
+                    " batched, create another BC")
+
+                # Otherwise, simply multiplies the single value by the
+                # tensor of DOFs
+
+                else:
+
+                    final_value_tensor = value*tf.ones(
+                    unique_tensor_dofs.shape, dtype=
+                    mesh_common_info.float_dtype)
+
                 # Gets the value and transforms it into a load. Multi-
                 # plied by the tensor already
 
-                load_class_instance = load_class(time, value*tf.ones(
-                unique_tensor_dofs.shape, dtype=
-                mesh_common_info.float_dtype), final_time)
+                load_class_instance = load_class(time, 
+                final_value_tensor, final_time)
 
                 # Updates the value and appends this instance to a load
                 # instances list
@@ -402,8 +465,31 @@ class PrescribedDirichletBC:
 
         self.scatter_indices = tf.reshape(tf.stack([realization_indices, 
         dofs_indices], axis=-1), [-1, 2])
+
+        # Selects the proper method to broadcast the prescribed values
+        # across realizations
+
+        if self.flag_batched_values:
+
+            self.appropriate_broadcaster = self.broadcast_multiple_values
+
+        # Otherwise, if the same values are broadcast to all realizations
+
+        else:
+
+            self.appropriate_broadcaster = self.broadcast_same_values
                 
-        # Stacks the list of prescribed values in the same fashion
+        # Stacks the list of prescribed values from all load instances
+        # and creates a variable for the prescribed values
+
+        self.prescribed_values = tf.Variable(tf.reshape(
+        self.appropriate_broadcaster(), [-1]))
+
+    # Defines a function to broadcast the tensor of prescribed values if
+    # the same values are prescribed for all realizations
+
+    @tf.function
+    def broadcast_same_values(self):
 
         # Gets the values by calling the loading classes
 
@@ -415,25 +501,30 @@ class PrescribedDirichletBC:
         values = tf.broadcast_to(values[None, :], [
         self.n_selected_realizations, self.n_prescribed_dofs])
 
-        # Creates a variable for the prescribed values
+        return values
 
-        self.prescribed_values = tf.Variable(tf.reshape(values, [-1]))
+    # Defines a function to broadcast the tensor of prescribed values if
+    # there is a prescribed value for each realization
+
+    @tf.function
+    def broadcast_multiple_values(self):
+
+        # Gets the values by calling the loading classes, and reshapes
+        # to match [n_realizations, n_prescribed_dofs]
+
+        values = tf.reshape(tf.stack([load_instance() for (
+        load_instance) in self.list_of_load_instances], axis=0), [
+        self.n_selected_realizations, self.n_prescribed_dofs])
+
+        return values
 
     # Defines a function to update loads
 
     @tf.function
     def update_load_curve(self):
 
-        # Gets the values by calling the loading classes
+        # Stacks the values of the load instances and updates the varia-
+        # ble for the prescribed values
 
-        values = tf.reshape(tf.stack([load_instance() for (
-        load_instance) in self.list_of_load_instances], axis=0), [-1])
-
-        # Broadcasts the values across realizations
-
-        values = tf.broadcast_to(values[None, :], [
-        self.n_selected_realizations, self.n_prescribed_dofs])
-
-        # Creates a variable for the prescribed values
-
-        self.prescribed_values.assign(tf.reshape(values, [-1]))
+        self.prescribed_values.assign(tf.reshape(
+        self.appropriate_broadcaster(), [-1]))

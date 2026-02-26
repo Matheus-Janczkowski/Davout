@@ -1,18 +1,18 @@
 # Routine to test the implementation of optimization methods
 
-import unittest
-
 import numpy as np
 
 from ...PythonicUtilities.path_tools import get_parent_path_of_file
+
+from ...PythonicUtilities.testing_tools import run_class_of_tests
 
 from ...GraphUtilities import plotting_tools
 
 # Defines a function to test the ANN optimization wrappers
 
-class TestPlots(unittest.TestCase):
+class TestPlots:
 
-    def setUp(self):
+    def __init__(self):
 
         # Sets the unimodal data
 
@@ -289,4 +289,6 @@ class TestPlots(unittest.TestCase):
 
 if __name__=="__main__":
 
-    unittest.main()
+    class_of_tests = TestPlots()
+
+    run_class_of_tests(class_of_tests)

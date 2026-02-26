@@ -4,9 +4,9 @@ import traceback
 
 from ...GraphUtilities import paraview_tools
 
-from ...PythonicUtilities.programming_tools import get_attribute
-
 from ...PythonicUtilities.path_tools import get_parent_path_of_file
+
+from ...PythonicUtilities.testing_tools import run_class_of_tests
 
 # Defines a class to store all tests
 
@@ -238,43 +238,4 @@ if __name__=="__main__":
 
     test_class = TestParaView()
 
-    # Gets a dictionary of the methods inside this instance except for
-    # the __init__ method
-
-    methods_dictionary = get_attribute(test_class, None, None, 
-    dictionary_of_methods=True, delete_init_key=True)
-
-    # Initializes the success and failure counters
-
-    success_counter = 0
-
-    failure_counter = 0
-
-    # Iterates through the methods 
-
-    for name, method in methods_dictionary.items():
-
-        print("\nRuns method '"+str(name)+"'\n")
-
-        try:
-
-            method()
-
-            success_counter += 1
-
-        except Exception as e:
-
-            print("Method '"+str(name)+"' failed:\n"+str(e)+"\n")
-
-            traceback.print_exc()
-
-            failure_counter += 1
-
-    print("\n#########################################################"+
-    "###############\n#                             Execution log     "+
-    "                       #\n#######################################"+
-    "#################################\n")
-
-    print(str(success_counter)+" methods were successfully executed\n")
-
-    print(str(failure_counter)+" methods failed to be executed")
+    run_class_of_tests(test_class)
