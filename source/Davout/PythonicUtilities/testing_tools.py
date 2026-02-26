@@ -23,6 +23,10 @@ def run_class_of_tests(class_of_tests):
 
     failure_counter = 0
 
+    # Initializes a list to plot information per method
+
+    log_per_method = []
+
     # Iterates through the methods 
 
     initial_overall_time = time()
@@ -30,6 +34,8 @@ def run_class_of_tests(class_of_tests):
     for name, method in methods_dictionary.items():
 
         print("\nRuns method '"+str(name)+"'\n")
+
+        flag_sucess = False
 
         initial_method_time = time()
 
@@ -39,6 +45,8 @@ def run_class_of_tests(class_of_tests):
 
             success_counter += 1
 
+            flag_sucess = True
+
         except Exception as e:
 
             print("Method '"+str(name)+"' failed:\n"+str(e)+"\n")
@@ -46,6 +54,14 @@ def run_class_of_tests(class_of_tests):
             traceback.print_exc()
 
             failure_counter += 1
+
+        # Gets the time
+
+        method_time = time()-initial_method_time
+
+        # Appends the necessary information
+
+        log_per_method.append([name, flag_sucess, method_time])
 
         print("\n#####################################################"+
         "###################\nMethod '"+str(name)+" took "+str(time()-
@@ -60,6 +76,20 @@ def run_class_of_tests(class_of_tests):
     print(str(success_counter)+" methods were successfully executed\n")
 
     print(str(failure_counter)+" methods failed to be executed")
+
+    # Print the complete log
+
+    for method_log in log_per_method:
+
+        if method_log[1]:
+
+            print("\n'"+str(method_log[0])+"' was SUCCESSFULL and took"+
+            " "+str(method_log[2])+" seconds")
+
+        else:
+
+            print("\n'"+str(method_log[0])+"' was NOT SUCCESSFULL and "+
+            "took "+str(method_log[2])+" seconds")
 
     print("\nThe whole testing operation took "+str(time()-
     initial_overall_time)+" seconds.")

@@ -3,6 +3,8 @@
 
 import tensorflow as tf
 
+import numpy as np
+
 from .tensorflow_utilities import convert_object_to_tensor
 
 ########################################################################
@@ -63,7 +65,8 @@ class TractionVectorOnSurface:
 
                 # Verifies if component value is a list
 
-                if isinstance(component_value, list):
+                if isinstance(component_value, list) or isinstance(
+                component_value, np.ndarray):
 
                     # Verifies if a batching number has been already gi-
                     # ven
@@ -83,6 +86,18 @@ class TractionVectorOnSurface:
                             )+", whereas the list corresponding to the"+
                             " component '"+str(amplitude_key)+"' has s"+
                             "ize of "+str(len(component_value)))
+                        
+                    # Verifies if traction vector is not empty
+
+                    elif len(traction_vector)!=0:
+
+                        raise ValueError("The component '"+str(
+                        amplitude_key)+"' of 'TractionVectorOnSurface'"+
+                        " at physical group '"+str(physical_group_name)+
+                        "' is batched, but other components have been "+
+                        "provided before and were not batched. If one "+
+                        "component is batched, all of the others must "+
+                        "be as well")
                 
                     # If it was not created yet, saves the length of the gi-
                     # ven list
