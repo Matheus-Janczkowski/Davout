@@ -46,13 +46,15 @@ class NeoHookean:
             self.n_material_realizations = len(self.mu)
 
             # Converts the Lamé parameters to tensors [n_realizations,
-            # 1, 1]
+            # 1, 1, 1, 1]
 
             self.mu = tf.reshape(tf.constant(self.mu, dtype=
-            mesh_data_class.dtype), [self.n_material_realizations, 1, 1])
+            mesh_data_class.dtype), [self.n_material_realizations, 1, 1, 
+            1, 1])
 
             self.lmbda = tf.reshape(tf.constant(self.lmbda, dtype=
-            mesh_data_class.dtype), [self.n_material_realizations, 1, 1])
+            mesh_data_class.dtype), [self.n_material_realizations, 1, 1,
+            1, 1])
 
         # Otherwise, if it is a dictionary
 
@@ -129,21 +131,16 @@ class NeoHookean:
         F_inv_transposed = get_inverse(tf.transpose(F, perm=[0, 1, 2, 4, 
         3]), self.identity_tensor)
 
-        # Computes the jacobian
+        # Computes the jacobian [n_realizations, n_elements, 
+        # n_quadrature_points], then expands two dimensions to the right
 
-        J = tf.linalg.det(F)
+        J = tf.expand_dims(tf.expand_dims(tf.linalg.det(F), axis=-1),
+        axis=-1)
 
         # Evaluates the analytical expression for the first Piola-
         # Kirchhoff stress tensor as a tensor [n_realizations, n_ele-
         # ments, n_quadrature_points, 3, 3]
 
-        #return ((self.mu*F)+tf.einsum('peq,peqij->peqij', ((self.lmbda*
-        #tf.math.log(J))-self.mu), F_inv_transposed))
-
-        # Adds two dimensions at the end to make this tensor [n_realiza-
-        # tions, n_elements, n_quadrature_points, 1, 1]
-
-        scalar_coefficient = tf.expand_dims(tf.expand_dims((self.lmbda*
-        tf.math.log(J))-self.mu, axis=-1), axis=-1)
+        scalar_coefficient = (self.lmbda*tf.math.log(J))-self.mu
 
         return (self.mu*F)+(scalar_coefficient*F_inv_transposed)

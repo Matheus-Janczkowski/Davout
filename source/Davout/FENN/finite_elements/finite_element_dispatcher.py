@@ -1,6 +1,8 @@
 # Routine to dispatch and instantiate finite element classes given the 
 # tag read by the mesh reader
 
+import numpy as np
+
 from ..finite_elements.elements_manager import DomainElements, BoundaryElements
 
 # Defines a function to receive the mesh data class, the dictionary of
@@ -22,7 +24,7 @@ region, integer_dtype):
     if region=="domain":
 
         region_finite_elements = DomainElements(
-        mesh_data_class.nodes_coordinates, 
+        np.asarray(mesh_data_class.nodes_coordinates), 
         mesh_data_class.quadrature_degree, element_per_field)
 
         # Updates the name of the connectivities inside the domain class
@@ -37,7 +39,7 @@ region, integer_dtype):
     elif region=="boundary":
 
         region_finite_elements = BoundaryElements(
-        mesh_data_class.nodes_coordinates, 
+        np.asarray(mesh_data_class.nodes_coordinates), 
         mesh_data_class.quadrature_degree, element_per_field,
         mesh_data_class.dofs_node_dict)
 
@@ -78,7 +80,7 @@ region, integer_dtype):
             # ments and dispatches the class of this element
 
             region_finite_elements.dispatch_element(element_type, 
-            connectivities, physical_group_tag, dtype, integer_dtype)
+            np.asarray(connectivities), physical_group_tag, dtype, integer_dtype)
 
     # Stores the global number of DOFs if the current region is the do-
     # main

@@ -2,6 +2,8 @@
 
 import tensorflow as tf
 
+import numpy as np
+
 from time import time
 
 from ...PythonicUtilities.path_tools import verify_path, verify_file_existence, get_parent_path_of_file, take_outFileNameTermination
@@ -468,7 +470,9 @@ end_key="$EndNodes"):
 
     # Initializes a list of nodes
 
-    nodes_coordinates = []
+    nodes_coordinates = None
+
+    node_counter = 0
 
     # Initializes a flag to tell if reading is allowed already
 
@@ -520,7 +524,16 @@ end_key="$EndNodes"):
             # Adds the node coordinates, skipping the first element (
             # which is node index)
 
-            nodes_coordinates.append(line_info[1:len(line_info)])
+            nodes_coordinates[node_counter, :] = np.asarray(line_info[1:
+            len(line_info)], dtype=float)
+
+            node_counter += 1
+
+        # Otherwise it is the number of nodes
+
+        elif len(line_info)==1:
+
+            nodes_coordinates = np.zeros((line_info[0], 3))
 
     return nodes_coordinates, start_reading_at_index
     

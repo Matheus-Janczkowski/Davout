@@ -3,6 +3,8 @@
 
 import tensorflow as tf
 
+import numpy as np
+
 from ..finite_elements import volume_elements
 
 from ..finite_elements import surface_elements
@@ -187,11 +189,6 @@ None, integer_dtype=tf.int32):
 
         n_dofs_per_node = info_dict["number of DOFs per node"]
 
-        # Initializes a set of node indexes that are already used by this
-        # field
-
-        used_nodes_set = set()
-
         # Gets the type of the element required by the field
 
         required_element_type = info_dict["required element type"]
@@ -222,73 +219,43 @@ None, integer_dtype=tf.int32):
         element_class, element_info = get_element(required_element_type, 
         finite_elements_classes, region_name)
 
-        # And adds a list of nodes for each element
+        # Gets the connectivity provided by gmsh
+        
+        gmsh_connectivity = np.asarray(element_info["indices of the gm"+
+        "sh connectivity"], dtype=int)
 
-        nodes_in_elements = []
+        number_of_gmsh_connectivities = gmsh_connectivity.shape[0]
 
-        # Initializes a list of lists. Each sublist corresponds to a fi-
-        # nite element. Each sublist contains n other sublists, where n 
-        # is the number of nodes in each element. The inner-most sublists 
-        # contain the nodes coordinates for that element
+        # Verifies if the element has enough nodes
 
-        element_nodes_coordinates = []
+        if connectivities.shape[1]<number_of_gmsh_connectivities:
+            
+            received_element_name = str(tag)
 
-        # Iterates through the connectivities
+            if tag in finite_elements_classes:
 
-        for connectivity in connectivities:
+                received_element_name = str(finite_elements_classes[
+                tag].stored_elements[tag]["name"])
+            
+            raise IndexError("The element recovered from the mesh has "+
+            "a connectivity of "+str(connectivities[0])+". This connec"+
+            "tivity list has "+str(connectivities.shape[1])+" nodes; b"+
+            "ut "+str(number_of_gmsh_connectivities)+" nodes are requi"+
+            "red by element type '"+str(element_info["name"])+"'. The "+
+            "generated mesh has a '"+received_element_name+"' element."+
+            " This happened at the '"+str(region_name)+"' region")
 
-            # Appends another sublist corresponding to the element
+        # Gets an array [n_elements, n_nodes_per_element] with the node
+        # indices for each element. Uses gmsh_connectivity to convert the
+        # node ordering in each element created by gmsh to the ordering
+        # defined by the user
 
-            element_nodes_coordinates.append([])
+        nodes_in_elements = connectivities[:, gmsh_connectivity]
 
-            # Initializes a list of nodes per element
+        # Gathers the coordinates per node [n_elements, 
+        # n_nodes_per_element, 3]
 
-            nodes_in_elements.append([])
-
-            # Verifies if the element has enough nodes
-
-            if len(connectivity)<len(element_info["indices of the gmsh"+
-            " connectivity"]):
-                
-                received_element_name = str(tag)
-
-                if tag in finite_elements_classes:
-
-                    received_element_name = str(finite_elements_classes[
-                    tag].stored_elements[tag]["name"])
-                
-                raise IndexError("The element recovered from the mesh "+
-                "has a connectivity of "+str(connectivity)+". This con"+
-                "nectivity list has "+str(len(connectivity))+" nodes; "+
-                "but "+str(len(element_info["indices of the gmsh conne"+
-                "ctivity"]))+" nodes are required by element type '"+str(
-                element_info["name"])+"'. The generated mesh has a '"+
-                received_element_name+"' element. This happened at the"+
-                " '"+str(region_name)+"' region")
-
-            # Iterates through the nodes indices in the list of connec-
-            # tivity
-
-            for connectivity_real_index in element_info["indices of th"+
-            "e gmsh connectivity"]:
-                
-                # Gets the node index
-
-                node_index = connectivity[connectivity_real_index]
-
-                # Gets the node coordinates and adds them to the list of
-                # element nodes coordinates
-
-                element_nodes_coordinates[-1].append(
-                nodes_coordinates[node_index])
-
-                # Adds the node index to the set of used nodes
-
-                used_nodes_set.add(node_index)
-
-                # Adds the node index to the list of nodes in the element
-
-                nodes_in_elements[-1].append(node_index)
+        element_nodes_coordinates = nodes_coordinates[nodes_in_elements]
 
         # If the dictionary of DOFs per node is to be updated
 
@@ -298,49 +265,62 @@ None, integer_dtype=tf.int32):
 
             if not (field_name in dofs_node_dict):
 
-                dofs_node_dict[field_name] = {}
+                # Gets the maximum number of nodes in the whole mesh
 
-            # Sorts the set of used nodes
+                maximum_node_index = nodes_coordinates.shape[0]
 
-            used_nodes_set = sorted(used_nodes_set)
+                # Creates an array [n_nodes, n_dofs_per_node] to tell
+                # the DOF indices for each node
 
-            # Iterates through the set of used/found nodes
+                dofs_node_dict[field_name] = -np.ones((maximum_node_index
+                +1, n_dofs_per_node), dtype=int)
+                
+            dofs_node_by_field = dofs_node_dict[field_name]
+            
+            # Gets an array of unique numbers of nodes used for this bit
+            # of the mesh
 
-            for used_node in used_nodes_set:
+            used_nodes_array = np.unique(nodes_in_elements)
 
-                # Verifies if this node has already been registered
+            # Creates a mask for the nodes that have not been updated 
+            # with the proper DOF ordering
 
-                if not (used_node in dofs_node_dict[field_name]):
+            unassigned_mask = dofs_node_by_field[used_nodes_array, 0]==-1
 
-                    # Adds a list of the DOFs for this node
+            # Gets the used nodes that have not been updated yet
 
-                    dofs_node_dict[field_name][used_node] = []
+            not_updated_nodes = used_nodes_array[unassigned_mask]
 
-                    # And iterates through the local numbers of DOFs
-                    
-                    for local_dof in range(n_dofs_per_node):
+            # Calculates the number of nodes that have not been updated
+            #  yet
 
-                        DOF_number = local_dof+dofs_counter
-                        
-                        dofs_node_dict[field_name][used_node].append(
-                        DOF_number)
+            number_of_nodes_to_update = len(not_updated_nodes)
 
-                    # Updates the DOFs couter
+            if number_of_nodes_to_update>0:
 
-                    dofs_counter += n_dofs_per_node
+                # Creates an array with the DOFs indices corresponding 
+                # to these nodes
+                
+                new_dofs = (np.arange(dofs_counter, dofs_counter+(
+                number_of_nodes_to_update*n_dofs_per_node)).reshape(
+                number_of_nodes_to_update, n_dofs_per_node))
+
+                # Puts this array into the array of DOFs
+
+                dofs_node_by_field[not_updated_nodes] = new_dofs
+
+                # Updates the counter of asserted DOFs
+
+                dofs_counter += (number_of_nodes_to_update*
+                n_dofs_per_node)
 
         # Uses the dictionary of nodes to DOFs to create a list of ele-
         # ments with nested lists for nodes, which, in turn, have nested
         # lists for dimensions (local DOFs)
 
-        for element_index in range(len(nodes_in_elements)):
+        dofs_node_by_field = dofs_node_dict[field_name]
 
-            for node_index in range(len(nodes_in_elements[
-            element_index])):
-                
-                nodes_in_elements[element_index][node_index] = (
-                dofs_node_dict[field_name][nodes_in_elements[
-                element_index][node_index]])
+        nodes_in_elements = dofs_node_by_field[nodes_in_elements]
 
         # Instantiates the finite element class
 
