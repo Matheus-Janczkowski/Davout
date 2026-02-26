@@ -14,7 +14,8 @@ list, target_values: (list | np.ndarray)):
 
     """
     Function to get rows and their indices from a numpy array whose given
-    subset of columns equals an array of values.
+    subset of columns equals an array of values. Returns rows and, then,
+    the rows indices.
     
     array: 2D numpy array that is going to be searched
     
@@ -22,6 +23,20 @@ list, target_values: (list | np.ndarray)):
     for the searched values
     
     target_values: list or array of values searched in those columns"""
+
+    # Verifies if the array is a 2D numpy array
+
+    if not isinstance(array, np.ndarray):
+
+        raise ValueError("'array' in 'get_rows_given_column_values' mu"+
+        "st be a 2D numpy array. Currently its type is: "+str(type(array
+        )))
+
+    elif len(array.shape)!=2:
+
+        raise ValueError("'array' in 'get_rows_given_column_values' mu"+
+        "st be a 2D numpy array. Currently its shape is: "+str(
+        array.shape))
 
     # Verifies if inspected columns is not a list
 
