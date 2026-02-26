@@ -30,20 +30,9 @@ class TestANNTools(unittest.TestCase):
 
     def setUp(self):
 
-        pass
+        self.file_name = "box"
 
-    # Defines a function to test batching material parameters
-
-    def test_batching_material_parameters(self):
-
-        print("\n#####################################################"+
-        "###################\n#                  Tests batching materi"+
-        "al parameters                  #\n###########################"+
-        "#############################################\n")
-
-        file_name = "box"
-
-        file_directory = get_parent_path_of_file()
+        self.file_directory = get_parent_path_of_file()
 
         # Creates a box mesh 
 
@@ -59,85 +48,38 @@ class TestANNTools(unittest.TestCase):
         
         n_divisions_z = 3
 
-        quadrature_degree = 2
+        self.quadrature_degree = 2
 
-        n_subdomains_z = 2
+        self.n_subdomains_z = 2
 
         create_box_mesh(length_x, length_y, length_z, n_divisions_x, 
-        n_divisions_y, n_divisions_z, file_name=file_name, verbose=False, 
-        convert_to_xdmf=False, file_directory=file_directory, 
-        mesh_polinomial_order=2, n_subdomains_z=n_subdomains_z)
-
-        ################################################################
-        #                             FENN                             #
-        ################################################################
+        n_divisions_y, n_divisions_z, file_name=self.file_name, verbose=
+        False, convert_to_xdmf=False, file_directory=self.file_directory, 
+        mesh_polinomial_order=2, n_subdomains_z=self.n_subdomains_z)
 
         # Defines a dictionary of finite element per field
 
-        elements_per_field = {"Displacement": {"number of DOFs per nod"+
-        "e": 3, "required element type": "tetrahedron of 10 nodes"}}
+        self.elements_per_field = {"Displacement": {"number of DOFs pe"+
+        "r node": 3, "required element type": "tetrahedron of 10 nodes"}}
 
         # Reads this mesh
 
-        mesh_data_class = mesh_tools.read_msh_mesh(file_name, 
-        quadrature_degree, elements_per_field, verbose=True)
+        self.mesh_data_class = mesh_tools.read_msh_mesh(self.file_name, 
+        self.quadrature_degree, self.elements_per_field, verbose=True)
 
-        print("The read mesh has "+str(mesh_data_class.global_number_dofs
-        )+" degrees of freedom")
+        # Sets the base loads
 
-        # Sets the loads
+        self.base_dirichlet_load = [0.1]
 
-        dirichlet_load = 0.1
+        self.base_neumann_load = [0.0E5]
 
-        neumann_load = 0.0E5
+        self.base_current_time = 1.0
 
-        current_time = 1.0
+        # Sets the base material properties
 
-        # Creates a dictionary to tell Dirichlet boundary conditions
+        self.base_material_properties = [{"E": 1E6, "nu": 0.4}, {"E": 
+        2E6, "nu": 0.4}]
 
-        boundary_conditions_dict = {"top": {"BC case": "PrescribedDiri"+
-        "chletBC", "load_function": "linear", "degrees_ofFreedomList": 2,
-        "end_point": [1.0, dirichlet_load], "field name": "Displacement"
-        }, "bottom": {"BC case": "FixedSupportDirichletBC", "field nam"+
-        "e": "Displacement"}}
-
-        # Sets the dictionary of constitutive models
-
-        material_properties = [{"E": 1E6, "nu": 0.4}, {"E": 1E6, "nu": 0.4}]
-
-        constitutive_models = dict()
-
-        for subdomain in range(n_subdomains_z):
-
-            constitutive_models["volume "+str(subdomain+1)] = NeoHookean(
-            material_properties, mesh_data_class)
-
-        # Sets the dictionary of traction classes
-
-        traction_dictionary = {"top": {"load case": "TractionVectorOnS"+
-        "urface", "amplitude_tractionX": 0.0, "amplitude_tractionY": 0.0, 
-        "amplitude_tractionZ": neumann_load}}
-
-        # Instantiates the class to evaluate the residual vector
-
-        residual_class = CompressibleHyperelasticity(mesh_data_class,
-        constitutive_models, traction_dictionary=traction_dictionary, 
-        boundary_conditions_dict=boundary_conditions_dict, time=
-        current_time, save_vector_of_parameters_in_class=True,
-        n_realizations=2)
-
-        # Gets the vector of parameters and the global residual vector
-
-        vector_of_parameters = residual_class.vector_of_parameters
-
-        global_residual_vector = residual_class.global_residual_vector
-
-        # Evaluates the residual
-
-        residual_vector = residual_class.evaluate_residual_vector(
-        vector_of_parameters, global_residual_vector)
-
-        """
         ################################################################
         #                            FEniCS                            #
         ################################################################
@@ -150,52 +92,86 @@ class TestANNTools(unittest.TestCase):
         "ber of divisions in z": n_divisions_z, "verbose": False, "mes"+
         "h file name": "box_mesh", "mesh file directory": 
         get_parent_path_of_file(), "number of subdomains in z direction":
-        n_subdomains_z})
+        self.n_subdomains_z})
 
         functional_data_class = functional_tools.construct_monolithicFunctionSpace(
         {"Displacement": {"field type": "vector", "interpolation funct"+
         "ion": "CG", "polynomial degree": 2}}, mesh_data_class_fenics)
 
-        # Dirichlet boundary conditions
+        # Initializes a list of bcs and of Dirichlet loads
 
-        bcs, dirichlet_loads = functional_tools.construct_DirichletBCs({
-        "top": {"BC case": "PrescribedDirichletBC", "bc_information"+
-        "sDict": {"load_function": "linear", "degrees_ofFreedomList": 2,
-        "end_point": [1.0, dirichlet_load]}}, "bottom": {"BC case": "F"+
-        "ixedSupportDirichletBC"}}, functional_data_class, 
-        mesh_data_class_fenics)
+        list_of_bcs = []
 
-        # Variational form of the exterior work using an uniform referential 
-        # traction
+        list_of_dirichlet_loads = []
 
-        external_work, neumann_loads = variational_tools.traction_work({
-        "top": {"load case": "UniformReferentialTraction", "amplitude_"+
-        "tractionX": 0.0, "amplitude_tractionY": 0.0, "amplitude_tract"+
-        "ionZ": neumann_load, "parametric_load_curve": "square_root", 
-        "t": 0.0, "t_final": 1.0}}, "Displacement", 
-        functional_data_class, mesh_data_class_fenics, [])
+        # Iterates over the list of base Dirichlet loads
 
-        constitutive_model_multimech = NeoHookeanMultiMech(
-        material_properties)
+        for dirichlet_load in self.base_dirichlet_load:
 
-        constitutive_model_multimech.check_model(None)
+            bcs, dirichlet_loads = functional_tools.construct_DirichletBCs(
+            {"top": {"BC case": "PrescribedDirichletBC", "bc_informati"+
+            "onsDict": {"load_function": "linear", "degrees_ofFreedomL"+
+            "ist": 2, "end_point": [1.0, dirichlet_load]}}, "bottom": {
+            "BC case": "FixedSupportDirichletBC"}}, 
+            functional_data_class, mesh_data_class_fenics)
 
-        internal_work = variational_tools.hyperelastic_internalWorkFirstPiola(
-        "Displacement", functional_data_class, 
-        constitutive_model_multimech, mesh_data_class_fenics)
+            # Updates the load class
 
-        # Update the load class
+            dirichlet_loads[0].update_load(self.base_current_time)
 
-        neumann_loads[0].update_load(current_time)
+            # Then appends them into the lists
 
-        dirichlet_loads[0].update_load(current_time)
+            list_of_bcs.append(bcs)
 
-        # Updates the Dirichlet boundary conditions
+            list_of_dirichlet_loads.append(dirichlet_loads)
 
-        for bc in bcs:
+        # Initializes a list of variations of the external work and of 
+        # Neumann_loads loads
 
-            bc.apply(functional_data_class.solution_fields["Displaceme"+
-            "nt"].vector())
+        list_of_external_work = []
+
+        list_of_neumann_loads = []
+
+        # Iterates over the Neumann loads
+
+        for neumann_load in self.base_neumann_load:
+
+            # Variational form of the exterior work using an uniform re-
+            # ferential traction
+
+            external_work, neumann_loads = variational_tools.traction_work(
+            {"top": {"load case": "UniformReferentialTraction", "ampli"+
+            "tude_tractionX": 0.0, "amplitude_tractionY": 0.0, "amplit"+
+            "ude_tractionZ": neumann_load, "parametric_load_curve": "s"+
+            "quare_root", "t": 0.0, "t_final": 1.0}}, "Displacement", 
+            functional_data_class, mesh_data_class_fenics, [])
+
+            # Updates the load class
+
+            neumann_loads[0].update_load(self.base_current_time)
+
+            # Then appends them into the lists
+
+            list_of_external_work.append(external_work)
+
+            list_of_neumann_loads.append(neumann_loads)
+
+        # Constructs a list of instances of the constitutive model class
+        # with different sets of material properties
+
+        list_of_constitutive_model_multimech = [NeoHookeanMultiMech(
+        material_properties) for material_properties in (
+        self.base_material_properties)]
+
+        # Checks the constitutive models
+
+        [constitutive_model.check_model(None) for (constitutive_model
+        ) in list_of_constitutive_model_multimech]
+
+        list_of_internal_work = [variational_tools.hyperelastic_internalWorkFirstPiola(
+        "Displacement", functional_data_class, constitutive_mode, 
+        mesh_data_class_fenics) for constitutive_mode in (
+        list_of_constitutive_model_multimech)]
 
         ################################################################
         #                          Comparison                          #
@@ -210,15 +186,74 @@ class TestANNTools(unittest.TestCase):
 
         dofs_fenics_from_gmsh_nodes = np.array([dofs_finder(
         *node_coordinates) for node_coordinates in (
-        mesh_data_class.nodes_coordinates)])
+        self.mesh_data_class.nodes_coordinates)])
 
-        # Assembles the residual vector and stores as a list
+        # Gets the number of variations per category
 
-        assembled_residual = assemble(internal_work-external_work)
+        n_dirichlet_loads = len(self.base_dirichlet_load)
 
-        residual_vector_fenics = np.zeros(residual_vector.shape[1])
+        n_neumann_loads = len(self.base_neumann_load)
 
-        for dof_number, dof_value in enumerate(assembled_residual):
+        n_internal_works = len(self.base_material_properties)
+
+        # Initializes a numpy array for the residual vector across para-
+        # meters combinations (realizations)
+
+        self.assembled_residual = np.zeros(
+        self.mesh_data_class.global_number_dofs, int(n_internal_works*
+        n_dirichlet_loads*n_neumann_loads))
+
+        # Initializes an array telling the combination of indices of each
+        # one of the varied parameters
+
+        self.combinations = np.zeros((self.assembled_residual.shape[1],
+        3), dtype=int)
+
+        counter = 0
+
+        # Iterates over the Dirichlet boundary conditions
+
+        for bc_index, bcs in enumerate(list_of_bcs):
+
+            # Updates the Dirichlet boundary conditions
+
+            for bc in bcs:
+
+                bc.apply(functional_data_class.solution_fields["Displa"+
+                "cement"].vector())
+
+            # Iterates over the Neumann boundary conditions
+
+            for neumann_index, external_work in enumerate(
+            list_of_external_work):
+
+                # Iterates over the internal work
+
+                for inner_index, internal_work in enumerate(
+                list_of_internal_work):
+
+                    # Assembles the residual vector and stores it in the
+                    # corresponding realization column
+
+                    self.assembled_residual[:,counter] = assemble(
+                    internal_work-external_work)
+
+                    # Updates the realization counter and the array of
+                    # combinations
+
+                    self.combinations[counter,:] = np.asarray([bc_index,
+                    neumann_index, inner_index], dtype=int)
+
+                    counter += 1
+
+        # Creates a numpy array similar to the assembled residual. The
+        # only difference is that this array will have the same DOF or-
+        # dering as gmsh
+
+        self.residual_vector_fenics = np.zeros_like(
+        self.assembled_residual)
+
+        for dof_number, dof_value in enumerate(self.assembled_residual):
 
             # Gets the DOF enumeration in gmsh
 
@@ -228,10 +263,70 @@ class TestANNTools(unittest.TestCase):
             # Gets the DOF number in the FENN numbering system using the
             # node number
 
-            dof_number_gmsh = mesh_data_class.dofs_node_dict["Displace"+
-            "ment"][dof_number_gmsh[0]][dof_number_gmsh[1]]
+            dof_number_gmsh = self.mesh_data_class.dofs_node_dict["Dis"+
+            "placement"][dof_number_gmsh[0]][dof_number_gmsh[1]]
 
-            residual_vector_fenics[dof_number_gmsh] = dof_value
+            self.residual_vector_fenics[dof_number_gmsh,:] = dof_value
+
+    # Defines a function to test batching material parameters
+
+    def test_batching_material_parameters(self):
+
+        print("\n#####################################################"+
+        "###################\n#                  Tests batching materi"+
+        "al parameters                  #\n###########################"+
+        "#############################################\n")
+
+        ################################################################
+        #                             FENN                             #
+        ################################################################
+
+        print("The read mesh has "+str(self.mesh_data_class.global_number_dofs
+        )+" degrees of freedom")
+
+        # Creates a dictionary to tell Dirichlet boundary conditions
+
+        boundary_conditions_dict = {"top": {"BC case": "PrescribedDiri"+
+        "chletBC", "load_function": "linear", "degrees_ofFreedomList": 2,
+        "end_point": [1.0, self.base_dirichlet_load[0]], "field name": "D"+
+        "isplacement"}, "bottom": {"BC case": "FixedSupportDirichletBC", 
+        "field name": "Displacement"}}
+
+        # Sets the dictionary of constitutive models
+
+        material_properties = self.base_material_properties
+
+        constitutive_models = dict()
+
+        for subdomain in range(self.n_subdomains_z):
+
+            constitutive_models["volume "+str(subdomain+1)] = NeoHookean(
+            material_properties, self.mesh_data_class)
+
+        # Sets the dictionary of traction classes
+
+        traction_dictionary = {"top": {"load case": "TractionVectorOnS"+
+        "urface", "amplitude_tractionX": 0.0, "amplitude_tractionY": 0.0, 
+        "amplitude_tractionZ": self.base_neumann_load[0]}}
+
+        # Instantiates the class to evaluate the residual vector
+
+        residual_class = CompressibleHyperelasticity(self.mesh_data_class,
+        constitutive_models, traction_dictionary=traction_dictionary, 
+        boundary_conditions_dict=boundary_conditions_dict, time=
+        self.base_current_time, save_vector_of_parameters_in_class=True,
+        n_realizations=2)
+
+        # Gets the vector of parameters and the global residual vector
+
+        vector_of_parameters = residual_class.vector_of_parameters
+
+        global_residual_vector = residual_class.global_residual_vector
+
+        # Evaluates the residual
+
+        residual_vector = residual_class.evaluate_residual_vector(
+        vector_of_parameters, global_residual_vector)
 
         # Plots both to compare
 
@@ -245,12 +340,12 @@ class TestANNTools(unittest.TestCase):
 
                 n_nonzero_components += 1
 
-            print("FENN: residual_vector["+str(i)+"]="+str(
-            residual_vector[0,i])+";            FEniCS: residual_vecto"+
-            "r["+str(i)+"]="+str(residual_vector_fenics[i]))
+            print("FENN: residual_vector[:,"+str(i)+"]="+str(
+            residual_vector[:,i])+";            FEniCS: residual_vecto"+
+            "r["+str(i)+"]="+str(self.residual_vector_fenics[i]))
 
         print("\nThe FEniCS residual vector has a length of "+str(len(
-        assembled_residual)))
+        self.assembled_residual)))
 
         print("The FENN residual vector has a shape of "+str(
         residual_vector.shape)+"\nwhere the first value tells the numb"+
