@@ -45,6 +45,42 @@ specifications.loader.exec_module(dictionary_tools)
 #                             Progress bar                             #
 ########################################################################
 
+# Defines a class of colors to colorize text on terminal
+
+class TerminalColor:
+
+    def __init__(self):
+
+        # Defines a dictionary of colors and their terminal keys
+
+        self.color_dictionary = {"green": "\033[92m", "red": "\033[91m", 
+        "yellow": "\033[93m", "cyan": "\033[96m", "bold light blue": 
+        "\033[1m\033[94m", "bold red": "\033[1m\033[91m", "reset": 
+        "\033[0m"}
+
+    # Defines a method to get color and text and combine them into a sin-
+    # gle setring
+
+    def __call__(self, text, color_name):
+        
+        # Verifies if color name is in the dictionary of colors
+
+        if not (color_name in self.color_dictionary):
+
+            available_colors = ""
+
+            for name in self.color_dictionary.keys():
+
+                available_colors += "\n'"+str(name)+"'"
+
+            raise ValueError("'"+str(color_name)+"' is not a valid col"+
+            "or name. Check the available names: "+available_colors)
+        
+        # Concatenates the command with the text
+
+        return (self.color_dictionary[color_name]+str(text)+
+        self.color_dictionary["reset"])
+
 # Defines a function to create a progress bar
 
 def progress_bar(iteration_set, message=None, colorful_bar=True):

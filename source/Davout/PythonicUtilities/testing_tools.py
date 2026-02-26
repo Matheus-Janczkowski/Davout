@@ -6,10 +6,16 @@ import traceback
 
 from ..PythonicUtilities.programming_tools import get_attribute
 
+from ..PythonicUtilities.programming_tools import TerminalColor
+
 # Defines a function to perform a series of tests defined as methods in-
 # side a class
 
 def run_class_of_tests(class_of_tests):
+
+    # Instantiates the class of colors in the terminal
+
+    terminal_color = TerminalColor()
 
     # Gets a dictionary of the methods inside this instance except for
     # the __init__ method
@@ -83,13 +89,16 @@ def run_class_of_tests(class_of_tests):
 
         if method_log[1]:
 
-            print("\n'"+str(method_log[0])+"' was SUCCESSFULL and took"+
-            " "+str(method_log[2])+" seconds")
+            print("\n'"+terminal_color(method_log[0], "bold light blue"
+            )+"' was "+terminal_color("SUCCESSFUL", "green")+" and too"+
+            "k "+terminal_color(method_log[2], "yellow")+" seconds")
 
         else:
 
-            print("\n'"+str(method_log[0])+"' was NOT SUCCESSFULL and "+
-            "took "+str(method_log[2])+" seconds")
+            print("\n'"+terminal_color(method_log[0], "bold light blue"
+            )+"' was "+terminal_color("NOT SUCCESSFUL", "bold red")+" "+
+            "and took "+terminal_color(method_log[2])+" seconds", "yel"+
+            "low")
 
     print("\nThe whole testing operation took "+str(time()-
     initial_overall_time)+" seconds.")
