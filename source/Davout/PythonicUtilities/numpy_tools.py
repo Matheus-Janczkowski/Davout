@@ -38,6 +38,12 @@ list, target_values: (list | np.ndarray)):
         "st be a 2D numpy array. Currently its shape is: "+str(
         array.shape))
 
+    # If target values is None, returns the proper array
+
+    if target_values is None:
+
+        return array, np.arange(array.shape[0], dtype=int)
+
     # Verifies if inspected columns is not a list
 
     if not isinstance(inspected_columns, list):
