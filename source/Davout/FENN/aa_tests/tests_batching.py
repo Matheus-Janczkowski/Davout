@@ -711,8 +711,14 @@ class TestANNTools:
         # 2. Neumann boundary conditions
         # 3. Material parameters
 
-        _, corresponding_realizations = get_rows_given_column_values(
-        self.combinations, [1, 2, 3], None)
+        _, corresponding_realizations1 = get_rows_given_column_values(
+        self.combinations, [0, 1, 2, 3], [0, 0, 0, 0])
+
+        _, corresponding_realizations2 = get_rows_given_column_values(
+        self.combinations, [0, 1, 2, 3], [1, 1, 1, 1])
+
+        corresponding_realizations = np.concatenate((
+        corresponding_realizations1, corresponding_realizations2), axis=0)
 
         compare_residual_vectors(residual_vector, 
         self.residual_vector_fenics, self.assembled_residual, 

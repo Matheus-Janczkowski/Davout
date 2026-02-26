@@ -147,13 +147,20 @@ class TractionVectorOnSurface:
 
             self.traction_vector = tf.reshape(self.traction_vector, [1, 
             1, 1, 3])
+
+        # Saves the number of elements and quadrature points
+
+        self.n_elements = (
+        self.mesh_realizations_common_info.number_elements)
+
+        self.n_quadrature_points = (
+        self.mesh_realizations_common_info.number_quadrature_points)
         
         # Calls the method to build the traction tensor if required
 
         self.traction_tensor = tf.Variable(tf.broadcast_to(
-        self.traction_vector, [self.n_realizations, 
-        self.mesh_realizations_common_info.number_elements, 
-        self.mesh_realizations_common_info.number_quadrature_points, 3]))
+        self.traction_vector, [self.n_realizations, self.n_elements,
+        self.n_quadrature_points, 3]))
         
     # Defines a function to build the traction [n_elements, 
     # n_quadrature_points, 3] with the first ever given vector of para-
@@ -166,9 +173,8 @@ class TractionVectorOnSurface:
         # to create the traction tensor
 
         self.traction_tensor.assign(tf.broadcast_to(self.traction_vector, 
-        [self.n_realizations, 
-        self.mesh_realizations_common_info.number_elements, 
-        self.mesh_realizations_common_info.number_quadrature_points, 3]))
+        [self.n_realizations, self.n_elements, self.n_quadrature_points, 
+        3]))
 
 ########################################################################
 #                       Prescribed stress tensor                       #
