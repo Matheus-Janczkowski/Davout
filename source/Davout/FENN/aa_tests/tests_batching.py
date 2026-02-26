@@ -560,6 +560,79 @@ class TestANNTools:
         self.mesh_data_class, corresponding_realizations, "BATCHED NEU"+
         "MANN BCs")
 
+    # Defines a function to test batching meshes
+
+    def test_batching_meshes(self):
+
+        print("\n#####################################################"+
+        "###################\n#  Tests batching meshes with same conne"+
+        "ctivity but different geometry #\n###########################"+
+        "#############################################\n", flush=True)
+
+        # Creates a dictionary to tell Dirichlet boundary conditions
+
+        boundary_conditions_dict = {"top": {"BC case": "PrescribedDiri"+
+        "chletBC", "load_function": "linear", "degrees_ofFreedomList": 2,
+        "end_point": [1.0, self.base_dirichlet_load[0]], "field name": 
+        "Displacement"}, "bottom": {"BC case": "FixedSupportDirichletB"+
+        "C", "field name": "Displacement"}}
+
+        # Sets the dictionary of constitutive models. Selects the first
+        # set of material parameters only
+
+        material_properties = self.base_material_properties[0]
+
+        constitutive_models = dict()
+
+        for subdomain in range(self.n_subdomains_z):
+
+            constitutive_models["volume "+str(subdomain+1)] = NeoHookean(
+            material_properties, self.mesh_data_class[0])
+
+        # Sets the dictionary of traction classes
+
+        traction_dictionary = {"top": {"load case": "TractionVectorOnS"+
+        "urface", "amplitude_tractionX": 0.0, "amplitude_tractionY": 0.0,
+        "amplitude_tractionZ": self.base_neumann_load[0]}}
+
+        # Instantiates the class to evaluate the residual vector. Se-
+        # lects the number of realizations as the number of Dirichlet
+        # loads. Note that the whole mesh data class will be used; not
+        # only the first element
+
+        residual_class = CompressibleHyperelasticity(self.mesh_data_class,
+        constitutive_models, traction_dictionary=traction_dictionary, 
+        boundary_conditions_dict=boundary_conditions_dict, time=
+        self.base_current_time, save_vector_of_parameters_in_class=True,
+        n_realizations=len(self.mesh_data_class))
+
+        # Gets the vector of parameters and the global residual vector
+
+        vector_of_parameters = residual_class.vector_of_parameters
+
+        global_residual_vector = residual_class.global_residual_vector
+
+        # Evaluates the residual
+
+        residual_vector = residual_class.evaluate_residual_vector(
+        vector_of_parameters, global_residual_vector)
+
+        # Finds the indices of the realizations whose Dirichlet and Neu-
+        # mann boundary conditions are in the first set position. The 
+        # combinations array has its columns related to:
+        # 0. Mesh
+        # 1. Dirichlet boundary conditions
+        # 2. Neumann boundary conditions
+        # 3. Material parameters
+
+        _, corresponding_realizations = get_rows_given_column_values(
+        self.combinations, [1, 2, 3], [0, 0, 0])
+
+        compare_residual_vectors(residual_vector, 
+        self.residual_vector_fenics, self.assembled_residual, 
+        self.mesh_data_class, corresponding_realizations, "BATCHED MES"+
+        "HES WITH SAME CONNECTIVITIES BUT DIFFERENT GEOMETRY")
+
 # Runs all tests
 
 if __name__=="__main__":
