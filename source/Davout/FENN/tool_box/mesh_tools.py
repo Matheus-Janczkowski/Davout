@@ -253,6 +253,15 @@ tf.int32):
         print("Dispatching boundary finite elements took: "+str(
         boundary_dispatching_reading_time)+" s\n")
 
+        print("The total amount of time to read the mesh: "+str(
+        lines_reading_time+physical_groups_reading_time+
+        nodes_reading_time+connectivities_reading_time+
+        domain_dispatching_reading_time+boundary_dispatching_reading_time
+        )+" s\n")
+
+        print("There are "+str(nodes_coordinates.shape[0])+" nodes in "+
+        "the mesh\n")
+
         print("#######################################################"+
         "#################\n#                        Domain physical g"+
         "roups                        #\n#############################"+
@@ -316,7 +325,7 @@ def read_gmsh_version(lines_list, start_reading_at_index, start_key=
 
             # Verifies if this line is equal to the start key
 
-            if line==start_key:
+            if isinstance(line, str) and line==start_key:
 
                 # Updates the flag reading to allow for reading
 
@@ -326,7 +335,7 @@ def read_gmsh_version(lines_list, start_reading_at_index, start_key=
 
         # Verifies if the end key has been reached
 
-        elif line==end_key:
+        elif isinstance(line, str) and line==end_key:
 
             # Modifies the start index for the next index
 
@@ -335,6 +344,9 @@ def read_gmsh_version(lines_list, start_reading_at_index, start_key=
             break 
 
         gmsh_version = line
+
+        #gmsh_version = str(line[0])+" "+str(int(line[1]))+" "+str(int(
+        #line[2]))
 
     return gmsh_version, start_reading_at_index
     
@@ -370,7 +382,7 @@ def read_physical_groups(lines_list, start_reading_at_index, start_key=
 
             # Verifies if this line is equal to the start key
 
-            if line==start_key:
+            if isinstance(line, str) and line==start_key:
 
                 # Updates the flag reading to allow for reading
 
@@ -380,7 +392,7 @@ def read_physical_groups(lines_list, start_reading_at_index, start_key=
 
         # Verifies if the end key has been reached
 
-        elif line==end_key:
+        elif isinstance(line, str) and line==end_key:
 
             # Modifies the start index for the next index
 
@@ -472,7 +484,7 @@ end_key="$EndNodes"):
 
     nodes_coordinates = None
 
-    node_counter = 0
+    number_of_nodes = None
 
     # Initializes a flag to tell if reading is allowed already
 
@@ -515,27 +527,28 @@ end_key="$EndNodes"):
 
         line_info = string_toList("["+line+"]", element_separator=" ")
 
-        # If there are four elements in the list, the first is the node
-        # index; the second, the third, and the fourth elements are the
-        # coordinates
-
-        if len(line_info)>1:
-
-            # Adds the node coordinates, skipping the first element (
-            # which is node index)
-
-            nodes_coordinates[node_counter, :] = np.asarray(line_info[1:
-            len(line_info)], dtype=float)
-
-            node_counter += 1
-
         # Otherwise it is the number of nodes
 
-        elif len(line_info)==1:
+        if len(line_info)==1:
 
-            nodes_coordinates = np.zeros((line_info[0], 3))
+            number_of_nodes = line_info[0]
 
-    return nodes_coordinates, start_reading_at_index
+            nodes_coordinates = np.zeros((number_of_nodes, 3))
+
+            start_reading_at_index = i+1
+
+            break
+
+    # Converts the read lines to lists and then to an array of node co-
+    # ordinates
+
+    numerical_lines = [np.fromstring(line.strip(), sep=" ")[1:4] for (
+    line) in lines_list[start_reading_at_index:(start_reading_at_index+
+    number_of_nodes)]]
+
+    nodes_coordinates = np.asarray(numerical_lines, dtype=float)
+
+    return nodes_coordinates, start_reading_at_index+number_of_nodes
     
 # Defines a function to read the bit about finite element connectivity. 
 # The output is a list of lists, where each list corresponds to a finite
@@ -547,17 +560,13 @@ def read_elements(lines_list, start_reading_at_index,
 domain_physical_groups_tags, boundary_physical_groups_tags, start_key=
 "$Elements", end_key="$EndElements"):
 
-    # Initializes a dictionary whose keys are the physical groups. The 
-    # values are dictionaries whose keys are the element type, and the 
-    # values are the element connectivities
-
-    connectivity_dict = dict()
-
     # Initializes a flag to tell if reading is allowed already
 
     flag_reading = False
 
     # Iterates through the lines
+
+    initial_index = 0
 
     for i in range(start_reading_at_index, len(lines_list)):
 
@@ -577,6 +586,8 @@ domain_physical_groups_tags, boundary_physical_groups_tags, start_key=
 
                 flag_reading = True
 
+                initial_index = i+1
+
             continue
 
         # Verifies if the end key has been reached
@@ -589,56 +600,41 @@ domain_physical_groups_tags, boundary_physical_groups_tags, start_key=
 
             break 
 
-        # Transforms this line to a list to get the different informa-
-        # tion readily available, and independently
+    # Creates a dictionary of connectivity
 
-        line_info = string_toList("["+line+"]", element_separator=" ")
+    connectivity_dict = {}
 
-        # If there are more than one element in the list, it is a valid
-        # finite element. The first component is the element index; the
-        # second one represents the element type; the third represents
-        # the number of tags for the physical groups; the fourth compo-
-        # nent gives the physical group tag given by the user; the fifth
-        # one is the tag given by gmsh; the sixth onwards are nodes in-
-        # dices
+    # Iterates over the lines
 
-        if len(line_info)>1:
+    for line in lines_list[initial_index:start_reading_at_index]:
 
-            # Gets the element type, and the physical group tag
+        # Converts the line to an array
 
-            element_type = line_info[1]
+        line_array = np.fromstring(line.strip(), sep=" ", dtype=int)
 
-            physical_group_tag = line_info[3]
+        # If the line has length of 1, it tells the number of elements
+        # only
 
-            nodes = [(node_index-1) for node_index in line_info[5:len(
-            line_info)]]
+        if len(line_array)<=1: 
+            
+            continue
 
-            # Verifies if this physical group tag has already been regis-
-            # tered
+        # Gets the physical group tag and element type tag
 
-            if physical_group_tag in connectivity_dict:
+        physical_group_tag = line_array[3]
 
-                # Verifies if this element type has already been regis-
-                # tered
+        element_type = line_array[1]
 
-                if element_type in connectivity_dict[physical_group_tag]:
+        # Gets the indices of the node of this element, subtracts 1 to
+        # make them compatible with python ordering
 
-                    # Appends the connectivity
+        nodes_indices = line_array[5:] - 1
 
-                    connectivity_dict[physical_group_tag][element_type
-                    ].append(nodes)
+        # Sets a dictionary such as {physical_group_tag: {element_type:
+        # array_of_connectivities}}
 
-                else:
-
-                    connectivity_dict[physical_group_tag][element_type
-                    ] = [nodes]
-
-            else:
-
-                # Registers the tag
-
-                connectivity_dict[physical_group_tag] = {element_type:
-                [nodes]}
+        connectivity_dict.setdefault(physical_group_tag, {}).setdefault(
+        element_type, []).append(nodes_indices)
 
     # Separates the connectivity dictionaries into domain and boundary
 
@@ -646,19 +642,29 @@ domain_physical_groups_tags, boundary_physical_groups_tags, start_key=
 
     boundary_connectivity = dict()
 
-    for physical_group_tag, connectivities in connectivity_dict.items():
+    # Iterates through the physical groups
+    
+    for physical_group_tag, elements_dictionary in connectivity_dict.items():
+
+        # Converts the connectivities to a proper numpy integer array
+
+        for element_type, connectivity in elements_dictionary.items():
+            
+            elements_dictionary[element_type] = np.array(connectivity, 
+            dtype=int)
 
         # Verifies if the physical group tag is one of the domain's
 
         if physical_group_tag in domain_physical_groups_tags:
 
-            domain_connectivity[physical_group_tag] = connectivities
+            domain_connectivity[physical_group_tag] = elements_dictionary
 
         # Verifies if the physical group tag is one of the boundary's
 
         elif physical_group_tag in boundary_physical_groups_tags:
 
-            boundary_connectivity[physical_group_tag] = connectivities
+            boundary_connectivity[physical_group_tag] = (
+            elements_dictionary)
 
         else:
 
@@ -669,7 +675,3 @@ domain_physical_groups_tags, boundary_physical_groups_tags, start_key=
 
     return (domain_connectivity, boundary_connectivity, 
     start_reading_at_index)
-
-########################################################################
-#                          Mesh normal vectors                         #
-########################################################################
