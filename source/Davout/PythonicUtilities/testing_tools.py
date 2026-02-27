@@ -99,8 +99,8 @@ def run_class_of_tests(class_of_tests):
 
             print("\n'"+terminal_color(method_log[0], "bold light blue"
             )+"' was "+terminal_color("NOT SUCCESSFUL", "bold red")+" "+
-            "and took "+terminal_color(method_log[2], "bold red")+" se"+
-            "conds", "yellow")
+            "and took "+terminal_color(method_log[2], "yellow")+" se"+
+            "conds")
 
     print("\nThe whole testing operation took "+str(time()-
     initial_overall_time)+" seconds.")

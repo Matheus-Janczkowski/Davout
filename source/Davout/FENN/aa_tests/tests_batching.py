@@ -725,6 +725,8 @@ class TestANNTools:
         self.mesh_data_class, corresponding_realizations, "BATCHED EVE"+
         "RYTHING")
 
+        float(a)
+
 # Runs all tests
 
 if __name__=="__main__":
