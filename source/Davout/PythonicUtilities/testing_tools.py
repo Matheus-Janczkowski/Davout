@@ -11,7 +11,21 @@ from ..PythonicUtilities.programming_tools import TerminalColor
 # Defines a function to perform a series of tests defined as methods in-
 # side a class
 
-def run_class_of_tests(class_of_tests):
+def run_class_of_tests(class_of_tests, reserved_methods=None,
+sort_methods_alphabetically=True):
+
+    """
+    Function to test all methods defined in a class except the __init__
+    method and those especially reserved.
+    
+    class_of_tests: python class with functions to be tested defined as
+    methods in the class
+    
+    reserved_methods: list of strings, where each string is the name of
+    methods that are not to be tested
+    
+    sort_methods_alphabetically: flag to tell if the methods of the class
+    must be run using alphabetical order"""
 
     # Instantiates the class of colors in the terminal
 
@@ -21,7 +35,9 @@ def run_class_of_tests(class_of_tests):
     # the __init__ method
 
     methods_dictionary = get_attribute(class_of_tests, None, None, 
-    dictionary_of_methods=True, delete_init_key=True)
+    dictionary_of_methods=True, delete_init_key=True, reserved_methods=
+    reserved_methods, sort_methods_alphabetically=
+    sort_methods_alphabetically)
 
     # Initializes the success and failure counters
 

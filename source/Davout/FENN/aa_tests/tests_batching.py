@@ -725,12 +725,29 @@ class TestANNTools:
         self.mesh_data_class, corresponding_realizations, "BATCHED EVE"+
         "RYTHING")
 
-        float(a)
-
 # Runs all tests
 
 if __name__=="__main__":
 
+    # Instantiates the class with the methods to be tested
+
     class_of_tests = TestANNTools()
 
-    run_class_of_tests(class_of_tests)
+    # Creates a list of methods (using their names) that are not to be
+    # tested
+
+    reserved_methods = []
+    
+    #reserved_methods.append("test_batching_everything")
+    
+    #reserved_methods.append("test_batching_meshes")
+    
+    #reserved_methods.append("test_batching_dirichlet_boundary_conditio"+
+    #"ns")
+    
+    #reserved_methods.append("test_batching_material_parameters")
+
+    # Calls the function to run all the necessary tests
+
+    run_class_of_tests(class_of_tests, reserved_methods=reserved_methods,
+    sort_methods_alphabetically=False)

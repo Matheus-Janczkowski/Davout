@@ -530,13 +530,20 @@ def get_result(whole_result, variable_name):
 
 def get_attribute(class_object, attribute_name, error_message, 
 dictionary_of_methods=False, delete_init_key=False, reserved_methods=
-None):
+None, sort_methods_alphabetically=True):
 
     """
-    Arguments: class_object, a class instance; attribute_name, a string 
-    with the attribute name; error_message, a string with the error
-    message in case the class does not have this attribute. This function
-    is meant to give meaningful error messages
+    Function to verify if a class instance has an attribute and to build 
+    a dictionary of methods defined in a class. The keys are the methods 
+    names, and the values are the executable methods themselves
+
+    class_object: a class instance
+    
+    attribute_name: a string with the attribute name
+    
+    error_message: a string with the error message in case the class 
+    does not have this attribute. This function is meant to give 
+    meaningful error messages
     
     If 'dictionary_of_methods' is True, a dictionary of methods (method
     name - callable method function) of the instance of a class will be 
@@ -553,19 +560,44 @@ None):
 
         # Initializes a dictionary of methods
 
-        dictionary_of_methods = dict()
+        dictionary_of_methods = OrderedDict()
 
-        # Iterates over the methods of this class instance
+        # If methods are to be alphabetically ordered
 
-        for name, member in inspect.getmembers(class_object, predicate=
-        inspect.ismethod):
-            
-            # Verifies if the name is not in one of the reserved func-
-            # tions
+        if sort_methods_alphabetically:
 
-            if not (name in reserved_methods):
+            # Iterates over the methods of this class instance
 
-                dictionary_of_methods[name] = member
+            for name, member in inspect.getmembers(class_object, 
+            predicate=inspect.ismethod):
+                
+                # Verifies if the name is not in one of the reserved
+                # functions
+
+                if not (name in reserved_methods):
+
+                    dictionary_of_methods[name] = member
+
+        # Otherwise, just use the dictionary of the class to preserve 
+        # the implementation order of the methods
+
+        else:
+
+            # Iterates over the objects of the class
+        
+            for name, member in class_object.__class__.__dict__.items():
+
+                # Verifies if the object is callable, i.e. a function
+
+                if inspect.isfunction(member):
+
+                    # If it is not in the list of reserved methods, sa-
+                    # ves it
+
+                    if not (name in reserved_methods):
+
+                        dictionary_of_methods[name] = getattr(
+                        class_object, name)
 
         # If the __init__ method is to be taken away
 

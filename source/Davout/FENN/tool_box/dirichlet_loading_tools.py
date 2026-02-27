@@ -127,6 +127,8 @@ class FixedSupportDirichletBC:
     @tf.function
     def update_load_curve(self):
 
+        #tf.print("scatter shape:", tf.shape(self.scatter_indices))
+
         pass
 
 ########################################################################
@@ -441,6 +443,10 @@ class PrescribedDirichletBC:
             "cribedDirichletBC' at physical group '"+str(
             physical_group_name)+"' is not a list nor an integer. Curr"+
             "ently it is: "+str(prescribed_dofs_list))
+        
+        # Makes the list of load instances a tuple
+
+        self.list_of_load_instances = tuple(self.list_of_load_instances)
 
         # Stacks the list of prescribed DOFs back into a tensor, and re-
         # shapes it to a flat tensor
