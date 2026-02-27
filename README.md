@@ -13,7 +13,7 @@ to the repository and source files: https://github.com/Matheus-Janczkowski/Davou
 # What does Davout do?
 Workhorse for a research project that encompasses finite element analy-
 sis, machine learning, and multiscale analysis. Additionally, a set of 
-tools is provided. 
+tools is provided.
 
 This package contains extensive implementation of hyperelastic problems 
 in large strains using FEniCS and GMSH for mesh generation. A consistent 
@@ -30,6 +30,14 @@ This suite performs:
 
 # Installation using pip
 pip install Davout
+
+# Philosophy and aims
+Davout aims to be a unified software to accompany researchers in compu-
+tational mechanics. Davout sits on a profound love for python and open
+software.
+
+Davout stands on the shoulders of other massively mighty python packages,
+such as FEniCS, TensorFlow, GMSH, ParaView, and matplotlib.
 
 # Installation using installer file
 Download the zip file, unzip it and move it to a suitable directory. 
