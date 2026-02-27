@@ -10,6 +10,9 @@ to the repository and source files: https://github.com/Matheus-Janczkowski/Davou
 
 4. Link for the presentation template: https://www.overleaf.com/read/sbgxdphxswmm#6d7d64
 
+# Citation
+https://doi.org/10.5281/zenodo.18806245
+
 # What does Davout do?
 Workhorse for a research project that encompasses finite element analy-
 sis, machine learning, and multiscale analysis. Additionally, a set of 
