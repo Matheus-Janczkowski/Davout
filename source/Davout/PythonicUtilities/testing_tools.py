@@ -83,6 +83,8 @@ def run_class_of_tests(class_of_tests):
 
     print(str(failure_counter)+" methods failed to be executed")
 
+    print(terminal_color("\nThe full log follows below:", "purple"))
+
     # Print the complete log
 
     for method_log in log_per_method:

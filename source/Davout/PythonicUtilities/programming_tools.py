@@ -56,7 +56,7 @@ class TerminalColor:
         self.color_dictionary = {"green": "\033[92m", "red": "\033[91m", 
         "yellow": "\033[93m", "cyan": "\033[96m", "bold light blue": 
         "\033[1m\033[94m", "bold red": "\033[1m\033[91m", "reset": 
-        "\033[0m"}
+        "\033[0m", "purple": "\033[95m"}
 
     # Defines a method to get color and text and combine them into a sin-
     # gle setring
