@@ -115,7 +115,9 @@ plot_object=None, verbose=False):
     (default) if no error bars are to be plotted
     """
 
-    print("Starts plotting")
+    if verbose:
+
+        print("Starts plotting")
 
     # Verifies the type of the plot
 
@@ -291,7 +293,7 @@ plot_object=None, verbose=False):
 
                 y_data = y_data.tolist()
 
-        elif (isinstance(y_data[0], list) or isinstance(y_data[0], 
+        if (isinstance(y_data[0], list) or isinstance(y_data[0], 
         np.ndarray)):
 
             multiple_curves = len(y_data)
@@ -384,8 +386,8 @@ plot_object=None, verbose=False):
 
             except Exception as error_message:
 
-                print("Error Message:"+str(error_message)+"\nProbably "+
-                "this color map does not exist")
+                raise NameError("Error Message:"+str(error_message)+
+                "\nProbably this color map does not exist")
 
     # Creates the figure and the subplots
 
@@ -698,18 +700,22 @@ plot_object=None, verbose=False):
                 statistic_parameter = stats.t.ppf(0.5*(1+confidence),
                 len(y_data)-1)
 
-                print("For a confidence of "+str(confidence)+", uses t"+
-                "he t-Student coefficient of "+str(statistic_parameter)+
-                "\n")
+                if verbose:
+
+                    print("For a confidence of "+str(confidence)+", us"+
+                    "es the t-Student coefficient of "+str(
+                    statistic_parameter)+"\n")
         
             elif error_bar_copy=="normal distribution":
 
                 statistic_parameter = stats.norm.ppf(0.5*(1+confidence))
 
-                print("For a confidence of "+str(confidence)+", uses t"+
-                "he z-score coefficient of "+str(statistic_parameter)+
-                "\n")
-        
+                if verbose:
+
+                    print("For a confidence of "+str(confidence)+", us"+
+                    "es the z-score coefficient of "+str(
+                    statistic_parameter)+"\n")
+            
             else:
                 
                 raise ValueError("'error_bar', if string, can be eithe"+
@@ -1608,8 +1614,10 @@ plot_object=None, verbose=False):
             raise InterruptedError("The file is probably open on a vis"+
             "ualizer. Close it and try again. But the true error messa"+
             "ge is: "+str(e))
+        
+    if verbose:
 
-    print("Finishes plotting\n")
+        print("Finishes plotting\n")
 
     return plot_object
 
