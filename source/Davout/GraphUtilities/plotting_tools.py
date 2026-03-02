@@ -37,7 +37,7 @@ color_barIntegerTicks=False, color_barNumberOfTicks=5,
 color_barIncludeMinMaxTicks=False, x_ticksLabels=None, y_ticksLabels=
 None, ticks_fontsize=12, label_fontsize=14, legend_fontsize=12,
 highlight_pointsColors='black', parent_path=None, error_bar=None, 
-plot_object=None):
+plot_object=None, verbose=False):
     
     """
     You can provide an array of data, where the first column will be in
@@ -402,6 +402,10 @@ plot_object=None):
     # Verifies the nature of the line styles and of the color vector
 
     if multiple_curves:
+
+        if verbose:
+
+            print("Multiple curves will be plotted\n")
 
         # Verifies line styles
 
