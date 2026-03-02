@@ -6,6 +6,10 @@ import importlib
 
 import inspect
 
+########################################################################
+#                             Class loading                            #
+########################################################################
+
 # Defines a function to import classes from all modules in a package.
 # Modules are the .py file, whereas package is a directory with a 
 # __init__ file in it
@@ -147,3 +151,52 @@ classes_list=None, return_dictionary_of_classes=False):
                     classes_list.append(class_object)
 
     return classes_list
+
+########################################################################
+#                           Function loading                           #
+########################################################################
+
+# Defines a function to import functions from a single module. Modules 
+# are the .py file
+
+def load_functions_from_module(module, functions_list=None, 
+return_dictionary_of_functions=False):
+    
+    # Initializes a list of functions
+
+    if functions_list is None:
+
+        # If a dictionary of functions is to be created
+
+        if return_dictionary_of_functions:
+
+            functions_list = dict()
+
+        # Otherwise creates a list
+
+        else:
+
+            functions_list = []
+
+    # Iterates through the function objects inside this module
+
+    for function_name, function_object in inspect.getmembers(module, 
+    inspect.isfunction):
+
+        # Only keeps functions defined in this module (not imports)
+
+        if function_object.__module__==module.__name__:
+
+            # If a dictionary is to be created
+
+            if return_dictionary_of_functions:
+
+                functions_list[function_name] = function_object
+
+            # Otherwise, appends to a list
+
+            else:
+
+                functions_list.append(function_object)
+
+    return functions_list
