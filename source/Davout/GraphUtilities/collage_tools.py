@@ -69,7 +69,7 @@ layout_height_milimeters=297.0, add_overlaying_grid=False, tolerance=
 1E-1, grid_annotation_length=10, rule_fontsize=6, rule_number_offset=0.5,
 vanishing_points_list=None, save_lists_to_txt=True, interactive_preview=
 False, arrows_and_lines_file="arrows_and_lines_list", size_template=None,
-export_selection=None):
+export_selection=None, image_interpolation=None):
     
     # Initializes the class of colors, the class of alignments, and the 
     # class of line styles
@@ -210,7 +210,7 @@ export_selection=None):
 
                 general_axes, depth_order = plot_images(general_axes, 
                 read_input_image_list, alignments_class, input_path, 
-                verbose, depth_order)
+                verbose, depth_order, interpolation=image_interpolation)
 
             else:
 
@@ -225,7 +225,7 @@ export_selection=None):
 
                 general_axes, depth_order = plot_images(general_axes, 
                 input_image_list, alignments_class, input_path, verbose, 
-                depth_order)
+                depth_order, interpolation=image_interpolation)
 
         # Verifies if the list of input text excerpts is not None
 

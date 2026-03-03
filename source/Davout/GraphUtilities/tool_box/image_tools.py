@@ -11,7 +11,7 @@ from ...PythonicUtilities import path_tools
 # Defines a function to plot figures within a matplotlib canvas
 
 def plot_images(general_axes, input_image_list, alignments_class, 
-input_path, verbose, depth_order):
+input_path, verbose, depth_order, interpolation="lanczos"):
 
     # Sets a list of necessary keys
 
@@ -109,6 +109,11 @@ input_path, verbose, depth_order):
         # Reads the image
 
         input_image = Image.open(input_file_name)
+
+        if verbose:
+
+            print("\nImage at '"+str(input_file_name)+"' has size of "+
+            str(input_image.size)+" pixels")
 
         # Verifies if a transparent picture is to be trimmed
 
@@ -224,7 +229,7 @@ input_path, verbose, depth_order):
 
         general_axes.imshow(input_image, extent=[position[0], position[0
         ]+size[0], position[1], position[1]+size[1]], origin='upper', 
-        zorder=local_depth_order)
+        zorder=local_depth_order, interpolation=interpolation)
 
     # Returns the axes
 
