@@ -14,26 +14,34 @@ from ...PythonicUtilities.package_tools import load_classes_from_module
 
 class LossFunction:
 
-    def __init__(self, conditioning_matrix_dict, loss_function_dict,
-    n_realizations, n_global_dofs, float_dtype, vector_of_parameters, 
-    global_residual_vector):
+    def __init__(self, conditioning_matrix_list, loss_function_dict,
+    vector_of_parameters):
         
         # Saves code-given information
 
-        self.n_realizations = n_realizations
+        self.n_realizations = vector_of_parameters.shape[0]
 
-        self.n_global_dofs = n_global_dofs
+        self.n_global_dofs = vector_of_parameters.shape[1]
 
-        # Verifies if the dictionary of conditioning matrices is not a 
-        # dictionary
+        float_dtype = vector_of_parameters.dtype
 
-        if not isinstance(conditioning_matrix_dict, dict):
+        # Verifies if the list of conditioning matrices is a dictionary
 
-            raise TypeError("'conditioning_matrix_dict' in 'LossFuncti"+
-            "on' must be a dictionary whose keys are the names of the "+
-            "classes that build the conditioning matrices, and whose c"+
-            "orresponding values are dictionaries with further informa"+
-            "tion")
+        if isinstance(conditioning_matrix_list, dict):
+
+            # Converts to a list
+
+            conditioning_matrix_list = [conditioning_matrix_list]
+
+        # Verifies if the list of conditioning matrices is not a list
+
+        elif not isinstance(conditioning_matrix_list, list):
+
+            raise TypeError("'conditioning_matrix_list' in 'LossFuncti"+
+            "on' must be a list of dictionaries whose keys are: the na"+
+            "me of the class that construct such conditioning matrix a"+
+            "nd other keys for additional information particular to th"+
+            "e conditioner method")
 
         # Gets the available classes to construct the conditioning ma-
         # trices
@@ -48,9 +56,24 @@ class LossFunction:
 
         # Iterates through the list of names of conditioning matrices
 
-        for condition_name, condition_info in conditioning_matrix_dict.items():
+        for index, condition_info in enumerate(conditioning_matrix_list):
+
+            # Verifies if condition info is a dictionary
+
+            if (not isinstance(condition_info, dict)) or (not ("condit"+
+            "ioner name" in condition_info)):
+
+                raise TypeError("The "+str(index+1)+"-th condition inf"+
+                "o inside the list 'conditioning_matrix_list' in 'Loss"+
+                "Function' is not a dictionary or does not have the ke"+
+                "y 'conditioner name'. It must be a dictionary with, a"+
+                "t least, the key 'conditioner name' to set the method"+
+                " that computes the conditioning matrix. Currently it "+
+                "is: "+str(condition_info))
 
             # Verifies if it is a valid conditioning matrix
+
+            condition_name = condition_info["conditioner name"]
 
             if not (condition_name in available_conditioning_classes):
 
@@ -76,8 +99,8 @@ class LossFunction:
         if len(self.conditioning_matrices_instances)==0:
 
             raise ValueError("No conditioning matrices in 'LossFunctio"+
-            "n' have been given. Check 'conditioning_matrix_dict':\n"+
-            str(conditioning_matrix_dict))
+            "n' have been given. Check 'conditioning_matrix_list':\n"+
+            str(conditioning_matrix_list))
 
         # Verifies if there is a single conditioning matrix for all BVP
         # realizations
@@ -143,8 +166,8 @@ class LossFunction:
         
         # Instantiates the loss function class
 
-        self.loss_function_class = available_loss_classes["loss functi"+
-        "on name"](loss_function_dict)
+        self.loss_function_class = available_loss_classes[
+        loss_function_dict["loss function name"]](loss_function_dict)
 
     # Defines a function to broadcast a single conditioning matrix for
     # all realizations

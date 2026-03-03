@@ -14,10 +14,10 @@ class IdentityMultiple:
         # Verifies the keys of the dictionary of information for this
         # class
 
-        verify_obligatory_and_optional_keys(info_dictionary, [], {"mul"+
-        "tiple": {"type": float, "description": "Constant that multipl"+
-        "ies the identity matrix to build the conditioning matrix"}}, 
-        "info_dictionary", "IdentityMultiple")
+        verify_obligatory_and_optional_keys(info_dictionary, ["conditi"+
+        "oner name"], {"multiple": {"type": float, "description": "Con"+
+        "stant that multiplies the identity matrix to build the condit"+
+        "ioning matrix"}}, "info_dictionary", "IdentityMultiple")
 
         # Saves the code-given information
 

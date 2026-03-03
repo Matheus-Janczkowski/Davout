@@ -85,38 +85,25 @@ class TerminalColor:
 
 def progress_bar(iteration_set, message=None, colorful_bar=True):
 
+    # Instantiates the terminal color class
+
+    terminal_colors = TerminalColor()
+
     # If message is None, gets an empty string
 
     if message is None:
 
         message = ""
 
-    # Customizes the progress bar, ANSI color codes for the terminal 
+    # Creates the string for the custom bar using the terminal colors
+    # class
 
-    bold_light_blue = ""
-
-    bold_red = ""
-
-    reset = ""
-
-    # Verifies if color is desired and if the terminal allows it
-
-    if colorful_bar and hasattr(sys.stdout, "isatty") and (
-    sys.stdout.isatty()):
-
-        bold_light_blue = "\033[1m\033[94m"
+    custom_bar = ("{l_bar}{bar}| {n_fmt}/{total_fmt} ["+terminal_colors(
+    "Elapsed: {elapsed}", "bold light blue")+" | "+terminal_colors("Es"+
+    "timated time: {remaining}", "bold red")+"]")
     
-        bold_red = "\033[1m\033[91m" 
-        
-        reset = "\033[0m"
-
-    # Creates the string for the custom bar
-
-    custom_bar = ("{l_bar}{bar}| {n_fmt}/{total_fmt} ["+bold_light_blue+
-    "Elapsed: {elapsed}"+reset+" | "+bold_red+"Estimated time"+
-    ": {remaining}"+reset+"]")
-    
-    return tqdm(iteration_set, desc=message, bar_format=custom_bar) 
+    return tqdm(iteration_set, desc=terminal_colors(message, "green"), 
+    bar_format=custom_bar) 
 
 ########################################################################
 #               Handler and executioner of other scripts               #

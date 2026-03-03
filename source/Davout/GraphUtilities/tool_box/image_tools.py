@@ -76,9 +76,19 @@ input_path, verbose, depth_order):
 
         input_file_name = input_dictionary["file name"]
 
+        # Verifies if parent path is a key in the dictionary of input i-
+        # mages
+
+        if "parent path" in input_dictionary:
+
+            parent_path = input_dictionary["parent path"]
+
+            input_file_name = path_tools.verify_path(parent_path, 
+            input_file_name)
+
         # Adds the input path
 
-        if input_path is not None:
+        elif input_path is not None:
 
             input_file_name = path_tools.verify_path(input_path, 
             input_file_name)
