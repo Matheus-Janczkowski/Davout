@@ -66,7 +66,8 @@ aspect_ratio='auto', adjustable=None, layout_width_milimeters=210.0,
 layout_height_milimeters=297.0, add_overlaying_grid=False, tolerance=
 1E-1, grid_annotation_length=10, rule_fontsize=6, rule_number_offset=0.5,
 vanishing_points_list=None, save_lists_to_txt=True, interactive_preview=
-False, arrows_and_lines_file="arrows_and_lines_list", size_template=None):
+False, arrows_and_lines_file="arrows_and_lines_list", size_template=None,
+export_selection=None):
     
     # Initializes the class of colors, the class of alignments, and the 
     # class of line styles
@@ -113,6 +114,10 @@ False, arrows_and_lines_file="arrows_and_lines_list", size_template=None):
 
         layout_width_milimeters, layout_height_milimeters = sizes_class(
         size_template)
+
+    # Initializes the bounding box
+
+    bbox_inches = None
 
     # Initializes a flag to tell if the process of redrawing is to be
     # carried out iteratively
@@ -528,6 +533,13 @@ False, arrows_and_lines_file="arrows_and_lines_list", size_template=None):
                     0.1, depth_order, x_min, x_max, y_min, y_max, 
                     input_path, verbose=verbose)
 
+                # Verifies if an export selection is given
+
+                if export_selection is not None:
+
+                    bbox_inches = collage_classes.get_export_selection(
+                    export_selection, verbose=verbose)
+
                 # Saves the figure with this bounding box in inches
 
                 plt.savefig(output_file, bbox_inches=bbox_inches, 
@@ -643,7 +655,15 @@ False, arrows_and_lines_file="arrows_and_lines_list", size_template=None):
                 print("There is no bounding box to shrink and pad.\nSaves "+
                 "at "+str(output_file)+"\n")
 
-                plt.savefig(output_file, dpi=dpi)
+                # Verifies if an export selection is given
+
+                if export_selection is not None:
+
+                    bbox_inches = collage_classes.get_export_selection(
+                    export_selection, verbose=verbose)
+
+                plt.savefig(output_file, dpi=dpi, bbox_inches=
+                bbox_inches)
 
                 # Verifies if an interactive window is to be shown
 
@@ -744,7 +764,14 @@ False, arrows_and_lines_file="arrows_and_lines_list", size_template=None):
 
             print("Saves as it is at "+str(output_file)+"\n")
 
-            plt.savefig(output_file, dpi=dpi)
+            # Verifies if an export selection is given
+
+            if export_selection is not None:
+
+                bbox_inches = collage_classes.get_export_selection(
+                export_selection, verbose=verbose)
+
+            plt.savefig(output_file, dpi=dpi, bbox_inches=bbox_inches)
 
             # Verifies if an interactive window is to be shown
 

@@ -4,7 +4,11 @@ import numpy as np
 
 from matplotlib.patches import ArrowStyle
 
+from matplotlib.transforms import Bbox
+
 from matplotlib.path import Path
+
+from ...PythonicUtilities.dictionary_tools import verify_obligatory_and_optional_keys
 
 # Defines a class with colors
 
@@ -430,6 +434,110 @@ class ArrowHeadStyles:
             arrow_path = Path(vertices, codes)
 
             return arrow_path, True
+        
+########################################################################
+#                             Bounding box                             #
+########################################################################
+
+# Defines a function to get a export selection and transform it into a
+# bounding box
+
+def get_export_selection(export_selection, verbose=False):
+
+    # Verifies if export_selection is a dictionary and the keys
+
+    verify_obligatory_and_optional_keys(export_selection, {"origin poi"+
+    "nt": {"type": str, "description": "alignment of the selection box"+
+    " with respect to the 'position' vector. It can be either 'top-lef"+
+    "t', 'top-right', 'bottom-right', or 'bottom-left'"}, "position": {
+    "type": list, "description": "list with two components [x, y] in m"+
+    "ilimeters, that tells the position of the corner that sets the al"+
+    "ignment from"}, "width": {"type": float, "description": "width of"+
+    " the selection box in milimeters"}, "height": {"type": float, "de"+
+    "scription": "height of the selection box in milimeters"}}, {}, "e"+
+    "xport_selection", "create_box_collage")
+
+    # Gets the alignment and the measurements
+
+    alignment = export_selection["origin point"]
+
+    position = export_selection["position"]
+
+    width = export_selection["width"]
+
+    height = export_selection["height"]
+
+    # Initializes the bounding box bounds
+
+    x_min = None 
+
+    x_max = None 
+
+    y_min = None 
+
+    y_max = None
+
+    # Computes the bounds for each alignment case
+
+    if alignment=="bottom-right":
+
+        x_min = position[0]-width
+        
+        y_min = position[1]
+        
+        x_max = position[0]
+        
+        y_max = position[1]+height
+
+    elif alignment=="top-right":
+
+        x_min = position[0]-width
+        
+        y_min = position[1]-height
+        
+        x_max = position[0]
+        
+        y_max = position[1]
+
+    elif alignment=="top-left":
+
+        x_min = position[0]
+        
+        y_min = position[1]-height
+        
+        x_max = position[0]+width
+        
+        y_max = position[1]
+
+    elif alignment=="bottom-left":
+
+        x_min = position[0]
+        
+        y_min = position[1]
+        
+        x_max = position[0]+width
+        
+        y_max = position[1]+height
+
+    else:
+
+        raise NameError("'origin-point' in 'export_selection' at 'crea"+
+        "te_box_collage' is '"+str(alignment)+"'. But it can be only o"+
+        "ne of the following options:\n'top-left'\n'top-right'\n'botto"+
+        "m-right'\n'bottom-left'")
+    
+    if verbose:
+    
+        print("\nCreates a bounding box from an export selection. The "+
+        "bounds are:\n"+str(x_min)+" <= x <= "+str(x_max)+"\n"+str(y_min
+        )+" <= y <= "+str(y_max))
+
+    # Makes the bounding box in inches
+
+    factor = 1/25.4
+
+    return Bbox.from_extents(x_min*factor, y_min*factor, x_max*factor, 
+    y_max*factor)
 
 ########################################################################
 #                              Utilities                               #

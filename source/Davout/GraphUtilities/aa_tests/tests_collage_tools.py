@@ -77,7 +77,9 @@ class TestCollage():
 
         verbose=True, no_padding=True, add_overlaying_grid=True, dpi=500,
         grid_annotation_length=10, save_lists_to_txt=True, 
-        interactive_preview=True, size_template="A4")
+        interactive_preview=True, size_template="A4", export_selection={
+        "origin point": "bottom-left", "position": [42.0, 191.0], "wid"+
+        "th": 123.0, "height": 63.0})
 
 # Runs all tests
 
