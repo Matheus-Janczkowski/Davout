@@ -6,9 +6,7 @@ from matplotlib.patches import ArrowStyle
 
 from matplotlib.transforms import Bbox
 
-from matplotlib.path import Path
-
-from pathlib import Path as Pathlib
+from pathlib import Path as Path
 
 from importlib import util
 
@@ -20,7 +18,7 @@ import sys
 
 # Gets the parent paths of the current 
 
-broken_path = Pathlib(__file__).parents
+broken_path = Path(__file__).parents
 
 # Imports path tools
 
@@ -32,6 +30,8 @@ dictionary_tools = util.module_from_spec(specifications)
 sys.modules["dictionary_tools"] = dictionary_tools
 
 specifications.loader.exec_module(dictionary_tools)
+
+from matplotlib.path import Path
 
 # Defines a class with colors
 
