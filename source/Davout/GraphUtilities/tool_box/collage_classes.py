@@ -8,7 +8,30 @@ from matplotlib.transforms import Bbox
 
 from matplotlib.path import Path
 
-from ...PythonicUtilities.dictionary_tools import verify_obligatory_and_optional_keys
+from pathlib import Path as Pathlib
+
+from importlib import util
+
+import sys
+
+########################################################################
+#                           Imports preamble                           #
+########################################################################
+
+# Gets the parent paths of the current 
+
+broken_path = Pathlib(__file__).parents
+
+# Imports path tools
+
+specifications = util.spec_from_file_location("dictionary_tools", 
+broken_path[2]/"PythonicUtilities"/"dictionary_tools.py")
+
+dictionary_tools = util.module_from_spec(specifications)
+
+sys.modules["dictionary_tools"] = dictionary_tools
+
+specifications.loader.exec_module(dictionary_tools)
 
 # Defines a class with colors
 
@@ -446,7 +469,7 @@ def get_export_selection(export_selection, verbose=False):
 
     # Verifies if export_selection is a dictionary and the keys
 
-    verify_obligatory_and_optional_keys(export_selection, {"origin poi"+
+    dictionary_tools.verify_obligatory_and_optional_keys(export_selection, {"origin poi"+
     "nt": {"type": str, "description": "alignment of the selection box"+
     " with respect to the 'position' vector. It can be either 'top-lef"+
     "t', 'top-right', 'bottom-right', or 'bottom-left'"}, "position": {
