@@ -64,6 +64,58 @@ class ColorMiscellany:
             raise ValueError("'"+str(key)+"' is not a key of the dicti"+
             "onary of colors nor is a list with RGB values (3 componen"+
             "ts). Check the valid color names:"+available_colors)
+
+# Defines a class with ready-to-use layout sizes
+
+class TemplateSizes:
+
+    def __init__(self):
+
+        # Sets names as keys and values as lists of width and height in 
+        # milimeters
+    
+        self.sizes_dictionary = {"A4": [210.0, 297.0], "beamer full sl"+
+        "ide": [128.0, 96.0], "beamer slide with logo": [76.0, 54.0], 
+        "beamer slide without logo": [76.0, 67.0]}
+
+    # Defines a function to get the color
+
+    def __call__(self, key):
+        
+        # Verifies if it is one of the keys
+
+        if key in self.sizes_dictionary:
+
+            return self.sizes_dictionary[key]
+        
+        # Otherwise, verifies if it is a list
+
+        elif isinstance(key, list):
+
+            # Verifies if it has 2 elements
+
+            if len(key)!=2:
+
+                raise IndexError("'"+str(key)+"' does not have 2 eleme"+
+                "nts. It must have 2 values only to select the layout "+
+                "dimensions---width and height")
+            
+            return key 
+        
+        # Otherwise, throws an error
+
+        else:
+
+            available_sizes = ""
+
+            for size in self.sizes_dictionary:
+
+                available_sizes += "\n'"+str(size)+"'"
+
+            raise ValueError("'"+str(key)+"' is not a key of the dicti"+
+            "onary of sizes nor is a list with layout sizes (2 compone"+
+            "nts---width and height). Check the valid size names:"+
+            available_sizes)
         
 # Defines a class to store alignment options
 

@@ -113,9 +113,14 @@ True):
 
     if not isinstance(dictionary, dict):
 
+        # Gets a string with the list of obligatory and optional keys
+
+        available_keys = list_keys(obligatory_keys, optional_keys)
+
         raise TypeError("'"+str(dictionary_variable_name)+"' in '"+str(
         location)+"' must be a dictionary. Currently it is:\n"+str(
-        dictionary)+"\nwhose type is: "+str(type(dictionary)))
+        dictionary)+"\nwhose type is: "+str(type(dictionary))+"\nThis "+
+        "dictionary must have the following keys:"+available_keys)
     
     # Initializes a set of inspected keys
 

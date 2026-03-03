@@ -66,7 +66,7 @@ aspect_ratio='auto', adjustable=None, layout_width_milimeters=210.0,
 layout_height_milimeters=297.0, add_overlaying_grid=False, tolerance=
 1E-1, grid_annotation_length=10, rule_fontsize=6, rule_number_offset=0.5,
 vanishing_points_list=None, save_lists_to_txt=True, interactive_preview=
-False, arrows_and_lines_file="arrows_and_lines_list"):
+False, arrows_and_lines_file="arrows_and_lines_list", size_template=None):
     
     # Initializes the class of colors, the class of alignments, and the 
     # class of line styles
@@ -100,6 +100,19 @@ False, arrows_and_lines_file="arrows_and_lines_list"):
     # Initializes a counter of how many times the canvas has been redrawn
 
     redrawing_counter = 0
+
+    # Checks if the size template has been given
+
+    if size_template is not None:
+
+        # Intantiates the size class
+
+        sizes_class = collage_classes.TemplateSizes()
+
+        # Gets the layout sizes
+
+        layout_width_milimeters, layout_height_milimeters = sizes_class(
+        size_template)
 
     # Initializes a flag to tell if the process of redrawing is to be
     # carried out iteratively
@@ -472,6 +485,9 @@ False, arrows_and_lines_file="arrows_and_lines_list"):
                         
                         general_axes.text(x, y_min-rule_number_offset, f"{x}", 
                         ha='right', va='top', fontsize=rule_fontsize)
+                        
+                        general_axes.text(x, y_max+rule_number_offset, f"{x}", 
+                        ha='right', va='bottom', fontsize=rule_fontsize)
 
                     # Adds the y ticks
 
@@ -482,6 +498,10 @@ False, arrows_and_lines_file="arrows_and_lines_list"):
                         
                         general_axes.text(x_min-rule_number_offset, y, f"{y}", 
                         ha='right', va='top', fontsize=rule_fontsize)
+                    
+                        general_axes.text(x_max+rule_number_offset, y, 
+                        f"{y}", ha='left', va='top', fontsize=
+                        rule_fontsize)
 
                     # Updates the bounding box to include the numbers
 
@@ -491,8 +511,9 @@ False, arrows_and_lines_file="arrows_and_lines_list"):
                     factor = 1/25.4
 
                     bbox_inches = Bbox.from_extents((x_min-(extension_length
-                    *2))*factor, (y_min-extension_length)*factor, x_max*
-                    factor, y_max*factor)
+                    *2))*factor, (y_min-extension_length)*factor, (x_max
+                    +(2*extension_length))*factor, (y_max+
+                    extension_length)*factor)
 
                 # Verifies if a list of vanishing points has been given to 
                 # construct perspective lines
@@ -569,8 +590,12 @@ False, arrows_and_lines_file="arrows_and_lines_list"):
                     grid_annotation_length)*grid_annotation_length)+1, 
                     grid_annotation_length):
                         
-                        general_axes.text(x, min(y_min+rule_number_offset,
-                        y_max), f"{x}", ha='right', va='top', fontsize=
+                        general_axes.text(x, y_min-rule_number_offset, 
+                        f"{x}", ha='right', va='top', fontsize=
+                        rule_fontsize)
+                        
+                        general_axes.text(x, y_max+rule_number_offset, 
+                        f"{x}", ha='right', va='bottom', fontsize=
                         rule_fontsize)
 
                     # Adds the y ticks
@@ -580,9 +605,25 @@ False, arrows_and_lines_file="arrows_and_lines_list"):
                     grid_annotation_length)*grid_annotation_length)+1, 
                     grid_annotation_length):
                         
-                        general_axes.text(min(x_min+rule_number_offset, x_max
-                        ), y, f"{y}", ha='right', va='top', fontsize=
+                        general_axes.text(x_min-rule_number_offset, y, 
+                        f"{y}", ha='right', va='top', fontsize=
                         rule_fontsize)
+                    
+                        general_axes.text(x_max+rule_number_offset, y, 
+                        f"{y}", ha='left', va='top', fontsize=
+                        rule_fontsize)
+
+                    # Updates the bounding box to include the numbers
+
+                    extension_length = (collage_classes.points_to_milimeters(
+                    rule_fontsize)+rule_number_offset)
+
+                    factor = 1/25.4
+
+                    bbox_inches = Bbox.from_extents((x_min-(extension_length
+                    *2))*factor, (y_min-extension_length)*factor, (x_max
+                    +(extension_length*2))*factor, (y_max+
+                    extension_length)*factor)
 
                 # Verifies if a list of vanishing points has been given to 
                 # construct perspective lines
@@ -654,8 +695,11 @@ False, arrows_and_lines_file="arrows_and_lines_list"):
                 grid_annotation_length)*grid_annotation_length)+1, 
                 grid_annotation_length):
                     
-                    general_axes.text(x, min(y_min+rule_number_offset, y_max
-                    ), f"{x}", ha='right', va='top', fontsize=rule_fontsize)
+                    general_axes.text(x, y_min-rule_number_offset, 
+                    f"{x}", ha='right', va='top', fontsize=rule_fontsize)
+                        
+                    general_axes.text(x, y_max+rule_number_offset, f"{x}", 
+                    ha='right', va='bottom', fontsize=rule_fontsize)
 
                 # Adds the y ticks
 
@@ -664,9 +708,25 @@ False, arrows_and_lines_file="arrows_and_lines_list"):
                 grid_annotation_length)*grid_annotation_length)+1, 
                 grid_annotation_length):
                     
-                    general_axes.text(min(x_min+(2*rule_number_offset), 
-                    x_max), y, f"{y}", ha='right', va='top', fontsize=
+                    general_axes.text(x_min-rule_number_offset, y, 
+                    f"{y}", ha='right', va='top', fontsize=
                     rule_fontsize)
+                    
+                    general_axes.text(x_max+rule_number_offset, y, 
+                    f"{y}", ha='left', va='top', fontsize=
+                    rule_fontsize)
+
+                # Updates the bounding box to include the numbers
+
+                extension_length = (collage_classes.points_to_milimeters(
+                rule_fontsize)+rule_number_offset)
+
+                factor = 1/25.4
+
+                bbox_inches = Bbox.from_extents((x_min-(extension_length
+                *2))*factor, (y_min-extension_length)*factor, (x_max
+                +(extension_length*2))*factor, (y_max+extension_length)*
+                factor)
 
             # Verifies if a list of vanishing points has been given to cons-
             # truct perspective lines
