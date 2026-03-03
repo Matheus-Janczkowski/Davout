@@ -67,7 +67,7 @@ color_barIntegerTicks=False, color_barNumberOfTicks=5,
 color_barIncludeMinMaxTicks=False, x_ticksLabels=None, y_ticksLabels=
 None, ticks_fontsize=12, label_fontsize=14, legend_fontsize=12,
 highlight_pointsColors='black', parent_path=None, error_bar=None, 
-plot_object=None, verbose=False):
+plot_object=None, verbose=False, latex_package="amsmath"):
     
     """
     You can provide an array of data, where the first column will be in
@@ -399,10 +399,11 @@ plot_object=None, verbose=False):
 
     # Sets the graph to be plotted in LaTeX style
 
-    #plt.rcParams.update({"text.usetex": True, "font.family": "serif",
-    #"font.serif": ["Computer Modern Roman"], "axes.labelsize": 14, "fo"+
-    #"nt.size": 14, "legend.fontsize": 12, "xtick.labelsize": 12, "ytic"+
-    #"k.labelsize": 12, "text.latex.preamble": r"\usepackage{amsmath}"})
+    plt.rcParams.update({"text.usetex": True, "font.family": "serif",
+    "font.serif": ["Computer Modern Roman"], "axes.labelsize": 14, "fo"+
+    "nt.size": 14, "legend.fontsize": 12, "xtick.labelsize": 12, "ytic"+
+    "k.labelsize": 12, "text.latex.preamble": r"\usepackage{"+str(
+    latex_package)+"}"})
 
     # Gets the color map
 
