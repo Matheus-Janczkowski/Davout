@@ -6,6 +6,8 @@ from copy import deepcopy
 
 from scipy import stats
 
+import matplotlib
+
 import matplotlib.pyplot as plt
 
 import matplotlib.colors as plt_colors
@@ -19,6 +21,34 @@ from ..PythonicUtilities import path_tools
 from ..PythonicUtilities import programming_tools
 
 from ..PythonicUtilities import string_tools
+
+########################################################################
+#                            LaTeX preamble                            #
+########################################################################
+
+from pathlib import Path as PathPathlib
+
+import os
+
+# Gets the parent paths of the current file
+
+broken_path = PathPathlib(__file__).parents
+
+# Gets the path to LaTeXUtilities.sty
+
+latex_utilities_path = broken_path[1]/"LaTeXUtilities"
+
+# Adds this path to the system
+
+os.environ["TEXINPUTS"] = (str(latex_utilities_path)+os.sep+os.pathsep+
+os.environ.get("TEXINPUTS", ""))
+
+# Sets LaTeX font and the latex utilities
+
+matplotlib.rcParams.update({"text.usetex": True, "font.family": "serif",
+"font.serif": ["Computer Modern Roman"], "axes.labelsize": 14, "fo"+
+"nt.size": 14, "legend.fontsize": 12, "xtick.labelsize": 12, "ytic"+
+"k.labelsize": 12, "text.latex.preamble": r"\usepackage{LaTeXUtilities}"})
 
 ########################################################################
 #                          Bidimensional plots                         #
@@ -369,10 +399,10 @@ plot_object=None, verbose=False):
 
     # Sets the graph to be plotted in LaTeX style
 
-    plt.rcParams.update({"text.usetex": True, "font.family": "serif",
-    "font.serif": ["Computer Modern Roman"], "axes.labelsize": 14, "fo"+
-    "nt.size": 14, "legend.fontsize": 12, "xtick.labelsize": 12, "ytic"+
-    "k.labelsize": 12, "text.latex.preamble": r"\usepackage{amsmath}"})
+    #plt.rcParams.update({"text.usetex": True, "font.family": "serif",
+    #"font.serif": ["Computer Modern Roman"], "axes.labelsize": 14, "fo"+
+    #"nt.size": 14, "legend.fontsize": 12, "xtick.labelsize": 12, "ytic"+
+    #"k.labelsize": 12, "text.latex.preamble": r"\usepackage{amsmath}"})
 
     # Gets the color map
 
