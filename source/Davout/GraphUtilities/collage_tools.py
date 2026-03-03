@@ -14,6 +14,8 @@ from matplotlib.transforms import Bbox
 
 from ..PythonicUtilities import path_tools
 
+from ..PythonicUtilities.programming_tools import progress_bar
+
 from ..PythonicUtilities.file_handling_tools import txt_toList, list_toTxt
 
 from .tool_box import collage_classes
@@ -483,10 +485,11 @@ export_selection=None):
 
                     # Adds the x ticks
 
-                    for x in range(int(np.floor(x_min/grid_annotation_length
-                    )*grid_annotation_length), int(np.ceil(x_max/
-                    grid_annotation_length)*grid_annotation_length)+1, 
-                    grid_annotation_length):
+                    for x in progress_bar(range(int(np.floor(x_min/
+                    grid_annotation_length)*grid_annotation_length), int(
+                    np.ceil(x_max/grid_annotation_length)*
+                    grid_annotation_length)+1, grid_annotation_length), 
+                    message="Generating ticks in the X ruler"):
                         
                         general_axes.text(x, y_min-rule_number_offset, f"{x}", 
                         ha='right', va='top', fontsize=rule_fontsize)
@@ -496,10 +499,11 @@ export_selection=None):
 
                     # Adds the y ticks
 
-                    for y in range(int(np.floor(y_min/grid_annotation_length
-                    )*grid_annotation_length), int(np.ceil(y_max/
-                    grid_annotation_length)*grid_annotation_length)+1, 
-                    grid_annotation_length):
+                    for y in progress_bar(range(int(np.floor(y_min/
+                    grid_annotation_length)*grid_annotation_length), int(
+                    np.ceil(y_max/grid_annotation_length)*
+                    grid_annotation_length)+1, grid_annotation_length), 
+                    message="Generating ticks in the Y ruler"):
                         
                         general_axes.text(x_min-rule_number_offset, y, f"{y}", 
                         ha='right', va='top', fontsize=rule_fontsize)
@@ -597,10 +601,11 @@ export_selection=None):
 
                     # Adds the x ticks
 
-                    for x in range(int(np.floor(x_min/grid_annotation_length
-                    )*grid_annotation_length), int(np.ceil(x_max/
-                    grid_annotation_length)*grid_annotation_length)+1, 
-                    grid_annotation_length):
+                    for x in progress_bar(range(int(np.floor(x_min/
+                    grid_annotation_length)*grid_annotation_length), int(
+                    np.ceil(x_max/grid_annotation_length)*
+                    grid_annotation_length)+1, grid_annotation_length), 
+                    message="Generating ticks in the X ruler"):
                         
                         general_axes.text(x, y_min-rule_number_offset, 
                         f"{x}", ha='right', va='top', fontsize=
@@ -612,10 +617,11 @@ export_selection=None):
 
                     # Adds the y ticks
 
-                    for y in range(int(np.floor(y_min/grid_annotation_length
-                    )*grid_annotation_length), int(np.ceil(y_max/
-                    grid_annotation_length)*grid_annotation_length)+1, 
-                    grid_annotation_length):
+                    for y in progress_bar(range(int(np.floor(y_min/
+                    grid_annotation_length)*grid_annotation_length), int(
+                    np.ceil(y_max/grid_annotation_length)*
+                    grid_annotation_length)+1, grid_annotation_length), 
+                    message="Generating ticks in the Y ruler"):
                         
                         general_axes.text(x_min-rule_number_offset, y, 
                         f"{y}", ha='right', va='top', fontsize=
@@ -710,10 +716,11 @@ export_selection=None):
 
                 # Adds the x ticks
 
-                for x in range(int(np.floor(x_min/grid_annotation_length)*
-                grid_annotation_length), int(np.ceil(x_max/
-                grid_annotation_length)*grid_annotation_length)+1, 
-                grid_annotation_length):
+                for x in progress_bar(range(int(np.floor(x_min/
+                grid_annotation_length)*grid_annotation_length), int(
+                np.ceil(x_max/grid_annotation_length)*
+                grid_annotation_length)+1, grid_annotation_length), 
+                message="Generating ticks in the X ruler"):
                     
                     general_axes.text(x, y_min-rule_number_offset, 
                     f"{x}", ha='right', va='top', fontsize=rule_fontsize)
@@ -723,10 +730,11 @@ export_selection=None):
 
                 # Adds the y ticks
 
-                for y in range(int(np.floor(y_min/grid_annotation_length)*
-                grid_annotation_length), int(np.ceil(y_max/
-                grid_annotation_length)*grid_annotation_length)+1, 
-                grid_annotation_length):
+                for y in progress_bar(range(int(np.floor(y_min/
+                grid_annotation_length)*grid_annotation_length), int(
+                np.ceil(y_max/grid_annotation_length)*
+                grid_annotation_length)+1, grid_annotation_length), 
+                message="Generating ticks in the Y ruler"):
                     
                     general_axes.text(x_min-rule_number_offset, y, 
                     f"{y}", ha='right', va='top', fontsize=
