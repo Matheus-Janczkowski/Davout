@@ -4,6 +4,8 @@ import numpy as np
 
 from copy import deepcopy
 
+from time import time
+
 import matplotlib
 
 import matplotlib.pyplot as plt
@@ -544,7 +546,13 @@ export_selection=None, image_interpolation=None):
                     bbox_inches = collage_classes.get_export_selection(
                     export_selection, verbose=verbose)
 
+                if verbose:
+
+                    print("\nStarts to save the file")
+
                 # Saves the figure with this bounding box in inches
+
+                saving_time = time()
 
                 plt.savefig(output_file, bbox_inches=bbox_inches, 
                 pad_inches=0, dpi=dpi)
@@ -552,7 +560,8 @@ export_selection=None, image_interpolation=None):
                 if verbose:
 
                     print("Finishes saving the figure at "+str(
-                    output_file)+"\n")
+                    output_file)+"\nSaving took "+str(time()-saving_time
+                    )+" seconds\n")
 
                 # Verifies if an interactive window is to be shown
 
@@ -668,8 +677,20 @@ export_selection=None, image_interpolation=None):
                     bbox_inches = collage_classes.get_export_selection(
                     export_selection, verbose=verbose)
 
+                if verbose:
+
+                    print("\nStarts to save the file")
+
+                saving_time = time()
+
                 plt.savefig(output_file, dpi=dpi, bbox_inches=
                 bbox_inches)
+
+                if verbose:
+
+                    print("Finishes saving the figure at "+str(
+                    output_file)+"\nSaving took "+str(time()-saving_time
+                    )+" seconds\n")
 
                 # Verifies if an interactive window is to be shown
 
@@ -779,7 +800,18 @@ export_selection=None, image_interpolation=None):
                 bbox_inches = collage_classes.get_export_selection(
                 export_selection, verbose=verbose)
 
+            if verbose:
+
+                print("\nStarts to save the file")
+
+            saving_time = time()
+
             plt.savefig(output_file, dpi=dpi, bbox_inches=bbox_inches)
+
+            if verbose:
+
+                print("Finishes saving the figure at "+str(output_file)+
+                "\nSaving took "+str(time()-saving_time)+" seconds\n")
 
             # Verifies if an interactive window is to be shown
 
