@@ -73,7 +73,7 @@ layout_height_milimeters=297.0, add_overlaying_grid=False, tolerance=
 1E-1, grid_annotation_length=10, rule_fontsize=6, rule_number_offset=0.5,
 vanishing_points_list=None, save_lists_to_txt=True, interactive_preview=
 False, arrows_and_lines_file="arrows_and_lines_list", size_template=None,
-export_selection=None, image_interpolation=None, backend="agg", 
+export_selection=None, image_interpolation=None, backend=None, 
 compress_level=None):
     
     # Initializes the class of colors, the class of alignments, and the 
@@ -551,7 +551,7 @@ compress_level=None):
 
                 save_plot(output_file, dpi, backend, bbox_inches=
                 bbox_inches, verbose=verbose, pad_inches=0, 
-                compress_level=compress_level)
+                compress_level=compress_level, figure=collage)
 
                 # Verifies if an interactive window is to be shown
 
@@ -669,7 +669,7 @@ compress_level=None):
 
                 save_plot(output_file, dpi, backend, bbox_inches=
                 bbox_inches, verbose=verbose, compress_level=
-                compress_level)
+                compress_level, figure=collage)
 
                 # Verifies if an interactive window is to be shown
 
@@ -780,7 +780,8 @@ compress_level=None):
                 export_selection, verbose=verbose)
 
             save_plot(output_file, dpi, backend, bbox_inches=bbox_inches,
-            verbose=verbose, compress_level=compress_level)
+            verbose=verbose, compress_level=compress_level, figure=
+            collage)
 
             # Verifies if an interactive window is to be shown
 
@@ -807,7 +808,7 @@ compress_level=None):
 # Defines a function to save the picture
 
 def save_plot(output_file, dpi, backend, bbox_inches=None, pad_inches=
-0.1, verbose=False, compress_level=None):
+0.1, verbose=False, compress_level=None, figure=None):
 
     if verbose:
 
