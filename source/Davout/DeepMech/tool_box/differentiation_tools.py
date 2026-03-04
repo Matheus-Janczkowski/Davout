@@ -105,56 +105,78 @@ class ScalarGradientWrtTrainableParamsGivenParameters:
             self.scalar_function.prepare_custom_gradient(self.model,
             self.input_tensor)
 
+            # Sets the gradient helper to the one appropriate for custom
+            # gradient implementation
+
+            self.gradient_helper = self.custom_gradient_helper
+
+        else:
+
+            # Sets the gradient helper to the one appropriate for native
+            # automatic differentiation
+
+            self.gradient_helper = self.native_gradient_helper
+
+        # Sets the class to evaluate the model output given the traina-
+        # ble parameters
+
+        self.model_output_given_parameters = parameters_tools.ModelOutputGivenTrainableParameters(
+        model, self.shapes_trainable_parameters)
+
+    # Defines a helper function to get the gradient given a custom im-
+    # plementation
+
+    @tf.function
+    def custom_gradient_helper(self, trainable_parameters):
+
+        # Gets the response of the model
+
+        y = self.model_output_given_parameters(self.input_tensor, 
+        trainable_parameters)
+
+        return self.scalar_function.custom_gradient(
+        self.model_true_values, y, trainable_parameters)
+
+    # Defines a helper function to get the gradient using native automa-
+    # tic differentiation
+
+    @tf.function
+    def native_gradient_helper(self, trainable_parameters):
+
+        # Creates the tape
+
+        with tf.GradientTape() as tape:
+
+            tape.watch(trainable_parameters)
+
+            # Gets the response of the model
+
+            y = self.model_output_given_parameters(self.input_tensor, 
+            trainable_parameters)
+
+            phi = self.scalar_function(self.model_true_values, y)
+
+        # Gets the gradient
+
+        return tape.gradient(phi, trainable_parameters)
+
     # Defines a function to actually evaluate the derivative
 
     @tf.function
     def __call__(self, trainable_parameters):
 
-        # Uses the custom implementation of the gradient defined inside
-        # the class of the loss function
+        # Calls the gradient helper
 
-        if self.custom_gradient:
-
-            # Gets the response of the model
-
-            y = parameters_tools.model_output_given_trainable_parameters(
-            self.input_tensor, self.model, trainable_parameters, 
-            self.shapes_trainable_parameters)
-
-            return self.scalar_function.custom_gradient(
-            self.model_true_values, y, trainable_parameters)
-
-        # Otherwise, uses automatic differentiation
-
-        else:
-
-            # Creates the tape
-
-            with tf.GradientTape() as tape:
-
-                tape.watch(trainable_parameters)
-
-                # Gets the response of the model
-
-                y = parameters_tools.model_output_given_trainable_parameters(
-                self.input_tensor, self.model, trainable_parameters, 
-                self.shapes_trainable_parameters)
-
-                phi = self.scalar_function(self.model_true_values, y)
-
-            # Gets the gradient
-
-            return tape.gradient(phi, trainable_parameters)
+        return self.gradient_helper(trainable_parameters)
         
     # Defines a function to evaluate the loss function
 
     def evaluate_scalar_function(self, trainable_parameters):
 
         # Gets the response of the model
-
-        y = parameters_tools.model_output_given_trainable_parameters(
-        self.input_tensor, self.model, trainable_parameters, 
-        self.shapes_trainable_parameters)
+        
+        y = self.model_output_given_parameters(self.input_tensor, 
+        trainable_parameters)
 
         # Gets the scalar function value and returns it
 
@@ -230,6 +252,18 @@ class ScalarGradientWrtTrainableParamsGivenParametersConvexModel:
             self.scalar_function.prepare_custom_gradient(self.model,
             self.input_tensor)
 
+            # Sets the gradient helper to the one appropriate for custom
+            # gradient implementation
+
+            self.gradient_helper = self.custom_gradient_helper
+
+        else:
+
+            # Sets the gradient helper to the one appropriate for native
+            # automatic differentiation
+
+            self.gradient_helper = self.native_gradient_helper
+
         # Verifies if the type of the parameters is different to the ty-
         # pe of the input tensor
 
@@ -239,59 +273,73 @@ class ScalarGradientWrtTrainableParamsGivenParametersConvexModel:
             self.input_tensor.dtype)+", is different to the type of th"+
             "e trainable parameters, "+str(parameters_type))
 
+        # Sets the class to evaluate the model output given the traina-
+        # ble parameters
+
+        self.model_output_given_parameters = parameters_tools.ModelOutputGivenTrainableParameters(
+        model, self.shapes_trainable_parameters)
+
+    # Defines a helper function to get the gradient given a custom im-
+    # plementation
+
+    @tf.function
+    def custom_gradient_helper(self, trainable_parameters):
+
+        # Gets the response of the model
+
+        """y = parameters_tools.model_output_given_trainable_parameters(
+        self.input_tensor, self.model, trainable_parameters, 
+        self.shapes_trainable_parameters, regularizing_function=
+        self.regularizing_function)"""
+
+        # Gets the response of the model
+        
+        y = self.model_output_given_parameters(self.input_tensor, 
+        trainable_parameters)
+
+        return self.scalar_function.custom_gradient(
+        self.model_true_values, y, trainable_parameters)
+
+    # Defines a helper function to get the gradient using native automa-
+    # tic differentiation
+
+    @tf.function
+    def native_gradient_helper(self, trainable_parameters):
+
+        # Creates the tape
+
+        with tf.GradientTape() as tape:
+
+            tape.watch(trainable_parameters)
+
+            # Gets the response of the model
+            
+            y = self.model_output_given_parameters(self.input_tensor, 
+            trainable_parameters)
+
+            phi = self.scalar_function(self.model_true_values, y)
+
+        # Gets the gradient
+
+        return tape.gradient(phi, trainable_parameters)
+
     # Defines a function to actually evaluate the derivative
 
     @tf.function
     def __call__(self, trainable_parameters):
 
-        # Uses the custom implementation of the gradient defined inside
-        # the class of the loss function
+        # Calls the gradient helper
 
-        if self.custom_gradient:
-
-            # Gets the response of the model
-
-            y = parameters_tools.model_output_given_trainable_parameters(
-            self.input_tensor, self.model, trainable_parameters, 
-            self.shapes_trainable_parameters, regularizing_function=
-            self.regularizing_function)
-
-            return self.scalar_function.custom_gradient(
-            self.model_true_values, y, trainable_parameters)
-
-        # Otherwise, uses automatic differentiation
-
-        else:
-
-            # Creates the tape
-
-            with tf.GradientTape() as tape:
-
-                tape.watch(trainable_parameters)
-
-                # Gets the response of the model
-
-                y = parameters_tools.model_output_given_trainable_parameters(
-                self.input_tensor, self.model, trainable_parameters, 
-                self.shapes_trainable_parameters, regularizing_function=
-                self.regularizing_function)
-
-                phi = self.scalar_function(self.model_true_values, y)
-
-            # Gets the gradient
-
-            return tape.gradient(phi, trainable_parameters)
+        return self.gradient_helper(trainable_parameters)
         
     # Defines a function to evaluate the loss function
 
     def evaluate_scalar_function(self, trainable_parameters):
 
         # Gets the response of the model
-
-        y = parameters_tools.model_output_given_trainable_parameters(
-        self.input_tensor, self.model, trainable_parameters, 
-        self.shapes_trainable_parameters, regularizing_function=
-        self.regularizing_function)
+        
+        y = self.model_output_given_parameters(self.input_tensor, 
+        trainable_parameters)
 
         # Gets the scalar function value and returns it
 

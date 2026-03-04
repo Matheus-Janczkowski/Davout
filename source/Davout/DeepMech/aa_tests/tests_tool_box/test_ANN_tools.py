@@ -12,6 +12,8 @@ import numpy as np
 
 from ...tool_box import ANN_tools
 
+from ...tool_box.custom_activation_functions import CustomActivationFunctions
+
 from ...tool_box import training_tools
 
 from ...tool_box import differentiation_tools as diff_tools
@@ -22,7 +24,7 @@ from ...tool_box import loss_tools
 
 from ...tool_box import loss_assembler_classes as loss_assemblers
 
-from ....PythonicUtilities import file_handling_tools
+from ....PythonicUtilities.path_tools import get_parent_path_of_file
 
 # Defines a function to test the ANN tools methods
 
@@ -143,11 +145,13 @@ class TestANNTools(unittest.TestCase):
 
         activation_dict = {"relu": 2, "sigmoid": 3}
 
+        custom_activation_class = CustomActivationFunctions()
+
         live_activations, *_ = ANN_tools.verify_activationDict(
-        activation_dict, 0, dict(), False)
+        activation_dict, 0, dict(), False, custom_activation_class)
 
         mixed_layer = ANN_tools.MixedActivationLayer(activation_dict,
-        live_activationsDict=live_activations)
+        custom_activation_class, live_activationsDict=live_activations)
 
         output_direct = mixed_layer(self.input_tensor)
 
@@ -189,9 +193,8 @@ class TestANNTools(unittest.TestCase):
 
         model = ANN_tools.MultiLayerModel(2, config)()
 
-        model_path = os.path.join(file_handling_tools.get_parent_path_of_file(
-        file=__file__), "mixed_activation_mo"+
-        "del.keras")
+        model_path = os.path.join(get_parent_path_of_file(file=__file__), 
+        "mixed_activation_model.keras")
 
         print(model_path)
 

@@ -190,6 +190,7 @@ def model_parameters_to_flat_tensor_and_shapes(model):
 # Defines a function to get the flat tensor of parameters back to the
 # tensors of parameters
 
+@tf.function
 def unflatten_parameters(flat_parameters, shapes):
 
     # Initializes the tensors list and the index
@@ -223,6 +224,7 @@ def unflatten_parameters(flat_parameters, shapes):
 # tensors of parameters and regularizes each weight using the regulari-
 # zation function
 
+@tf.function
 def unflatten_regularize_parameters(flat_parameters, shapes, 
 regularization_function):
 
@@ -270,69 +272,134 @@ regularization_function):
 #             Call with parameters method for custom layers            #
 ########################################################################
 
-# Defines a function to compute the output of a NN model given the para-
-# meters (weights and biases) as input. The regularizing function modu-
-# lates the weights and biases, one example is with convex-input neural
+# Defines a class to compute the output of a NN model given the parame-
+# ters (weights and biases) as input. The regularizing function modula-
+# tes the weights and biases, one example is with convex-input neural
 # networks, where the weights must be positive
 
-def model_output_given_trainable_parameters(input_variables, model,
-model_parameters, parameters_shapes, regularizing_function=None):
-    
-    # Gets the parameters from a 1D tensor to the conventional tensor 
-    # format for building models
+class ModelOutputGivenTrainableParameters:
 
-    if regularizing_function is None:
-    
-        parameters = unflatten_parameters(model_parameters, 
-        parameters_shapes)
+    def __init__(self, model, parameters_shapes, regularizing_function=
+    None):
 
-    else:
-    
-        parameters = unflatten_regularize_parameters(model_parameters, 
-        parameters_shapes, regularizing_function)
+        # Stores the model
 
-    # Initializes the index of the parameters to be read in the new ten-
-    # sor format
-    
-    parameter_index = 0
+        self.model = model
 
-    # Iterates through the layers
+        self.parameters_shapes = parameters_shapes
 
-    for layer in model.layers:
+        # Initializes lists of initial and final indices for the list of
+        # parameters
+
+        self.initial_index = []
+
+        self.final_index = []
         
-        # Verifies if the layer has the call with parameters attribute,
-        # which signals it as an instance of the MixedActivationLayer 
-        # class
+        parameter_index = 0
 
-        if hasattr(layer, "call_with_parameters"):
+        # Initializes a list of layer objects
 
-            # Gets the number of parameters in this layer
+        self.layers_list = []
 
-            n_parameters = len(layer.trainable_variables)
+        # Validates the consistency of the layers of the model
+
+        for layer in self.model.layers:
+            
+            # Verifies if the layer has the call with parameters attri-
+            # bute, which signals it as an instance of the MixedActiva-
+            # tionLayer class
+
+            if hasattr(layer, "call_with_parameters"):
+                
+                self.layers_list.append(layer)
+
+                # Gets the number of parameters in this layer
+
+                n_parameters = len(layer.trainable_variables)
+                
+                # Gets the initial and final index in the list of traina-
+                # ble parameters
+
+                self.initial_index.append(parameter_index)
+                
+                self.final_index.append(parameter_index+n_parameters)
+
+                # Updates the index of the parameter tensors
+
+                parameter_index += n_parameters
+
+            # Verifies if it is not an input layer, throws an error, be-
+            # cause the input layer does not do anything really
+                
+            elif layer.__class__.__name__!="InputLayer":
+
+                raise TypeError("Layer '"+str(layer.__class__.__name__)+
+                "' is not an instance of 'MixedActivationLayer' nor of"+
+                " 'InputLayer'")
+
+        # Converts the lists of indices to tuples
+
+        self.initial_index = tuple(self.initial_index)
+
+        self.final_index = tuple(self.final_index)
+
+        self.n_layers = len(self.layers_list)
+
+        self.layers_list = tuple(self.layers_list)
+
+        # Sets the method to unflatten the trainable parameters based on
+        # the need for regularizing them or not
+
+        if regularizing_function is None:
+
+            self.unflattening_method = unflatten_parameters
+
+        # Otherwise, calls the helper method
+
+        else:
+
+            self.regularizing_function = regularizing_function
+
+            self.unflattening_method = self.unflatten_and_regularize
+
+    # Defines a helper method to unflatten trainable parameters that ha-
+    # ve to be regularized
+
+    def unflatten_and_regularize(self, model_parameters, 
+    parameters_shapes):
+        
+        return unflatten_regularize_parameters(model_parameters, 
+        parameters_shapes, self.regularizing_function)
+
+    # Defines a method to evaluate the model
+
+    @tf.function
+    def __call__(self, input_variables, model_parameters):
+        
+        # Gets the parameters from a 1D tensor to the conventional ten-
+        # sor format for building models
+
+        parameters = self.unflattening_method(model_parameters, 
+        self.parameters_shapes)
+
+        # Iterates through the layers
+
+        for i in range(self.n_layers):
+
+            # Gets the layer
+
+            layer = self.layers_list[i]
 
             # Gets the output of this layer from the method call with 
             # parameters
             
             input_variables = layer.call_with_parameters(input_variables, 
-            parameters[parameter_index:(parameter_index+n_parameters)])
-
-            # Updates the index of the parameter tensors
-
-            parameter_index += n_parameters
-
-        # Verifies if it is not an input layer, throws an error, because
-        # the input layer does not do anything really
-
-        elif layer.__class__.__name__!="InputLayer":
-
-            raise TypeError("Layer '"+str(layer.__class__.__name__)+"'"+
-            " is not an instance of 'MixedActivationLayer' nor of 'Inp"+
-            "utLayer'")
-        
-    # Returns the input variables as the output of the NN model, because
-    # it has been passed through the NN model
-        
-    return input_variables
+            parameters[self.initial_index[i]:self.final_index[i]])
+            
+        # Returns the input variables as the output of the NN model, be-
+        # cause it has been passed through the NN model
+            
+        return input_variables
 
 ########################################################################
 #           Call with parameters method for non-custom layers          #
