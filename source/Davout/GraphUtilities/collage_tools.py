@@ -6,6 +6,8 @@ from copy import deepcopy
 
 from time import time
 
+import PIL
+
 import matplotlib
 
 import matplotlib.pyplot as plt
@@ -71,7 +73,8 @@ layout_height_milimeters=297.0, add_overlaying_grid=False, tolerance=
 1E-1, grid_annotation_length=10, rule_fontsize=6, rule_number_offset=0.5,
 vanishing_points_list=None, save_lists_to_txt=True, interactive_preview=
 False, arrows_and_lines_file="arrows_and_lines_list", size_template=None,
-export_selection=None, image_interpolation=None):
+export_selection=None, image_interpolation=None, backend="agg", 
+compress_level=None):
     
     # Initializes the class of colors, the class of alignments, and the 
     # class of line styles
@@ -546,22 +549,9 @@ export_selection=None, image_interpolation=None):
                     bbox_inches = collage_classes.get_export_selection(
                     export_selection, verbose=verbose)
 
-                if verbose:
-
-                    print("\nStarts to save the file")
-
-                # Saves the figure with this bounding box in inches
-
-                saving_time = time()
-
-                plt.savefig(output_file, bbox_inches=bbox_inches, 
-                pad_inches=0, dpi=dpi)
-
-                if verbose:
-
-                    print("Finishes saving the figure at "+str(
-                    output_file)+"\nSaving took "+str(time()-saving_time
-                    )+" seconds\n")
+                save_plot(output_file, dpi, backend, bbox_inches=
+                bbox_inches, verbose=verbose, pad_inches=0, 
+                compress_level=compress_level)
 
                 # Verifies if an interactive window is to be shown
 
@@ -677,20 +667,9 @@ export_selection=None, image_interpolation=None):
                     bbox_inches = collage_classes.get_export_selection(
                     export_selection, verbose=verbose)
 
-                if verbose:
-
-                    print("\nStarts to save the file")
-
-                saving_time = time()
-
-                plt.savefig(output_file, dpi=dpi, bbox_inches=
-                bbox_inches)
-
-                if verbose:
-
-                    print("Finishes saving the figure at "+str(
-                    output_file)+"\nSaving took "+str(time()-saving_time
-                    )+" seconds\n")
+                save_plot(output_file, dpi, backend, bbox_inches=
+                bbox_inches, verbose=verbose, compress_level=
+                compress_level)
 
                 # Verifies if an interactive window is to be shown
 
@@ -800,18 +779,8 @@ export_selection=None, image_interpolation=None):
                 bbox_inches = collage_classes.get_export_selection(
                 export_selection, verbose=verbose)
 
-            if verbose:
-
-                print("\nStarts to save the file")
-
-            saving_time = time()
-
-            plt.savefig(output_file, dpi=dpi, bbox_inches=bbox_inches)
-
-            if verbose:
-
-                print("Finishes saving the figure at "+str(output_file)+
-                "\nSaving took "+str(time()-saving_time)+" seconds\n")
+            save_plot(output_file, dpi, backend, bbox_inches=bbox_inches,
+            verbose=verbose, compress_level=compress_level)
 
             # Verifies if an interactive window is to be shown
 
@@ -834,3 +803,36 @@ export_selection=None, image_interpolation=None):
                 interactive_window_info.flag_redraw = False
 
                 plt.close()
+
+# Defines a function to save the picture
+
+def save_plot(output_file, dpi, backend, bbox_inches=None, pad_inches=
+0.1, verbose=False, compress_level=None):
+
+    if verbose:
+
+        print("\nStarts to save the file")
+
+    # Saves the figure with this bounding box in inches
+
+    saving_time = time()
+
+    # Verifies if the pillow package is to be used to save the image
+
+    if compress_level is not None:
+
+        plt.savefig(output_file, bbox_inches=bbox_inches, pad_inches=
+        pad_inches, dpi=dpi, backend=backend, pil_kwargs={"compress_le"+
+        "vel": compress_level})
+
+    # Otherwise, uses plain savefig from matplotlib
+
+    else:
+
+        plt.savefig(output_file, bbox_inches=bbox_inches, pad_inches=
+        pad_inches, dpi=dpi, backend=backend)
+
+    if verbose:
+
+        print("Finishes saving the figure at "+str(output_file)+"\nSav"+
+        "ing took "+str(time()-saving_time)+" seconds\n")

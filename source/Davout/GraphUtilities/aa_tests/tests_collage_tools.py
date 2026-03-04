@@ -79,7 +79,7 @@ class TestCollage():
         grid_annotation_length=10, save_lists_to_txt=True, 
         interactive_preview=True, size_template="A4", export_selection={
         "origin point": "bottom-left", "position": [42.0, 191.0], "wid"+
-        "th": 123.0, "height": 63.0})
+        "th": 123.0, "height": 63.0}, compress_level=1)
 
 # Runs all tests
 
