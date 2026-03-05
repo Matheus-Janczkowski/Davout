@@ -79,6 +79,9 @@
 \RequirePackage{caption}
 \RequirePackage{makecell}
 \RequirePackage{pdfpages}
+\RequirePackage{longtable}
+\RequirePackage{booktabs}
+\RequirePackage{array}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -170,6 +173,60 @@ top=3cm, bottom=2cm}}\onehalfspacing\setlength{\parindent}{1.25cm}%
 % neath it
 
 \newcommand*{\CommentedArrow}[2]{\xRightarrow[#2]{#1}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                 Units                                %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Command to set up units
+
+\newcommand{\Unit}[1]{$\Brackets{\mathrm{#1}}$}
+
+% Command to print degrees
+
+\newcommand{\Degree}{$^{\circ}$}
+
+\newcommand{\DegreeUnit}{$\Brackets{^{\circ}}$}
+
+% Command for scientific notation
+
+\newcommand{\ScientificNotation}[2]{$#1\times 10^{#2}$}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                               Functions                              %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Command to write the sine function 
+
+\newcommand{\Sin}[1]{\mathrm{sin}\Parentheses{#1}}
+
+% Command to write the cosine function 
+
+\newcommand{\Cos}[1]{\mathrm{cos}\Parentheses{#1}}
+
+% Command to write the tangent function 
+
+\newcommand{\Tan}[1]{\mathrm{tan}\Parentheses{#1}}
+
+% Command to write the arc-sine function 
+
+\newcommand{\Asin}[1]{\mathrm{sin^{-1}}\Parentheses{#1}}
+
+% Command to write the rc-cosine function 
+
+\newcommand{\Acos}[1]{\mathrm{cos^{-1}}\Parentheses{#1}}
+
+% Command to write the arc-tangent function 
+
+\newcommand{\Atan}[1]{\mathrm{tan^{-1}}\Parentheses{#1}}
+
+% Command to write the exponential function 
+
+\newcommand{\Exp}[1]{\mathrm{exp}\Parentheses{#1}}
+
+% Command to write the logarithm function
+
+\newcommand{\Log}[1]{\mathrm{log}\Parentheses{#1}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                               Calculus                               %
@@ -291,10 +348,6 @@ top=3cm, bottom=2cm}}\onehalfspacing\setlength{\parindent}{1.25cm}%
 % Command to write the axial tensor of a skew tensor of higher order
 
 \newcommand{\Axl}[1]{\mathrm{axl}\Parentheses{#1}}
-
-% Command to write the logarithm of a tensor
-
-\newcommand{\Log}[1]{\mathrm{log}\Parentheses{#1}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                      Vector and function spaces                      %
@@ -488,8 +541,39 @@ $\displaystyle\left\{\begin{aligned}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \definecolor{LightGray}{gray}{0.7}
-
 \definecolor{DarkGray}{gray}{0.4}
+
+% Base colors
+\definecolor{White}{rgb}{1.0,1.0,1.0}
+\definecolor{Black}{rgb}{0.0,0.0,0.0}
+
+% Reds
+\definecolor{Red1}{rgb}{1.0,0.835,0.835}
+\definecolor{Red2}{rgb}{1.0,0.667,0.667}
+\definecolor{Red3}{rgb}{1.0,0.502,0.502}
+\definecolor{Red4}{rgb}{1.0,0.333,0.333}
+\definecolor{Red5}{rgb}{1.0,0.165,0.165}
+
+% Greyish Reds
+\definecolor{GreyishRed1}{rgb}{1.0,0.843,0.843}
+\definecolor{GreyishRed2}{rgb}{0.914,0.686,0.686}
+\definecolor{GreyishRed3}{rgb}{0.871,0.529,0.529}
+\definecolor{GreyishRed4}{rgb}{0.827,0.373,0.373}
+\definecolor{GreyishRed5}{rgb}{0.784,0.216,0.216}
+
+% Greys
+\definecolor{Grey1}{rgb}{0.89,0.859,0.859}
+\definecolor{Grey2}{rgb}{0.784,0.718,0.718}
+\definecolor{Grey3}{rgb}{0.675,0.576,0.576}
+\definecolor{Grey4}{rgb}{0.569,0.435,0.435}
+\definecolor{Grey5}{rgb}{0.424,0.325,0.325}
+
+% Yellows
+\definecolor{Yellow1}{rgb}{1.0,0.902,0.835}
+\definecolor{Yellow2}{rgb}{1.0,0.8,0.667}
+\definecolor{Yellow3}{rgb}{1.0,0.702,0.502}
+\definecolor{Yellow4}{rgb}{1.0,0.6,0.333}
+\definecolor{Yellow5}{rgb}{1.0,0.498,0.165}
 
 % Defines a set of environments with three shades of shadows
 
@@ -609,3 +693,13 @@ minimum height=2em]
 trapezium right angle=120, minimum height=2em]
 
 \tikzstyle{connector} = [draw, -latex']
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                               Tables                               %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Defines a command to color a cell in a table
+
+\newcommand{\ColoredCell}[2]{\cellcolor{#1}{#2}}

@@ -195,7 +195,7 @@ def unflatten_parameters(flat_parameters, shapes):
 
     # Initializes the tensors list and the index
     
-    tensors = []
+    """tensors = []
 
     parameter_index = 0
 
@@ -218,7 +218,10 @@ def unflatten_parameters(flat_parameters, shapes):
 
         parameter_index += size
 
-    return tensors
+    return tensors"""
+
+    return tf.split(flat_parameters, [np.prod(
+    shape[0]) for shape in shapes], axis=-1)
 
 # Defines a function to get the flat tensor of parameters back to the
 # tensors of parameters and regularizes each weight using the regulari-
