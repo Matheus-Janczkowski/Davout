@@ -558,7 +558,19 @@ def test_indexing_list_with_tf_range():
 
         return t[i]
     
-    tf.vectorized_map(test_reading, tf.range(len(t)))
+    #tf.vectorized_map(test_reading, tf.range(len(t)))
+
+def test_ragged_from_vector():
+
+    flat_tensor = tf.constant([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0])
+
+    print("SPLIT: "+str(tf.split(flat_tensor, tf.constant([3,3,3]), axis=-1)))
+
+    in_rows = tf.reshape(flat_tensor, (3,3))
+
+    ragged = tf.RaggedTensor.from_row_splits(in_rows, tf.constant([0, 2, 3]))
+
+    print("\nRagged: "+str(ragged))
 
 if __name__=="__main__":
 
@@ -589,3 +601,5 @@ if __name__=="__main__":
     test_unique_dofs()
 
     test_indexing_list_with_tf_range()
+
+    test_ragged_from_vector()

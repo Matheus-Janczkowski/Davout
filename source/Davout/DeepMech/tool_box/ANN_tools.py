@@ -285,6 +285,14 @@ class MultiLayerModel:
         model = tf.keras.Model(inputs=input_layer, outputs=
         output_eachLayer)
 
+        # Adds the shapes of the trainables parameters
+
+        for layer in model.layers:
+
+            layer.trainable_variables_shapes = tuple([tuple(
+            trainable_tensor.shape) for trainable_tensor in (
+            layer.trainable_variables)])
+
         # Adds the input convex information and the dimension of the 
         # output layer
 
@@ -443,6 +451,11 @@ class MixedActivationLayer(tf.keras.layers.Layer):
 
         self.layer = layer
 
+        # Gets all the live activation functions into a tuple
+
+        self.activation_list = tuple([self.live_activationFunctions[name
+        ] for name in self.functions_dict.keys()])
+
         # Saves the flag to inform if the model is supposed to be input-
         # convex or not
 
@@ -452,6 +465,12 @@ class MixedActivationLayer(tf.keras.layers.Layer):
         # the case of partially input-convex networks
 
         self.functions_dict_acessory_network = activations_accessory_layer_dict
+
+        # Gets all the live activation functions into a tuple
+
+        self.activation_list_acessory_network = tuple([
+        self.live_activationFunctions[name] for name in (
+        self.functions_dict_acessory_network.keys())])
 
         # Verifies the input convex flag and the corresponding required
         # activation functions
@@ -512,6 +531,11 @@ class MixedActivationLayer(tf.keras.layers.Layer):
             self.input_size_main_network = input_size_main_network
 
             self.input_size_main_layer = input_size_main_layer
+
+        # Initializes a variable with the shapes of the trainable para-
+        # meters
+
+        self.trainable_variables_shapes = None
 
     # Defines a function to help Keras build the layer
 
@@ -646,6 +670,7 @@ class MixedActivationLayer(tf.keras.layers.Layer):
 
     # Defines a function to get the output of such a mixed layer
 
+    #@tf.function
     def call(self, input):
         
         return self.call_from_input_method(input)
@@ -653,6 +678,7 @@ class MixedActivationLayer(tf.keras.layers.Layer):
     # Defines a function to get the output of such a mixed layer when 
     # the trainable parameters are given
 
+    #@tf.function
     def call_with_parameters(self, input, parameters):
 
         return self.call_given_parameters(input, parameters)
@@ -660,6 +686,7 @@ class MixedActivationLayer(tf.keras.layers.Layer):
     # Defines a method for getting the layer value given the input when
     # no accessory layer is necessary
 
+    #@tf.function
     def call_from_input_no_accessory_layer(self, input):
 
         # Initializes the input as dense layer and split it into the 
@@ -671,9 +698,10 @@ class MixedActivationLayer(tf.keras.layers.Layer):
 
         # Initializes a list of outputs for each family of neurons (or-
         # ganized by their activation functions)
-        
-        output_activations = [self.live_activationFunctions[name](split
-        ) for name, split in zip(self.functions_dict.keys(), x_splits)]
+
+        output_activations = [activation_function(split) for (
+        activation_function), split in zip(self.activation_list, 
+        x_splits)]
 
         # Concatenates the response and returns it. Uses flag axis=-1 to
         # concatenate next to the last row
@@ -696,19 +724,19 @@ class MixedActivationLayer(tf.keras.layers.Layer):
 
         if self.layer==0:
 
-            input = (input[..., :self.input_size_main_network], input[
-            ..., self.input_size_main_network:])
+            segmented_input = (input[..., :self.input_size_main_network], 
+            input[..., self.input_size_main_network:])
 
             # Gets the multiplication of the parcel of the accessory 
             # layer by its corresponding matrix
 
-            parcel_1 = self.dense_Wu(input[1])
+            parcel_1 = self.dense_Wu(segmented_input[1])
 
             # Gets the parcel of the convex input multiplied by the bit 
             # made of the accessory layer using the Hadamard product
 
-            parcel_2 = self.dense_Wy(tf.multiply(input[0], 
-            self.dense_Wyu(input[1])))
+            parcel_2 = self.dense_Wy(tf.multiply(segmented_input[0], 
+            self.dense_Wyu(segmented_input[1])))
 
             # Initializes the input as dense layer and split it into the 
             # different families of activation functions for the main 
@@ -719,21 +747,21 @@ class MixedActivationLayer(tf.keras.layers.Layer):
 
             # Initializes a list of outputs for each family of neurons 
             # (organized by their activation functions)
-            
-            output_activations_main_layer = [
-            self.live_activationFunctions[name](split) for name, (split
-            ) in zip(self.functions_dict.keys(), x_splits_main_layer)]
+
+            output_activations_main_layer = [activation_function(split
+            ) for activation_function, split in zip(self.activation_list, 
+            x_splits_main_layer)]
 
             # Does the same for the accessory layer
 
             x_splits_accessory_layer = tf.split(
-            self.dense_accessory_layer(input[1]), 
+            self.dense_accessory_layer(segmented_input[1]), 
             self.neurons_per_activation_acessory_layer,  axis=-1)
-            
-            output_activations_accessory_layer = [
-            self.live_activationFunctions[name](split) for name, split in (
-            zip(self.functions_dict_acessory_network.keys(), 
-            x_splits_accessory_layer))]
+
+            output_activations_accessory_layer = [activation_function(
+            split) for activation_function, split in zip(
+            self.activation_list_acessory_network, 
+            x_splits_accessory_layer)]
 
             # Concatenates the response and returns it. Uses flag axis=-1 
             # to concatenate next to the last row. Returns always the 
@@ -742,7 +770,7 @@ class MixedActivationLayer(tf.keras.layers.Layer):
 
             return (tf.concat(output_activations_main_layer, axis=-1), 
             tf.concat(output_activations_accessory_layer, axis=-1), 
-            input[0])
+            segmented_input[0])
 
         # Gets the multiplication of the parcel of the accessory layer
         # by its corresponding matrix
@@ -772,20 +800,19 @@ class MixedActivationLayer(tf.keras.layers.Layer):
 
         # Initializes a list of outputs for each family of neurons (or-
         # ganized by their activation functions)
-        
-        output_activations_main_layer = [self.live_activationFunctions[
-        name](split) for name, split in zip(self.functions_dict.keys(), 
+
+        output_activations_main_layer = [activation_function(split
+        ) for activation_function, split in zip(self.activation_list, 
         x_splits_main_layer)]
 
         # Does the same for the accessory layer
 
         x_splits_accessory_layer = tf.split(self.dense_accessory_layer(
         input[1]), self.neurons_per_activation_acessory_layer,  axis=-1)
-        
-        output_activations_accessory_layer = [
-        self.live_activationFunctions[name](split) for name, split in (
-        zip(self.functions_dict_acessory_network.keys(), 
-        x_splits_accessory_layer))]
+
+        output_activations_accessory_layer = [activation_function(split
+        ) for activation_function, split in zip(
+        self.activation_list_acessory_network, x_splits_accessory_layer)]
 
         # Concatenates the response and returns it. Uses flag axis=-1 to
         # concatenate next to the last row. Returns always the main layer
@@ -808,9 +835,14 @@ class MixedActivationLayer(tf.keras.layers.Layer):
     def call_with_parameters_without_accessory_network(self, input, 
     parameters):
 
-        # Gets the weights and biases
+        # Gets the weights and biases, then, reshapes them according to 
+        # the parameters shapes
 
-        weights, biases = parameters
+        weights = tf.reshape(parameters[0], 
+        self.trainable_variables_shapes[0])
+
+        biases = tf.reshape(parameters[1], 
+        self.trainable_variables_shapes[1])
 
         # Multiplies the weights by the inputs and adds the biases, then
         # splits by activation function family
@@ -820,9 +852,10 @@ class MixedActivationLayer(tf.keras.layers.Layer):
 
         # Initializes a list of outputs for each family of neurons (or-
         # ganized by their activation functions)
-        
-        output_activations = [self.live_activationFunctions[name](split
-        ) for name, split in zip(self.functions_dict.keys(), x_splits)]
+
+        output_activations = [activation_function(split) for (
+        activation_function), split in zip(self.activation_list, 
+        x_splits)]
 
         # Concatenates the response and returns it. Uses flag axis=-1 to
         # concatenate next to the last row
@@ -840,25 +873,45 @@ class MixedActivationLayer(tf.keras.layers.Layer):
         # bit for the main network, the rest for the accessory network
 
         if self.layer==0:
-        
-            # Gets the weights and biases
 
-            W_tilde, b_tilde, W_yu, b_y, W_u, b_layer, W_y = (
-            parameters)
+            #W_tilde, b_tilde, W_yu, b_y, W_u, b_layer, W_y = (
+            #parameters)
 
-            layer_input = (layer_input[..., :self.input_size_main_network
-            ], layer_input[..., self.input_size_main_network:])
+            W_tilde = tf.reshape(parameters[0], 
+            self.trainable_variables_shapes[0])
+            
+            b_tilde = tf.reshape(parameters[1], 
+            self.trainable_variables_shapes[1])
+            
+            W_yu = tf.reshape(parameters[2], 
+            self.trainable_variables_shapes[2])
+            
+            b_y = tf.reshape(parameters[3], 
+            self.trainable_variables_shapes[3])
+            
+            W_u = tf.reshape(parameters[4], 
+            self.trainable_variables_shapes[4])
+            
+            b_layer = tf.reshape(parameters[5], 
+            self.trainable_variables_shapes[5])
+            
+            W_y = tf.reshape(parameters[6], 
+            self.trainable_variables_shapes[6])
+
+            segmented_layer_input = (layer_input[..., :(
+            self.input_size_main_network)], layer_input[..., 
+            self.input_size_main_network:])
 
             # Gets the multiplication of the parcel of the accessory 
             # layer by its corresponding matrix
 
-            parcel_1 = tf.matmul(layer_input[1], W_u)+b_layer
+            parcel_1 = tf.matmul(segmented_layer_input[1], W_u)+b_layer
 
             # Gets the parcel of the convex input multiplied by the bit 
             # made of the accessory layer using the Hadamard product
 
-            parcel_2 = tf.matmul(tf.multiply(layer_input[0], tf.matmul(
-            layer_input[1], W_yu)+b_y), W_y)
+            parcel_2 = tf.matmul(tf.multiply(segmented_layer_input[0], 
+            tf.matmul(segmented_layer_input[1], W_yu)+b_y), W_y)
 
             # Initializes the input as dense layer and split it into the 
             # different families of activation functions for the main 
@@ -869,21 +922,21 @@ class MixedActivationLayer(tf.keras.layers.Layer):
 
             # Initializes a list of outputs for each family of neurons 
             # (organized by their activation functions)
-            
-            output_activations_main_layer = [
-            self.live_activationFunctions[name](split) for name, (split
-            ) in zip(self.functions_dict.keys(), x_splits_main_layer)]
+
+            output_activations_main_layer = [activation_function(split
+            ) for activation_function, split in zip(self.activation_list, 
+            x_splits_main_layer)]
 
             # Does the same for the accessory layer
 
-            x_splits_accessory_layer = tf.split(tf.matmul(layer_input[1], 
-            W_tilde)+b_tilde, self.neurons_per_activation_acessory_layer, 
-            axis=-1)
-            
-            output_activations_accessory_layer = [
-            self.live_activationFunctions[name](split) for name, split in (
-            zip(self.functions_dict_acessory_network.keys(), 
-            x_splits_accessory_layer))]
+            x_splits_accessory_layer = tf.split(tf.matmul(
+            segmented_layer_input[1], W_tilde)+b_tilde, 
+            self.neurons_per_activation_acessory_layer, axis=-1)
+
+            output_activations_accessory_layer = [activation_function(
+            split) for activation_function, split in zip(
+            self.activation_list_acessory_network, 
+            x_splits_accessory_layer)]
 
             # Concatenates the response and returns it. Uses flag axis=-1 
             # to concatenate next to the last row. Returns always the 
@@ -892,7 +945,7 @@ class MixedActivationLayer(tf.keras.layers.Layer):
 
             return (tf.concat(output_activations_main_layer, axis=-1), 
             tf.concat(output_activations_accessory_layer, axis=-1), 
-            layer_input[0])
+            segmented_layer_input[0])
 
         ################################################################
         #                    Accessory layer update                    #
@@ -912,10 +965,10 @@ class MixedActivationLayer(tf.keras.layers.Layer):
 
         # Initializes a list of outputs for each family of neurons (or-
         # ganized by their activation functions) for the accessory layer
-        
-        output_activations_u = [self.live_activationFunctions[name](split
-        ) for name, split in zip(self.functions_dict_acessory_network.keys(
-        ), x_splits_u)]
+
+        output_activations_u = [activation_function(split) for (
+        activation_function), split in zip(
+        self.activation_list_acessory_network, x_splits_u)]
 
         # Concatenates the response and saves it into u_(i+1). Uses flag 
         # axis=-1 to concatenate next to the last row
@@ -954,9 +1007,10 @@ class MixedActivationLayer(tf.keras.layers.Layer):
 
         # Initializes a list of outputs for each family of neurons (or-
         # ganized by their activation functions) for the main layer
-        
-        output_activations_z = [self.live_activationFunctions[name](split
-        ) for name, split in zip(self.functions_dict.keys(), x_splits_z)]
+
+        output_activations_z = [activation_function(split) for (
+        activation_function), split in zip(self.activation_list, 
+        x_splits_z)]
 
         # Concatenates the response and saves it into z_(i+1). Uses flag 
         # axis=-1 to concatenate next to the last row
