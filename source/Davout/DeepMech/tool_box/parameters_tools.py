@@ -187,41 +187,14 @@ def model_parameters_to_flat_tensor_and_shapes(model):
 
     return tf.concat(flat_parameters, axis=0), shapes
 
-# Defines a function to get the flat tensor of parameters back to the
-# tensors of parameters
+# Defines a function to get the split the flat tensor of parameters into
+# the different parameters tensors
 
 @tf.function
 def unflatten_parameters(flat_parameters, shapes):
 
-    # Initializes the tensors list and the index
-    
-    """tensors = []
-
-    parameter_index = 0
-
-    # Iterates over the list of shapes of the tensors of weights and 
-    # biases
-
-    for shape in shapes:
-
-        # Gets the number of elements for this tensor
-
-        size = np.prod(shape[0])
-
-        # Gets the parameters for this tensor, and appends to the ten-
-        # sors list
-
-        tensors.append(tf.reshape(flat_parameters[parameter_index:(
-        parameter_index+size)], shape[0]))
-
-        # Updates the index counter
-
-        parameter_index += size
-
-    return tensors"""
-
-    return tf.split(flat_parameters, [np.prod(
-    shape[0]) for shape in shapes], axis=-1)
+    return tf.split(flat_parameters, [np.prod(shape[0]) for shape in (
+    shapes)], axis=-1)
 
 # Defines a function to get the flat tensor of parameters back to the
 # tensors of parameters and regularizes each weight using the regulari-
