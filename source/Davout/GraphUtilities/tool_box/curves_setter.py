@@ -62,11 +62,13 @@ vanishing_points):
     # Iterates through the perspective points to gather possible matching
     # points
 
-    for perspective_point in vanishing_points:
+    if vanishing_points is not None:
 
-        # Appends the point
+        for perspective_point in vanishing_points:
 
-        comparison_points.append(perspective_point["coordinates"])
+            # Appends the point
+
+            comparison_points.append(perspective_point["coordinates"])
 
     # Iterates over the points given for this curve
 

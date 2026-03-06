@@ -1276,7 +1276,7 @@ physical_group_name=None, region_function=None, field_name=None):
 class DOFsNode:
 
     def __init__(self, dof_coordinates, dofs_indices, tolerance=1E-6, 
-    return_coordinates=False, do_not_throw_error=False, n_closest_dofs=
+    return_coordinates=False, do_not_throw_error=False, n_closest_nodes=
     None):
         
         self.dof_coordinates = dof_coordinates
@@ -1291,18 +1291,18 @@ class DOFsNode:
 
         self.do_not_throw_error = do_not_throw_error
 
-        self.n_closest_dofs = n_closest_dofs
+        self.n_closest_nodes = n_closest_nodes
 
         # Verifies if the number of closest DOFs were provided if an er-
         # ror is not be raised in case of a violated tolerance
 
         if self.do_not_throw_error:
 
-            if self.n_closest_dofs is None:
+            if self.n_closest_nodes is None:
 
                 raise ValueError("'do_not_throw_error' is True, but 'n"+
-                "_closest_dofs' was not provided. Give a number of clo"+
-                "sest DOFs to the given coordinate to be returned")
+                "_closest_nodes' was not provided. Give a number of cl"+
+                "osest nodes to the given coordinate to be returned")
             
     # Defines a method to get the coordinates of a given DOF
 
@@ -1344,7 +1344,34 @@ class DOFsNode:
 
             # Gets the closest DOFs to the given coordinate
 
-            dofs_indices = np.argsort(distances)[:self.n_closest_dofs]
+            dofs_indices = np.argsort(distances)
+            
+            # Initializes a counter of found nodes
+
+            verified_nodes = 1
+
+            # Iterates over the DOFs coordinates using the sorted DOF 
+            # indices to look for all DOFs that map to the closest node
+
+            for sorted_index, dof_index in enumerate(dofs_indices):
+
+                # Verifies if the current node is different than the last
+                # one
+
+                if not np.allclose(self.dof_coordinates[dof_index],
+                self.dof_coordinates[dofs_indices[max(0,sorted_index-1)]
+                ]):
+                    
+                    verified_nodes += 1
+
+                    # Verifies if the number of nodes found is higher 
+                    # than the number of selected nodes
+
+                    if verified_nodes>self.n_closest_nodes:
+
+                        # Cuts the list of DOF indices
+
+                        dofs_indices = dofs_indices[0:sorted_index]
 
         else:
 
@@ -1395,7 +1422,7 @@ class DOFsNode:
 
 def dofs_per_node_finder_class(functional_data_class, field_name=None, 
 node_proximity_tolerance=1E-6, return_coordinates_per_dof_found=False,
-do_not_throw_error=False, n_closest_dofs=None, get_higher_order_dofs_too=
+do_not_throw_error=False, n_closest_nodes=None, get_higher_order_dofs_too=
 True):
     
     """
@@ -1538,7 +1565,7 @@ True):
     return DOFsNode(dof_coordinates, dofs_indices, tolerance=
     node_proximity_tolerance, return_coordinates=
     return_coordinates_per_dof_found, do_not_throw_error=
-    do_not_throw_error, n_closest_dofs=n_closest_dofs)
+    do_not_throw_error, n_closest_nodes=n_closest_nodes)
     
 # Defines a function to create a list of nodes indexes that lie on a
 # surface

@@ -275,7 +275,7 @@ compress_level=None):
 
         # Verifies if the list of arrows is not None
 
-        if arrows_and_lines_list is not None:
+        if (arrows_and_lines_list is not None) or arrows_and_lines_file:
 
             if verbose:
 
@@ -322,7 +322,7 @@ compress_level=None):
                 line_style_class, arrow_style_class, tolerance, 
                 depth_order, verbose=verbose)
 
-            else:
+            elif arrows_and_lines_list is not None:
 
                 # If the given list is to be saved as a txt file
 

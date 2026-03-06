@@ -306,6 +306,14 @@ interactive_window_info, verbose=False):
                 "lected point\nPress R to redraw the image if you want"+
                 " to see the perspective lines immediatly")
 
+                # Makes sure vanishing points is a list
+
+                if interactive_window_info.vanishing_points_list is None:
+
+                    interactive_window_info.vanishing_points_list = []
+
+                # Iterates over the list of points
+
                 for new_point in points_list:
 
                     # Initializes a list of directions from the last ad-

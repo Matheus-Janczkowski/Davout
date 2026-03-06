@@ -421,3 +421,36 @@ def keras_dense_call_with_parameters(self, inputs, parameters):
     # the activation function
 
     return self.activation(tf.matmul(inputs, weights)+biases)
+
+# Defines a class to call Keras dense layers given parameters. This class
+# is meant to store the parameters shape as well
+
+class KerasCallWithParameters:
+
+    def __init__(self, trainable_variables_shapes, activation):
+        
+        # Saves the shapes of the trainable variables and the activation
+        # function
+
+        self.trainable_variables_shapes = trainable_variables_shapes
+
+        self.activation = activation
+
+    # Defines a method to get a vector of split flat vectors, then, calls
+    # the activation function
+
+    def __call__(self, inputs, parameters):
+
+        # Gets the weights and biases, then, reshapes them according to 
+        # the parameters shapes
+
+        weights = tf.reshape(parameters[0], 
+        self.trainable_variables_shapes[0])
+
+        biases = tf.reshape(parameters[1], 
+        self.trainable_variables_shapes[1])
+
+        # Multiplies the weights by the inputs, adds the biases and ap-
+        # plies the activation function
+
+        return self.activation(tf.matmul(inputs, weights)+biases)

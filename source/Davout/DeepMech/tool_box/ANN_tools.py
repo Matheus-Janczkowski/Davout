@@ -332,8 +332,8 @@ class MultiLayerModel:
         # Adds the method to call the Dense keras layer giving the para-
         # meters as a 1D tensor
 
-        tf.keras.layers.Dense.call_with_parameters = (
-        parameters_tools.keras_dense_call_with_parameters)
+        #tf.keras.layers.Dense.call_with_parameters = (
+        #parameters_tools.keras_dense_call_with_parameters)
 
         # Initializes the Keras model. Constructs a list of layers
 
@@ -386,6 +386,13 @@ class MultiLayerModel:
             keras_model.output_dimension = self.output_dimension
             
             return keras_model
+        
+# Defines a function to add the call with parameters method to each Keras
+# layer
+
+def insert_call_with_parameters_to_keras():
+
+    #
 
 # Defines a class to construct a layer with different activation 
 # functions. Receives a dictionary of activation functions, the activa-
