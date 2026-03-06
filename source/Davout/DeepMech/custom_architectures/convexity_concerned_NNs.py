@@ -12,13 +12,8 @@ from ..tool_box.activation_function_utilities import verify_activationDict
 class PartiallyConvexNNs:
 
     def __init__(self, activation_functionDict, custom_activations_class,
-    trainable_variables_shapes, neurons_per_activation, live_activationsDict=dict(), 
-    activations_accessory_layer_dict=dict(), input_size_main_network=
-    None, layer=0):
-        
-        # Saves the size of the tensors of trainable parameters
-
-        self.trainable_variables_shapes = trainable_variables_shapes
+    live_activationsDict=dict(), activations_accessory_layer_dict=dict(), 
+    input_size_main_network=None, layer=0):
 
         # Saves the custom activations_class
 
@@ -86,17 +81,13 @@ class PartiallyConvexNNs:
             # Saves the number of input neurons for the main network
 
             self.input_size_main_network = input_size_main_network
-
-        # TODO missing info
-
-        self.neurons_per_activation = neurons_per_activation
     
     # Defines a method for getting the layer value given the input when
     # an accessory layer is necessary. In this case, the input must be a
     # tuple. It follows the rationale from Amos et al, Input convex neu-
     # ral networks. This is the case of the first layer
 
-    def first_layer_call_from_input(self, input):
+    def first_layer_call_from_input(self, layer_self, input):
 
         # The first element in the input tuple is the main layer. The 
         # second element is due to the accessory layer. The third element
@@ -111,20 +102,20 @@ class PartiallyConvexNNs:
         # Gets the multiplication of the parcel of the accessory 
         # layer by its corresponding matrix
 
-        parcel_1 = self.dense_Wu(segmented_input[1])
+        parcel_1 = layer_self.dense_Wu(segmented_input[1])
 
         # Gets the parcel of the convex input multiplied by the bit made
         # of the accessory layer using the Hadamard product
 
         parcel_2 = self.dense_Wy(tf.multiply(segmented_input[0], 
-        self.dense_Wyu(segmented_input[1])))
+        layer_self.dense_Wyu(segmented_input[1])))
 
         # Initializes the input as dense layer and split it into the dif-
         # ferent families of activation functions for the main layer. 
         # This keeps the input as a tensor
 
         x_splits_main_layer = tf.split(parcel_1+parcel_2, 
-        self.neurons_per_activation,  axis=-1)
+        layer_self.neurons_per_activation,  axis=-1)
 
         # Initializes a list of outputs for each family of neurons (or-
         # ganized by their activation functions)
@@ -136,8 +127,8 @@ class PartiallyConvexNNs:
         # Does the same for the accessory layer
 
         x_splits_accessory_layer = tf.split(
-        self.dense_accessory_layer(segmented_input[1]), 
-        self.neurons_per_activation_acessory_layer,  axis=-1)
+        layer_self.dense_accessory_layer(segmented_input[1]), 
+        layer_self.neurons_per_activation_acessory_layer,  axis=-1)
 
         output_activations_accessory_layer = [activation_function(
         split) for activation_function, split in zip(
@@ -157,7 +148,7 @@ class PartiallyConvexNNs:
     # tuple. It follows the rationale from Amos et al, Input convex neu-
     # ral networks. This is for a middle layer
 
-    def middle_layer_call_from_input(self, input):
+    def middle_layer_call_from_input(self, layer_self, input):
 
         # The first element in the input tuple is the main layer. The 
         # second element is due to the accessory layer. The third element
@@ -166,28 +157,28 @@ class PartiallyConvexNNs:
         # Gets the multiplication of the parcel of the accessory layer
         # by its corresponding matrix
 
-        parcel_1 = self.dense_Wu(input[1])
+        parcel_1 = layer_self.dense_Wu(input[1])
 
         # Gets the parcel of the convex input multiplied by the bit made
         # of the accessory layer using the Hadamard product
 
-        parcel_2 = self.dense_Wy(tf.multiply(input[2], self.dense_Wyu(
-        input[1])))
+        parcel_2 = layer_self.dense_Wy(tf.multiply(input[2], 
+        layer_self.dense_Wyu(input[1])))
 
         # Gets the parcel of the input of the main network multiplied by
         # the absolute value of the bit given by accessory previous 
         # layer, using the Hadamard product. Then, multiplies by the cor-
         # responding weight matrix
 
-        parcel_3 = self.dense(tf.multiply(input[0], tf.abs(
-        self.dense_Wzu(input[1]))))
+        parcel_3 = layer_self.dense(tf.multiply(input[0], tf.abs(
+        layer_self.dense_Wzu(input[1]))))
 
         # Initializes the input as dense layer and split it into the 
         # different families of activation functions for the main layer. 
         # This keeps the input as a tensor
 
         x_splits_main_layer = tf.split(parcel_1+parcel_2+parcel_3, 
-        self.neurons_per_activation,  axis=-1)
+        layer_self.neurons_per_activation,  axis=-1)
 
         # Initializes a list of outputs for each family of neurons (or-
         # ganized by their activation functions)
@@ -198,8 +189,9 @@ class PartiallyConvexNNs:
 
         # Does the same for the accessory layer
 
-        x_splits_accessory_layer = tf.split(self.dense_accessory_layer(
-        input[1]), self.neurons_per_activation_acessory_layer,  axis=-1)
+        x_splits_accessory_layer = tf.split(
+        layer_self.dense_accessory_layer(input[1]), 
+        layer_self.neurons_per_activation_acessory_layer,  axis=-1)
 
         output_activations_accessory_layer = [activation_function(split
         ) for activation_function, split in zip(
@@ -217,7 +209,7 @@ class PartiallyConvexNNs:
     # tuple. It follows the rationale from Amos et al, Input convex neu-
     # ral networks. This is for the output layer
 
-    def output_layer_call_from_input(self, input):
+    def output_layer_call_from_input(self, layer_self, input):
 
         # The first element in the input tuple is the main layer. The 
         # second element is due to the accessory layer. The third element
@@ -226,28 +218,28 @@ class PartiallyConvexNNs:
         # Gets the multiplication of the parcel of the accessory layer
         # by its corresponding matrix
 
-        parcel_1 = self.dense_Wu(input[1])
+        parcel_1 = layer_self.dense_Wu(input[1])
 
         # Gets the parcel of the convex input multiplied by the bit made
         # of the accessory layer using the Hadamard product
 
-        parcel_2 = self.dense_Wy(tf.multiply(input[2], self.dense_Wyu(
-        input[1])))
+        parcel_2 = layer_self.dense_Wy(tf.multiply(input[2], 
+        layer_self.dense_Wyu(input[1])))
 
         # Gets the parcel of the input of the main network multiplied by
         # the absolute value of the bit given by accessory previous 
         # layer, using the Hadamard product. Then, multiplies by the cor-
         # responding weight matrix
 
-        parcel_3 = self.dense(tf.multiply(input[0], tf.abs(
-        self.dense_Wzu(input[1]))))
+        parcel_3 = layer_self.dense(tf.multiply(input[0], tf.abs(
+        layer_self.dense_Wzu(input[1]))))
 
         # Initializes the input as dense layer and split it into the 
         # different families of activation functions for the main layer. 
         # This keeps the input as a tensor
 
         x_splits_main_layer = tf.split(parcel_1+parcel_2+parcel_3, 
-        self.neurons_per_activation,  axis=-1)
+        layer_self.neurons_per_activation,  axis=-1)
 
         # Initializes a list of outputs for each family of neurons (or-
         # ganized by their activation functions)
@@ -267,31 +259,31 @@ class PartiallyConvexNNs:
     # Neural Networks). This function is for the first layer
 
     def first_layer_call_partially_convex_with_parameters(self, 
-    layer_input, parameters):
+    layer_self, layer_input, parameters):
         
         # If it's the first layer, the input tensor must be sliced: one
         # bit for the main network, the rest for the accessory network
 
         W_tilde = tf.reshape(parameters[0], 
-        self.trainable_variables_shapes[0])
+        layer_self.trainable_variables_shapes[0])
         
         b_tilde = tf.reshape(parameters[1], 
-        self.trainable_variables_shapes[1])
+        layer_self.trainable_variables_shapes[1])
         
         W_yu = tf.reshape(parameters[2], 
-        self.trainable_variables_shapes[2])
+        layer_self.trainable_variables_shapes[2])
         
         b_y = tf.reshape(parameters[3], 
-        self.trainable_variables_shapes[3])
+        layer_self.trainable_variables_shapes[3])
         
         W_u = tf.reshape(parameters[4], 
-        self.trainable_variables_shapes[4])
+        layer_self.trainable_variables_shapes[4])
         
         b_layer = tf.reshape(parameters[5], 
-        self.trainable_variables_shapes[5])
+        layer_self.trainable_variables_shapes[5])
         
         W_y = tf.reshape(parameters[6], 
-        self.trainable_variables_shapes[6])
+        layer_self.trainable_variables_shapes[6])
 
         segmented_layer_input = (layer_input[..., :(
         self.input_size_main_network)], layer_input[..., 
@@ -313,7 +305,7 @@ class PartiallyConvexNNs:
         # layer. This keeps the input as a tensor
 
         x_splits_main_layer = tf.split(parcel_1+parcel_2, 
-        self.neurons_per_activation,  axis=-1)
+        layer_self.neurons_per_activation,  axis=-1)
 
         # Initializes a list of outputs for each family of neurons 
         # (organized by their activation functions)
@@ -326,7 +318,7 @@ class PartiallyConvexNNs:
 
         x_splits_accessory_layer = tf.split(tf.matmul(
         segmented_layer_input[1], W_tilde)+b_tilde, 
-        self.neurons_per_activation_acessory_layer, axis=-1)
+        layer_self.neurons_per_activation_acessory_layer, axis=-1)
 
         output_activations_accessory_layer = [activation_function(
         split) for activation_function, split in zip(
@@ -347,7 +339,7 @@ class PartiallyConvexNNs:
     # Neural Networks). This function is for the middle layers
 
     def middle_layer_call_partially_convex_with_parameters(self, 
-    layer_input, parameters):
+    layer_self, layer_input, parameters):
 
         ################################################################
         #                    Accessory layer update                    #
@@ -355,42 +347,42 @@ class PartiallyConvexNNs:
         
         # Gets the weights and biases
 
-        W_z = tf.reshape(parameters[0], self.trainable_variables_shapes[
+        W_z = tf.reshape(parameters[0], layer_self.trainable_variables_shapes[
         0])
 
         W_tilde = tf.reshape(parameters[1], 
-        self.trainable_variables_shapes[1])
+        layer_self.trainable_variables_shapes[1])
 
         b_tilde = tf.reshape(parameters[2], 
-        self.trainable_variables_shapes[2])
+        layer_self.trainable_variables_shapes[2])
 
         W_zu = tf.reshape(parameters[3], 
-        self.trainable_variables_shapes[3])
+        layer_self.trainable_variables_shapes[3])
 
         b_z = tf.reshape(parameters[4], 
-        self.trainable_variables_shapes[4])
+        layer_self.trainable_variables_shapes[4])
 
         W_yu = tf.reshape(parameters[5], 
-        self.trainable_variables_shapes[5])
+        layer_self.trainable_variables_shapes[5])
 
         b_y = tf.reshape(parameters[6], 
-        self.trainable_variables_shapes[6])
+        layer_self.trainable_variables_shapes[6])
 
         W_u = tf.reshape(parameters[7], 
-        self.trainable_variables_shapes[7])
+        layer_self.trainable_variables_shapes[7])
 
         b_layer = tf.reshape(parameters[8], 
-        self.trainable_variables_shapes[8])
+        layer_self.trainable_variables_shapes[8])
         
         W_y = tf.reshape(parameters[9], 
-        self.trainable_variables_shapes[9])
+        layer_self.trainable_variables_shapes[9])
 
         # Multiplies the weights of the acessory network (u) by the in-
         # puts of the acessory layer and, then, adds the biases. Finally,
         # splits by activation function family
 
         x_splits_u = tf.split(tf.matmul(layer_input[1], W_tilde)+b_tilde, 
-        self.neurons_per_activation_acessory_layer, axis=-1)
+        layer_self.neurons_per_activation_acessory_layer, axis=-1)
 
         # Initializes a list of outputs for each family of neurons (or-
         # ganized by their activation functions) for the accessory layer
@@ -432,7 +424,7 @@ class PartiallyConvexNNs:
         # activation functions
 
         x_splits_z = tf.split(parcel_1+parcel_2+parcel_3,
-        self.neurons_per_activation, axis=-1)
+        layer_self.neurons_per_activation, axis=-1)
 
         # Initializes a list of outputs for each family of neurons (or-
         # ganized by their activation functions) for the main layer
@@ -455,7 +447,7 @@ class PartiallyConvexNNs:
     # Neural Networks). This function is for the output layer
 
     def output_layer_call_partially_convex_with_parameters(self, 
-    layer_input, parameters):
+    layer_self, layer_input, parameters):
 
         ################################################################
         #                    Accessory layer update                    #
@@ -463,54 +455,29 @@ class PartiallyConvexNNs:
         
         # Gets the weights and biases
 
-        W_z = tf.reshape(parameters[0], self.trainable_variables_shapes[
+        W_z = tf.reshape(parameters[0], layer_self.trainable_variables_shapes[
         0])
 
-        W_tilde = tf.reshape(parameters[1], 
-        self.trainable_variables_shapes[1])
-
-        b_tilde = tf.reshape(parameters[2], 
-        self.trainable_variables_shapes[2])
-
         W_zu = tf.reshape(parameters[3], 
-        self.trainable_variables_shapes[3])
+        layer_self.trainable_variables_shapes[3])
 
         b_z = tf.reshape(parameters[4], 
-        self.trainable_variables_shapes[4])
+        layer_self.trainable_variables_shapes[4])
 
         W_yu = tf.reshape(parameters[5], 
-        self.trainable_variables_shapes[5])
+        layer_self.trainable_variables_shapes[5])
 
         b_y = tf.reshape(parameters[6], 
-        self.trainable_variables_shapes[6])
+        layer_self.trainable_variables_shapes[6])
 
         W_u = tf.reshape(parameters[7], 
-        self.trainable_variables_shapes[7])
+        layer_self.trainable_variables_shapes[7])
 
         b_layer = tf.reshape(parameters[8], 
-        self.trainable_variables_shapes[8])
+        layer_self.trainable_variables_shapes[8])
         
         W_y = tf.reshape(parameters[9], 
-        self.trainable_variables_shapes[9])
-
-        # Multiplies the weights of the acessory network (u) by the in-
-        # puts of the acessory layer and, then, adds the biases. Finally,
-        # splits by activation function family
-
-        x_splits_u = tf.split(tf.matmul(layer_input[1], W_tilde)+b_tilde, 
-        self.neurons_per_activation_acessory_layer, axis=-1)
-
-        # Initializes a list of outputs for each family of neurons (or-
-        # ganized by their activation functions) for the accessory layer
-
-        output_activations_u = [activation_function(split) for (
-        activation_function), split in zip(
-        self.activation_list_acessory_network, x_splits_u)]
-
-        # Concatenates the response and saves it into u_(i+1). Uses flag 
-        # axis=-1 to concatenate next to the last row
-
-        output_u = tf.concat(output_activations_u, axis=-1)
+        layer_self.trainable_variables_shapes[9])
 
         ################################################################
         #                      Main layer update                       #
@@ -540,7 +507,7 @@ class PartiallyConvexNNs:
         # activation functions
 
         x_splits_z = tf.split(parcel_1+parcel_2+parcel_3,
-        self.neurons_per_activation, axis=-1)
+        layer_self.neurons_per_activation, axis=-1)
 
         # Initializes a list of outputs for each family of neurons (or-
         # ganized by their activation functions) for the main layer
