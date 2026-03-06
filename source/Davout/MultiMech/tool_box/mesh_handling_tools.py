@@ -1373,6 +1373,8 @@ class DOFsNode:
 
                         dofs_indices = dofs_indices[0:sorted_index]
 
+                        break
+
         else:
 
             # Selects the DOFs indices that are close to the point given
@@ -1392,10 +1394,18 @@ class DOFsNode:
                 " node is x="+str(closest_node[0])+", y="+str(
                 closest_node[1])+", z="+str(closest_node[2]))
             
-        # Reassembles the DOFs to match the list of DOFs indices
+        # Reassembles the DOFs to match the list of DOFs indices. Pairs 
+        # DOF indices and 
 
-        correct_dofs_indices = [self.dofs_indices[dof_index] for (
-        dof_index) in dofs_indices]
+        pairs = list(zip([self.dofs_indices[dof_index] for (dof_index
+        ) in dofs_indices], [self.dof_coordinates[i,:] for i in (
+        dofs_indices)]))
+
+        # Sorts the pairs by ascending order of DOF indices
+
+        pairs.sort(key=lambda x: x[0])
+
+        correct_dofs_indices = [p[0] for p in pairs]
         
         # If the coordinates of the found nodes are to be returned as 
         # well
@@ -1405,8 +1415,9 @@ class DOFsNode:
             # If there are multiple DOFs in a single location, returns a
             # a list of them
 
-            return correct_dofs_indices, [self.dof_coordinates[dof_index,
-            :] for dof_index in dofs_indices]
+            DOFs_coordinates = [p[1] for p in pairs]
+
+            return correct_dofs_indices, DOFs_coordinates
         
         # Otherwise, returns the dof indices only
 

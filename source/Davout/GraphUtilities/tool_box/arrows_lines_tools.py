@@ -432,6 +432,20 @@ depth_order, verbose=False):
 
         arrow_stem_path = Path(np.array(vertices), codes=codes)
 
+        # Verifies if a depth number has been given
+
+        local_depth_order = deepcopy(depth_order)
+
+        if "depth order" in input_dictionary:
+
+            local_depth_order = input_dictionary["depth order"]
+
+        else:
+
+            # Updates the depth number
+
+            depth_order += 1
+
         # Verifies if the path is to be filled with color]
 
         if ("fill path with color" in input_dictionary) and (
@@ -456,20 +470,6 @@ depth_order, verbose=False):
             general_axes.add_patch(PathPatch(arrow_stem_path, facecolor=
             fill_path_color, edgecolor=arrow_color, zorder=
             local_depth_order, linewidth=0))
-
-        # Verifies if a depth number has been given
-
-        local_depth_order = deepcopy(depth_order)
-
-        if "depth order" in input_dictionary:
-
-            local_depth_order = input_dictionary["depth order"]
-
-        else:
-
-            # Updates the depth number
-
-            depth_order += 1
 
         # Adds the arrow stem
         
