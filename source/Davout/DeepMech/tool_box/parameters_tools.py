@@ -177,7 +177,7 @@ def model_parameters_to_flat_tensor_and_shapes(model):
         # Adds the shape of the tensor of parameters, and adds if it has
         # the regularizable attribute
 
-        shapes.append((layer.shape, hasattr(layer, "regularizable")))
+        shapes.append((layer.shape, getattr(layer, "name")))
 
         # Adds the parameters as a vector tensor
 
@@ -191,10 +191,9 @@ def model_parameters_to_flat_tensor_and_shapes(model):
 # the different parameters tensors
 
 @tf.function
-def unflatten_parameters(flat_parameters, shapes):
+def unflatten_parameters(flat_parameters, n_parameters_per_tensor):
 
-    return tf.split(flat_parameters, [np.prod(shape[0]) for shape in (
-    shapes)], axis=-1)
+    return tf.split(flat_parameters, n_parameters_per_tensor, axis=-1)
 
 # Defines a function to get the flat tensor of parameters back to the
 # tensors of parameters and regularizes each weight using the regulari-
@@ -255,8 +254,7 @@ regularization_function):
 
 class ModelOutputGivenTrainableParameters:
 
-    def __init__(self, model, parameters_shapes, regularizing_function=
-    None):
+    def __init__(self, model, parameters_shapes):
 
         # Stores the model
 
@@ -312,6 +310,11 @@ class ModelOutputGivenTrainableParameters:
                 raise TypeError("Layer '"+str(layer.__class__.__name__)+
                 "' is not an instance of 'MixedActivationLayer' nor of"+
                 " 'InputLayer'")
+            
+        # Gets the number of parameters per variable tensor
+
+        self.n_parameters_per_tensor = [np.prod(shape[0]) for shape in (
+        self.parameters_shapes)]
 
         # Converts the lists of indices to tuples
 
@@ -323,29 +326,7 @@ class ModelOutputGivenTrainableParameters:
 
         self.layers_list = tuple(self.layers_list)
 
-        # Sets the method to unflatten the trainable parameters based on
-        # the need for regularizing them or not
-
-        if regularizing_function is None:
-
-            self.unflattening_method = unflatten_parameters
-
-        # Otherwise, calls the helper method
-
-        else:
-
-            self.regularizing_function = regularizing_function
-
-            self.unflattening_method = self.unflatten_and_regularize
-
-    # Defines a helper method to unflatten trainable parameters that ha-
-    # ve to be regularized
-
-    def unflatten_and_regularize(self, model_parameters, 
-    parameters_shapes):
-        
-        return unflatten_regularize_parameters(model_parameters, 
-        parameters_shapes, self.regularizing_function)
+        self.n_parameters_per_tensor = tuple(self.n_parameters_per_tensor)
 
     # Defines a method to evaluate the model
 
@@ -355,8 +336,8 @@ class ModelOutputGivenTrainableParameters:
         # Gets the parameters from a 1D tensor to the conventional ten-
         # sor format for building models
 
-        parameters = self.unflattening_method(model_parameters, 
-        self.parameters_shapes)
+        parameters = unflatten_parameters(model_parameters, 
+        self.n_parameters_per_tensor)
 
         # Iterates through the layers
 
@@ -376,6 +357,27 @@ class ModelOutputGivenTrainableParameters:
         # cause it has been passed through the NN model
             
         return input_variables
+
+    # Defines a method to update the model parameters
+
+    @tf.function
+    def update_model_parameters(self, model, model_parameters):
+        
+        # Gets the parameters from a 1D tensor to the conventional ten-
+        # sor format for building models
+
+        parameters = unflatten_parameters(model_parameters, 
+        self.n_parameters_per_tensor)
+
+        # Iterates through the layers
+
+        for i, layer in enumerate(model.layers):
+
+            # Updates the model parameters in place given the flat vec-
+            # tor of parameters
+
+            layer.apply_parameters_to_layer(parameters[
+            self.initial_index[i]:self.final_index[i]])
 
 ########################################################################
 #           Call with parameters method for non-custom layers          #

@@ -64,7 +64,8 @@ class ScalarGradientWrtTrainableParams:
 class ScalarGradientWrtTrainableParamsGivenParameters:
     
     def __init__(self, scalar_function, model, input_tensor, 
-    shapes_trainable_parameters, model_true_values=None):
+    shapes_trainable_parameters, model_true_values=None, parameters_type=
+    tf.float32):
         
         self.scalar_function = scalar_function
 
@@ -73,153 +74,6 @@ class ScalarGradientWrtTrainableParamsGivenParameters:
         self.input_tensor = input_tensor
 
         self.shapes_trainable_parameters = shapes_trainable_parameters
-
-        # Creates a dummy true value of output, because the Keras' loss 
-        # functions requires y_true and y_pred as arguments
-
-        if model_true_values is None:
-
-            self.model_true_values = tf.constant([0.0], dtype=
-            input_tensor.dtype)
-
-        else:
-
-            self.model_true_values = model_true_values
-
-        # Saves a flag to tell to use the custom gradient defined within
-        # the loss function class or not
-
-        if hasattr(self.scalar_function, "custom_gradient_usage"):
-
-            self.custom_gradient = self.scalar_function.custom_gradient_usage
-
-        else:
-
-            self.custom_gradient = False
-
-        # If the custom gradient is to be used, prepare it sharing the 
-        # same model and input tensor
-
-        if self.custom_gradient:
-
-            self.scalar_function.prepare_custom_gradient(self.model,
-            self.input_tensor)
-
-            # Sets the gradient helper to the one appropriate for custom
-            # gradient implementation
-
-            self.gradient_helper = self.custom_gradient_helper
-
-        else:
-
-            # Sets the gradient helper to the one appropriate for native
-            # automatic differentiation
-
-            self.gradient_helper = self.native_gradient_helper
-
-        # Sets the class to evaluate the model output given the traina-
-        # ble parameters
-
-        self.model_output_given_parameters = parameters_tools.ModelOutputGivenTrainableParameters(
-        model, self.shapes_trainable_parameters)
-
-    # Defines a helper function to get the gradient given a custom im-
-    # plementation
-
-    @tf.function
-    def custom_gradient_helper(self, trainable_parameters):
-
-        # Gets the response of the model
-
-        y = self.model_output_given_parameters(self.input_tensor, 
-        trainable_parameters)
-
-        return self.scalar_function.custom_gradient(
-        self.model_true_values, y, trainable_parameters)
-
-    # Defines a helper function to get the gradient using native automa-
-    # tic differentiation
-
-    @tf.function
-    def native_gradient_helper(self, trainable_parameters):
-
-        # Creates the tape
-
-        with tf.GradientTape() as tape:
-
-            tape.watch(trainable_parameters)
-
-            # Gets the response of the model
-
-            y = self.model_output_given_parameters(self.input_tensor, 
-            trainable_parameters)
-
-            phi = self.scalar_function(self.model_true_values, y)
-
-        # Gets the gradient
-
-        return tape.gradient(phi, trainable_parameters)
-
-    # Defines a function to actually evaluate the derivative
-
-    @tf.function
-    def __call__(self, trainable_parameters):
-
-        # Calls the gradient helper
-
-        return self.gradient_helper(trainable_parameters)
-        
-    # Defines a function to evaluate the loss function
-
-    def evaluate_scalar_function(self, trainable_parameters):
-
-        # Gets the response of the model
-        
-        y = self.model_output_given_parameters(self.input_tensor, 
-        trainable_parameters)
-
-        # Gets the scalar function value and returns it
-
-        return self.scalar_function(self.model_true_values, y)
-    
-    # Defines a function to update the scalar function if it is parame-
-    # terizable by externally-given quantities
-
-    def update_function(self, *external_arguments):
-
-        # Calls the method to update the scalar function
-
-        self.scalar_function.update_arguments(*external_arguments)
-
-# Defines a class to evaluate the gradient of a scalar function with 
-# respect to the model trainable parameters, when the parameters are gi-
-# ven as a 1D tensor and the model is input-convex
-
-class ScalarGradientWrtTrainableParamsGivenParametersConvexModel:
-    
-    def __init__(self, scalar_function, model, input_tensor, 
-    shapes_trainable_parameters, regularizing_function="smooth absolut"+
-    "e value", model_true_values=None, parameters_type=tf.float32):
-        
-        self.scalar_function = scalar_function
-
-        self.model = model 
-
-        self.input_tensor = input_tensor
-
-        self.shapes_trainable_parameters = shapes_trainable_parameters
-
-        # Sets the function which is used to regularize the weights to 
-        # be non-negative
-
-        if isinstance(regularizing_function, str):
-
-            self.regularizing_function = numerical_tools.build_tensorflow_math_expressions(
-            regularizing_function, dtype=parameters_type)
-
-        else:
-
-            self.regularizing_function = regularizing_function
 
         # Creates a dummy true value of output, because the Keras' loss 
         # functions requires y_true and y_pred as arguments
@@ -287,13 +141,6 @@ class ScalarGradientWrtTrainableParamsGivenParametersConvexModel:
 
         # Gets the response of the model
 
-        """y = parameters_tools.model_output_given_trainable_parameters(
-        self.input_tensor, self.model, trainable_parameters, 
-        self.shapes_trainable_parameters, regularizing_function=
-        self.regularizing_function)"""
-
-        # Gets the response of the model
-        
         y = self.model_output_given_parameters(self.input_tensor, 
         trainable_parameters)
 
@@ -313,7 +160,7 @@ class ScalarGradientWrtTrainableParamsGivenParametersConvexModel:
             tape.watch(trainable_parameters)
 
             # Gets the response of the model
-            
+
             y = self.model_output_given_parameters(self.input_tensor, 
             trainable_parameters)
 

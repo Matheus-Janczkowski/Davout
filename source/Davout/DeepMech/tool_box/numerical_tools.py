@@ -252,7 +252,7 @@ def build_tensorflow_math_expressions(expression_name, dtype=tf.float32
 
         raise TypeError("The argument 'expression_name' for function '"+
         "build_tensorflow_math_expressions' must be a string or a dict"+
-        "ionary")
+        "ionary. Currently, it is: "+str(expression_name))
 
     # Verifies if the expression to be used is the smooth absolute value
 
@@ -272,17 +272,14 @@ def build_tensorflow_math_expressions(expression_name, dtype=tf.float32
 
         eps_squared = tf.square(eps)
 
-        #def smooth_abs(x, eps=eps, eps_squared=eps_squared):
+        @tf.function
+        def smooth_abs(x, eps=eps, eps_squared=eps_squared):
 
-            #print(x.shape, eps.shape, eps_squared.shape)
+            return tf.sqrt(tf.square(x)+eps_squared)-eps
 
-            #print(x.dtype, eps.dtype, eps_squared.dtype)
+        return smooth_abs
 
-            #return tf.sqrt(tf.square(x)+eps_squared)-eps
-
-        #return smooth_abs
-
-        return lambda x: tf.sqrt(tf.square(x)+eps_squared)-eps
+        #return lambda x: tf.sqrt(tf.square(x)+eps_squared)-eps
 
     else:
 

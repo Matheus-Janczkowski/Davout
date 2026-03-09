@@ -316,9 +316,7 @@ class ModelCustomTraining:
 
         self.loss_class, self.model_parameters = loss_tools.build_loss_gradient_varying_model_parameters(
         self.model, self.loss_metric, self.training_input, 
-        model_true_values=self.training_trueValues, convex_input_model=
-        self.input_convex_model, regularizing_function=
-        regularizing_function, verbose=verbose)
+        model_true_values=self.training_trueValues, verbose=verbose)
 
         # Gets the number of output neurons. Tries to get first via a 
         # custom attribute
@@ -539,7 +537,7 @@ class ModelCustomTraining:
 
             print("Training time: "+str(self.elapsed_time)+" seconds.\n")
 
-        # Gets the trained parameters and reassigns them to the model
+        """# Gets the trained parameters and reassigns them to the model
 
         if self.input_convex_model:
 
@@ -558,13 +556,18 @@ class ModelCustomTraining:
             # Does not regularize the model parameters
 
             self.model = parameters_tools.update_model_parameters(
-            self.model, self.model_parameters)
+            self.model, self.model_parameters)"""
+        
+        # Gets the trained parameters and reassigns them to the model
 
-            # Saves the model automatically and returns it as well
+        self.loss_class.model_output_given_parameters.update_model_parameters(
+        self.model, self.model_parameters)
 
-            self.model.save(self.save_model_file)
+        # Saves the model automatically and returns it as well
 
-            return self.model
+        self.model.save(self.save_model_file)
+
+        return self.model
         
     # Defines a function to perform a Monte Carlo training, i.e. train-
     # ing multiple times and generating multiple models
