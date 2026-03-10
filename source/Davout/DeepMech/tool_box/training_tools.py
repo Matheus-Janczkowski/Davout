@@ -442,7 +442,7 @@ class ModelCustomTraining:
 
             for i in range(optimization_iteration_groups):
 
-                print("\n\nStarts the "+str(i)+"-th group of "+str(
+                print("\n\nStarts the "+str(i+1)+"-th group of "+str(
                 self.verbose_deltaIterations)+" optimization iteration"+
                 "s\n")
 
