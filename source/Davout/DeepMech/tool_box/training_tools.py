@@ -442,8 +442,9 @@ class ModelCustomTraining:
 
             for i in range(optimization_iteration_groups):
 
-                print("\n\nStarts the "+str(i)+" groups of optimizatio"+
-                "n iterations\n")
+                print("\n\nStarts the "+str(i)+"-th group of "+str(
+                self.verbose_deltaIterations)+" optimization iteration"+
+                "s\n")
 
                 # Calls the optimization procedure
 

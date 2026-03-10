@@ -546,7 +546,6 @@ class MixedActivationLayer(tf.keras.layers.Layer):
 
     # Defines a function to get the output of such a mixed layer
 
-    #@tf.function
     def call(self, input):
         
         return self.call_from_input_method(input)
@@ -554,7 +553,6 @@ class MixedActivationLayer(tf.keras.layers.Layer):
     # Defines a function to get the output of such a mixed layer when 
     # the trainable parameters are given
 
-    #@tf.function
     def call_with_parameters(self, input, parameters):
 
         return self.call_given_parameters(input, parameters)
@@ -588,7 +586,6 @@ class MixedActivationLayer(tf.keras.layers.Layer):
     # a class method because TensorFlow calls it as such
 
     @classmethod
-
     def from_config(cls, config):
 
         # Rebuilds the class of CustomActivationFunctions from its own
