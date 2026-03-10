@@ -16,6 +16,8 @@ from ..tool_box.activation_function_utilities import verify_activationDict, veri
 
 from ...PythonicUtilities.package_tools import load_classes_from_package
 
+from ...PythonicUtilities.dictionary_tools import verify_obligatory_and_optional_keys
+
 ########################################################################
 #                       ANN construction classes                       #
 ########################################################################
@@ -33,9 +35,7 @@ class MultiLayerModel:
     def __init__(self, input_dimension, layers_activationInfo, 
     enforce_customLayers=False, evaluate_parameters_gradient=False,
     flat_trainable_parameters=False, verbose=False, parameters_dtype=
-    "float32", accessory_layers_activationInfo=[], 
-    input_size_main_network=None, custom_architecture=None, 
-    regularizing_function="smooth absolute value"):
+    "float32", input_size_main_network=None, custom_architecture=None):
         
         # Instantiates the class of custom activation functions
 
@@ -58,21 +58,6 @@ class MultiLayerModel:
 
         available_architectures = load_classes_from_package(
         custom_architectures, return_dictionary_of_classes=True)
-
-        # Verifies the need for an accessory network
-
-        if len(accessory_layers_activationInfo)==0:
-
-            self.accessory_network = False
-
-            self.accessory_layers_info = [{} for i in range(len(
-            self.layers_info))]
-
-        else:
-
-            self.accessory_network = True
-
-            self.accessory_layers_info = accessory_layers_activationInfo
 
         # Initializes the dictionary of live-wired activation functions
 
@@ -132,33 +117,38 @@ class MultiLayerModel:
 
         if self.custom_architecture is None:
 
-            self.custom_architecture = "GenericFeedForwardNNs"
+            self.custom_architecture = {"name": "GenericFeedForwardNNs"}
+
+        # Otherwise, verifies if it is a dictionary
+
+        available_architecture_names = ""
+
+        for name in available_architectures.keys():
+
+            available_architecture_names += "\n'"+str(name)+"'"
+
+        verify_obligatory_and_optional_keys(self.custom_architecture, {
+        "name": {"type": str, "description": "Name of the method that "+
+        "creates the NN architecture. Check the available methods:"+
+        available_architecture_names}}, {}, "custom_architecture", "Mu"+
+        "ltiLayerModel", check_not_expected_keys=False)
 
         # Verifies if it is one of the available architectures
 
-        if not (self.custom_architecture in available_architectures):
-
-            available_names = ""
-
-            for name in available_architectures.keys():
-
-                available_names += "\n'"+str(name)+"'"
+        if not (self.custom_architecture["name"] in (
+        available_architectures)):
             
-            raise NameError("'custom_architecture' is '"+str(
-            self.custom_architecture)+"'. However, it must be one of t"+
-            "he following names to select a special or custom architec"+
-            "ture:"+available_names)
+            raise NameError("The 'name' key in 'custom_architecture' i"+
+            "s '"+str(self.custom_architecture["name"])+"'. However, i"+
+            "t must be one of the following names to select a special "+
+            "or custom architecture:"+available_architecture_names)
         
         # If no error has been given, set custom architecture as one
-        # of the given by the available architectures
+        # of the given by the available architectures. In other words,
+        # puts the live class object there
 
-        self.custom_architecture = available_architectures[
-        self.custom_architecture]
-            
-        # Saves the regularizing function variable to instruct how to 
-        # train input convex or partially input convex models
-
-        self.regularizing_function = regularizing_function
+        self.custom_architecture["name"] = available_architectures[
+        self.custom_architecture["name"]]
 
     # Defines a function to verify the list of dictionaries and, then,
     # it creates the model accordingly
@@ -183,16 +173,6 @@ class MultiLayerModel:
             self.layers_info[i], layer_counter, self.live_activations, 
             flag_customLayers, self.custom_activations_class)
 
-            # Verifies if the accessory layer in case of partially input-
-            # convex neural networks is used
-
-            if self.accessory_layers_info[i]:
-
-                self.live_activations, flag_customLayers = verify_activationDict(
-                self.accessory_layers_info[i], layer_counter, 
-                self.live_activations, flag_customLayers, 
-                self.custom_activations_class)
-
             layer_counter += 1
 
         # If the model has custom layers, uses the custom layer builder
@@ -215,13 +195,15 @@ class MultiLayerModel:
 
             # Keras models cannot be used yet for input convex networks
 
-            if (self.custom_architecture.__name__!="GenericFeedForward"+
-            "NNs"):
+            if (self.custom_architecture["name"].__name__!="GenericFee"+
+            "dForwardNNs"):
 
-                raise NotImplementedError("'custom_architecture' is '"+
-                str(self.custom_architecture.__name__)+"', but Keras "+
-                "models does not feature the custom architecture opti"+
-                "on yet. Enforce the use of custom model instead")
+                raise NotImplementedError("The key 'name' in 'custom_a"+
+                "rchitecture' is '"+str(self.custom_architecture["name"
+                ].__name__)+"', but Keras models do not feature the cu"+
+                "stom architecture option yet. Enforce the use of cust"+
+                "om model instead using the argument\n\nenforce_custom"+
+                "Layers=True")
 
             return self.multilayer_modelKeras()
 
@@ -233,21 +215,9 @@ class MultiLayerModel:
 
     def multilayer_modelCustomLayers(self):
 
-        # Verifies if an accessory network is required and if the input
-        # size to it has been determmined
-
-        if self.accessory_network and ((self.input_size_main_network
-        ) is None):
-            
-            raise ValueError("An accessory network has been required, "+
-            "but the numebr of input neurons to the main network, 'inp"+
-            "ut_size_main_network', has not been provided")
-
         # Initializes the input layer
 
         input_layer = tf.keras.Input(shape=(self.input_dimension,))
-
-        # TODO add the apply_parameters_to_layer method to input_layer
 
         # Gets the first layer. Here the class is used as a function di-
         # rectly due to the call function. It goes directly there. Takes
@@ -255,15 +225,14 @@ class MultiLayerModel:
 
         input_size_main_layer = None
 
+        code_given_info_class = CodeGivenLayerInfo(
+        self.input_size_main_network, self.input_size_main_network, 0,
+        self.parameters_dtype)
+
         output_eachLayer = MixedActivationLayer(self.layers_info[0], 
-        self.custom_activations_class, live_activationsDict=
-        self.live_activations, activations_accessory_layer_dict=
-        self.accessory_layers_info[0], layer=0, 
-        input_size_main_network=self.input_size_main_network,
-        input_size_main_layer=self.input_size_main_network, 
-        custom_architecture=self.custom_architecture, float_dtype=
-        self.parameters_dtype, regularization_function=
-        self.regularizing_function)(input_layer)
+        self.custom_activations_class, code_given_info_class,
+        live_activationsDict=self.live_activations, custom_architecture=
+        self.custom_architecture)(input_layer)
 
         # Iterates through the other layers
 
@@ -304,15 +273,15 @@ class MultiLayerModel:
 
             # Gets the output of this layer
 
+            code_given_info_class = CodeGivenLayerInfo(
+            self.input_size_main_network, input_size_main_layer, 
+            layer_number, self.parameters_dtype)
+
             output_eachLayer = MixedActivationLayer(self.layers_info[i],
-            self.custom_activations_class, live_activationsDict=
-            self.live_activations, activations_accessory_layer_dict=
-            self.accessory_layers_info[i], input_size_main_network=
-            self.input_size_main_network, input_size_main_layer=
-            input_size_main_layer, layer=layer_number, 
-            custom_architecture=self.custom_architecture, 
-            regularization_function=self.regularizing_function, 
-            float_dtype=self.parameters_dtype)(output_eachLayer)
+            self.custom_activations_class, code_given_info_class, 
+            live_activationsDict=self.live_activations, 
+            custom_architecture=self.custom_architecture)(
+            output_eachLayer)
 
         # Assembles the model
 
@@ -330,14 +299,9 @@ class MultiLayerModel:
         # Adds the input convex information and the dimension of the 
         # output layer
 
-        model.custom_architecture = self.custom_architecture
+        model.custom_architecture = self.custom_architecture["name"]
 
         model.output_dimension = self.output_dimension
-
-        # Adds the regularizing function for regularizing weight matrices
-        # in case of input convex models or partially input convex models
-
-        model.regularizing_function = self.regularizing_function
 
         # If the gradient is to be evaluated too
 
@@ -449,6 +413,21 @@ def insert_call_with_parameters_to_keras(model):
 
     return model
 
+# Defines a class to store code-given information per layer
+
+class CodeGivenLayerInfo:
+
+    def __init__(self, input_size_main_network, input_size_main_layer,
+    layer, float_dtype):
+        
+        self.input_size_main_network = input_size_main_network
+
+        self.input_size_main_layer = input_size_main_layer
+
+        self.layer = layer
+
+        self.float_dtype = float_dtype
+
 # Defines a class to construct a layer with different activation 
 # functions. Receives a dictionary of activation functions, the activa-
 # tion functions' names are the keys while the values are the numbers of 
@@ -462,10 +441,12 @@ def insert_call_with_parameters_to_keras(model):
 class MixedActivationLayer(tf.keras.layers.Layer):
 
     def __init__(self, activation_functionDict, custom_activations_class,
-    live_activationsDict=dict(), activations_accessory_layer_dict=dict(), 
-    input_size_main_network=None, input_size_main_layer=None, layer=0, 
-    custom_architecture=None, regularization_function=None, float_dtype=
-    tf.float32, **kwargs):
+    code_given_info_class, live_activationsDict=dict(), 
+    custom_architecture=None, **kwargs):
+        
+        # Stores the code given information class instance
+
+        self.code_given_info_class = code_given_info_class
 
         # Initializes the parent class, i.e. Layer. The kwargs are opti-
         # onal arguments used during layer creation and deserialization, 
@@ -482,27 +463,9 @@ class MixedActivationLayer(tf.keras.layers.Layer):
 
         if (live_activationsDict is None) or live_activationsDict=={}: 
 
-            # Checks for the activation functions of the accessory net-
-            # work, too
-
-            if activations_accessory_layer_dict:
-
-                # Concatenates the two dictionaries, but overrides the 
-                # values of the accessory dictionary with the values of
-                # the conventional one
-
-                self.live_activationFunctions, *_ = verify_activationDict(
-                activations_accessory_layer_dict | activation_functionDict, 
-                layer, {}, True, self.custom_activations_class)
-
-            # Otherwise, gets only the activation functions from the con-
-            # ventional dictionary
-
-            else:
-
-                self.live_activationFunctions, *_ = verify_activationDict(
-                activation_functionDict, layer, {}, True,
-                self.custom_activations_class)
+            self.live_activationFunctions, *_ = verify_activationDict(
+            activation_functionDict, code_given_info_class.layer, {}, 
+            True, self.custom_activations_class)
 
         else:
 
@@ -512,19 +475,10 @@ class MixedActivationLayer(tf.keras.layers.Layer):
         
         self.functions_dict = activation_functionDict
 
-        self.layer = layer
-
         # Gets all the live activation functions into a tuple
 
         self.activation_list = tuple([self.live_activationFunctions[name
         ] for name in self.functions_dict.keys()])
-
-        # Saves the flag to inform if the model is supposed to be input-
-        # convex or not. Instantiates the class accordingly
-
-        self.regularization_function = regularization_function
-
-        self.float_dtype = float_dtype
 
         # Guarantees that the custom architecture is not None
 
@@ -533,45 +487,21 @@ class MixedActivationLayer(tf.keras.layers.Layer):
             # Uses GenericFeedForwardNNs as default, which is a generic
             # deep feed-forward neural network architecture
 
-            custom_architecture = load_classes_from_package(
+            custom_architecture = {"name": load_classes_from_package(
             custom_architectures, return_dictionary_of_classes=True)[
-            "GenericFeedForwardNNs"]
+            "GenericFeedForwardNNs"]}
 
-        self.custom_architecture_instance = custom_architecture(self,
-        activation_functionDict, custom_activations_class,
-        activations_accessory_layer_dict, input_size_main_network, layer,
-        regularization_function, float_dtype)
+        self.custom_architecture_instance = custom_architecture["name"](
+        self, activation_functionDict, custom_activations_class, 
+        custom_architecture)
 
-        # Gets the dictionary of functions of the accessory network in 
-        # the case of partially input-convex networks
+        # Saves the custom architecture dictionary for serialization
 
-        self.functions_dict_acessory_network = activations_accessory_layer_dict
+        self.custom_architecture_dict = {key: value for key, value in (
+        custom_architecture.items())}
 
-        # Gets all the live activation functions into a tuple
-
-        self.activation_list_acessory_network = tuple([
-        self.live_activationFunctions[name] for name in (
-        self.functions_dict_acessory_network.keys())])
-
-        # Defines the method that will be used to call the layer's res-
-        # ponse when the trainable parameters are fixed
-
-        self.call_from_input_method = (
-        self.custom_architecture_instance.call_from_input_method)
-
-        # Defines the method that will be used to call the layer's res-
-        # ponse when the trainable parameters are given
-
-        self.call_given_parameters = (
-        self.custom_architecture_instance.call_given_parameters)
-
-        # Saves the parameters for the case of accessory networks, even
-        # when they are not used. This saving is done so that this class 
-        # can be reinstantiated later when loaded from a file
-
-        self.input_size_main_network = input_size_main_network
-
-        self.input_size_main_layer = input_size_main_layer
+        self.custom_architecture_dict["name"] = (
+        self.custom_architecture_instance.__class__.__name__)
 
         # Initializes a variable with the shapes of the trainable para-
         # meters
@@ -641,15 +571,15 @@ class MixedActivationLayer(tf.keras.layers.Layer):
         # Updates the instructions dictionary
 
         config.update({"activation_functionDict": self.functions_dict,
-        "layer": self.layer, "custom_activations_config": 
+        "custom_activations_config": 
         self.custom_activations_class.get_config(), "custom_activation"+
-        "s_class": None, "activations_accessory_layer_dict":
-        self.functions_dict_acessory_network, "input_size_main_network":
-        self.input_size_main_network, "input_size_main_layer":
-        self.input_size_main_layer, "custom_architecture": 
-        self.custom_architecture_instance.__class__.__name__, "regular"+
-        "ization_function": self.regularization_function, "float_dtype":
-        self.float_dtype})
+        "s_class": None, "custom_architecture": 
+        self.custom_architecture_dict, "code_given_info_class": {"inpu"+
+        "t_size_main_network": 
+        self.code_given_info_class.input_size_main_network, "input_siz"+
+        "e_main_layer": self.code_given_info_class.input_size_main_layer, 
+        "layer": self.code_given_info_class.layer, "float_dtype": 
+        self.code_given_info_class.float_dtype}})
 
         return config
     
@@ -674,13 +604,25 @@ class MixedActivationLayer(tf.keras.layers.Layer):
         # Reallocates the dictionary of custom architectures to the con-
         # fig dictionary
 
-        architecture_name = config.pop("custom_architecture")
+        architecture_dictionary = config.pop("custom_architecture")
 
         architecture_map = load_classes_from_package(
         custom_architectures, return_dictionary_of_classes=True)
 
-        config["custom_architecture"] = architecture_map[
-        architecture_name]
+        config["custom_architecture"] = architecture_dictionary
+
+        config["custom_architecture"]["name"] = architecture_map[
+        architecture_dictionary["name"]]
+        
+        # Rebuilds CodeGivenLayerInfo instance
+
+        code_info_dictionary = config.pop("code_given_info_class")
+
+        config["code_given_info_class"] = CodeGivenLayerInfo(
+        input_size_main_network=code_info_dictionary["input_size_main_"+
+        "network"], input_size_main_layer=code_info_dictionary["input_"+
+        "size_main_layer"], layer=code_info_dictionary["layer"],
+        float_dtype=code_info_dictionary["float_dtype"])
 
         return cls(**config)
 

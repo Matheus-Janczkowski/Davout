@@ -7,7 +7,7 @@ from ..tool_box.activation_function_utilities import verify_activationDict
 
 from ..tool_box.numerical_tools import build_tensorflow_math_expressions
 
-from ..tool_box.custom_activation_functions import CustomActivationFunctions
+from ...PythonicUtilities.dictionary_tools import verify_obligatory_and_optional_keys
 
 ########################################################################
 #                      Fully convex neural network                     #
@@ -18,8 +18,24 @@ from ..tool_box.custom_activation_functions import CustomActivationFunctions
 class FullyConvexNNs:
 
     def __init__(self, layer_self, activation_functionDict, 
-    custom_activations_class, activations_accessory_layer_dict, 
-    input_size_main_network, layer, regularization_function, dtype):
+    custom_activations_class, architecture_info_dict):
+        
+        # Verifies if the necessary information of the architecture pro-
+        # vided by the user has been actually supplied
+
+        architecture_info_dict = verify_obligatory_and_optional_keys(
+        architecture_info_dict, ["name"], {"regularization function": {
+        "type": str, "description": "String with the name of the regul"+
+        "arization function to make the weights matrix strictly positi"+
+        "ve", "default": "smooth absolute value"}}, "custom_architectu"+
+        "re", "FullyConvexNNs")
+
+        # Saves the objects saved into the MixedActivationLayer class 
+        # instance
+
+        self.layer_self = layer_self
+
+        self.layer_number = self.layer_self.code_given_info_class.layer
 
         # Gets all the live activation functions into a tuple
 
@@ -30,17 +46,17 @@ class FullyConvexNNs:
         # Defines the method that will be used to call the layer's 
         # response when the trainable parameters are fixed
 
-        self.call_from_input_method = self.layer_call_from_input
+        self.layer_self.call_from_input_method = self.layer_call_from_input
 
         # Defines the method that will be used to call the layer's 
         # response when the trainable parameters are given
 
-        self.call_given_parameters = self.call_with_parameters
+        self.layer_self.call_given_parameters = self.call_with_parameters
 
         # Selects the method for reshaping the model parameters from a
         # flat vector
 
-        if layer==0:
+        if self.layer_number==0:
 
             self.update_layer_parameters = self.first_layer_update_parameters
 
@@ -50,15 +66,15 @@ class FullyConvexNNs:
 
             self.update_layer_parameters = self.middle_layer_update_parameters
 
+        # Selects the method to update the model parameters in place
+
+        self.layer_self.apply_parameters_to_layer = self.apply_parameters_to_layer
+
         # Gets the regularization function
 
         self.regularization_function = build_tensorflow_math_expressions(
-        regularization_function, dtype)
-
-        # Saves the objects saved into the MixedActivationLayer class 
-        # instance
-
-        self.layer_self = layer_self
+        architecture_info_dict["regularization function"], 
+        self.layer_self.code_given_info_class.float_dtype)
     
     # Defines a method for getting the layer value given the input when
     # an accessory layer is NOT necessary
@@ -129,7 +145,7 @@ class FullyConvexNNs:
         # If the model is to be fully input convex, the weight tensors
         # must be strictly positive, except for the first layer
 
-        if self.layer_self.layer!=0:
+        if self.layer_number!=0:
 
             # Builds the layer's parameters
 
@@ -196,43 +212,72 @@ class FullyConvexNNs:
 class PartiallyConvexNNs:
 
     def __init__(self, layer_self, activation_functionDict, 
-    custom_activations_class, activations_accessory_layer_dict, 
-    input_size_main_network, layer, regularization_function_name, dtype):
+    custom_activations_class, architecture_info_dict):
+        
+        # Verifies if the necessary information of the architecture pro-
+        # vided by the user has been actually supplied
+
+        architecture_info_dict = verify_obligatory_and_optional_keys(
+        architecture_info_dict, {"name": {}, "activations accessory la"+
+        "yer list": {"type": list, "description": "List with dictionar"+
+        "y with names of activation functions as keys and number of th"+
+        "e corresponding neurons as values. These activations function"+
+        "s are for the accessory layer. Each dictionary corresponds to"+
+        " a layer"}}, 
+        {"regularization function": {"type": str, "description": "Stri"+
+        "ng with the name of the regularization function to make the w"+
+        "eights matrix strictly positive", "default": "smooth absolute"+
+        " value"}}, "custom_architecture", "PartiallyConvexNNs")
         
         # Stores variables that will be used in the get_config for seri-
         # alization and class rebuilding
 
         self.layer_self = layer_self
 
-        self.input_size_main_network = input_size_main_network
+        self.input_size_main_network = (
+        self.layer_self.code_given_info_class.input_size_main_network)
+
+        self.layer_number = self.layer_self.code_given_info_class.layer
+
+        self.input_size_main_layer = (
+        self.layer_self.code_given_info_class.input_size_main_layer)
+
+        # Verifies if the size of the main network is not None
+
+        if self.input_size_main_network is None:
+
+            raise ValueError(" The key 'name' in 'custom_architecture'"+
+            " was selected as 'PartiallyConvexNNs', but the argument '"+
+            "input_size_main_network' in 'MultiLayerModel' is None.\nY"+
+            "ou have to insert the number of neurons of the main layer"+
+            " to 'input_size_main_network', this quantity is equal to "+
+            "the number of variables of input to which the NN model mu"+
+            "st be convex to")
+
+        # Gets the dictionary of activation functions for the accessory
+        # layer
+
+        self.activations_accessory_layer_dict = architecture_info_dict[
+        "activations accessory layer list"][self.layer_number]
         
         # Verifies if there are activations in the dictionary of activa-
         # tions for the accessory layer
 
-        if not activations_accessory_layer_dict:
+        if not self.activations_accessory_layer_dict:
 
             raise ValueError("'activations_accessory_layer_dict' must "+
             "have at least one activation function for setting up 'Par"+
             "tiallyConvexNNs', since this class constructs an accessor"+
             "ry neural network")
 
-        # Adds the dictionary of live-wired activation functions. But 
-        # checks if it is given as argument
+        # Concatenates the two dictionaries, but overrides the val-
+        # ues of the accessory dictionary with the values of the con-
+        # ventional one
 
-        if (layer_self.live_activationFunctions is None) or (
-        layer_self.live_activationFunctions=={}): 
-
-            # Concatenates the two dictionaries, but overrides the val-
-            # ues of the accessory dictionary with the values of the con-
-            # ventional one
-
-            self.live_activationFunctions, *_ = verify_activationDict(
-            activations_accessory_layer_dict | activation_functionDict, 
-            layer, {}, True, custom_activations_class)
-
-        else:
-
-            self.live_activationFunctions = layer_self.live_activationFunctions
+        self.live_activationFunctions, *_ = verify_activationDict(
+        self.activations_accessory_layer_dict | activation_functionDict, 
+        self.layer_number, {}, True, 
+        custom_activations_class)
 
         # Gets all the live activation functions into a tuple
 
@@ -243,22 +288,22 @@ class PartiallyConvexNNs:
 
         self.activation_list_acessory_network = tuple([
         self.live_activationFunctions[name] for name in (
-        activations_accessory_layer_dict.keys())])
+        self.activations_accessory_layer_dict.keys())])
 
         # Defines the method to call this layer and get the forward res-
         # ponse. If this layer is the first layer
 
-        if layer==0:
+        if self.layer_number==0:
 
             # Defines the method that will be used to call the layer's 
             # response when the trainable parameters are fixed
 
-            self.call_from_input_method = self.first_layer_call_from_input
+            self.layer_self.call_from_input_method = self.first_layer_call_from_input
 
             # Defines the method that will be used to call the layer's 
             # response when the trainable parameters are given
 
-            self.call_given_parameters = self.first_layer_call_partially_convex_with_parameters
+            self.layer_self.call_given_parameters = self.first_layer_call_partially_convex_with_parameters
 
             # Selects the method for reshaping the model parameters from 
             # a flat vector
@@ -267,21 +312,21 @@ class PartiallyConvexNNs:
 
             # Selects the method to update the model parameters in place
 
-            self.apply_parameters_to_layer = self.apply_parameters_to_first_layer
+            self.layer_self.apply_parameters_to_layer = self.apply_parameters_to_first_layer
 
         # If this layer is the output layer
 
-        elif layer==-1:
+        elif self.layer_number==-1:
 
             # Defines the method that will be used to call the layer's 
             # response when the trainable parameters are fixed
 
-            self.call_from_input_method = self.output_layer_call_from_input
+            self.layer_self.call_from_input_method = self.output_layer_call_from_input
 
             # Defines the method that will be used to call the layer's 
             # response when the trainable parameters are given
 
-            self.call_given_parameters = self.output_layer_call_partially_convex_with_parameters
+            self.layer_self.call_given_parameters = self.output_layer_call_partially_convex_with_parameters
 
             # Selects the method for reshaping the model parameters from 
             # a flat vector
@@ -290,7 +335,7 @@ class PartiallyConvexNNs:
 
             # Selects the method to update the model parameters in place
 
-            self.apply_parameters_to_layer = self.apply_parameters_to_output_layer
+            self.layer_self.apply_parameters_to_layer = self.apply_parameters_to_output_layer
 
         # Otherwise, if it is any of the intermediate layers
 
@@ -299,12 +344,12 @@ class PartiallyConvexNNs:
             # Defines the method that will be used to call the layer's 
             # response when the trainable parameters are fixed
 
-            self.call_from_input_method = self.middle_layer_call_from_input
+            self.layer_self.call_from_input_method = self.middle_layer_call_from_input
 
             # Defines the method that will be used to call the layer's 
             # response when the trainable parameters are given
 
-            self.call_given_parameters = self.middle_layer_call_partially_convex_with_parameters
+            self.layer_self.call_given_parameters = self.middle_layer_call_partially_convex_with_parameters
 
             # Selects the method for reshaping the model parameters from 
             # a flat vector
@@ -313,12 +358,13 @@ class PartiallyConvexNNs:
 
             # Selects the method to update the model parameters in place
 
-            self.apply_parameters_to_layer = self.apply_parameters_to_middle_layer
+            self.layer_self.apply_parameters_to_layer = self.apply_parameters_to_middle_layer
 
         # Gets the regularization function
 
         self.regularization_function = build_tensorflow_math_expressions(
-        regularization_function_name, dtype)
+        architecture_info_dict["regularization function"], 
+        self.layer_self.code_given_info_class.float_dtype)
     
     # Defines a method for getting the layer value given the input when
     # an accessory layer is necessary. In this case, the input must be a
@@ -706,7 +752,7 @@ class PartiallyConvexNNs:
         # at the first hidden layer, the whole input of the model is 
         # simply fed into this first hidden layer
 
-        if self.layer_self.layer!=0:
+        if self.layer_number!=0:
 
             self.layer_self.dense = tf.keras.layers.Dense(
             self.layer_self.total_neurons, use_bias=False, name="Wz")
@@ -716,7 +762,7 @@ class PartiallyConvexNNs:
 
         self.layer_self.neurons_per_activation_acessory_layer = [value[
         "number of neurons"] if isinstance(value, dict) else value for (
-        value) in self.layer_self.functions_dict_acessory_network.values(
+        value) in self.activations_accessory_layer_dict.values(
         )]
 
         # Creates a dense layer for the accessory network
@@ -734,7 +780,7 @@ class PartiallyConvexNNs:
         # mard product
 
         self.layer_self.dense_Wzu = tf.keras.layers.Dense(
-        self.layer_self.input_size_main_layer, name="Wzu")
+        self.input_size_main_layer, name="Wzu")
 
         # Creates a dense layer for the bit of the accessory layer's re-
         # sult that multiplies the initial convex input using the Hada-

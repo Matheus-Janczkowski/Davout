@@ -97,8 +97,8 @@ True):
     
     optional_keys: list of optional_keys. It can be either a simple list
     such as [key1, key2, ..., keyn], or a dictionary with a key for 
-    description and type {key1: {"description": description_1, "type":
-    type1}, ...]
+    description, type, and default value, such as {key1: {"description": 
+    description_1, "type": type1, "default": default_value1}, ...]
     
     dictionary_variable_name: name of the variable that possess that 
     dictionary
@@ -217,11 +217,24 @@ True):
 
     flag_check_type = False
 
+    flag_set_default_values = False
+
     if isinstance(optional_keys, dict):
 
         optional_keys_list = list(optional_keys.keys())
 
         flag_check_type = True
+
+        # Verifies if default values are passed
+
+        for value in optional_keys.values():
+
+            if "default" in value:
+
+                # If the key 'default' is found, set the flag to set the
+                # default values
+
+                flag_set_default_values = True
 
     else:
 
@@ -277,6 +290,30 @@ True):
                     "' has type "+str(type(value))+", whereas it must "+
                     "have type '"+str(value_type)+"'. Check the availa"+
                     "ble keys and their types:")
+                
+    # If the default values are passed, set them
+
+    if flag_set_default_values:
+
+        # Iterates over the optional keys
+
+        for optional_key, optional_info in optional_keys.items():
+
+            # If there is a default value and if this optional key is 
+            # not set in the original dictionary
+
+            if ("default" in optional_info) and (not (optional_key in (
+            dictionary))):
+
+                default_value = optional_info["default"]
+
+                # Sets the default value
+
+                dictionary[optional_key] = default_value 
+
+        # Returns the dictionary
+
+        return dictionary
             
 # Defines a function to list the keys in a string for error messageing
 

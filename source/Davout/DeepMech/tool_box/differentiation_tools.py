@@ -2,6 +2,8 @@
 
 import tensorflow as tf
 
+import inspect
+
 import numpy as np
 
 from ..tool_box import parameters_tools
@@ -64,8 +66,8 @@ class ScalarGradientWrtTrainableParams:
 class ScalarGradientWrtTrainableParamsGivenParameters:
     
     def __init__(self, scalar_function, model, input_tensor, 
-    shapes_trainable_parameters, model_true_values=None, parameters_type=
-    tf.float32):
+    shapes_trainable_parameters, model_initial_parameters, 
+    model_true_values=None, parameters_type=tf.float32):
         
         self.scalar_function = scalar_function
 
@@ -82,6 +84,29 @@ class ScalarGradientWrtTrainableParamsGivenParameters:
 
             self.model_true_values = tf.constant([0.0], dtype=
             input_tensor.dtype)
+
+            # If model true values is None and the scalar function has
+            # only one argument, makes a helper
+
+            # Verifies if the scalar function is callable
+
+            if callable(scalar_function):
+
+                # Gets the number of arguments of the scalar function
+
+                signature = inspect.signature(scalar_function)
+
+                number_of_arguments = sum(1 for parameter in (
+                signature.parameters.values()) if parameter.default==(
+                inspect.Parameter.empty))
+                
+                # If the number of arguments is one, makes the helper
+
+                if number_of_arguments==1:
+
+                    self.original_scalar_function = scalar_function
+
+                    self.scalar_function = self.scalar_argument_helper
 
         else:
 
@@ -111,12 +136,22 @@ class ScalarGradientWrtTrainableParamsGivenParameters:
 
             self.gradient_helper = self.custom_gradient_helper
 
+            # Sets the helper to compute the loss function and the gra-
+            # dient using the same forward pass
+
+            self.joint_loss_gradient_method = self.joint_loss_and_custom_gradient
+
         else:
 
             # Sets the gradient helper to the one appropriate for native
             # automatic differentiation
 
             self.gradient_helper = self.native_gradient_helper
+
+            # Sets the helper to compute the loss function and the gra-
+            # dient using the same forward pass
+
+            self.joint_loss_gradient_method = self.joint_loss_and_native_gradient
 
         # Verifies if the type of the parameters is different to the ty-
         # pe of the input tensor
@@ -132,6 +167,21 @@ class ScalarGradientWrtTrainableParamsGivenParameters:
 
         self.model_output_given_parameters = parameters_tools.ModelOutputGivenTrainableParameters(
         model, self.shapes_trainable_parameters)
+
+        # Sets the model initial parameters as a tensorflow variable
+
+        self.parameters_type = parameters_type
+
+        self.model_trainable_parameters = tf.Variable(tf.constant(
+        model_initial_parameters, dtype=self.parameters_type))
+
+    # Defines a helper function to enable the true values of y argument
+    # even though the original scalar function does not use it
+
+    @tf.function
+    def scalar_argument_helper(self, true_values, model_response):
+
+        return self.original_scalar_function(model_response)
 
     # Defines a helper function to get the gradient given a custom im-
     # plementation
@@ -169,19 +219,33 @@ class ScalarGradientWrtTrainableParamsGivenParameters:
         # Gets the gradient
 
         return tape.gradient(phi, trainable_parameters)
-
-    # Defines a function to actually evaluate the derivative
-
-    @tf.function
-    def __call__(self, trainable_parameters):
-
-        # Calls the gradient helper
-
-        return self.gradient_helper(trainable_parameters)
         
     # Defines a function to evaluate the loss function
 
     def evaluate_scalar_function(self, trainable_parameters):
+
+        # Sets the trainable variables to the variable tensor for ease 
+        # of differentiation
+
+        self.model_trainable_parameters.assign(tf.cast(
+        trainable_parameters, self.parameters_type))
+
+        # Gets the response of the model
+        
+        y = self.model_output_given_parameters(self.input_tensor, 
+        self.model_trainable_parameters)
+
+        # Gets the scalar function value and returns it
+
+        return self.scalar_function(self.model_true_values, y)
+    
+    # Defines a function to compute the loss function and its gradient
+    # with respect to the trainable parameters using the same forward 
+    # pass. This function is specialized for the case of gradients eva-
+    # luated using a custom function defined by the user
+    
+    @tf.function
+    def joint_loss_and_custom_gradient(self, trainable_parameters):
 
         # Gets the response of the model
         
@@ -190,7 +254,52 @@ class ScalarGradientWrtTrainableParamsGivenParameters:
 
         # Gets the scalar function value and returns it
 
-        return self.scalar_function(self.model_true_values, y)
+        return (self.scalar_function(self.model_true_values, y), 
+        self.scalar_function.custom_gradient(self.model_true_values, y, 
+        trainable_parameters))
+    
+    # Defines a function to compute the loss function and its gradient
+    # with respect to the trainable parameters using the same forward 
+    # pass. This function is specialized for the case of gradients eva-
+    # luated natively
+    
+    @tf.function
+    def joint_loss_and_native_gradient(self, trainable_parameters):
+
+        # Creates the tape
+
+        with tf.GradientTape() as tape:
+
+            tape.watch(trainable_parameters)
+
+            # Gets the response of the model
+
+            y = self.model_output_given_parameters(self.input_tensor, 
+            trainable_parameters)
+
+            phi = self.scalar_function(self.model_true_values, y)
+
+        # Gets the gradient
+
+        gradient = tape.gradient(phi, trainable_parameters)
+
+        return phi, gradient
+
+    # Defines a function to actually evaluate the derivative
+
+    def __call__(self, trainable_parameters):
+
+        # Sets the trainable variables to the variable tensor for ease 
+        # of differentiation
+
+        self.model_trainable_parameters.assign(tf.cast(
+        trainable_parameters, self.parameters_type))
+
+        # Calls the loss function and the gradient using the same func-
+        # tion to spare computational effort
+
+        return self.joint_loss_gradient_method(
+        self.model_trainable_parameters)
     
     # Defines a function to update the scalar function if it is parame-
     # terizable by externally-given quantities

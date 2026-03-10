@@ -177,7 +177,7 @@ def model_parameters_to_flat_tensor_and_shapes(model):
         # Adds the shape of the tensor of parameters, and adds if it has
         # the regularizable attribute
 
-        shapes.append((layer.shape, getattr(layer, "name")))
+        shapes.append((layer.shape))
 
         # Adds the parameters as a vector tensor
 
@@ -186,14 +186,6 @@ def model_parameters_to_flat_tensor_and_shapes(model):
     # Concatenates and returns everything
 
     return tf.concat(flat_parameters, axis=0), shapes
-
-# Defines a function to get the split the flat tensor of parameters into
-# the different parameters tensors
-
-@tf.function
-def unflatten_parameters(flat_parameters, n_parameters_per_tensor):
-
-    return tf.split(flat_parameters, n_parameters_per_tensor, axis=-1)
 
 # Defines a function to get the flat tensor of parameters back to the
 # tensors of parameters and regularizes each weight using the regulari-
@@ -243,6 +235,14 @@ regularization_function):
 
     return tensors
 
+# Defines a function to get the split the flat tensor of parameters into
+# the different parameters tensors
+
+@tf.function
+def unflatten_parameters(flat_parameters, n_parameters_per_tensor):
+
+    return tf.split(flat_parameters, n_parameters_per_tensor, axis=-1)
+
 ########################################################################
 #             Call with parameters method for custom layers            #
 ########################################################################
@@ -275,9 +275,11 @@ class ModelOutputGivenTrainableParameters:
 
         self.layers_list = []
 
+        self.layers_indices = []
+
         # Validates the consistency of the layers of the model
 
-        for layer in self.model.layers:
+        for layer_index, layer in enumerate(self.model.layers):
             
             # Verifies if the layer has the call with parameters attri-
             # bute, which signals it as an instance of the MixedActiva-
@@ -286,6 +288,8 @@ class ModelOutputGivenTrainableParameters:
             if hasattr(layer, "call_with_parameters"):
                 
                 self.layers_list.append(layer)
+
+                self.layers_indices.append(layer_index)
 
                 # Gets the number of parameters in this layer
 
@@ -305,7 +309,7 @@ class ModelOutputGivenTrainableParameters:
             # Verifies if it is not an input layer, throws an error, be-
             # cause the input layer does not do anything really
                 
-            elif layer.__class__.__name__!="InputLayer":
+            elif not isinstance(layer, tf.keras.layers.InputLayer):
 
                 raise TypeError("Layer '"+str(layer.__class__.__name__)+
                 "' is not an instance of 'MixedActivationLayer' nor of"+
@@ -313,7 +317,7 @@ class ModelOutputGivenTrainableParameters:
             
         # Gets the number of parameters per variable tensor
 
-        self.n_parameters_per_tensor = [np.prod(shape[0]) for shape in (
+        self.n_parameters_per_tensor = [np.prod(shape) for shape in (
         self.parameters_shapes)]
 
         # Converts the lists of indices to tuples
@@ -325,6 +329,8 @@ class ModelOutputGivenTrainableParameters:
         self.n_layers = len(self.layers_list)
 
         self.layers_list = tuple(self.layers_list)
+
+        self.layers_indices = tuple(self.layers_indices)
 
         self.n_parameters_per_tensor = tuple(self.n_parameters_per_tensor)
 
@@ -371,12 +377,12 @@ class ModelOutputGivenTrainableParameters:
 
         # Iterates through the layers
 
-        for i, layer in enumerate(model.layers):
+        for i, index in enumerate(self.layers_indices):
 
             # Updates the model parameters in place given the flat vec-
             # tor of parameters
 
-            layer.apply_parameters_to_layer(parameters[
+            model.layers[index].apply_parameters_to_layer(parameters[
             self.initial_index[i]:self.final_index[i]])
 
 ########################################################################

@@ -150,8 +150,12 @@ class TestANNTools(unittest.TestCase):
         live_activations, *_ = ANN_tools.verify_activationDict(
         activation_dict, 0, dict(), False, custom_activation_class)
 
+        code_given_info_class = ANN_tools.CodeGivenLayerInfo(None, None, 
+        0, self.input_tensor.dtype)
+
         mixed_layer = ANN_tools.MixedActivationLayer(activation_dict,
-        custom_activation_class, live_activationsDict=live_activations)
+        custom_activation_class, code_given_info_class,
+        live_activationsDict=live_activations)
 
         output_direct = mixed_layer(self.input_tensor)
 
@@ -594,11 +598,15 @@ class TestANNTools(unittest.TestCase):
         objective_function_with_parameters, model_params = loss_tools.build_loss_gradient_varying_model_parameters(
         custom_model, loss, input_test_data)
 
-        result3 = objective_function_with_parameters(model_params)
+        # Gets the gradient from the second position of the call method
+
+        result3 = objective_function_with_parameters(model_params)[1]
 
         t_initial = time.time()
 
-        result3 = objective_function_with_parameters(model_params)
+        # Gets the gradient from the second position of the call method
+
+        result3 = objective_function_with_parameters(model_params)[1]
 
         elapsed_time = time.time()-t_initial
 
@@ -623,11 +631,15 @@ class TestANNTools(unittest.TestCase):
         objective_function_with_parameters, model_paramsKeras = loss_tools.build_loss_gradient_varying_model_parameters(
         custom_model, loss, input_test_data)
 
-        result4 = objective_function_with_parameters(model_params)
+        # Gets the gradient from the second position of the call method
+
+        result4 = objective_function_with_parameters(model_params)[1]
 
         t_initial = time.time()
 
-        result4 = objective_function_with_parameters(model_params)
+        # Gets the gradient from the second position of the call method
+
+        result4 = objective_function_with_parameters(model_params)[1]
 
         elapsed_time = time.time()-t_initial
 

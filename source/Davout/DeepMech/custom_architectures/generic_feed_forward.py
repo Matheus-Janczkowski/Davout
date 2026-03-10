@@ -3,6 +3,8 @@
 
 import tensorflow as tf
 
+from ...PythonicUtilities.dictionary_tools import verify_obligatory_and_optional_keys
+
 ########################################################################
 #                        Generic feed-forward NN                       #
 ########################################################################
@@ -12,8 +14,19 @@ import tensorflow as tf
 class GenericFeedForwardNNs:
 
     def __init__(self, layer_self, activation_functionDict, 
-    custom_activations_class, activations_accessory_layer_dict, 
-    input_size_main_network, layer, regularization_function, dtype):
+    custom_activations_class, architecture_info_dict):
+        
+        # Verifies if the necessary information of the architecture pro-
+        # vided by the user has been actually supplied
+
+        architecture_info_dict = verify_obligatory_and_optional_keys(
+        architecture_info_dict, ["name"], {}, "custom_architecture", 
+        "GenericFeedForwardNNs")
+
+        # Saves the objects saved into the MixedActivationLayer class 
+        # instance
+
+        self.layer_self = layer_self
 
         # Gets all the live activation functions into a tuple
 
@@ -24,22 +37,21 @@ class GenericFeedForwardNNs:
         # Defines the method that will be used to call the layer's 
         # response when the trainable parameters are fixed
 
-        self.call_from_input_method = self.layer_call_from_input
+        self.layer_self.call_from_input_method = self.layer_call_from_input
 
         # Defines the method that will be used to call the layer's 
         # response when the trainable parameters are given
 
-        self.call_given_parameters = self.call_with_parameters
+        self.layer_self.call_given_parameters = self.call_with_parameters
+
+        # Selects the method to update the model parameters in place
+
+        self.layer_self.apply_parameters_to_layer = self.apply_parameters_to_layer
 
         # Selects the method for reshaping the model parameters from a
         # flat vector
 
         self.update_layer_parameters = self.layer_update_parameters
-
-        # Saves the objects saved into the MixedActivationLayer class 
-        # instance
-
-        self.layer_self = layer_self
     
     # Defines a method for getting the layer value given the input when
     # an accessory layer is NOT necessary

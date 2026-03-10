@@ -182,8 +182,7 @@ class ModelCustomTraining:
     def __init__(self, model, training_inputArray, training_trueArray,
     loss_metric, optimizer="CG", n_iterations=1000, gradient_tolerance=
     1E-3, float_type=None, verbose_deltaIterations=100, verbose=False, 
-    save_model_file="trained_model.keras", parent_path="get current pa"+
-    "th"):
+    save_model_file="trained_model.keras", parent_path=None):
         
         """
         Class for training a model whose trainable parameters (weights
@@ -209,7 +208,7 @@ class ModelCustomTraining:
 
         # Saves the parent path where to save the model
 
-        if parent_path=="get current path":
+        if parent_path is None:
 
             # Gets as default the path where this class was instantia-
             # ted
@@ -274,41 +273,6 @@ class ModelCustomTraining:
 
         self.training_trueValues = tf.constant(training_trueArray, dtype
         =self.float_type)
-
-        # Gets a variable to inform if the model is convex to its input,
-        # and saves the regularizing function
-
-        regularizing_function = "smooth absolute value"
-
-        if hasattr(model, "input_convex_model"):
-
-            self.input_convex_model = model.input_convex_model
-
-            if self.input_convex_model is not None:
-
-                if self.input_convex_model!="fully" and (
-                self.input_convex_model!="partially"):
-                    
-                    raise NameError("'input_convex_model' is '"+str(
-                    self.input_convex_model)+"', whereas it can be eit"+
-                    "her None, 'fully', or 'partially'")
-                
-            # Gets the regularizing function
-
-            if hasattr(model, "regularizing_function"):
-                
-                regularizing_function = model.regularizing_function
-
-            else:
-
-                raise AttributeError("The model is required to be inpu"+
-                "t convex or partially input convex, but no regularizi"+
-                "ng function has been provided for regularizing weight"+
-                " matrices")
-                
-        else:
-
-            self.input_convex_model = None
 
         # Construct a class to give the loss function, its gradient, and
         # the instructions for parameters (weights and biases) flattening
@@ -442,9 +406,14 @@ class ModelCustomTraining:
         # Sets the minimization problem using the minimize class from 
         # scipy
 
-        minimization_problem = minimize(
+        """minimization_problem = minimize(
         self.loss_class.evaluate_scalar_function, self.model_parameters,
         method=self.optimizer, jac=self.loss_class, tol=
+        self.gradient_tolerance, options={"maxiter": n_max_iterations})"""
+
+        minimization_problem = minimize(
+        self.loss_class, self.model_parameters,
+        method=self.optimizer, jac=True, tol=
         self.gradient_tolerance, options={"maxiter": n_max_iterations})
 
         # Updates the model parameters
@@ -491,8 +460,11 @@ class ModelCustomTraining:
                 loss_value = self.loss_class.evaluate_scalar_function(
                 self.model_parameters)
 
+                # Gets the gradient from the second position of the call
+                # method
+
                 gradient_value = tf.norm(self.loss_class(
-                self.model_parameters)).numpy()
+                self.model_parameters)[1]).numpy()
 
                 if gradient_value<=self.gradient_tolerance:
 
@@ -536,27 +508,6 @@ class ModelCustomTraining:
             print("Final loss...: "+format(final_loss, '.5e'))
 
             print("Training time: "+str(self.elapsed_time)+" seconds.\n")
-
-        """# Gets the trained parameters and reassigns them to the model
-
-        if self.input_convex_model:
-
-            self.model = parameters_tools.update_model_parameters(
-            self.model, self.model_parameters, regularizing_function=
-            self.loss_class.regularizing_function)
-
-            # Saves the model automatically and returns it as well
-
-            self.model.save(self.save_model_file)
-
-            return self.model
-        
-        else:
-            
-            # Does not regularize the model parameters
-
-            self.model = parameters_tools.update_model_parameters(
-            self.model, self.model_parameters)"""
         
         # Gets the trained parameters and reassigns them to the model
 

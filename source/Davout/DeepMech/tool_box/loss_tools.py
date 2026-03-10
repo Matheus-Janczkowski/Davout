@@ -86,8 +86,9 @@ None, verbose=False):
         # it alongside the 1D tensor of model parameters
 
         gradient_class = diff_tools.ScalarGradientWrtTrainableParamsGivenParameters(
-        loss, model, input_tensor, parameters_shapes, model_true_values=
-        model_true_values, parameters_type=model_parameters.dtype)
+        loss, model, input_tensor, parameters_shapes, model_parameters,
+        model_true_values=model_true_values, parameters_type=
+        model_parameters.dtype)
         
         return gradient_class, model_parameters
     

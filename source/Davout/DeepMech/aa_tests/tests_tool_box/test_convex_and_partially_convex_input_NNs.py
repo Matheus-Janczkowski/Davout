@@ -119,7 +119,8 @@ class TestANNTools(unittest.TestCase):
         self.input_dimension_gradient_tests, 
         self.activation_list_gradient_tests, enforce_customLayers=True, 
         evaluate_parameters_gradient=False, verbose=True, 
-        parameters_dtype="float64", custom_architecture="FullyConvexNNs")
+        parameters_dtype="float64", custom_architecture={"name": "Full"+
+        "yConvexNNs"})
 
         custom_model = ANN_class()
 
@@ -186,10 +187,10 @@ class TestANNTools(unittest.TestCase):
         self.input_dimension_gradient_tests, 
         self.activation_list_gradient_tests, enforce_customLayers=True, 
         evaluate_parameters_gradient=False, verbose=True, 
-        parameters_dtype="float64", accessory_layers_activationInfo=
-        self.accessory_activation_list_gradient_tests, 
-        input_size_main_network=self.input_size_main_network,
-        custom_architecture="PartiallyConvexNNs")
+        parameters_dtype="float64", input_size_main_network=
+        self.input_size_main_network, custom_architecture={"name": 
+        "PartiallyConvexNNs", "activations accessory layer list": 
+        self.accessory_activation_list_gradient_tests})
 
         custom_model = ANN_class()
 
