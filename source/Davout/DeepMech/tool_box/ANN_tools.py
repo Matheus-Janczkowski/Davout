@@ -619,10 +619,7 @@ class MixedActivationLayer(tf.keras.layers.Layer):
         code_info_dictionary = config.pop("code_given_info_class")
 
         config["code_given_info_class"] = CodeGivenLayerInfo(
-        input_size_main_network=code_info_dictionary["input_size_main_"+
-        "network"], input_size_main_layer=code_info_dictionary["input_"+
-        "size_main_layer"], layer=code_info_dictionary["layer"],
-        float_dtype=code_info_dictionary["float_dtype"])
+        **code_info_dictionary)
 
         return cls(**config)
 

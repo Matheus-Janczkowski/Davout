@@ -406,14 +406,8 @@ class ModelCustomTraining:
         # Sets the minimization problem using the minimize class from 
         # scipy
 
-        """minimization_problem = minimize(
-        self.loss_class.evaluate_scalar_function, self.model_parameters,
-        method=self.optimizer, jac=self.loss_class, tol=
-        self.gradient_tolerance, options={"maxiter": n_max_iterations})"""
-
-        minimization_problem = minimize(
-        self.loss_class, self.model_parameters,
-        method=self.optimizer, jac=True, tol=
+        minimization_problem = minimize(self.loss_class, 
+        self.model_parameters, method=self.optimizer, jac=True, tol=
         self.gradient_tolerance, options={"maxiter": n_max_iterations})
 
         # Updates the model parameters
