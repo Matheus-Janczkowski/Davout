@@ -24,8 +24,8 @@ and general purpose implementation of ANN models using tensorflow is al-
 so available. 
 
 This suite performs and the corresponding module:
-1. Geometry and mesh generation -------------------------------------------------------> CuboidGmsh
-2. Finite element analysis --------------------------------------------------------------------> MultiMech
+1. Geometry and mesh generation --------------------------------------------------------> CuboidGmsh
+2. Finite element analysis ---------------------------------------------------------------------> MultiMech
 3. ANN models definition and training ---------------------------------------------------> DeepMech
 4. Post-processing automation using ParaView ---------------------------------------> GraphUtilities
 5. Generation of figures, collages, and slides using own graphical tools ----> GraphUtilities
