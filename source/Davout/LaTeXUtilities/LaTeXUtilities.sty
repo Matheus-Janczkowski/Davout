@@ -82,6 +82,8 @@
 \RequirePackage{longtable}
 \RequirePackage{booktabs}
 \RequirePackage{array}
+\RequirePackage{environ}
+\RequirePackage{xstring}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -611,6 +613,34 @@ $\displaystyle\left\{\begin{aligned}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                               Charts                               %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\usetikzlibrary{shapes.geometric, arrows}
+
+% Creates flowchart elements
+
+\tikzstyle{terminator} = [rectangle, draw, text centered, rounded corners,%
+minimum height=2em]
+
+\tikzstyle{process} = [rectangle, draw, text centered, minimum height=2em]
+
+\tikzstyle{decision} = [diamond, draw, text centered, minimum height=2em]
+
+\tikzstyle{data}=[trapezium, draw, text centered, trapezium left angle=60, %
+trapezium right angle=120, minimum height=2em]
+
+\tikzstyle{connector} = [draw, -latex']
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                               Tables                               %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                           Textual commands                           %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -672,34 +702,119 @@ elsarticle-num-names}\bibliography{#1}}
       \item \theDesc}% Print each item
   \end{enumerate}%
 }
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%                               Charts                               %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\usetikzlibrary{shapes.geometric, arrows}
-
-% Creates flowchart elements
-
-\tikzstyle{terminator} = [rectangle, draw, text centered, rounded corners,%
-minimum height=2em]
-
-\tikzstyle{process} = [rectangle, draw, text centered, minimum height=2em]
-
-\tikzstyle{decision} = [diamond, draw, text centered, minimum height=2em]
-
-\tikzstyle{data}=[trapezium, draw, text centered, trapezium left angle=60, %
-trapezium right angle=120, minimum height=2em]
-
-\tikzstyle{connector} = [draw, -latex']
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%                               Tables                               %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                             Word counter                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% Defines a command to color a cell in a table
+% Defines an environment for counting words within a text excerpt.
+% Usage example:
+% \begin{TextWordCounterWithLimit}{Abstract}{150}
+% Physics-informed neural networks combine machine learning
+% with physical laws to solve partial differential equations.
+% \end{TextWordCounter}
+% 
+% or
+%
+% \begin{TextWordCounter}{Abstract}
+% Physics-informed neural networks combine machine learning
+% with physical laws to solve partial differential equations.
+% \end{TextWordCounter}
 
-\newcommand{\ColoredCell}[2]{\cellcolor{#1}{#2}}
+% Counter for words
+
+\newcounter{wordcount}
+
+% Count words using xstring
+\newcommand{\countwords}[1]{%
+\setcounter{wordcount}{0}%
+\StrCount{#1}{ }[\tempcount]% count spaces
+\addtocounter{wordcount}{\tempcount}%
+\stepcounter{wordcount}% add 1 for last word
+}
+
+% Environment to type in the text and to put the header with the counter
+% and the limit of words
+
+\NewEnviron{TextWordCounterWithLimit}[2]{\countwords{\BODY}\par\bigskip
+\noindent
+\begin{minipage}{\linewidth} % forces the header to stay in the same page
+\hrule height 0.5pt % Top bar
+\vskip 1pt % Tiny vertical space
+\noindent\makebox[\linewidth][l]{\textbf{#1 (\thewordcount/#2 words)}} % Title centered
+\vskip 1pt % Tiny vertical space
+\hrule height 0.5pt % Bottom bar
+\end{minipage}
+\par\smallskip\noindent\BODY}
+
+% Environment to type in the text and to put the header with the counter
+% without any limits
+
+\NewEnviron{TextWordCounter}[1]{\countwords{\BODY}\par\bigskip
+\noindent
+\begin{minipage}{\linewidth} % forces the header to stay in the same page
+\hrule height 0.5pt % Top bar
+\vskip 1pt % Tiny vertical space
+\noindent\makebox[\linewidth][l]{\textbf{#1 (\thewordcount$\;$words)}} % Title centered
+\vskip 1pt % Tiny vertical space
+\hrule height 0.5pt % Bottom bar
+\end{minipage}
+\par\smallskip\noindent\BODY}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                           Character counter                          %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Defines an environment for counting characters within a text excerpt.
+% Usage example:
+% \begin{TextCharacterCounterWithLimit}{Abstract}{150}
+% Physics-informed neural networks combine machine learning
+% with physical laws to solve partial differential equations.
+% \end{TextCharacterCounterWithLimit}
+% 
+% or
+%
+% \begin{TextCharacterCounter}{Abstract}
+% Physics-informed neural networks combine machine learning
+% with physical laws to solve partial differential equations.
+% \end{TextCharacterCounter}
+
+% Counter for characters
+
+\newcounter{charcount}
+
+% Count characters using xstring
+
+\newcommand{\countchars}[1]{%
+\setcounter{charcount}{0}%
+\StrLen{#1}[\tempcount]% counts all characters including spaces
+\setcounter{charcount}{\tempcount}%
+}
+
+% Environment to type in the text and to put the header with the counter
+% and the limit of characters
+
+\NewEnviron{TextCharacterCounterWithLimit}[2]{\countchars{\BODY}\par\bigskip
+\noindent
+\begin{minipage}{\linewidth} % forces the header to stay in the same page
+\hrule height 0.5pt % Top bar
+\vskip 1pt % Tiny vertical space
+\noindent\makebox[\linewidth][l]{\textbf{#1 (\thecharcount/#2 characters)}} % Title centered
+\vskip 1pt % Tiny vertical space
+\hrule height 0.5pt % Bottom bar
+\end{minipage}
+\par\smallskip\noindent\BODY}
+
+% Environment to type in the text and to put the header with the counter
+% without any limits
+
+\NewEnviron{TextCharacterCounter}[1]{\countchars{\BODY}\par\bigskip
+\noindent
+\begin{minipage}{\linewidth} % forces the header to stay in the same page
+\hrule height 0.5pt % Top bar
+\vskip 1pt % Tiny vertical space
+\noindent\makebox[\linewidth][l]{\textbf{#1 (\thecharcount$\;$characters)}} % Title centered
+\vskip 1pt % Tiny vertical space
+\hrule height 0.5pt % Bottom bar
+\end{minipage}
+\par\smallskip\noindent\BODY}
