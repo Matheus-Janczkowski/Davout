@@ -23,12 +23,12 @@ in large strains using FEniCS and GMSH for mesh generation. A consistent
 and general purpose implementation of ANN models using tensorflow is al-
 so available. 
 
-This suite performs:
-1. Geometry and mesh generation
+This suite performs and the corresponding module:
+1. Geometry and mesh generation -> CuboidGmsh
 2. Finite element analysis
 3. ANN models definition and training
 4. Post-processing automation using ParaView
-5. Generation of figures, collages, and slides using own graphical tools
+5. Generation of figures, collages, and slides using own graphical tools -> GraphUtilities
 6. LaTeX writing and formating using an ensemble of commands
 
 # Philosophy and aims
