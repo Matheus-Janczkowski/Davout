@@ -6,7 +6,7 @@ to the repository and source files: https://github.com/Matheus-Janczkowski/Davou
 
 2. Link to the booklet on python programming: https://www.overleaf.com/read/hcmfzzsrhndj#00fdb1
 
-3. Link to the booklet on writing in LaTeX: https://www.overleaf.com/read/sdrvfrpdjhft#66d6f9
+3. Link to the booklet on writing using LaTeX: https://www.overleaf.com/read/sdrvfrpdjhft#66d6f9
 
 4. Link for the presentation template: https://www.overleaf.com/read/sbgxdphxswmm#6d7d64
 
@@ -31,19 +31,19 @@ This suite performs:
 5. Generation of figures, collages, and slides using own graphical tools
 6. LaTeX writing and formating using an ensemble of commands
 
-# Installation using pip
-pip install Davout
-
 # Philosophy and aims
-Davout aims to be a unified software to accompany researchers in compu-
-tational mechanics. Davout sits on a profound love for python and open
-software.
+Davout aims to be a unified software to accompany researchers in 
+computational mechanics. Davout is inspired by a profound love for python 
+and open software.
 
 Davout stands on the shoulders of other massively mighty python packages,
 such as FEniCS, TensorFlow, GMSH, ParaView, and matplotlib.
 
+# Installation using pip
+pip install Davout
+
 # Installation using installer file
-Download the zip file, unzip it and move it to a suitable directory. 
+Download the zip file, unzip it and move it to a suitable directory.
 Open the Davout folder, where setup.py is located. Open this path in
 terminal (using a virtual environment) and run the following command
 
