@@ -176,6 +176,11 @@ top=3cm, bottom=2cm}}\onehalfspacing\setlength{\parindent}{1.25cm}%
 
 \newcommand*{\CommentedArrow}[2]{\xRightarrow[#2]{#1}}
 
+% Command for creating an implication arrow with text ONLY above and un-
+% derneath it
+
+\newcommand*{\TextCommentedArrow}[2]{\xRightarrow[\text{#2}]{\text{#1}}}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                 Units                                %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -579,21 +584,28 @@ $\displaystyle\left\{\begin{aligned}
 
 % Defines a set of environments with three shades of shadows
 
-\newenvironment{LightShade}{\definecolor{shadecolor}{rgb}{0.8,0.8,0.8}\begin{snugshade}}{\end{snugshade}}
+\newenvironment{LightShade}{\definecolor{shadecolor}{rgb}{%
+0.8,0.8,0.8}\begin{snugshade}}{\end{snugshade}}
 
-\newenvironment{MediumShade}{\definecolor{shadecolor}{rgb}{0.675,0.675,0.675}\begin{snugshade}}{\end{snugshade}}
+\newenvironment{MediumShade}{\definecolor{shadecolor}{rgb}{%
+0.675,0.675,0.675}\begin{snugshade}}{\end{snugshade}}
 
-\newenvironment{DarkShade}{\definecolor{shadecolor}{rgb}{0.55,0.55,0.55}\begin{snugshade}}{\end{snugshade}}
+\newenvironment{DarkShade}{\definecolor{shadecolor}{rgb}{%
+0.55,0.55,0.55}\begin{snugshade}}{\end{snugshade}}
 
 % Defines a command to write something inside the shadded environments
 
-\NewDocumentCommand{\LightShadeText}{m}{\begin{LightShade}#1\end{LightShade}}
+\NewDocumentCommand{\LightShadeText}{m}{\begin{LightShade}#1%
+\end{LightShade}}
 
-\NewDocumentCommand{\MediumShadeText}{m}{\begin{MediumShade}#1\end{MediumShade}}
+\NewDocumentCommand{\MediumShadeText}{m}{\begin{MediumShade}#1%
+\end{MediumShade}}
 
-\NewDocumentCommand{\DarkShadeText}{m}{\begin{DarkShade}#1\end{DarkShade}}
+\NewDocumentCommand{\DarkShadeText}{m}{\begin{DarkShade}#1%
+\end{DarkShade}}
 
-% Defines a set of commands to write sections, subsections and subsubsections with shade
+% Defines a set of commands to write sections, subsections and subsub-
+% sections with shade
 %
 % Examples with label
 % \ShadedSection[sec:test]{Name}
@@ -605,11 +617,16 @@ $\displaystyle\left\{\begin{aligned}
 % \ShadedSubection{Name}
 % \ShadedSubsubection{Name}
 
-\NewDocumentCommand{\ShadedSection}{O{}m}{\IfNoValueTF{#1}{\DarkShadeText{\section{#2}}}{\DarkShadeText{\section{#2}\label{#1}}}}
+\NewDocumentCommand{\ShadedSection}{O{}m}{\IfNoValueTF{#1}{
+\DarkShadeText{\section{#2}}}{\DarkShadeText{\section{#2}\label{#1}}}}
 
-\NewDocumentCommand{\ShadedSubsection}{O{}m}{\IfNoValueTF{#1}{\MediumShadeText{\subsection{#2}}}{\MediumShadeText{\subsection{#2}\label{#1}}}}
+\NewDocumentCommand{\ShadedSubsection}{O{}m}{\IfNoValueTF{#1}{
+\MediumShadeText{\subsection{#2}}}{\MediumShadeText{\subsection{#2}
+\label{#1}}}}
 
-\NewDocumentCommand{\ShadedSubsubsection}{O{}m}{\IfNoValueTF{#1}{\LightShadeText{\subsubsection{#2}}}{\LightShadeText{\subsubsection{#2}\label{#1}}}}
+\NewDocumentCommand{\ShadedSubsubsection}{O{}m}{\IfNoValueTF{#1}{
+\LightShadeText{\subsubsection{#2}}}{\LightShadeText{
+\subsubsection{#2}\label{#1}}}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -694,7 +711,8 @@ elsarticle-num-names}\bibliography{#1}}
 }
 
 \newenvironment{AlphabeticalEnumerate}{%
-  \DTLifdbexists{list}{\DTLcleardb{list}}{\DTLnewdb{list}}% Create new/discard old list
+  \DTLifdbexists{list}{\DTLcleardb{list}}{\DTLnewdb{list}}% Create new/
+%discard old list
 }{%
   \DTLsort{description}{list}% Sort list
   \begin{enumerate}%
@@ -741,7 +759,7 @@ elsarticle-num-names}\bibliography{#1}}
 \begin{minipage}{\linewidth} % forces the header to stay in the same page
 \hrule height 0.5pt % Top bar
 \vskip 1pt % Tiny vertical space
-\noindent\makebox[\linewidth][l]{\textbf{#1 (\thewordcount/#2 words)}} % Title centered
+\noindent\textbf{#1} \hfill \textbf{(\thewordcount/#2 words)} % Title centered
 \vskip 1pt % Tiny vertical space
 \hrule height 0.5pt % Bottom bar
 \end{minipage}
@@ -755,7 +773,7 @@ elsarticle-num-names}\bibliography{#1}}
 \begin{minipage}{\linewidth} % forces the header to stay in the same page
 \hrule height 0.5pt % Top bar
 \vskip 1pt % Tiny vertical space
-\noindent\makebox[\linewidth][l]{\textbf{#1 (\thewordcount$\;$words)}} % Title centered
+\noindent\textbf{#1} \hfill \textbf{(\thewordcount$\;$words)} % Title centered
 \vskip 1pt % Tiny vertical space
 \hrule height 0.5pt % Bottom bar
 \end{minipage}
@@ -794,12 +812,14 @@ elsarticle-num-names}\bibliography{#1}}
 % Environment to type in the text and to put the header with the counter
 % and the limit of characters
 
-\NewEnviron{TextCharacterCounterWithLimit}[2]{\countchars{\BODY}\par\bigskip
+\NewEnviron{TextCharacterCounterWithLimit}[2]{\countchars{\BODY}\par
+\bigskip
 \noindent
 \begin{minipage}{\linewidth} % forces the header to stay in the same page
 \hrule height 0.5pt % Top bar
 \vskip 1pt % Tiny vertical space
-\noindent\makebox[\linewidth][l]{\textbf{#1 (\thecharcount/#2 characters)}} % Title centered
+\noindent\textbf{#1} \hfill \textbf{(\thecharcount/#2 characters)} % Title 
+% centered
 \vskip 1pt % Tiny vertical space
 \hrule height 0.5pt % Bottom bar
 \end{minipage}
@@ -813,7 +833,8 @@ elsarticle-num-names}\bibliography{#1}}
 \begin{minipage}{\linewidth} % forces the header to stay in the same page
 \hrule height 0.5pt % Top bar
 \vskip 1pt % Tiny vertical space
-\noindent\makebox[\linewidth][l]{\textbf{#1 (\thecharcount$\;$characters)}} % Title centered
+\noindent\textbf{#1} \hfill \textbf{(\thecharcount\ characters)} % Title 
+% centered
 \vskip 1pt % Tiny vertical space
 \hrule height 0.5pt % Bottom bar
 \end{minipage}
