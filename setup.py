@@ -19,7 +19,7 @@ setup(
     's/fonts/*.ttf'], },
     classifiers=[
         'Programming Language :: Python :: 3',
-        'License :: OSI Approved :: MIT License',
+        'License :: OSI Approved :: GNU License',
         # Add more classifiers as needed
     ],
     python_requires='>=3.10',  # Specify the required Python version

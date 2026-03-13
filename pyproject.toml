@@ -10,7 +10,7 @@ readme = "README.md"
 authors = [
     { name = "Matheus Janczkowski", email = "matheusj2009@hotmail.com" }
 ]
-license = "MIT"
+license = "GNU"
 requires-python = ">=3.10"
 
 dependencies = [
