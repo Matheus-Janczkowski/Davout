@@ -19,9 +19,9 @@ sis, machine learning, and multiscale analysis. Additionally, a set of
 tools is provided.
 
 This package contains extensive implementation of hyperelastic problems 
-in large strains using FEniCS and GMSH for mesh generation. A consistent 
-and general purpose implementation of ANN models using tensorflow is al-
-so available. 
+in finite strains using FEniCS and GMSH for mesh generation. A consistent 
+and general purpose implementation of ANN models using tensorflow is
+also available. 
 
 This suite performs and the corresponding module:
 1. Geometry and mesh generation ---------------------------------------------------------> CuboidGmsh
