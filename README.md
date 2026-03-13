@@ -16,9 +16,9 @@ https://doi.org/10.5281/zenodo.18806245
 All versions: DOI 10.5281/zenodo.18806244
 
 # What does Davout do?
-Workhorse for a research project that encompasses finite element analy-
-sis, machine learning, and multiscale analysis. Additionally, a set of 
-tools is provided.
+Workhorse for a research project that encompasses finite element 
+analysis, machine learning, and multiscale analysis. Additionally, a set 
+of tools is provided.
 
 This package contains extensive implementation of hyperelastic problems 
 in finite strains using FEniCS and GMSH for mesh generation. A consistent 
