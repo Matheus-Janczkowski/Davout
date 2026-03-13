@@ -12,6 +12,7 @@ to the repository and source files: https://github.com/Matheus-Janczkowski/Davou
 
 # Citation
 https://doi.org/10.5281/zenodo.18806245
+All versions: DOI 10.5281/zenodo.18806244
 
 # What does Davout do?
 Workhorse for a research project that encompasses finite element analy-
