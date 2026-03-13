@@ -268,8 +268,9 @@ class LineStyles:
 
                 available_contour_styles += "\n'"+str(contour)+"'"
 
-            raise NameError("The only '"+str(style_key_name)+"' availa"+
-            "ble are:"+available_contour_styles)
+            raise NameError("'"+str(style_key_name)+"' is not a valid "+
+            "line style. The only '"+str(style_key_name)+"' available "+
+            "are:"+available_contour_styles)
         
 # Defines a class to store arrow head styles
 
