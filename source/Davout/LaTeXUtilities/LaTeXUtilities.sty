@@ -84,6 +84,7 @@
 \RequirePackage{array}
 \RequirePackage{environ}
 \RequirePackage{xstring}
+\RequirePackage{tcolorbox}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -235,6 +236,14 @@ top=3cm, bottom=2cm}}\onehalfspacing\setlength{\parindent}{1.25cm}%
 
 \newcommand{\Log}[1]{\mathrm{log}\Parentheses{#1}}
 
+% Command to write the ceil function
+
+\newcommand{\Ceil}[1]{\left\lceil #1 \right\rceil}
+
+% Command to write the floor function
+
+\newcommand{\Floor}[1]{\left\lfloor #1 \right\rfloor}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                               Calculus                               %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -314,6 +323,10 @@ top=3cm, bottom=2cm}}\onehalfspacing\setlength{\parindent}{1.25cm}%
 
 \newcommand{\IntegerSet}[1]{\Set{1,2,\dots,#1}}
 
+% Command to get a set of integers from 1 to 3
+
+\newcommand{\IntegerSetThreeD}{\Set{1,2,3}}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                         Vectors and matrices                         %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -352,9 +365,21 @@ top=3cm, bottom=2cm}}\onehalfspacing\setlength{\parindent}{1.25cm}%
 
 \newcommand{\CovariantBasis}[1]{\boldsymbol{e}_{#1}}
 
+% Command for the contravariant basis vector
+
+\newcommand{\ContravariantBasis}[1]{\boldsymbol{e}^{#1}}
+
 % Command to write the axial tensor of a skew tensor of higher order
 
 \newcommand{\Axl}[1]{\mathrm{axl}\Parentheses{#1}}
+
+% Command for the second-order identity tensor
+
+\newcommand{\Identity}{\boldsymbol{I}}
+
+% Command for the fourth-order identity tensor
+
+\newcommand{\FourthOrderIdentity}{\pmb{\mathbb{I}}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                      Vector and function spaces                      %
@@ -397,6 +422,11 @@ top=3cm, bottom=2cm}}\onehalfspacing\setlength{\parindent}{1.25cm}%
 % a tensor
 
 \newcommand*{\SymOperator}[1]{\operatorname{sym}\!\left(#1\right)}
+
+% Command for typing the skew operator, which gives the skew-symmetric 
+% part of a tensor
+
+\newcommand*{\SkewOperator}[1]{\operatorname{skew}\!\left(#1\right)}
 
 % Command for making a generic operator with lower and upper text, like
 % U_{j=1}^{k}. The arguments are: the letter to symbolize the operator,
@@ -720,6 +750,19 @@ elsarticle-num-names}\bibliography{#1}}
       \item \theDesc}% Print each item
   \end{enumerate}%
 }
+
+% Environment to create a grey box as wide as the page.
+% Creates the counter of exercise boxes
+
+\newcounter{exercise}[section]
+
+\renewcommand{\theexercise}{\thesection.\arabic{exercise}}
+
+\newtcolorbox{ExerciseBox}{before title=\refstepcounter{exercise},
+% Updates the exercise counter
+colback=Red1, colbacktitle=Red2, colframe=black, coltitle=black, 
+title=\textit{\textbf{Exercise \theexercise}}, halign title=left, 
+lefttitle=0pt, width=\linewidth, boxrule=0.5pt, arc=0pt, left=2pt}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                             Word counter                             %
