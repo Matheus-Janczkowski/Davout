@@ -57,7 +57,8 @@ class InteractiveWindowInfo:
 def create_interactive_window(general_axes, collage, old_x_min, 
 old_x_max, old_y_min, old_y_max, new_x_min, new_x_max, new_y_min, 
 new_y_max, input_path, depth_order, arrows_and_lines_file,
-interactive_window_info, verbose=False):
+interactive_window_info, line_styles_class, arrow_head_styles_class, 
+colors_class, verbose=False):
 
     # Zoom axes to the bounding box
 
@@ -583,7 +584,8 @@ interactive_window_info, verbose=False):
             event.key, arrows_and_lines_list, arrows_and_lines_file, 
             input_path, depth_order, collage, points_list, general_axes,
             interactive_window_info.tolerance, 
-            interactive_window_info.vanishing_points_list)
+            interactive_window_info.vanishing_points_list, 
+            line_styles_class, arrow_head_styles_class, colors_class)
 
             # Disables the flag input again
 

@@ -57,7 +57,7 @@ class ColorMiscellany:
 
     # Defines a function to get the color
 
-    def __call__(self, key):
+    def __call__(self, key, throw_error=True):
         
         # Verifies if it is one of the keys
 
@@ -88,9 +88,66 @@ class ColorMiscellany:
 
                 available_colors += "\n'"+str(color)+"'"
 
-            raise ValueError("'"+str(key)+"' is not a key of the dicti"+
+            error_message = ("'"+str(key)+"' is not a key of the dicti"+
             "onary of colors nor is a list with RGB values (3 componen"+
             "ts). Check the valid color names:"+available_colors)
+
+            # If an error is to be thrown
+
+            if throw_error:
+
+                raise ValueError(error_message)
+            
+            # Otherwise, just returns False
+
+            return False
+
+    # Defines a function to verify if the color is there
+
+    def verify_color_name(self, key, throw_error=False):
+        
+        # Verifies if it is one of the keys
+
+        if key in self.color_dictionary:
+
+            return key
+        
+        # Otherwise, verifies if it is a list
+
+        elif isinstance(key, list):
+
+            # Verifies if it has 3 elements
+
+            if len(key)!=3:
+
+                raise IndexError("'"+str(key)+"' does not have 3 eleme"+
+                "nts. It must have 3 for they are the RGB values")
+            
+            return key 
+        
+        # Otherwise, throws an error
+
+        else:
+
+            available_colors = ""
+
+            for color in self.color_dictionary:
+
+                available_colors += "\n'"+str(color)+"'"
+
+            error_message = ("'"+str(key)+"' is not a key of the dicti"+
+            "onary of colors nor is a list with RGB values (3 componen"+
+            "ts). Check the valid color names:"+available_colors)
+
+            # If an error is to be thrown
+
+            if throw_error:
+
+                raise ValueError(error_message)
+            
+            # Otherwise, just returns False
+
+            return False
 
 # Defines a class with ready-to-use layout sizes
 
@@ -107,7 +164,7 @@ class TemplateSizes:
 
     # Defines a function to get the color
 
-    def __call__(self, key):
+    def __call__(self, key, throw_error=True):
         
         # Verifies if it is one of the keys
 
@@ -139,10 +196,20 @@ class TemplateSizes:
 
                 available_sizes += "\n'"+str(size)+"'"
 
-            raise ValueError("'"+str(key)+"' is not a key of the dicti"+
+            error_message = ("'"+str(key)+"' is not a key of the dicti"+
             "onary of sizes nor is a list with layout sizes (2 compone"+
             "nts---width and height). Check the valid size names:"+
             available_sizes)
+
+            # If an error is to be thrown
+
+            if error_message:
+
+                raise NameError(error_message)
+            
+            # Otherwise, just returns False
+
+            return False
         
 # Defines a class to store alignment options
 
@@ -166,7 +233,7 @@ class AlignmentOptions:
         "p")}
 
     def __call__(self, alignment, position, width, height, 
-    text_alignment=False):
+    text_alignment=False, throw_error=True):
         
         # If text alignment is to be given
 
@@ -201,9 +268,19 @@ class AlignmentOptions:
 
                 alignments_options += "\n'"+str(name)+"'"
 
-            raise NameError("There is no '"+str(alignment)+"' option f"+
-            "or alignment. Check the available options:"+
+            error_message = ("There is no '"+str(alignment)+"' option "+
+            "for alignment. Check the available options:"+
             alignments_options)
+
+            # If error is to be thrown
+
+            if throw_error:
+
+                raise NameError(error_message)
+            
+            # Otherwise, returns False
+
+            return False
         
         # Gets the coefficients
 
@@ -232,7 +309,8 @@ class LineStyles:
 
         return max(int(round(number)), 1)
 
-    def __call__(self, line_style, base_thickness, style_key_name):
+    def __call__(self, line_style, base_thickness, style_key_name, 
+    throw_error=True):
         
         # Verifies if the asked line style is available
 
@@ -268,9 +346,51 @@ class LineStyles:
 
                 available_contour_styles += "\n'"+str(contour)+"'"
 
-            raise NameError("'"+str(line_style)+"' is not a valid '"+str(
-            style_key_name)+"'. The only '"+str(style_key_name)+"' ava"+
-            "ilable are:"+available_contour_styles)
+            error_message = ("'"+str(line_style)+"' is not a valid '"+
+            str(style_key_name)+"'. The only '"+str(style_key_name)+"'"+
+            " available are:"+available_contour_styles)
+
+            # If error is to be thrown
+
+            if throw_error:
+
+                raise NameError(error_message)
+            
+            # Otherwise, returns false
+
+            return False
+
+    def verify_line_name(self, line_style, throw_error=False):
+        
+        # Verifies if the asked line style is available
+
+        if line_style in self.available_line_styles:
+
+            # Returns the plain key
+
+            return line_style
+
+        else:
+
+            available_contour_styles = ""
+
+            for contour in self.available_line_styles:
+
+                available_contour_styles += "\n'"+str(contour)+"'"
+
+            error_message = ("'"+str(line_style)+"' is not a valid 'li"+
+            "ne style'. The only 'line style' availables are:"+
+            available_contour_styles)
+
+            # If error is to be thrown
+
+            if throw_error:
+
+                raise NameError(error_message)
+            
+            # Otherwise, returns false
+
+            return False
         
 # Defines a class to store arrow head styles
 
@@ -286,7 +406,7 @@ class ArrowHeadStyles:
         "gular arrow": ArrowHeadStyles.InkscapeAngularArrow, "inkscape"+
         " round back arrow": ArrowHeadStyles.InkscapeCurvedBackArrow}
 
-    def __call__(self, arrow_head_style):
+    def __call__(self, arrow_head_style, throw_error=True):
         
         # Verifies if the asked arrow_head style is available
 
@@ -316,8 +436,47 @@ class ArrowHeadStyles:
 
                 available_arrow_styles += "\n'"+str(arrow)+"'"
 
-            raise NameError("The only 'arrow style' available are:"+
+            error_message = ("The only 'arrow style' available are:"+
             available_arrow_styles)
+
+            # If error is to be thrown
+
+            if throw_error:
+
+                raise NameError(error_message)
+            
+            # Otherwise, returns False
+
+            return False
+
+    def verify_arrow_name(self, arrow_head_style, throw_error=False):
+        
+        # Verifies if the asked arrow_head style is available
+
+        if arrow_head_style in self.arrow_head_styles:
+
+            return arrow_head_style
+
+        else:
+
+            available_arrow_styles = ""
+
+            for arrow in self.arrow_head_styles:
+
+                available_arrow_styles += "\n'"+str(arrow)+"'"
+
+            error_message = ("The only 'arrow style' available are:"+
+            available_arrow_styles)
+
+            # If error is to be thrown
+
+            if throw_error:
+
+                raise NameError(error_message)
+            
+            # Otherwise, returns False
+
+            return False
     
     ####################################################################
     #                           Custom arrows                          #

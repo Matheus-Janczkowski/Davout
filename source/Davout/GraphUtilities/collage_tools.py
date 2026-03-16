@@ -561,7 +561,8 @@ compress_level=None):
                     general_axes, collage, 0.0, layout_width_milimeters, 0.0, 
                     layout_height_milimeters, x_min, x_max, y_min, y_max, 
                     input_path, depth_order, arrows_and_lines_file, 
-                    interactive_window_info, verbose=verbose)
+                    interactive_window_info, line_style_class, 
+                    arrow_style_class, colors_class, verbose=verbose)
 
                     # Updates the counter of redrawing occurrences
 
@@ -679,7 +680,8 @@ compress_level=None):
                     general_axes, collage, 0.0, layout_width_milimeters, 
                     0.0, layout_height_milimeters, x_min, x_max, y_min, 
                     y_max, input_path, depth_order, arrows_and_lines_file, 
-                    interactive_window_info, verbose=verbose)
+                    interactive_window_info, line_style_class, 
+                    arrow_style_class, colors_class, verbose=verbose)
 
                     # Updates the counter of redrawing occurrences
 
@@ -791,7 +793,8 @@ compress_level=None):
                 collage, 0.0, layout_width_milimeters, 0.0, 
                 layout_height_milimeters, x_min, x_max, y_min, y_max, 
                 input_path, depth_order, arrows_and_lines_file, 
-                interactive_window_info, verbose=verbose)
+                interactive_window_info, line_style_class, 
+                arrow_style_class, colors_class, verbose=verbose)
 
                 # Updates the counter of redrawing occurrences
 

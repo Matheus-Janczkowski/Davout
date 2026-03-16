@@ -11,7 +11,8 @@ from ..tool_box import collage_classes
 
 def set_curve(key, arrows_and_lines_list, arrows_and_lines_file, 
 input_path, depth_order, collage, points_list, general_axes, tolerance,
-vanishing_points):
+vanishing_points, line_styles_class, arrow_head_styles_class, 
+colors_class):
     
     # Initializes the dictionary with the curve information
 
@@ -94,22 +95,20 @@ vanishing_points):
 
     if key=="q":
 
-        # Allows for selection of parameters
+        # Gets the necessary information
 
-        thickness = input("\nType the thickness and press enter: ")
+        thickness = input_repeater("\nType the thickness and press ent"+
+        "er: ", reviewer_function=None, default_value=0.2, 
+        necessary_type=float)
 
-        line_style = input("\nType the line style and press enter: ")
+        line_style = input_repeater("\nType the line style and press e"+
+        "nter: ", reviewer_function=line_styles_class.verify_line_name, 
+        default_value="solid", necessary_type=str)
 
-        color = input("\nType the color of the contour line and press "+
-        "enter: ")
-
-        # Converts these strings 
-
-        thickness = convert_string(thickness, 0.2)
-
-        line_style = convert_string(line_style, "solid")
-
-        color = convert_string(color, "black")
+        color = input_repeater("\nType the color of the contour line a"+
+        "nd press enter: ", reviewer_function=
+        colors_class.verify_color_name, default_value="black", 
+        necessary_type=str)
 
         # Creates the dictionary to create this spline
 
@@ -123,27 +122,24 @@ vanishing_points):
 
     elif key=="w":
 
-        # Allows for selection of parameters
+        # Gets the necessary information
 
-        thickness =  input("\nType the thickness and press enter: ")
+        thickness = input_repeater("\nType the thickness and press ent"+
+        "er: ", reviewer_function=None, default_value=0.2, 
+        necessary_type=float)
 
-        line_style =  input("\nType the line style and press enter: ")
+        line_style = input_repeater("\nType the line style and press e"+
+        "nter: ", reviewer_function=line_styles_class.verify_line_name, 
+        default_value="solid", necessary_type=str)
 
-        color = input("\nType the color of the contour line and press "+
-        "enter: ")
+        color = input_repeater("\nType the color of the contour line a"+
+        "nd press enter: ", reviewer_function=
+        colors_class.verify_color_name, default_value="black", 
+        necessary_type=str)
 
-        fill_color = input("\nType the color of filling and press ente"+
-        "r: ")
-
-        # Converts these strings 
-
-        thickness = convert_string(thickness, 0.2)
-
-        line_style = convert_string(line_style, "solid")
-
-        color = convert_string(color, "black")
-
-        fill_color = convert_string(fill_color, "transparent")
+        fill_color = input_repeater("\nType the color of filling and p"+
+        "ress enter: ", reviewer_function=colors_class.verify_color_name, 
+        default_value="transparent", necessary_type=str)
 
         # Creates the dictionary to create this spline
 
@@ -158,27 +154,25 @@ vanishing_points):
 
     elif key=="e":
 
-        # Allows for selection of parameters
+        # Gets the necessary information
 
-        thickness =  input("\nType the thickness and press enter: ")
+        thickness = input_repeater("\nType the thickness and press ent"+
+        "er: ", reviewer_function=None, default_value=0.2, 
+        necessary_type=float)
 
-        line_style =  input("\nType the line style and press enter: ")
+        line_style = input_repeater("\nType the line style and press e"+
+        "nter: ", reviewer_function=line_styles_class.verify_line_name, 
+        default_value="solid", necessary_type=str)
 
-        color = input("\nType the color of the contour line and press "+
-        "enter: ")
+        color = input_repeater("\nType the color of the contour line a"+
+        "nd press enter: ", reviewer_function=
+        colors_class.verify_color_name, default_value="black", 
+        necessary_type=str)
 
-        arrow_style = input("\nType the style of the arrow head: ")
-
-        # Converts these strings 
-
-        thickness = convert_string(thickness, 0.2)
-
-        line_style = convert_string(line_style, "solid")
-
-        color = convert_string(color, "black")
-
-        arrow_style = convert_string(arrow_style, "inkscape round back "+
-        "arrow")
+        arrow_style = input_repeater("\nType the style of the arrow he"+
+        "ad: ", reviewer_function=
+        arrow_head_styles_class.verify_arrow_name, default_value="inks"+
+        "cape round back arrow", necessary_type=str)
 
         # Creates the dictionary to create this spline
 
@@ -192,22 +186,20 @@ vanishing_points):
 
     if key=="a":
 
-        # Allows for selection of parameters
+        # Gets the necessary information
 
-        thickness = input("\nType the thickness and press enter: ")
+        thickness = input_repeater("\nType the thickness and press ent"+
+        "er: ", reviewer_function=None, default_value=0.2, 
+        necessary_type=float)
 
-        line_style = input("\nType the line style and press enter: ")
+        line_style = input_repeater("\nType the line style and press e"+
+        "nter: ", reviewer_function=line_styles_class.verify_line_name, 
+        default_value="solid", necessary_type=str)
 
-        color = input("\nType the color of the contour line and press "+
-        "enter: ")
-
-        # Converts these strings 
-
-        thickness = convert_string(thickness, 0.2)
-
-        line_style = convert_string(line_style, "solid")
-
-        color = convert_string(color, "black")
+        color = input_repeater("\nType the color of the contour line a"+
+        "nd press enter: ", reviewer_function=
+        colors_class.verify_color_name, default_value="black", 
+        necessary_type=str)
 
         # Creates the dictionary to create this polygonal curve
 
@@ -221,27 +213,24 @@ vanishing_points):
 
     elif key=="s":
 
-        # Allows for selection of parameters
+        # Gets the necessary information
 
-        thickness =  input("\nType the thickness and press enter: ")
+        thickness = input_repeater("\nType the thickness and press ent"+
+        "er: ", reviewer_function=None, default_value=0.2, 
+        necessary_type=float)
 
-        line_style =  input("\nType the line style and press enter: ")
+        line_style = input_repeater("\nType the line style and press e"+
+        "nter: ", reviewer_function=line_styles_class.verify_line_name, 
+        default_value="solid", necessary_type=str)
 
-        color = input("\nType the color of the contour line and press "+
-        "enter: ")
+        color = input_repeater("\nType the color of the contour line a"+
+        "nd press enter: ", reviewer_function=
+        colors_class.verify_color_name, default_value="black", 
+        necessary_type=str)
 
-        fill_color = input("\nType the color of filling and press ente"+
-        "r: ")
-
-        # Converts these strings 
-
-        thickness = convert_string(thickness, 0.2)
-
-        line_style = convert_string(line_style, "solid")
-
-        color = convert_string(color, "black")
-
-        fill_color = convert_string(fill_color, "transparent")
+        fill_color = input_repeater("\nType the color of filling and p"+
+        "ress enter: ", reviewer_function=colors_class.verify_color_name, 
+        default_value="transparent", necessary_type=str)
 
         # Creates the dictionary to create this polygonal curve
 
@@ -256,27 +245,25 @@ vanishing_points):
 
     elif key=="d":
 
-        # Allows for selection of parameters
+        # Gets the necessary information
 
-        thickness =  input("\nType the thickness and press enter: ")
+        thickness = input_repeater("\nType the thickness and press ent"+
+        "er: ", reviewer_function=None, default_value=0.2, 
+        necessary_type=float)
 
-        line_style =  input("\nType the line style and press enter: ")
+        line_style = input_repeater("\nType the line style and press e"+
+        "nter: ", reviewer_function=line_styles_class.verify_line_name, 
+        default_value="solid", necessary_type=str)
 
-        color = input("\nType the color of the contour line and press "+
-        "enter: ")
+        color = input_repeater("\nType the color of the contour line a"+
+        "nd press enter: ", reviewer_function=
+        colors_class.verify_color_name, default_value="black", 
+        necessary_type=str)
 
-        arrow_style = input("\nType the style of the arrow head: ")
-
-        # Converts these strings 
-
-        thickness = convert_string(thickness, 0.2)
-
-        line_style = convert_string(line_style, "solid")
-
-        color = convert_string(color, "black")
-
-        arrow_style = convert_string(arrow_style, "inkscape round back "+
-        "arrow")
+        arrow_style = input_repeater("\nType the style of the arrow he"+
+        "ad: ", reviewer_function=
+        arrow_head_styles_class.verify_arrow_name, default_value="inks"+
+        "cape round back arrow", necessary_type=str)
 
         # Creates the dictionary to create this spline
 
@@ -305,6 +292,50 @@ vanishing_points):
 ########################################################################
 #                               Utilities                              #
 ########################################################################
+
+# Defines a function to repeat a call until the right answer is given
+
+def input_repeater(input_text, reviewer_function=None, default_value=
+None, necessary_type=None):
+
+    # Initializes a flag to keep repeating the question
+
+    flag_repeat = True 
+
+    # Repeats the question until a right answer is given
+
+    while flag_repeat:
+
+        # Asks the user for the input
+
+        input_string =  input(input_text)
+        
+        # Converts the input string to another format if possible
+
+        input_string = convert_string(input_string, default_value,
+        necessary_type=necessary_type)
+
+        # Verifies if a right answer has been given
+
+        if reviewer_function is not None:
+
+            processed_answer = reviewer_function(input_string)
+
+            # If it is not false, returns it
+
+            if processed_answer:
+
+                flag_repeat = False 
+
+                return processed_answer
+            
+        # If the reviewer function is None, returns the answer anyways
+
+        else:
+
+            flag_repeat = False 
+
+            return input_string
 
 # Defines a function to substitute the X markers by square markers when
 # points defined by the user are saved
@@ -337,7 +368,7 @@ def substitute_markers(points_list, general_axes, depth_order, collage):
 
 # Defines a function to convert strings to useful formats
 
-def convert_string(string, default_value):
+def convert_string(string, default_value, necessary_type=None):
 
     # If the string has no length, returns the default value
 
@@ -366,6 +397,14 @@ def convert_string(string, default_value):
             if (string[0]=="[" and string[-1]=="]"):
 
                 string = string_toList(string)
+
+    # Verifies the type of the string if needed
+
+    if (necessary_type is not None) and (not isinstance(string, 
+    necessary_type)):
+        
+        raise TypeError("'"+str(string)+"' has type '"+str(type(string)
+        )+"', but the necessary type is "+str(necessary_type))
 
     # If the string is still a string and the default value is not None,
     # returns the default value
