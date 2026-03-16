@@ -145,6 +145,12 @@ class ColorMiscellany:
 
                 raise ValueError(error_message)
             
+            # Otherwise, prints on screen
+
+            else:
+
+                print(error_message)
+            
             # Otherwise, just returns False
 
             return False
@@ -388,6 +394,12 @@ class LineStyles:
 
                 raise NameError(error_message)
             
+            # Otherwise, prints on screen
+
+            else:
+
+                print(error_message)
+            
             # Otherwise, returns false
 
             return False
@@ -473,6 +485,12 @@ class ArrowHeadStyles:
             if throw_error:
 
                 raise NameError(error_message)
+            
+            # Otherwise, prints on screen
+
+            else:
+
+                print(error_message)
             
             # Otherwise, returns False
 

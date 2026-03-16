@@ -313,29 +313,34 @@ None, necessary_type=None):
         # Converts the input string to another format if possible
 
         input_string = convert_string(input_string, default_value,
-        necessary_type=necessary_type)
+        necessary_type=necessary_type, throw_error=False)
 
-        # Verifies if a right answer has been given
+        # If input string has not been falsified during conversion
 
-        if reviewer_function is not None:
+        if input_string is not None:
 
-            processed_answer = reviewer_function(input_string)
+            # Verifies if a right answer has been given
 
-            # If it is not false, returns it
+            if reviewer_function is not None:
 
-            if processed_answer:
+                processed_answer = reviewer_function(input_string)
+
+                # If it is not false, returns it
+
+                if processed_answer:
+
+                    flag_repeat = False 
+
+                    return processed_answer
+                
+            # If the reviewer function is None, returns the answer any-
+            # ways
+
+            else:
 
                 flag_repeat = False 
 
-                return processed_answer
-            
-        # If the reviewer function is None, returns the answer anyways
-
-        else:
-
-            flag_repeat = False 
-
-            return input_string
+                return input_string
 
 # Defines a function to substitute the X markers by square markers when
 # points defined by the user are saved
@@ -368,7 +373,8 @@ def substitute_markers(points_list, general_axes, depth_order, collage):
 
 # Defines a function to convert strings to useful formats
 
-def convert_string(string, default_value, necessary_type=None):
+def convert_string(string, default_value, necessary_type=None, 
+throw_error=True):
 
     # If the string has no length, returns the default value
 
@@ -403,8 +409,19 @@ def convert_string(string, default_value, necessary_type=None):
     if (necessary_type is not None) and (not isinstance(string, 
     necessary_type)):
         
-        raise TypeError("'"+str(string)+"' has type '"+str(type(string)
-        )+"', but the necessary type is "+str(necessary_type))
+        if throw_error:
+        
+            raise TypeError("'"+str(string)+"' has type '"+str(type(
+            string))+"', but the necessary type is "+str(necessary_type))
+        
+        # Otherwise, just prints the error
+
+        else:
+
+            print("'"+str(string)+"' has type '"+str(type(string))+"',"+
+            " but the necessary type is "+str(necessary_type))
+
+            return None
 
     # If the string is still a string and the default value is not None,
     # returns the default value
