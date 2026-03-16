@@ -37,7 +37,8 @@ class TestCollage():
         "size": 50.0, "trim transparent background": True, "origin point":
         "bottom-left"}, 
         {"file name": "warp_and_clip.png", "position": [107.0, 200.0], "size": 50.0, 
-        "trim transparent background": True, "origin point": "bottom-left"}], 
+        "trim transparent background": True, "origin point": "bottom-left",
+        "opacity": 0.5}], 
 
         input_text_list=[{"text": "Lateral", "position": [100.0, 195.0], "font size": 
         4, "origin point": "bottom-right"}, 

@@ -227,9 +227,34 @@ input_path, verbose, depth_order, interpolation="lanczos"):
             print("Adds figure at point "+str(position)+" with 'origin"+
             " point' as '"+str(origin_point)+"'\n")
 
+        # Verifies if an image opacity parameter is given. 
+        # Suggestion by Rafael Prado, March 16th 2026
+
+        opacity = 1.0
+
+        if "opacity" in input_dictionary:
+
+            opacity = input_dictionary["opacity"]
+            
+            # Verifies if it is a float
+
+            if not isinstance(opacity, float):
+
+                raise TypeError("The "+str(index+1)+"-th element 'inpu"+
+                "t_image_list' has at key 'opacity' a value that is no"+
+                "t a float. Currently, it is:\n"+str(opacity))
+            
+            elif opacity<0.0 or opacity>1.0:
+
+                raise ValueError("The "+str(index+1)+"-th element 'inp"+
+                "ut_image_list' has at key 'opacity' a value that is n"+
+                "ot between 0.0 and 1.0. Currently, it is:\n"+str(
+                opacity))
+
         general_axes.imshow(input_image, extent=[position[0], position[0
         ]+size[0], position[1], position[1]+size[1]], origin='upper', 
-        zorder=local_depth_order, interpolation=interpolation)
+        zorder=local_depth_order, interpolation=interpolation, alpha=
+        opacity)
 
     # Returns the axes
 
