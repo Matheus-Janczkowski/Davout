@@ -174,11 +174,15 @@ colors_class):
         arrow_head_styles_class.verify_arrow_name, default_value="inks"+
         "cape round back arrow", necessary_type=str)
 
+        arrow_head_size = input_repeater("\nType the size of the arrow"+
+        " head: ", reviewer_function=None, default_value=0.5, 
+        necessary_type=float)
+
         # Creates the dictionary to create this spline
 
         curve_dictionary = {"thickness": thickness, "arrow style": 
         arrow_style, "line style": line_style, "color": color, "spline"+
-        " points": points_list_copy}
+        " points": points_list_copy, "arrow head size": arrow_head_size}
 
     ####################################################################
     #                          Polygonal curve                         #
@@ -265,11 +269,16 @@ colors_class):
         arrow_head_styles_class.verify_arrow_name, default_value="inks"+
         "cape round back arrow", necessary_type=str)
 
+        arrow_head_size = input_repeater("\nType the size of the arrow"+
+        " head: ", reviewer_function=None, default_value=0.5, 
+        necessary_type=float)
+
         # Creates the dictionary to create this spline
 
         curve_dictionary = {"thickness": thickness, "arrow style": 
         arrow_style, "line style": line_style, "color": color, "polygo"+
-        "nal points": points_list_copy}
+        "nal points": points_list_copy, "arrow head size": 
+        arrow_head_size}
 
     # Appends to the list of arrows and lines and saves the later to the 
     # appropriate txt file
