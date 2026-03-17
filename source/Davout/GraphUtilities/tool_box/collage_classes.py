@@ -307,7 +307,8 @@ class LineStyles:
         
         self.available_line_styles = {"solid": '-', "dashed": [0, [10,6]
         ], "dotted": [0, [1, 5]], "dash-dotted": [0, [8, 4, 2, 4]], "d"+
-        "ashed 7x3": [0, [7, 3]], "dashed 7x7": [0, [7, 7]]}
+        "ashed 7x3": [0, [7, 3]], "dashed 7x7": [0, [7, 7]], "simple d"+
+        "ash": "--"}
 
     # Defines a function to get an integer value greater or equal to 1
 
