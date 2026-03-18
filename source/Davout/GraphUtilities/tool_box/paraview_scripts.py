@@ -175,13 +175,39 @@ None):
 
     #data.UpdatePipeline()
 
-    data.PointArrayStatus = [field_name]
-
     # Gets the components of the data
 
     data.UpdatePipeline()
 
     info = data.GetPointDataInformation()
+
+    # Gets the available fields
+
+    available_fields = [info.GetArray(i).GetName() for i in range(
+    info.GetNumberOfArrays())]
+
+    # Checks if the field name is one of the available fields
+
+    if not (field_name in available_fields):
+
+        available_fields_names = ""
+
+        for name in available_fields:
+
+            available_fields_names += "\n'"+str(name)+"'"
+
+        raise NameError("The given 'field_name' is '"+str(field_name)+
+        "', but it is not an available field name in '"+str(
+        input_fileName)+"'.\nCheck the available field names:"+
+        available_fields_names)
+    
+    # Selects the data for this field only
+
+    data.PointArrayStatus = [field_name]
+
+    data.UpdatePipeline()
+
+    # Gets an array of info for this field
 
     array_info = info.GetArray(field_name)
 

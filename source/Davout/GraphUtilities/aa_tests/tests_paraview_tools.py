@@ -220,7 +220,7 @@ class TestParaView():
         # field is called as 'Displacement' inside FEniCS. The edges of
         # the finite elements will be shown
         
-        paraview_tools.frozen_snapshots(self.file_name, self.field_name, 
+        paraview_tools.frozen_snapshots(self.file_name, "Displacment", 
         input_path=self.input_path, time=1.0, representation_type=
         "Surface With Edges", axes_color="black", 
         legend_bar_font="latex", zoom_factor=1.0, component_to_plot="Magnitude", 
@@ -238,4 +238,4 @@ if __name__=="__main__":
 
     test_class = TestParaView()
 
-    run_class_of_tests(test_class)
+    run_class_of_tests(test_class, sort_methods_alphabetically=False)
