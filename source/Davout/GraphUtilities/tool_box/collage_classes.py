@@ -296,6 +296,42 @@ class AlignmentOptions:
 
         return [position[0]+(c_width*width), position[1]+(c_height*
         height)]
+        
+    # Defines a function simply to verify the existence of the alignment
+    # option
+
+    def verify_alignment_name(self, alignment, throw_error=False):
+        
+        # Verifies if the asked alignment style is available
+
+        if alignment in self.alignments:
+
+            # Returns the alignment name
+
+            return alignment
+
+        else:
+
+            available_alignment_styles = ""
+
+            for alignment_name in self.alignments:
+
+                available_alignment_styles += "\n'"+str(alignment_name
+                )+"'"
+
+            error_message = ("'"+str(alignment)+"' is not a valid alig"+
+            "nment style. The only available options are: "+
+            available_alignment_styles)
+
+            # If error is to be thrown
+
+            if throw_error:
+
+                raise NameError(error_message)
+            
+            # Otherwise, returns false
+
+            return False
     
 # Defines a class to set line styles
 

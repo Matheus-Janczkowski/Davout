@@ -9,14 +9,19 @@ from ...PythonicUtilities.string_tools import string_toList
 
 from ..tool_box import collage_classes
 
-def set_curve(key, arrows_and_lines_list, arrows_and_lines_file, 
-input_path, depth_order, collage, points_list, general_axes, tolerance,
-vanishing_points, line_styles_class, arrow_head_styles_class, 
-colors_class):
+def set_curve(key, arrows_and_lines_list, boxes_list, 
+arrows_and_lines_file, boxes_list_file, input_path, depth_order, collage, 
+points_list, general_axes, tolerance, vanishing_points, 
+line_styles_class, arrow_head_styles_class, colors_class, 
+marker_box_class, alignment_class):
     
     # Initializes the dictionary with the curve information
 
     curve_dictionary = None
+
+    # Initializes the dictionary with marker information
+
+    marker_dictionary = None
 
     # Creates a copy of the points
 
@@ -280,6 +285,77 @@ colors_class):
         "nal points": points_list_copy, "arrow head size": 
         arrow_head_size}
 
+    ####################################################################
+    #                          Box and markers                         #
+    ####################################################################
+
+    elif key=="f":
+
+        # Gets the necessary information
+
+        marker_style = input_repeater("\nType the name of the marker o"+
+        "r box and press enter: ", reviewer_function=
+        marker_box_class.verify_marker_name, default_value="rectangle", 
+        necessary_type=str)
+
+        origin_point = input_repeater("\nType the alignment option rel"+
+        "ative to the pressed point and press enter: ", reviewer_function=
+        alignment_class.verify_alignment_name, default_value="centroid", 
+        necessary_type=str)
+
+        width = input_repeater("\nType width of the marker and press e"+
+        "nter: ", reviewer_function=None, default_value=None, 
+        necessary_type=float)
+
+        height = input_repeater("\nType height of the marker and press"+
+        " enter (the default value is the width itself): ", 
+        reviewer_function=None, default_value=width*1.0, necessary_type=
+        float)
+
+        thickness = input_repeater("\nType the thickness and press ent"+
+        "er: ", reviewer_function=None, default_value=0.2, 
+        necessary_type=float)
+
+        line_style = input_repeater("\nType the line style and press e"+
+        "nter: ", reviewer_function=line_styles_class.verify_line_name, 
+        default_value="solid", necessary_type=str)
+
+        color = input_repeater("\nType the color of the contour line a"+
+        "nd press enter: ", reviewer_function=
+        colors_class.verify_color_name, default_value="black", 
+        necessary_type=str)
+
+        fill_color = input_repeater("\nType the color of filling and p"+
+        "ress enter: ", reviewer_function=colors_class.verify_color_name, 
+        default_value="transparent", necessary_type=str)
+
+        # If the marker is a polygon, asks for the number of sides
+
+        number_of_sides = None 
+
+        if marker_style=="polygon":
+
+            number_of_sides = input_repeater("\nType the number of sid"+
+            "es of the polygon and press enter: ", reviewer_function=
+            None, default_value=None, necessary_type=int)
+
+        # Creates the dictionary to create this marker. Adds the last 
+        # point of the points list as position
+
+        marker_dictionary = {"shape": marker_style, "contour thickness": 
+        thickness, "line style": line_style, "contour color": color, 
+        "fill color": fill_color, "width": width, "height": height, "p"+
+        "osition": points_list[-1], "origin point": origin_point, "num"+
+        "ber of sides": number_of_sides}
+
+    print("\nThe graphic element has been successfully introduced. Pre"+
+    "ss R to redraw if you want to see it immediately\n")
+
+    # Defines a flag to tell if the markers were substituted in the 
+    # points on screen
+
+    flag_marker_substitution = False
+
     # Appends to the list of arrows and lines and saves the later to the 
     # appropriate txt file
 
@@ -296,7 +372,28 @@ colors_class):
         points_list, general_axes = substitute_markers(points_list,
         general_axes, depth_order, collage)
 
-    return points_list, general_axes, arrows_and_lines_list
+        flag_marker_substitution = True
+
+    # Appends to the list of box and markers, and saves the later to the 
+    # appropriate txt file
+
+    if marker_dictionary:
+
+        boxes_list.append(marker_dictionary)
+
+        list_toTxt(boxes_list, boxes_list_file, parent_path=input_path)
+
+        # Substitutes the X markers by square markers, and cleans the 
+        # list of points
+
+        if not flag_marker_substitution:
+
+            points_list, general_axes = substitute_markers(points_list,
+            general_axes, depth_order, collage)
+
+            flag_marker_substitution = True
+
+    return points_list, general_axes, arrows_and_lines_list, boxes_list
 
 ########################################################################
 #                               Utilities                              #

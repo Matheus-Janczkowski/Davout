@@ -446,7 +446,8 @@ class ModelCustomTraining:
                 self.verbose_deltaIterations)+" optimization iteration"+
                 "s\n")
 
-                # Calls the optimization procedure
+                # Calls the optimization procedure. Using the custom op-
+                # timizer
 
                 self.set_training(self.verbose_deltaIterations)
 

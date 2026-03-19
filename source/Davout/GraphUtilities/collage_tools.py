@@ -24,6 +24,8 @@ from ..PythonicUtilities.file_handling_tools import txt_toList, list_toTxt
 
 from .tool_box import collage_classes
 
+from .tool_box.box_and_markers_classes import MarkerBoxStyles
+
 from .tool_box.arrows_lines_tools import plot_arrows_and_lines
 
 from .tool_box.text_excerpt_tools import plot_text_excerpts
@@ -72,9 +74,9 @@ aspect_ratio='auto', adjustable=None, layout_width_milimeters=210.0,
 layout_height_milimeters=297.0, add_overlaying_grid=False, tolerance=
 1E-1, grid_annotation_length=10, rule_fontsize=6, rule_number_offset=0.5,
 vanishing_points_list=None, save_lists_to_txt=True, interactive_preview=
-False, arrows_and_lines_file="arrows_and_lines_list", size_template=None,
-export_selection=None, image_interpolation=None, backend=None, 
-compress_level=None):
+False, arrows_and_lines_file="arrows_and_lines_list", boxes_list_file=
+"boxes_list", size_template=None, export_selection=None, 
+image_interpolation=None, backend=None, compress_level=None):
     
     # Initializes the class of colors, the class of alignments, and the 
     # class of line styles
@@ -86,6 +88,8 @@ compress_level=None):
     line_style_class = collage_classes.LineStyles()
 
     arrow_style_class = collage_classes.ArrowHeadStyles()
+
+    marker_box_class = MarkerBoxStyles()
 
     interactive_window_info = InteractiveWindowInfo(True, 
     add_overlaying_grid, vanishing_points_list, tolerance, True)
@@ -154,7 +158,7 @@ compress_level=None):
 
         # Verifies if the list of boxes is not None
 
-        if boxes_list is not None:
+        if (boxes_list is not None) or boxes_list_file:
 
             if verbose:
 
@@ -174,7 +178,30 @@ compress_level=None):
 
                 general_axes, depth_order = plot_boxes(general_axes, 
                 read_boxes_list, colors_class, line_style_class, 
-                alignments_class, depth_order, verbose=verbose)
+                alignments_class, marker_box_class, depth_order, verbose=
+                verbose)
+
+                # If the given list is to be saved as a txt file
+
+                if save_lists_to_txt:
+
+                    list_toTxt(boxes_list, boxes_list_file, parent_path=
+                    input_path)
+
+            # Or, if it is a redrawing step
+
+            elif interactive_window_info.flag_redraw and (
+            redrawing_counter>0):
+
+                read_boxes_list = txt_toList(boxes_list_file, 
+                parent_path=input_path)
+
+                # Plots the list of boxes
+
+                general_axes, depth_order = plot_boxes(general_axes, 
+                read_boxes_list, colors_class, line_style_class, 
+                alignments_class, marker_box_class, depth_order, verbose=
+                verbose)
 
             # Otherwise, uses it plainly
 
@@ -184,14 +211,15 @@ compress_level=None):
 
                 if save_lists_to_txt:
 
-                    list_toTxt(boxes_list, "boxes_list", parent_path=
+                    list_toTxt(boxes_list, boxes_list_file, parent_path=
                     input_path)
 
                 # Plots the boxes
 
                 general_axes, depth_order = plot_boxes(general_axes, 
                 boxes_list, colors_class, line_style_class, 
-                alignments_class, depth_order, verbose=verbose)
+                alignments_class, marker_box_class, depth_order, verbose=
+                verbose)
 
         # Verifies if the dictionary of input figures is not None
 
@@ -561,8 +589,9 @@ compress_level=None):
                     general_axes, collage, 0.0, layout_width_milimeters, 0.0, 
                     layout_height_milimeters, x_min, x_max, y_min, y_max, 
                     input_path, depth_order, arrows_and_lines_file, 
-                    interactive_window_info, line_style_class, 
-                    arrow_style_class, colors_class, verbose=verbose)
+                    boxes_list_file, interactive_window_info, 
+                    line_style_class, arrow_style_class, colors_class, 
+                    marker_box_class, alignments_class, verbose=verbose)
 
                     # Updates the counter of redrawing occurrences
 
@@ -680,8 +709,9 @@ compress_level=None):
                     general_axes, collage, 0.0, layout_width_milimeters, 
                     0.0, layout_height_milimeters, x_min, x_max, y_min, 
                     y_max, input_path, depth_order, arrows_and_lines_file, 
-                    interactive_window_info, line_style_class, 
-                    arrow_style_class, colors_class, verbose=verbose)
+                    boxes_list_file, interactive_window_info, 
+                    line_style_class, arrow_style_class, colors_class, 
+                    marker_box_class, alignments_class, verbose=verbose)
 
                     # Updates the counter of redrawing occurrences
 
@@ -793,8 +823,9 @@ compress_level=None):
                 collage, 0.0, layout_width_milimeters, 0.0, 
                 layout_height_milimeters, x_min, x_max, y_min, y_max, 
                 input_path, depth_order, arrows_and_lines_file, 
-                interactive_window_info, line_style_class, 
-                arrow_style_class, colors_class, verbose=verbose)
+                boxes_list_file, interactive_window_info, line_style_class, 
+                arrow_style_class, colors_class, marker_box_class, 
+                alignments_class, verbose=verbose)
 
                 # Updates the counter of redrawing occurrences
 

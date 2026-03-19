@@ -2,14 +2,12 @@
 
 from copy import deepcopy
 
-from matplotlib.patches import FancyBboxPatch, Ellipse, RegularPolygon
-
 from matplotlib.transforms import Affine2D
 
 # Defines a function to plot boxes from a list of instructions
 
 def plot_boxes(general_axes, boxes_list, colors_class, line_style_class, 
-alignments_class, depth_order, verbose=False):
+alignments_class, marker_box_class, depth_order, verbose=False):
     
     # Sets a list of necessary keys
 
@@ -199,157 +197,16 @@ alignments_class, depth_order, verbose=False):
         if "shape" in input_dictionary:
 
             shape = input_dictionary["shape"]
-
-        new_box = None
-
-        # Initializes the rotation shift
-
-        rotation_shift = None
-
-        # If it is meant to be a rectangle
-
-        if shape=="rectangle":
-
-            new_box = FancyBboxPatch((position[0], position[1]), width, 
-            height, linewidth=contour_thickness, edgecolor=
-            contour_color, facecolor=fill_color, boxstyle=boxstyle, 
-            linestyle=line_style, zorder=local_depth_order)
-
-            # Sets the rotation shift as the proper position
-
-            rotation_shift = deepcopy(input_dictionary["position"])
-
-        # If it is meant to be an ellipse
-
-        elif shape=="ellipse" or shape=="circle":
-
-            # Calculates the center coordinates
-
-            x_center = position[0]*1.0
-
-            y_center = position[1]*1.0
-
-            # Translates it according to position
-
-            if origin_point=="bottom-left":
-
-                x_center += 0.5*width
-
-                y_center += 0.5*height 
-
-            elif origin_point=="bottom-right":
-
-                x_center -= 0.5*width 
-
-                y_center += 0.5*height
-
-            elif origin_point=="top-right":
-
-                x_center -= 0.5*width 
-
-                y_center -= 0.5*height
-
-            elif origin_point=="top-left":
-
-                x_center += 0.5*width 
-
-                y_center -= 0.5*height
-
-            # If circle is asked for, ignores height
-
-            if shape=="circle":
-
-                height = width*1.0
-
-            new_box = Ellipse((x_center, y_center), width, height, 
-            linewidth=contour_thickness, edgecolor=contour_color, 
-            facecolor=fill_color, linestyle=line_style, zorder=
-            local_depth_order)
-
-            # Sets the rotation shift as the proper position
-
-            rotation_shift = [x_center*1.0, y_center*1.0]
-
-        # If it is a polygon
-
-        elif shape=="polygon":
-
-            # Verifies if there is a key for the number of sides
-
-            if not ("number of sides" in input_dictionary):
-
-                raise KeyError("'polygon' shape has been asked to crea"+
-                "te a box, but no 'number of sides' key has been provi"+
-                "ded")
-            
-            number_of_sides = input_dictionary["number of sides"]
-
-            # Verifies if the number of sides is integer
-
-            if not isinstance(number_of_sides, int):
-
-                raise TypeError("'number of sides' to make a polygon m"+
-                "ust be an integer. Currently, it is: "+str(
-                number_of_sides))
-
-            # Calculates the center coordinates
-
-            x_center = position[0]*1.0
-
-            y_center = position[1]*1.0
-
-            # Translates it according to position
-
-            if origin_point=="bottom-left":
-
-                x_center += 0.5*width
-
-                y_center += 0.5*height 
-
-            elif origin_point=="bottom-right":
-
-                x_center -= 0.5*width 
-
-                y_center += 0.5*height
-
-            elif origin_point=="top-right":
-
-                x_center -= 0.5*width 
-
-                y_center -= 0.5*height
-
-            elif origin_point=="top-left":
-
-                x_center += 0.5*width 
-
-                y_center -= 0.5*height
-            
-            # Creates the box
-
-            new_box = RegularPolygon((x_center, y_center), radius=width*
-            0.5, numVertices=number_of_sides, linewidth=
-            contour_thickness, edgecolor=contour_color, facecolor=
-            fill_color, linestyle=line_style, zorder=local_depth_order)
-
-            # Stretches the polygon to match the required height. Firs-
-            # tly, translates to the origin, stretches, and, then, trans-
-            # lates back to the correct position
-
-            stretch_transform = Affine2D().translate(-x_center, -y_center
-            ).scale(1.0, height/width).translate(x_center, y_center)
-
-            new_box.set_transform(stretch_transform+
-            general_axes.transData)
-
-            # Sets the rotation shift as the proper position
-
-            rotation_shift = [x_center*1.0, y_center*1.0]
-
-        else:
-
-            raise NameError("'shape' has been given as '"+str(shape)+
-            "', but this shape is not available. The available shapes "+
-            "are:\n'rectangle'\n'ellipse'\n'circle'")
+        
+        # Calls the marker class to get the appropriate marker or box
+        # building function
+
+        building_function = marker_box_class(shape)
+
+        new_box, rotation_shift = building_function(input_dictionary, 
+        position, width, height, contour_thickness, contour_color, 
+        fill_color, boxstyle, line_style, local_depth_order, 
+        origin_point, general_axes)
 
         # Verifies if there is any rotation
 
