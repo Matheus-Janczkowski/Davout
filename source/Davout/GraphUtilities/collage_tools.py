@@ -75,8 +75,9 @@ layout_height_milimeters=297.0, add_overlaying_grid=False, tolerance=
 1E-1, grid_annotation_length=10, rule_fontsize=6, rule_number_offset=0.5,
 vanishing_points_list=None, save_lists_to_txt=True, interactive_preview=
 False, arrows_and_lines_file="arrows_and_lines_list", boxes_list_file=
-"boxes_list", size_template=None, export_selection=None, 
-image_interpolation=None, backend=None, compress_level=None):
+"boxes_list", text_list_file="text_excerpts_list", size_template=None, 
+export_selection=None, image_interpolation=None, backend=None, 
+compress_level=None, concatenate_read_lists_with_argument_lists=True):
     
     # Initializes the class of colors, the class of alignments, and the 
     # class of line styles
@@ -185,8 +186,8 @@ image_interpolation=None, backend=None, compress_level=None):
 
                 if save_lists_to_txt:
 
-                    list_toTxt(boxes_list, boxes_list_file, parent_path=
-                    input_path)
+                    list_toTxt(read_boxes_list, boxes_list_file, 
+                    parent_path=input_path)
 
             # Or, if it is a redrawing step
 
@@ -209,7 +210,31 @@ image_interpolation=None, backend=None, compress_level=None):
 
                 # If the given list is to be saved as a txt file
 
-                if save_lists_to_txt:
+                if save_lists_to_txt and (
+                not concatenate_read_lists_with_argument_lists):
+
+                    list_toTxt(boxes_list, boxes_list_file, parent_path=
+                    input_path)
+
+                # If the given list is to be saved but concatenated with
+                # whatever list has already been saved
+
+                elif save_lists_to_txt:
+
+                    read_boxes_list = txt_toList(boxes_list_file, 
+                    parent_path=input_path, do_not_raise_error=True)
+
+                    if read_boxes_list is None:
+
+                        # If it is empty, makes it an empty list
+
+                        read_boxes_list = []
+
+                    # Concatenate both
+
+                    boxes_list.extend(read_boxes_list)
+
+                    # Then, saves it
 
                     list_toTxt(boxes_list, boxes_list_file, parent_path=
                     input_path)
@@ -262,7 +287,7 @@ image_interpolation=None, backend=None, compress_level=None):
 
         # Verifies if the list of input text excerpts is not None
 
-        if input_text_list is not None:
+        if (input_text_list is not None) or text_list_file:
 
             if verbose:
 
@@ -284,22 +309,73 @@ image_interpolation=None, backend=None, compress_level=None):
 
                 general_axes, depth_order = plot_text_excerpts(
                 general_axes, read_input_text_list, alignments_class, 
-                verbose, depth_order)
-
-            else:
+                colors_class, verbose, depth_order)
 
                 # If the given list is to be saved as a txt file
 
                 if save_lists_to_txt:
 
-                    list_toTxt(input_text_list, "input_text_list", 
+                    list_toTxt(read_input_text_list, text_list_file, 
+                    parent_path=input_path)
+
+            # Or, if it is a redrawing step
+
+            elif interactive_window_info.flag_redraw and (
+            redrawing_counter>0):
+
+                read_input_text_list = txt_toList(text_list_file, 
+                parent_path=input_path)
+
+                # Plots the text excerpts
+
+                general_axes, depth_order = plot_text_excerpts(
+                general_axes, read_input_text_list, alignments_class, 
+                colors_class, verbose, depth_order)
+
+            else:
+
+                # If the given list is to be saved as a txt file
+
+                if save_lists_to_txt and (
+                not concatenate_read_lists_with_argument_lists):
+
+                    list_toTxt(input_text_list, text_list_file, 
+                    parent_path=input_path)
+
+                # If the given list is to be saved but concatenated with
+                # whatever list has already been saved
+
+                elif save_lists_to_txt:
+
+                    read_input_text_list = txt_toList(text_list_file, 
+                    parent_path=input_path, do_not_raise_error=True)
+
+                    if read_input_text_list is None:
+
+                        # If it is empty, makes it an empty list
+
+                        read_input_text_list = []
+
+                    if input_text_list is None:
+
+                        # If it is empty, makes it an empty list
+
+                        input_text_list = []
+
+                    # Concatenate both
+
+                    input_text_list.extend(read_input_text_list)
+
+                    # Then, saves it
+
+                    list_toTxt(input_text_list, text_list_file, 
                     parent_path=input_path)
 
                 # Plots the text excerpts
 
                 general_axes, depth_order = plot_text_excerpts(
-                general_axes, input_text_list, alignments_class, verbose, 
-                depth_order)
+                general_axes, input_text_list, alignments_class, 
+                colors_class, verbose, depth_order)
 
         # Verifies if the list of arrows is not None
 
@@ -354,7 +430,33 @@ image_interpolation=None, backend=None, compress_level=None):
 
                 # If the given list is to be saved as a txt file
 
-                if save_lists_to_txt:
+                if save_lists_to_txt and (
+                not concatenate_read_lists_with_argument_lists):
+
+                    list_toTxt(arrows_and_lines_list, 
+                    arrows_and_lines_file, parent_path=input_path)
+
+                # If the given list is to be saved but concatenated with
+                # whatever list has already been saved
+
+                elif save_lists_to_txt:
+
+                    read_arrows_and_lines_list = txt_toList(
+                    arrows_and_lines_file, parent_path=input_path, 
+                    do_not_raise_error=True)
+
+                    if read_arrows_and_lines_list is None:
+
+                        # If it is empty, makes it an empty list
+
+                        read_arrows_and_lines_list = []
+
+                    # Concatenate both
+
+                    arrows_and_lines_list.extend(
+                    read_arrows_and_lines_list)
+
+                    # Then, saves it
 
                     list_toTxt(arrows_and_lines_list, 
                     arrows_and_lines_file, parent_path=input_path)
@@ -589,7 +691,7 @@ image_interpolation=None, backend=None, compress_level=None):
                     general_axes, collage, 0.0, layout_width_milimeters, 0.0, 
                     layout_height_milimeters, x_min, x_max, y_min, y_max, 
                     input_path, depth_order, arrows_and_lines_file, 
-                    boxes_list_file, interactive_window_info, 
+                    boxes_list_file, text_list_file, interactive_window_info, 
                     line_style_class, arrow_style_class, colors_class, 
                     marker_box_class, alignments_class, verbose=verbose)
 
@@ -709,7 +811,7 @@ image_interpolation=None, backend=None, compress_level=None):
                     general_axes, collage, 0.0, layout_width_milimeters, 
                     0.0, layout_height_milimeters, x_min, x_max, y_min, 
                     y_max, input_path, depth_order, arrows_and_lines_file, 
-                    boxes_list_file, interactive_window_info, 
+                    boxes_list_file, text_list_file, interactive_window_info, 
                     line_style_class, arrow_style_class, colors_class, 
                     marker_box_class, alignments_class, verbose=verbose)
 
@@ -823,9 +925,9 @@ image_interpolation=None, backend=None, compress_level=None):
                 collage, 0.0, layout_width_milimeters, 0.0, 
                 layout_height_milimeters, x_min, x_max, y_min, y_max, 
                 input_path, depth_order, arrows_and_lines_file, 
-                boxes_list_file, interactive_window_info, line_style_class, 
-                arrow_style_class, colors_class, marker_box_class, 
-                alignments_class, verbose=verbose)
+                boxes_list_file, text_list_file, interactive_window_info, 
+                line_style_class, arrow_style_class, colors_class, 
+                marker_box_class, alignments_class, verbose=verbose)
 
                 # Updates the counter of redrawing occurrences
 

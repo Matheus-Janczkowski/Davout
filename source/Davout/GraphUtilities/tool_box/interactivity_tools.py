@@ -57,9 +57,9 @@ class InteractiveWindowInfo:
 def create_interactive_window(general_axes, collage, old_x_min, 
 old_x_max, old_y_min, old_y_max, new_x_min, new_x_max, new_y_min, 
 new_y_max, input_path, depth_order, arrows_and_lines_file, 
-boxes_list_file, interactive_window_info, line_styles_class, 
-arrow_head_styles_class, colors_class, marker_box_class, alignment_class, 
-verbose=False):
+boxes_list_file, text_list_file, interactive_window_info, 
+line_styles_class, arrow_head_styles_class, colors_class, 
+marker_box_class, alignment_class, verbose=False):
 
     # Zoom axes to the bounding box
 
@@ -114,6 +114,26 @@ verbose=False):
 
         print("\nThe list of boxes and markers was successfully read.\n"+
         str(boxes_list)+"\n")
+
+    # Reads the list of text excerpts
+
+    text_list = txt_toList(text_list_file, input_path,
+    do_not_raise_error=True)
+
+    # If no text excertps have been read, makes it an empty list
+
+    if text_list is None:
+
+        print("\nThe list of text excerpts was not found at:\n"+str(
+        input_path+"//"+text_list_file)+"\nAn empty list was automati"+
+        "cally created\n")
+
+        text_list = []
+
+    elif verbose:
+
+        print("\nThe list of text excerpts was successfully read.\n"+
+        str(text_list)+"\n")
 
     # Sets some commands for clicking and panning (dragging)
 
@@ -272,7 +292,7 @@ verbose=False):
 
     def on_key(event):
 
-        nonlocal points_list, general_axes, manual_close, arrows_and_lines_list, flag_input, interactive_window_info, boxes_list
+        nonlocal points_list, general_axes, manual_close, arrows_and_lines_list, flag_input, interactive_window_info, boxes_list, text_list
 
         # If enter is pressed, saves the image and do not resume redraw-
         # ing
@@ -453,9 +473,9 @@ verbose=False):
 
             plt.close()
 
-        # Uses the key t to get string from the user
+        # Uses the key G to get string from the user
 
-        elif event.key=="t":
+        elif event.key=="g":
 
             list_name = input("\nType the name of this list: ")
 
@@ -593,6 +613,59 @@ verbose=False):
 
                 print("", flush=True)
 
+        # Detects Ctrl+T to erase the last text
+         
+        elif event.key=="ctrl+t":
+
+            if text_list:
+
+                removed = text_list[-1]
+
+                # Takes input
+
+                flag_input = True 
+
+                response = input("\nAre you sure you want to remove th"+
+                "e last text excerpt? Type 'y' if so: ")
+
+                # If it is different than y, moves forward
+
+                if response!="y":
+
+                    print("\nCancels removing the following element:\n"+
+                    str(removed))
+
+                    flag_input = False 
+
+                    return None
+                
+                # Removes the last line and disables the input flag
+
+                text_list = text_list[0:-1]
+                
+                flag_input = False 
+                
+                print(f"[UNDO] removed {removed}", flush= True)
+
+                # Rewrites the arrows list
+
+                list_toTxt(text_list, text_list_file, parent_path=
+                input_path)
+
+                # Triggers redrawing
+                
+                interactive_window_info.flag_redraw = True
+
+                manual_close = False
+
+                plt.close()
+
+            else:
+
+                print("[UNDO] no curves left", flush=True)
+
+                print("", flush=True)
+
         # Verifies if one of the pre-fabricated curves were asked
 
         else:
@@ -601,10 +674,11 @@ verbose=False):
 
             flag_input = True
 
-            points_list, general_axes, arrows_and_lines_list, boxes_list = curves_setter.set_curve(
-            event.key, arrows_and_lines_list, boxes_list, 
-            arrows_and_lines_file, boxes_list_file, input_path, 
-            depth_order, collage, points_list, general_axes,
+            (points_list, general_axes, arrows_and_lines_list, 
+            boxes_list, text_list) = curves_setter.set_curve(
+            event.key, arrows_and_lines_list, boxes_list, text_list,
+            arrows_and_lines_file, boxes_list_file, text_list_file, 
+            input_path, depth_order, collage, points_list, general_axes,
             interactive_window_info.tolerance, 
             interactive_window_info.vanishing_points_list, 
             line_styles_class, arrow_head_styles_class, colors_class,
@@ -692,6 +766,9 @@ verbose=False):
     print("Press CTRL+X ............................. => delete the la"+
     "st line", flush=True)
 
+    print("Press CTRL+T ............................. => delete the la"+
+    "st text excerpt", flush=True)
+
     print("Press CTRL+V ............................. => delete the la"+
     "st perspective point with lines connecting to the vanishing point"+
     "s, or a vanishing point itself", flush=True)
@@ -714,7 +791,7 @@ verbose=False):
 
     print("\n5. Data query:")
 
-    print("Press key T .............................. => type the name"+
+    print("Press key G .............................. => type the name"+
     " of the list of points", flush=
     True)
 
@@ -756,6 +833,11 @@ verbose=False):
 
     print("Press key F .............................. => transform the"+
     " last point in a box or marker", flush=True)
+
+    print("\n9. Text excerpts:")
+
+    print("Press key T .............................. => add a text ex"+
+    "cerpt. Use $your equation$ if you want to put any LaTeX equation", flush=True)
 
     # Shows the image
 

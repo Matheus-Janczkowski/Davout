@@ -7,7 +7,7 @@ from .collage_classes import milimeters_to_points
 # Defines a function to plot excerpts of text from a list
 
 def plot_text_excerpts(general_axes, input_text_list, alignments_class, 
-verbose, depth_order):
+color_class, verbose, depth_order):
         
     # Sets a list of necessary keys
 
@@ -143,6 +143,16 @@ verbose, depth_order):
 
             depth_order += 1
 
+        # Gets the font color
+
+        color = "black"
+
+        if "color" in input_dictionary:
+
+            color = input_dictionary["color"]
+
+        color = color_class(color)
+
         # Adds the text input
 
         if verbose:
@@ -152,6 +162,7 @@ verbose, depth_order):
 
         general_axes.text(position[0], position[1], input_text, fontsize=
         font_size, ha=ha, va=va, rotation=angle, rotation_mode="anchor", 
-        zorder=local_depth_order, transform=general_axes.transData)
+        zorder=local_depth_order, transform=general_axes.transData,
+        color=color)
 
     return general_axes, depth_order

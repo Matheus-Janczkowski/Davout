@@ -9,11 +9,11 @@ from ...PythonicUtilities.string_tools import string_toList
 
 from ..tool_box import collage_classes
 
-def set_curve(key, arrows_and_lines_list, boxes_list, 
-arrows_and_lines_file, boxes_list_file, input_path, depth_order, collage, 
-points_list, general_axes, tolerance, vanishing_points, 
-line_styles_class, arrow_head_styles_class, colors_class, 
-marker_box_class, alignment_class):
+def set_curve(key, arrows_and_lines_list, boxes_list, text_list,
+arrows_and_lines_file, boxes_list_file, text_list_file, input_path, 
+depth_order, collage, points_list, general_axes, tolerance, 
+vanishing_points, line_styles_class, arrow_head_styles_class, 
+colors_class, marker_box_class, alignment_class):
     
     # Initializes the dictionary with the curve information
 
@@ -22,6 +22,10 @@ marker_box_class, alignment_class):
     # Initializes the dictionary with marker information
 
     marker_dictionary = None
+
+    # Initializes the dictionary of text excerpt
+
+    text_dictionary = None
 
     # Creates a copy of the points
 
@@ -348,6 +352,42 @@ marker_box_class, alignment_class):
         "osition": points_list[-1], "origin point": origin_point, "num"+
         "ber of sides": number_of_sides}
 
+    ####################################################################
+    #                           Text excerpts                          #
+    ####################################################################
+
+    elif key=="t":
+
+        # Gets the necessary information
+
+        text_excerpt = input_repeater("\nType the text you want to add"+
+        " and press enter: ", reviewer_function=None, default_value=
+        None, necessary_type=str)
+
+        origin_point = input_repeater("\nType the alignment option rel"+
+        "ative to the pressed point and press enter: ", reviewer_function=
+        alignment_class.verify_alignment_name, default_value="centroid", 
+        necessary_type=str)
+
+        font_size = input_repeater("\nType the height of the letters i"+
+        "n milimeters and press enter: ", reviewer_function=None, 
+        default_value=5.0, necessary_type=float)
+
+        rotation_in_degrees = input_repeater("\nType the rotation in d"+
+        "egrees from the x-axis and press enter: ", reviewer_function=
+        None, default_value=0.0, necessary_type=float)
+
+        color = input_repeater("\nType the color of the font and press"+
+        " enter: ", reviewer_function=colors_class.verify_color_name, 
+        default_value="black", necessary_type=str)
+
+        # Creates the dictionary to create this text excerpt. Adds the 
+        # last point of the points list as position
+
+        text_dictionary = {"text": text_excerpt, "font size": font_size, 
+        "color": color, "position": points_list[-1], "origin point": 
+        origin_point, "rotation in degrees": rotation_in_degrees}
+
     print("\nThe graphic element has been successfully introduced. Pre"+
     "ss R to redraw if you want to see it immediately\n")
 
@@ -393,7 +433,27 @@ marker_box_class, alignment_class):
 
             flag_marker_substitution = True
 
-    return points_list, general_axes, arrows_and_lines_list, boxes_list
+    # Appends to the list of text excerpts, and saves the later to the 
+    # appropriate txt file
+
+    if text_dictionary:
+
+        text_list.append(text_dictionary)
+
+        list_toTxt(text_list, text_list_file, parent_path=input_path)
+
+        # Substitutes the X markers by square markers, and cleans the 
+        # list of points
+
+        if not flag_marker_substitution:
+
+            points_list, general_axes = substitute_markers(points_list,
+            general_axes, depth_order, collage)
+
+            flag_marker_substitution = True
+
+    return (points_list, general_axes, arrows_and_lines_list, boxes_list,
+    text_list)
 
 ########################################################################
 #                               Utilities                              #
