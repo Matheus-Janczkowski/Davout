@@ -347,7 +347,7 @@ colors_class, marker_box_class, alignment_class):
         # point of the points list as position
 
         marker_dictionary = {"shape": marker_style, "contour thickness": 
-        thickness, "line style": line_style, "contour color": color, 
+        thickness, "contour style": line_style, "contour color": color, 
         "fill color": fill_color, "width": width, "height": height, "p"+
         "osition": points_list[-1], "origin point": origin_point, "num"+
         "ber of sides": number_of_sides}
@@ -366,7 +366,7 @@ colors_class, marker_box_class, alignment_class):
 
         origin_point = input_repeater("\nType the alignment option rel"+
         "ative to the pressed point and press enter: ", reviewer_function=
-        alignment_class.verify_alignment_name, default_value="centroid", 
+        alignment_class.verify_alignment_name, default_value="bottom-left", 
         necessary_type=str)
 
         font_size = input_repeater("\nType the height of the letters i"+
@@ -401,6 +401,12 @@ colors_class, marker_box_class, alignment_class):
 
     if curve_dictionary:
 
+        # Updates the depth
+
+        depth_order += 1
+
+        curve_dictionary["depth order"] = depth_order
+
         arrows_and_lines_list.append(curve_dictionary)
 
         list_toTxt(arrows_and_lines_list, arrows_and_lines_file, 
@@ -418,6 +424,12 @@ colors_class, marker_box_class, alignment_class):
     # appropriate txt file
 
     if marker_dictionary:
+
+        # Updates the depth
+
+        depth_order += 1
+
+        marker_dictionary["depth order"] = depth_order
 
         boxes_list.append(marker_dictionary)
 
@@ -438,6 +450,12 @@ colors_class, marker_box_class, alignment_class):
 
     if text_dictionary:
 
+        # Updates the depth
+
+        depth_order += 1
+
+        text_dictionary["depth order"] = depth_order
+
         text_list.append(text_dictionary)
 
         list_toTxt(text_list, text_list_file, parent_path=input_path)
@@ -453,7 +471,7 @@ colors_class, marker_box_class, alignment_class):
             flag_marker_substitution = True
 
     return (points_list, general_axes, arrows_and_lines_list, boxes_list,
-    text_list)
+    text_list, depth_order)
 
 ########################################################################
 #                               Utilities                              #

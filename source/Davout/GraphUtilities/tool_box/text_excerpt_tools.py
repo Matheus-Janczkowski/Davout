@@ -128,6 +128,11 @@ color_class, verbose, depth_order):
                 "s_list' has at key 'rotation in degrees' a value that"+
                 " is not a float. Currently, 'rotation in degrees' is:"+
                 " "+str(angle))
+            
+            if verbose:
+
+                print("\nRotates the text except by "+str(angle)+" deg"+
+                "rees")
 
         # Verifies if a depth number has been given
 

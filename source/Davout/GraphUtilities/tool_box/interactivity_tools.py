@@ -292,7 +292,7 @@ marker_box_class, alignment_class, verbose=False):
 
     def on_key(event):
 
-        nonlocal points_list, general_axes, manual_close, arrows_and_lines_list, flag_input, interactive_window_info, boxes_list, text_list
+        nonlocal points_list, general_axes, manual_close, arrows_and_lines_list, flag_input, interactive_window_info, boxes_list, text_list, depth_order
 
         # If enter is pressed, saves the image and do not resume redraw-
         # ing
@@ -666,6 +666,59 @@ marker_box_class, alignment_class, verbose=False):
 
                 print("", flush=True)
 
+        # Detects Ctrl+F to erase the box
+         
+        elif event.key=="ctrl+f":
+
+            if boxes_list:
+
+                removed = boxes_list[-1]
+
+                # Takes input
+
+                flag_input = True 
+
+                response = input("\nAre you sure you want to remove th"+
+                "e last box or marker? Type 'y' if so: ")
+
+                # If it is different than y, moves forward
+
+                if response!="y":
+
+                    print("\nCancels removing the following element:\n"+
+                    str(removed))
+
+                    flag_input = False 
+
+                    return None
+                
+                # Removes the last line and disables the input flag
+
+                boxes_list = boxes_list[0:-1]
+                
+                flag_input = False 
+                
+                print(f"[UNDO] removed {removed}", flush= True)
+
+                # Rewrites the arrows list
+
+                list_toTxt(boxes_list, boxes_list_file, parent_path=
+                input_path)
+
+                # Triggers redrawing
+                
+                interactive_window_info.flag_redraw = True
+
+                manual_close = False
+
+                plt.close()
+
+            else:
+
+                print("[UNDO] no curves left", flush=True)
+
+                print("", flush=True)
+
         # Verifies if one of the pre-fabricated curves were asked
 
         else:
@@ -675,7 +728,7 @@ marker_box_class, alignment_class, verbose=False):
             flag_input = True
 
             (points_list, general_axes, arrows_and_lines_list, 
-            boxes_list, text_list) = curves_setter.set_curve(
+            boxes_list, text_list, depth_order) = curves_setter.set_curve(
             event.key, arrows_and_lines_list, boxes_list, text_list,
             arrows_and_lines_file, boxes_list_file, text_list_file, 
             input_path, depth_order, collage, points_list, general_axes,
@@ -849,4 +902,4 @@ marker_box_class, alignment_class, verbose=False):
 
     general_axes.set_ylim(old_y_min, old_y_max)
 
-    return interactive_window_info
+    return interactive_window_info, depth_order

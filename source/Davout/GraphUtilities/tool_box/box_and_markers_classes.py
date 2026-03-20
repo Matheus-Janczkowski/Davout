@@ -158,37 +158,33 @@ class MarkerBoxStyles:
 
         y_center = position[1]*1.0
 
-        # Translates it according to position
-
-        if origin_point=="bottom-left":
-
-            x_center += 0.5*width
-
-            y_center += 0.5*height 
-
-        elif origin_point=="bottom-right":
-
-            x_center -= 0.5*width 
-
-            y_center += 0.5*height
-
-        elif origin_point=="top-right":
-
-            x_center -= 0.5*width 
-
-            y_center -= 0.5*height
-
-        elif origin_point=="top-left":
-
-            x_center += 0.5*width 
-
-            y_center -= 0.5*height
-
         # If circle is asked for, ignores height
 
         if self.shape=="circle":
 
             height = width*1.0
+
+        # Translates it according to position
+
+        if origin_point=="bottom-left":
+
+            x_center += width
+
+            y_center += height 
+
+        elif origin_point=="bottom-right":
+
+            y_center += height
+
+        elif origin_point=="top-left":
+
+            x_center += width 
+
+        elif origin_point=="centroid":
+
+            x_center += 0.5*width
+
+            y_center += 0.5*height
 
         new_box = Ellipse((x_center, y_center), width, height, 
         linewidth=contour_thickness, edgecolor=contour_color, 
