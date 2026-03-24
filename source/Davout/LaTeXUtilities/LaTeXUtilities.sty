@@ -182,6 +182,10 @@ top=3cm, bottom=2cm}}\onehalfspacing\setlength{\parindent}{1.25cm}%
 
 \newcommand*{\TextCommentedArrow}[2]{\xRightarrow[\text{#2}]{\text{#1}}}
 
+% Command to set the inner product of two arguments
+
+\newcommand{\InnerProduct}[2]{\left\langle #1,#2 \right\rangle}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                 Units                                %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -199,6 +203,14 @@ top=3cm, bottom=2cm}}\onehalfspacing\setlength{\parindent}{1.25cm}%
 % Command for scientific notation
 
 \newcommand{\ScientificNotation}[2]{$#1\times 10^{#2}$}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                          Special characters                          %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Command to set the varlambda character
+
+\DeclareRobustCommand{\varlambda}{\text{\usefont{OML}{txmi}{m}{it}\symbol{"15}}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                               Functions                              %
@@ -291,9 +303,17 @@ top=3cm, bottom=2cm}}\onehalfspacing\setlength{\parindent}{1.25cm}%
 
 \newcommand{\SingleVariableIntegration}[4]{\int_{#1}^{#2}#3\IntegralDif#4}
 
+% Command for the differential form of something
+
+\newcommand{\Differential}[1]{\mathrm{d}#1}
+
 % Command for partial derivative
 
 \newcommand{\PartialDerivative}[2]{\frac{\partial #1}{\partial #2}}
+
+% Command for higher-order partial derivative
+
+\newcommand{\HigherOrderPartialDerivative}[3]{\frac{\partial^{#3} #1}{\partial #2^{#3}}}
 
 % Command for total derivative
 
@@ -302,6 +322,10 @@ top=3cm, bottom=2cm}}\onehalfspacing\setlength{\parindent}{1.25cm}%
 % Command for creating the vertical bar that evaluates derivatives
 
 \newcommand{\EvaluateBar}[3]{\left.#1\right|_{#2}^{#3}}
+
+% Command for typing the directional derivative
+
+\newcommand{\DirectionalDerivative}[2]{\mathcal{D}_{#2}#1}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                           Sets and analysis                          %
@@ -327,6 +351,16 @@ top=3cm, bottom=2cm}}\onehalfspacing\setlength{\parindent}{1.25cm}%
 
 \newcommand{\IntegerSetThreeD}{\Set{1,2,3}}
 
+% Command to generate a generic tensor space as the dyadic of multiple
+% R^3
+
+\newcommand{\ThreeDTensorSpace}{\RealSpace{3}\otimes\RealSpace{3}%
+\otimes\dots\otimes\RealSpace{3}}
+
+% Command to generate the eigenspace of a tensor
+
+\newcommand{\EigSpace}[1]{\mathrm{eigspace}\left( #1 \right)}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                         Vectors and matrices                         %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -335,14 +369,19 @@ top=3cm, bottom=2cm}}\onehalfspacing\setlength{\parindent}{1.25cm}%
 
 \newcommand{\Norm}[2]{\left\lVert #1 \right\rVert_{#2}}
 
+% Command for typing the inverse
+
+\newcommand{\Inverse}[1]{{#1}^{\!\raisebox{0.4ex}{\scriptsize$%
+\mathrm{-1}$}}}
+
 % Command for typing the transposition T
 
-\newcommand{\Transpose}[1]{{#1}^{\!\raisebox{0.2ex}{\scriptsize$%
+\newcommand{\Transpose}[1]{{#1}^{\!\raisebox{0.4ex}{\scriptsize$%
 \mathrm{T}$}}}
 
 % Command for typing the inverse transposition -T
 
-\newcommand{\InverseTranspose}[1]{{#1}^{\!\raisebox{0.2ex}{\scriptsize$%
+\newcommand{\InverseTranspose}[1]{{#1}^{\!\raisebox{0.4ex}{\scriptsize$%
 \mathrm{-T}$}}}
 
 % Command to write pos def
@@ -381,6 +420,23 @@ top=3cm, bottom=2cm}}\onehalfspacing\setlength{\parindent}{1.25cm}%
 
 \newcommand{\FourthOrderIdentity}{\pmb{\mathbb{I}}}
 
+% Command for the determinant of a tensor
+
+\newcommand{\Det}[1]{\mathrm{det}\Parentheses{#1}}
+
+% Command for the trace of a tensor
+
+\newcommand{\Trace}[1]{\mathrm{tr}\Parentheses{#1}}
+
+% Command for typing the dot (time-derivative) for tensors
+
+\newcommand{\DotOverTensor}[1]{\mathop{#1}\limits^{\hspace{0.40em}\cdot}}
+
+% Command to create an arbitrarily large tensor basis
+
+\newcommand{\GenericTensorBasis}[3]{\CovariantBasis{#1}\otimes
+\CovariantBasis{#2}\otimes\dots\otimes\CovariantBasis{#3}}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                      Vector and function spaces                      %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -388,6 +444,23 @@ top=3cm, bottom=2cm}}\onehalfspacing\setlength{\parindent}{1.25cm}%
 % Command for typing the real vector space R^n, where n is the argument
 
 \newcommand{\RealSpace}[1]{\mathbb{R}^{#1}}
+
+% Command for typing the field of integers. The argument is to make it 
+% positive, negative, or else
+
+\newcommand{\IntegerField}[1]{\mathbb{Z}^{#1}}
+
+% Command for typing the SO3 group
+
+\newcommand{\SoThree}{\mathrm{SO}^{3}}
+
+% Command for typing the symmetric tensors space
+
+\newcommand{\SymThree}{\mathrm{Sym}^{3}}
+
+% Command for typing a p-th order tensor space
+
+\newcommand{\TensorSpace}[1]{\mathcal{T}^{#1}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                              Operators                               %
@@ -438,6 +511,94 @@ top=3cm, bottom=2cm}}\onehalfspacing\setlength{\parindent}{1.25cm}%
 {\raisebox{-0.1ex}{\scalebox{1.3}{$\scriptstyle #1$}}}% scriptstyle
 {\raisebox{0ex}{\scalebox{1.0}{$\scriptscriptstyle #1$}}}% scriptscriptstyle
 }\limits_{#2}^{#3}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                         Continuum mechanics                        %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Defines commands for the most usual first-order tensors
+% i) Displacement
+
+\newcommand{\Displacement}{\boldsymbol{u}}
+
+% ii) Variation of the displacement field
+
+\newcommand{\DisplacementVariation}{\delta\boldsymbol{u}}
+
+% iii) Material normal vector
+
+\newcommand{\MaterialNormal}{\boldsymbol{N}}
+
+% iV) Spatial normal vector
+
+\newcommand{\SpatialNormal}{\boldsymbol{n}}
+
+% v) Material position vector
+
+\newcommand{\MaterialPositionVector}{\boldsymbol{X}}
+
+% vi) Spatial position vector
+
+\newcommand{\SpatialPositionVector}{\boldsymbol{x}}
+
+% vii) Spatial traction
+
+\newcommand{\SpatialTraction}{\boldsymbol{t}}
+
+% viii) Material traction
+
+\newcommand{\MaterialTraction}{\boldsymbol{T}}
+
+% Defines commands for the most usual second-order tensors
+% i) Deformation gradient
+
+\newcommand{\DeformationGradient}{\boldsymbol{F}}
+
+% ii) First Piola-Kirchhoff
+
+\newcommand{\FirstPK}{\boldsymbol{P}}
+
+% iii) Second Piola-Kirchhoff
+
+\newcommand{\SecondPK}{\boldsymbol{S}}
+
+% iV) Cauchy stress tensor
+
+\newcommand{\CauchyStress}{\boldsymbol{\sigma}}
+
+% v) Deformation gradient variation
+
+\newcommand{\DeformationGradientVariation}{\delta\boldsymbol{F}}
+
+% vi) Rotation tensor
+
+\newcommand{\RotationTensor}{\boldsymbol{R}}
+
+% vii) Material stretch
+
+\newcommand{\MaterialStretch}{\boldsymbol{U}}
+
+% viii) Spatial stretch
+
+\newcommand{\SpatialStretch}{\boldsymbol{v}}
+
+% ix) Right Cauchy-Green
+
+\newcommand{\RightCauchyGreen}{\boldsymbol{C}}
+
+% x) Right Cauchy-Green
+
+\newcommand{\LeftCauchyGreen}{\boldsymbol{b}}
+
+% xi) Euler-Lagrange strain tensor
+
+\newcommand{\EulerLagrange}{\boldsymbol{E}}
+
+% xii) Euler-Almansi
+
+\newcommand{\EulerAlmansi}{\boldsymbol{e}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -666,6 +827,13 @@ $\displaystyle\left\{\begin{aligned}
 
 \usetikzlibrary{shapes.geometric, arrows}
 
+\usetikzlibrary{arrows.meta}
+
+% Robust tikzmark command to create an anchor point
+
+\newcommand{\tikzmark}[1]{\tikz[remember picture,baseline=(#1.base)]
+\node[inner sep=0pt,outer sep=0pt] (#1) {};}
+
 % Creates flowchart elements
 
 \tikzstyle{terminator} = [rectangle, draw, text centered, rounded corners,%
@@ -751,8 +919,12 @@ elsarticle-num-names}\bibliography{#1}}
   \end{enumerate}%
 }
 
-% Environment to create a grey box as wide as the page.
-% Creates the counter of exercise boxes
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                            Thematic boxes                            %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Environment to create a salmon-colored box as wide as the page for e-
+% xercises. Creates the counter of exercise boxes
 
 \newcounter{exercise}[section]
 
@@ -762,6 +934,32 @@ elsarticle-num-names}\bibliography{#1}}
 % Updates the exercise counter
 colback=Red1, colbacktitle=Red2, colframe=black, coltitle=black, 
 title=\textit{\textbf{Exercise \theexercise}}, halign title=left, 
+lefttitle=0pt, width=\linewidth, boxrule=0.5pt, arc=0pt, left=2pt}
+
+% Environment to create a grey box as wide as the page for remarks.
+% Creates the counter of remark boxes
+
+\newcounter{remark}[section]
+
+\renewcommand{\theremark}{\thesection.\arabic{remark}}
+
+\newtcolorbox{RemarkBox}{before title=\refstepcounter{remark},
+% Updates the remark counter
+colback=Grey1, colbacktitle=Red3, colframe=black, coltitle=black, 
+title=\textit{\textbf{Remark \theremark}}, halign title=left, 
+lefttitle=0pt, width=\linewidth, boxrule=0.5pt, arc=0pt, left=2pt}
+
+% Environment to create a grey box as wide as the page for challenges.
+% Creates the counter of challenge boxes
+
+\newcounter{challenge}[section]
+
+\renewcommand{\thechallenge}{\thesection.\arabic{challenge}}
+
+\newtcolorbox{ChallengeBox}{before title=\refstepcounter{challenge},
+% Updates the challenge counter
+colback=Grey2, colbacktitle=Red4, colframe=black, coltitle=black, 
+title=\textit{\textbf{Challenge \thechallenge}}, halign title=left, 
 lefttitle=0pt, width=\linewidth, boxrule=0.5pt, arc=0pt, left=2pt}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

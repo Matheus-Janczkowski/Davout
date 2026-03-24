@@ -88,6 +88,15 @@ depth_order, verbose=False):
 
             arrow_color = colors_class(input_dictionary["color"])
 
+        # Gets the transparency if it is asked for
+
+        if ("contour transparency" in input_dictionary) and len(
+        arrow_color)<4:
+
+            # Adds the transparency level to the fourth channel of RGBA
+            
+            arrow_color.append(input_dictionary["contour transparency"]) 
+
         # Gets the start point
 
         start_point = None 
@@ -464,6 +473,14 @@ depth_order, verbose=False):
 
             fill_path_color = colors_class(input_dictionary["fill path"+
             " with color"])
+
+            # If the fill color still has 3 values add the transparency
+
+            if ("background transparency" in input_dictionary) and len(
+            fill_path_color)<4:
+                
+                fill_path_color.append(input_dictionary["background tr"+
+                "ansparency"])
 
             # Adds the path to the canvas as a patch
 

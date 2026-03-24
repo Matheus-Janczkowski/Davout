@@ -150,12 +150,26 @@ colors_class, marker_box_class, alignment_class):
         "ress enter: ", reviewer_function=colors_class.verify_color_name, 
         default_value="transparent", necessary_type=str)
 
+        fill_transparency = input_repeater("\nType a value between 0.0"+
+        " and 1.0 for the transparency (opacity) of the color of the f"+
+        "illing, then press enter: (the default value is 1.0, i.e. com"+
+        "pletely opaque)", reviewer_function=None, default_value=1.0, 
+        necessary_type=float)
+
+        contour_transparency = input_repeater("\nType a value between "+
+        "0.0 and 1.0 for the transparency (opacity) of the color of th"+
+        "e contour, then press enter: (the default value is 1.0, i.e. "+
+        "completely opaque)", reviewer_function=None, default_value=1.0, 
+        necessary_type=float)
+
         # Creates the dictionary to create this spline
 
         curve_dictionary = {"thickness": thickness, "arrow style": "no"+
         " arrow", "line style": line_style, "color": color, "spline po"+
         "ints": points_list_copy, "closed path": True, "fill path with"+
-        " color": fill_color}
+        " color": fill_color, "contour transparency": 
+        contour_transparency, "background transparency": 
+        fill_transparency}
 
     ####################################################################
     #                      Arrow with spline stem                      #
@@ -245,12 +259,26 @@ colors_class, marker_box_class, alignment_class):
         "ress enter: ", reviewer_function=colors_class.verify_color_name, 
         default_value="transparent", necessary_type=str)
 
+        fill_transparency = input_repeater("\nType a value between 0.0"+
+        " and 1.0 for the transparency (opacity) of the color of the f"+
+        "illing, then press enter: (the default value is 1.0, i.e. com"+
+        "pletely opaque)", reviewer_function=None, default_value=1.0, 
+        necessary_type=float)
+
+        contour_transparency = input_repeater("\nType a value between "+
+        "0.0 and 1.0 for the transparency (opacity) of the color of th"+
+        "e contour, then press enter: (the default value is 1.0, i.e. "+
+        "completely opaque)", reviewer_function=None, default_value=1.0, 
+        necessary_type=float)
+
         # Creates the dictionary to create this polygonal curve
 
         curve_dictionary = {"thickness": thickness, "arrow style": "no"+
         " arrow", "line style": line_style, "color": color, "polygonal"+
         " points": points_list_copy, "closed path": True, "fill path w"+
-        "ith color": fill_color}
+        "ith color": fill_color, "contour transparency": 
+        contour_transparency, "background transparency": 
+        fill_transparency}
 
     ####################################################################
     #                     Arrow with polygonal stem                    #
@@ -333,6 +361,18 @@ colors_class, marker_box_class, alignment_class):
         "ress enter: ", reviewer_function=colors_class.verify_color_name, 
         default_value="transparent", necessary_type=str)
 
+        fill_transparency = input_repeater("\nType a value between 0.0"+
+        " and 1.0 for the transparency (opacity) of the color of the f"+
+        "illing, then press enter: (the default value is 1.0, i.e. com"+
+        "pletely opaque)", reviewer_function=None, default_value=1.0, 
+        necessary_type=float)
+
+        contour_transparency = input_repeater("\nType a value between "+
+        "0.0 and 1.0 for the transparency (opacity) of the color of th"+
+        "e contour, then press enter: (the default value is 1.0, i.e. "+
+        "completely opaque)", reviewer_function=None, default_value=1.0, 
+        necessary_type=float)
+
         # If the marker is a polygon, asks for the number of sides
 
         number_of_sides = None 
@@ -350,7 +390,9 @@ colors_class, marker_box_class, alignment_class):
         thickness, "contour style": line_style, "contour color": color, 
         "fill color": fill_color, "width": width, "height": height, "p"+
         "osition": points_list[-1], "origin point": origin_point, "num"+
-        "ber of sides": number_of_sides}
+        "ber of sides": number_of_sides, "contour transparency": 
+        contour_transparency, "background transparency": 
+        fill_transparency}
 
     ####################################################################
     #                           Text excerpts                          #

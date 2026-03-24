@@ -129,7 +129,8 @@ alignments_class, marker_box_class, depth_order, verbose=False):
         
         # Gets the transparency if it is
 
-        if "contour transparency" in input_dictionary:
+        if ("contour transparency" in input_dictionary) and len(
+        contour_color)<4:
 
             # Adds a 0.0 to the fourth channel of RGBA
             
@@ -137,7 +138,8 @@ alignments_class, marker_box_class, depth_order, verbose=False):
         
         # Gets the transparency if it is for the background only
 
-        if "background transparency" in input_dictionary:
+        if ("background transparency" in input_dictionary) and len(
+        contour_color)<4:
 
             # Adds a 0.0 to the fourth channel of RGBA
             
