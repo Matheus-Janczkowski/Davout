@@ -67,7 +67,7 @@ color_barIntegerTicks=False, color_barNumberOfTicks=5,
 color_barIncludeMinMaxTicks=False, x_ticksLabels=None, y_ticksLabels=
 None, ticks_fontsize=12, label_fontsize=14, legend_fontsize=12,
 highlight_pointsColors='black', parent_path=None, error_bar=None, 
-plot_object=None, verbose=False, latex_package="amsmath"):
+plot_object=None, verbose=False, latex_package="amsmath", dpi=500):
     
     """
     You can provide an array of data, where the first column will be in
@@ -1638,7 +1638,8 @@ plot_object=None, verbose=False, latex_package="amsmath"):
 
         try:
 
-            plt.savefig(file_name, bbox_inches="tight", pad_inches=0)
+            plt.savefig(file_name, bbox_inches="tight", pad_inches=0, 
+            dpi=dpi)
 
         except Exception as e:
 
