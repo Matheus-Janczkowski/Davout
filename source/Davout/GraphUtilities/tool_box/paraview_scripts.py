@@ -1530,9 +1530,23 @@ colors_class, clip_marker_color, clip_marker_size):
 
         clip_marker_color = [1.0, 0.0, 0.0]
 
+    print("The color of the marker is: "+str(clip_marker_color))
+
     # Sets the color to the sphere
 
     display.DiffuseColor = clip_marker_color
+
+    display.AmbientColor = clip_marker_color
+
+    # Diminishes the shade influence
+
+    display.Ambient = 0.5
+
+    display.Diffuse = 0.5
+
+    display.Specular = 0.1
+    
+    display.SpecularPower = 10
 
 ########################################################################
 #                         Functions dispatching                        #
