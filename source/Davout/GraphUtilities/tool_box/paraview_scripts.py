@@ -124,7 +124,7 @@ set_camera_interactively=None, background_color=None,
 legend_bar_font_color=None, color_bar_min_value=None, 
 color_bar_max_value=None, read_camera_settings_dictionary=None,
 clip_marker_size=None, clip_marker_color=None, legend_bar_visibility=
-None):
+None, list_of_markers=None):
     
     # Instantiates the class of fonts
 
@@ -510,70 +510,8 @@ None):
 
         # Creates a point to highlight the plane origin point
 
-        point = PointSource()
-
-        point.Center = clip_plane_origin
-
-        point.NumberOfPoints = 1
-
-        # Applies a glyph filter to highlight it as a large sphere
-
-        glyph = Glyph(Input=point)
-
-        glyph.GlyphType = 'Sphere'
-
-        # Verifies if the marker size has been given by the user
-
-        if clip_marker_size:
-
-            # Tries to convert the to a float
-
-            try:
-
-                clip_marker_size = float(clip_marker_size)
-
-            except:
-
-                raise ValueError("Could not convert 'clip_marker_size'"+
-                " to float in 'frozen_snapshots'. The current value is"+
-                ": "+str(clip_marker_size))
-            
-        else:
-
-            # Gets the size from the bounding box
-
-            bounds = active_data.GetDataInformation().GetBounds()
-            
-            length = max(bounds[1]-bounds[0], bounds[3]-bounds[2], 
-            bounds[5]-bounds[4])
-
-            clip_marker_size = 0.1*length
-
-        # Adjust the sphere size
-
-        glyph.GlyphType.Radius = clip_marker_size
-
-        # Displays it
-
-        display = Show(glyph, renderView)
-
-        # Verifies if the color of the marker has been given
-
-        if clip_marker_color:
-
-            # Gets the RGB value from the colors class
-
-            clip_marker_color = colors_class(clip_marker_color)
-
-        else:
-
-            # Makes it red per default
-
-            clip_marker_color = [1.0, 0.0, 0.0]
-
-        # Sets the color to the sphere
-
-        display.DiffuseColor = clip_marker_color
+        spheric_marker(clip_plane_origin, active_data, renderView, 
+        colors_class, clip_marker_color, clip_marker_size)
 
     ####################################################################
     #                         Additive filters                         #
@@ -640,7 +578,31 @@ None):
         "omponents": 1, "representation": "Surface", "get scalar bar f"+
         "rom": False}
 
-    #Render()
+    # Verifies if a list of point markers to plot has been given
+
+    if list_of_markers:
+
+        # Verifies if it is a list
+
+        if (list_of_markers[0]=="[" and list_of_markers[-1]=="]"):
+        
+            # Converts the argument to a list and sets the parameter
+
+            list_of_markers = string_tools.string_toList(list_of_markers)
+
+        else:
+
+            raise ValueError("'list_of_markers' at 'frozen_snapshots' "+
+            "is not a list. However, it must be a list as [[x_marker1,"+
+            "y_marker1, z_marker1], [x_marker2, y_marker2, z_marker2],"+
+            " ...]; currently, it is: "+str(list_of_markers))
+        
+        # Plots the markers
+
+        for marker_coordinates in list_of_markers:
+
+            spheric_marker(marker_coordinates, active_data, renderView, 
+            colors_class, clip_marker_color, clip_marker_size)
 
     # Verifies if the color of the coordinate system triad is given
 
@@ -1462,6 +1424,82 @@ None):
 
         print("\nThe attributes of the RenderView are:\n"+str(
         renderView.ListProperties()))
+
+########################################################################
+#
+########################################################################
+
+# Defines a function to plot a sphere as a marker
+
+def spheric_marker(marker_position, active_data, renderView, 
+colors_class, clip_marker_color, clip_marker_size):
+
+    # Creates a point to highlight the plane origin point
+
+    point = PointSource()
+
+    point.Center = marker_position
+
+    point.NumberOfPoints = 1
+
+    # Applies a glyph filter to highlight it as a large sphere
+
+    glyph = Glyph(Input=point)
+
+    glyph.GlyphType = 'Sphere'
+
+    # Verifies if the marker size has been given by the user
+
+    if clip_marker_size:
+
+        # Tries to convert the to a float
+
+        try:
+
+            clip_marker_size = float(clip_marker_size)
+
+        except:
+
+            raise ValueError("Could not convert 'clip_marker_size'"+
+            " to float in 'frozen_snapshots'. The current value is"+
+            ": "+str(clip_marker_size))
+        
+    else:
+
+        # Gets the size from the bounding box
+
+        bounds = active_data.GetDataInformation().GetBounds()
+        
+        length = max(bounds[1]-bounds[0], bounds[3]-bounds[2], 
+        bounds[5]-bounds[4])
+
+        clip_marker_size = 0.1*length
+
+    # Adjust the sphere size
+
+    glyph.GlyphType.Radius = clip_marker_size
+
+    # Displays it
+
+    display = Show(glyph, renderView)
+
+    # Verifies if the color of the marker has been given
+
+    if clip_marker_color:
+
+        # Gets the RGB value from the colors class
+
+        clip_marker_color = colors_class(clip_marker_color)
+
+    else:
+
+        # Makes it red per default
+
+        clip_marker_color = [1.0, 0.0, 0.0]
+
+    # Sets the color to the sphere
+
+    display.DiffuseColor = clip_marker_color
 
 ########################################################################
 #                         Functions dispatching                        #
