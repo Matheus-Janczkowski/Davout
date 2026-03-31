@@ -1434,6 +1434,39 @@ None, list_of_markers=None):
 def spheric_marker(marker_position, active_data, renderView, 
 colors_class, clip_marker_color, clip_marker_size):
 
+    # Verifies if marker position is a dictionary
+
+    if isinstance(marker_position, dict):
+
+        # Verifies if it has the color key
+
+        if "color" in marker_position:
+
+            # Overrides the color option
+
+            clip_marker_color = marker_position["color"]
+
+        # Verifies if it has the size key
+
+        if "size" in marker_position:
+
+            # Overrides the size option
+
+            clip_marker_size = marker_position["size"]
+
+        # Verifies if it has the position option
+
+        if not ("position" in marker_position):
+
+            raise KeyError("The key 'position' is not available in the"+
+            " dictionary in the list of markers. This key must contain"+
+            " a list of the coordinates of the marker. See the current"+
+            " dictionary: "+str(marker_position))
+        
+        # Overrides the dictionary with the position
+
+        marker_position = marker_position["position"]
+
     # Creates a point to highlight the plane origin point
 
     point = PointSource()
