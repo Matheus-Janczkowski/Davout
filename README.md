@@ -4,9 +4,11 @@ to the repository and source files: https://github.com/Matheus-Janczkowski/Davou
 
 1. Link to the booklet on installation of a miscelaneous of software: https://www.overleaf.com/read/wbxhncmtnmkm#0eb73b
 
-2. Link to the booklet on python programming: https://www.overleaf.com/read/hcmfzzsrhndj#00fdb1
+2. Link to the book on python programming: https://github.com/Matheus-Janczkowski/CompMechSelfStudy/blob/main/introduction_to_python_programming.pdf
 
 3. Link to the booklet on writing using LaTeX: https://www.overleaf.com/read/sdrvfrpdjhft#66d6f9
+
+4. Link to the book on continuum mechanics: https://github.com/Matheus-Janczkowski/CompMechSelfStudy/blob/main/introduction_to_continuum_mechanics.pdf
 
 4. Link for the presentation template: https://www.overleaf.com/read/sbgxdphxswmm#6d7d64
 
