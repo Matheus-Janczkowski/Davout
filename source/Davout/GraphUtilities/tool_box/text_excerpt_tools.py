@@ -61,7 +61,8 @@ color_class, verbose, depth_order):
                 raise ValueError("The "+str(index+1)+"-th element 'inp"+
                 "ut_text_list' does not have all the necessary keys, i"+
                 "n particular '"+str(key)+"'. Check the necessary keys"+
-                ":"+names)
+                ":"+names+"\n\nThe current input dictionary is:\n"+str(
+                input_dictionary))
             
         # Gets the text excerpt
 
