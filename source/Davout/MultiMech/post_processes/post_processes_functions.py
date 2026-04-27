@@ -1841,6 +1841,9 @@ def initialize_mesh_volume(data, direct_codeData, submesh_flag):
 
     file_name = path_tools.verify_path(parent_path, file_name)
 
+    file_name_quadratic_constant = path_tools.verify_path(parent_path, 
+    "quadratic_constraint_over_the_jacobian")
+
     # Verifies if an extension has been added to the file name
 
     if len(file_name)>4:
@@ -1849,10 +1852,22 @@ def initialize_mesh_volume(data, direct_codeData, submesh_flag):
 
             file_name = file_name[0:-4]
 
+    if len(file_name_quadratic_constant)>4:
+
+        if file_name_quadratic_constant[-4:len(
+        file_name_quadratic_constant)]==".txt":
+
+            file_name_quadratic_constant = file_name_quadratic_constant[
+            0:-4]
+            
     # Initializes the list of values of the ratio of the new volume to
     # the reference volume along the loading steps
 
     volume_ratio_list = []
+
+    # Initializes the list of values of the quadratic constraint
+
+    quadratic_constraint_list = []
 
     # Assembles the file and the function space into a class
 
@@ -1869,7 +1884,12 @@ def initialize_mesh_volume(data, direct_codeData, submesh_flag):
 
             self.file_name = file_name
 
+            self.file_name_quadratic_constant = (
+            file_name_quadratic_constant)
+
             self.result = volume_ratio_list
+
+            self.quadratic_constraint_list = quadratic_constraint_list
 
             self.initial_volume = initial_volume
 
@@ -1928,6 +1948,13 @@ fields_namesDict):
 
     new_volume = assemble(J*output_object.dx) 
 
+    # Calculates the sum of a quadratic constraint over the jacobian
+
+    quadratic_constraint = assemble((J**2)*output_object.dx)
+
+    output_object.quadratic_constraint_list.append([time, 
+    quadratic_constraint])
+
     # Gets the ratio of the new volume to the reference
 
     ratio = new_volume/output_object.initial_volume
@@ -1941,6 +1968,12 @@ fields_namesDict):
     mpi_execute_function(output_object.comm_object, 
     file_tools.list_toTxt, output_object.result, output_object.file_name, 
     add_extension=True)
+
+    # Saves the list of quadratic constraint in a txt file
+
+    mpi_execute_function(output_object.comm_object, 
+    file_tools.list_toTxt, output_object.quadratic_constraint_list, 
+    output_object.file_name_quadratic_constant, add_extension=True)
     
     return output_object
 
