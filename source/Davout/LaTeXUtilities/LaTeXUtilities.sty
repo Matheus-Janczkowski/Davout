@@ -27,13 +27,16 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\RequirePackage[T1]{fontenc}
+\RequirePackage[utf8]{inputenc}
+\RequirePackage[\LU@babelLang]{babel}
+
 % Loads a set of packages, so that none has to be loaded in the file's
 % preamble
 
 \RequirePackage{ulem}
 \RequirePackage{mathtools}
 \RequirePackage{tikz}
-\RequirePackage[\LU@babelLang]{babel}
 \RequirePackage{amsmath}
 \RequirePackage{mattens}
 \RequirePackage{amsthm}
@@ -43,9 +46,7 @@
 \RequirePackage{hhline}
 \RequirePackage{commath}
 \RequirePackage{graphicx}
-\RequirePackage[utf8]{inputenc}
 \RequirePackage{bm}
-\RequirePackage[T1]{fontenc}
 \RequirePackage{url}
 \RequirePackage[title]{appendix}
 \RequirePackage{mathrsfs}
@@ -85,6 +86,14 @@
 \RequirePackage{environ}
 \RequirePackage{xstring}
 \RequirePackage{tcolorbox}
+\RequirePackage{tabularx}
+\RequirePackage{calc}
+\RequirePackage{ragged2e}
+\RequirePackage{everypage}
+
+\RequirePackage{eso-pic}
+\RequirePackage{paracol}
+\RequirePackage{ifoddpage}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -187,12 +196,24 @@ top=3cm, bottom=2cm}}\onehalfspacing\setlength{\parindent}{1.25cm}%
 \newcommand{\InnerProduct}[2]{\left\langle #1,#2 \right\rangle}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                  Statistics and stochastic processes                 %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Defines a command for typing the statistical moemnt of order alpha
+
+\newcommand{\StatisticalMoment}[1]{\mathbb{E}_{#1}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                 Units                                %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Command to set up units
 
 \newcommand{\Unit}[1]{$\Brackets{\mathrm{#1}}$}
+
+% Command to set up units with fractions
+
+\newcommand{\FractionUnit}[2]{$\Brackets{\mathrm{#1}/\mathrm{#2}}$}
 
 % Command to print degrees
 
@@ -211,6 +232,14 @@ top=3cm, bottom=2cm}}\onehalfspacing\setlength{\parindent}{1.25cm}%
 % Command to set the varlambda character
 
 \DeclareRobustCommand{\varlambda}{\text{\usefont{OML}{txmi}{m}{it}\symbol{"15}}}
+
+% Command to generate a bold fraktur letter
+
+\newcommand{\BoldFraktur}[1]{\boldsymbol{\frak{#1}}}
+
+% Command to generate a bold caligraphic letter
+
+\newcommand{\BoldCaligraphic}[1]{\boldsymbol{\mathcal{#1}}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                               Functions                              %
@@ -247,6 +276,10 @@ top=3cm, bottom=2cm}}\onehalfspacing\setlength{\parindent}{1.25cm}%
 % Command to write the logarithm function
 
 \newcommand{\Log}[1]{\mathrm{log}\Parentheses{#1}}
+
+% Command to write the logarithm function of base 10
+
+\newcommand{\LogTen}[1]{\mathrm{log}_{10}\Parentheses{#1}}
 
 % Command to write the ceil function
 
@@ -325,7 +358,7 @@ top=3cm, bottom=2cm}}\onehalfspacing\setlength{\parindent}{1.25cm}%
 
 % Command for typing the directional derivative
 
-\newcommand{\DirectionalDerivative}[2]{\mathcal{D}_{#2}#1}
+\newcommand{\DirectionalDerivative}[2]{D_{#2}#1}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                           Sets and analysis                          %
@@ -338,6 +371,14 @@ top=3cm, bottom=2cm}}\onehalfspacing\setlength{\parindent}{1.25cm}%
 % Command to get something inside brackets
 
 \newcommand{\Brackets}[1]{\left[ #1 \right]}
+
+% Command to get the Macaulay brackets
+
+\newcommand{\MacaulayBrackets}[1]{\left\langle #1 \right\rangle}
+
+% Command to get the Heaviside function
+
+\newcommand{\Heaviside}[1]{\mathcal{H}\left(#1\right)}
 
 % Command to get the braces of a set
 
@@ -391,6 +432,10 @@ top=3cm, bottom=2cm}}\onehalfspacing\setlength{\parindent}{1.25cm}%
 % Command to write the diagonal matrix
 
 \newcommand{\Diag}[1]{\mathrm{diag}\Parentheses{#1}}
+
+% Command for typing the rank
+
+\newcommand{\Rank}[1]{\mathrm{rank}\Parentheses{#1}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                               Tensors                                %
@@ -501,6 +546,10 @@ top=3cm, bottom=2cm}}\onehalfspacing\setlength{\parindent}{1.25cm}%
 
 \newcommand*{\SkewOperator}[1]{\operatorname{skew}\!\left(#1\right)}
 
+% Command for typing the span operator
+
+\newcommand{\SpanOperator}[1]{\mathrm{span}\!\left(#1\right)}
+
 % Command for making a generic operator with lower and upper text, like
 % U_{j=1}^{k}. The arguments are: the letter to symbolize the operator,
 % the lower limit, and the upper limit
@@ -511,6 +560,16 @@ top=3cm, bottom=2cm}}\onehalfspacing\setlength{\parindent}{1.25cm}%
 {\raisebox{-0.1ex}{\scalebox{1.3}{$\scriptstyle #1$}}}% scriptstyle
 {\raisebox{0ex}{\scalebox{1.0}{$\scriptscriptstyle #1$}}}% scriptscriptstyle
 }\limits_{#2}^{#3}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                        Finite element method                       %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Command for typing an interpolation function in the tensorial space
+
+\newcommand{\InterpolationFunction}[1]{\boldsymbol{N}_{#1}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -550,6 +609,10 @@ top=3cm, bottom=2cm}}\onehalfspacing\setlength{\parindent}{1.25cm}%
 % viii) Material traction
 
 \newcommand{\MaterialTraction}{\boldsymbol{T}}
+
+% ix) Velocity
+
+\newcommand{\Velocity}{\boldsymbol{v}}
 
 % Defines commands for the most usual second-order tensors
 % i) Deformation gradient
@@ -869,7 +932,7 @@ trapezium right angle=120, minimum height=2em]
 
 \newcommand{\AppendixSetup}{\appendix\setcounter{figure}{0}%
 \renewcommand\thefigure{A.\arabic{figure}}\addcontentsline{toc}{section%
-}{Appendix}}
+}{\appendixname}}
 
 % Command to insert the bibliography in the file
 
@@ -884,14 +947,21 @@ elsarticle-num-names}\bibliography{#1}}
 
 % Command to set some textual bits in Portuguese
 
-\newcommand{\SetTextualBitsInPortuguese}{\renewcommand{\refname}{Referências}%
+\newcommand{\SetTextualBitsInPortuguese}{\AtBeginDocument{\renewcommand{\refname}{Referências}%
 \renewcommand{\figurename}{Figura}%
 \renewcommand{\tablename}{Tabela}%
 \renewcommand{\appendixname}{Apêndice}%
 \abstracttitle{Resumo}%
 \renewcommand{\contentsname}{Sumário}%
-\renewcommand{\lstlistingname}{Código}
-}
+\renewcommand{\lstlistingname}{Código}%
+\renewcommand{\LectureNotesTitle}{Anotações}%
+\renewcommand{\LectureName}{Aula}%
+\renewcommand{\LecturePlanName}{Plano de aula}%
+\renewcommand{\ExerciseName}{Exercício}%
+\renewcommand{\RemarkName}{Nota}%
+\renewcommand{\ExampleName}{Exemplo}%
+\renewcommand{\ChallengeName}{Desafio}
+}}
 
 % Commands to build an enumerating environment where the items are alpha-
 % betically sorted.
@@ -930,10 +1000,12 @@ elsarticle-num-names}\bibliography{#1}}
 
 \renewcommand{\theexercise}{\thesection.\arabic{exercise}}
 
+\newcommand{\ExerciseName}{Exercise}
+
 \newtcolorbox{ExerciseBox}{before title=\refstepcounter{exercise},
 % Updates the exercise counter
 colback=Red1, colbacktitle=Red2, colframe=black, coltitle=black, 
-title=\textit{\textbf{Exercise \theexercise}}, halign title=left, 
+title=\textit{\textbf{\ExerciseName\;\theexercise}}, halign title=left, 
 lefttitle=0pt, width=\linewidth, boxrule=0.5pt, arc=0pt, left=2pt}
 
 % Environment to create a grey box as wide as the page for remarks.
@@ -943,10 +1015,27 @@ lefttitle=0pt, width=\linewidth, boxrule=0.5pt, arc=0pt, left=2pt}
 
 \renewcommand{\theremark}{\thesection.\arabic{remark}}
 
+\newcommand{\RemarkName}{Remark}
+
 \newtcolorbox{RemarkBox}{before title=\refstepcounter{remark},
 % Updates the remark counter
 colback=Grey1, colbacktitle=Red3, colframe=black, coltitle=black, 
-title=\textit{\textbf{Remark \theremark}}, halign title=left, 
+title=\textit{\textbf{\RemarkName\;\theremark}}, halign title=left, 
+lefttitle=0pt, width=\linewidth, boxrule=0.5pt, arc=0pt, left=2pt}
+
+% Environment to create a grey box as wide as the page for examples.
+% Creates the counter of remark boxes
+
+\newcounter{example}[section]
+
+\renewcommand{\theexample}{\thesection.\arabic{example}}
+
+\newcommand{\ExampleName}{Example}
+
+\newtcolorbox{ExampleBox}{before title=\refstepcounter{example},
+% Updates the example counter
+colback=Yellow1, colbacktitle=Red3, colframe=black, coltitle=black, 
+title=\textit{\textbf{\ExampleName\;\theexample}}, halign title=left, 
 lefttitle=0pt, width=\linewidth, boxrule=0.5pt, arc=0pt, left=2pt}
 
 % Environment to create a grey box as wide as the page for challenges.
@@ -954,12 +1043,14 @@ lefttitle=0pt, width=\linewidth, boxrule=0.5pt, arc=0pt, left=2pt}
 
 \newcounter{challenge}[section]
 
+\newcommand{\ChallengeName}{Challenge}
+
 \renewcommand{\thechallenge}{\thesection.\arabic{challenge}}
 
 \newtcolorbox{ChallengeBox}{before title=\refstepcounter{challenge},
 % Updates the challenge counter
 colback=Grey2, colbacktitle=Red4, colframe=black, coltitle=black, 
-title=\textit{\textbf{Challenge \thechallenge}}, halign title=left, 
+title=\textit{\textbf{\ChallengeName\;\thechallenge}}, halign title=left, 
 lefttitle=0pt, width=\linewidth, boxrule=0.5pt, arc=0pt, left=2pt}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1080,3 +1171,247 @@ lefttitle=0pt, width=\linewidth, boxrule=0.5pt, arc=0pt, left=2pt}
 \hrule height 0.5pt % Bottom bar
 \end{minipage}
 \par\smallskip\noindent\BODY}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                       Single-page Italic Header                      %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\RequirePackage{fancyhdr} % make sure fancyhdr is loaded
+
+% Usage: \SinglePageOuterHeader{<Text>}
+
+\newcommand{\SinglePageOuterHeader}[1]{%
+    \fancypagestyle{singleouter}{%
+        \fancyhf{}% clear header/footer
+        % Determine if page is odd or even and align to outer margin
+        \fancyhead[LE,RO]{\textit{#1}}%
+
+        % Page number (choose where you want it)
+        \fancyfoot[C]{\thepage}%
+        \renewcommand{\headrulewidth}{0.4pt}% optional: line under header
+        \renewcommand{\footrulewidth}{0pt}%
+    }%
+    \thispagestyle{singleouter}% apply to this page only
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                           Lecture heading                            %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcounter{lecture}
+\newcommand{\LectureName}{Lecture}
+\newcommand{\CurrentLectureHeader}{}
+
+\newcommand{\Lecture}[1]{%
+    \setcounter{section}{0}
+    \refstepcounter{lecture}%
+    \gdef\CurrentLectureHeader{\textbf{\LectureName}\;\textbf{\Roman{lecture}}: #1}%
+    \clearpage
+    \phantomsection
+    \addcontentsline{toc}{section}{\protect\textbf{\LectureName}\;\textbf{\Roman{lecture}}: #1}%
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                         Lecture plan heading                         %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcounter{lectureplan}
+\newcommand{\LecturePlanName}{Lecture plan}
+\newcommand{\CurrentLecturePlanHeader}{}
+
+\newcommand{\LecturePlan}[1]{%
+    \setcounter{section}{0}
+    \refstepcounter{lectureplan}%
+    \gdef\CurrentLecturePlanHeader{\textbf{\LecturePlanName}\;\textbf{\Roman{lectureplan}}: #1}%
+    \clearpage
+    \phantomsection
+    \addcontentsline{toc}{section}{\protect\textbf{\LecturePlanName}\;\textbf{\Roman{lectureplan}}: #1}%
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                 Two-column lecture notes with grid                   %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% ---------------------------------------------------------------------
+% Packages/libraries needed
+% ---------------------------------------------------------------------
+
+\usetikzlibrary{calc}
+
+% ---------------------------------------------------------------------
+% Customizable dimensions
+% ---------------------------------------------------------------------
+
+\newlength{\LectureNotesGap}
+\newlength{\LectureNotesColumnWidth}
+\newlength{\LectureMainColumnWidth}
+\newlength{\LectureNotesInnerMargin}
+\newlength{\LectureNotesTitleHeight}
+\newlength{\LectureCurrentSideMargin}
+
+\newcommand{\LectureColumnRatioMain}{0.68}
+\newcommand{\LectureColumnRatioNotes}{0.32}
+
+\setlength{\LectureNotesGap}{0.0mm}
+\setlength{\LectureNotesColumnWidth}{0.32\textwidth}
+\setlength{\LectureMainColumnWidth}{\dimexpr\textwidth-\LectureNotesColumnWidth-\LectureNotesGap\relax}
+\setlength{\LectureNotesInnerMargin}{0mm}
+\setlength{\LectureNotesTitleHeight}{8mm}
+
+% ---------------------------------------------------------------------
+% Customizable appearance
+% ---------------------------------------------------------------------
+
+\definecolor{LectureGridColor}{gray}{0.82}
+\newcommand{\LectureNotesTitle}{Annotations}
+\newcommand{\LectureNotesTitleFont}{\bfseries\small}
+\newcommand{\LectureNotesFrameThickness}{0.8pt}
+
+\definecolor{LectureRulerLabelColor}{gray}{0.45}
+\newcommand{\LectureRulerLabelFont}{\scriptsize}
+\newlength{\LectureRulerRightInset}
+\setlength{\LectureRulerRightInset}{1mm}
+
+\definecolor{LectureBottomIndexColor}{gray}{0.45}
+\newcommand{\LectureBottomIndexFont}{\scriptsize}
+\newlength{\LectureBottomIndexYOffset}
+\setlength{\LectureBottomIndexYOffset}{1.0mm}
+
+% ---------------------------------------------------------------------
+% Draw annotation block
+% ---------------------------------------------------------------------
+
+\newcommand{\DrawLectureNotesGrid}{%
+    \begin{tikzpicture}[remember picture,overlay]
+
+         % Select correct side margin depending on page parity
+        \ifodd\value{page}
+            \setlength{\LectureCurrentSideMargin}{\oddsidemargin}
+        \else
+            \setlength{\LectureCurrentSideMargin}{\evensidemargin}
+        \fi
+
+        % Text block top-left
+        \coordinate (TextNW) at
+            ([xshift=1in+\LectureCurrentSideMargin,
+              yshift=-1in-\topmargin-\headheight-\headsep]current page.north west);
+
+        % Notes block top-left
+        \coordinate (NotesNW) at ([xshift=\LectureMainColumnWidth+\LectureNotesGap]TextNW);
+
+        % Notes block bottom-right
+        \coordinate (NotesSE) at ([xshift=\LectureNotesColumnWidth,yshift=-\textheight]NotesNW);
+
+        % Other corners
+        \coordinate (NotesSW) at (NotesNW |- NotesSE);
+        \coordinate (NotesNE) at (NotesNW -| NotesSE);
+
+        % ----------------------------
+        % GRID (covers whole block)
+        % ----------------------------
+        \draw[
+            step=5mm,
+            LectureGridColor,
+            very thin
+        ]
+        (NotesNW) grid (NotesSE);
+
+        % ----------------------------
+        % LEFT-EDGE NUMBERED INDEX
+        % ----------------------------
+        \pgfmathsetmacro{\MaxLabels}{int(\textheight/10mm)}
+
+        \foreach \i in {1,...,\MaxLabels} {
+            \pgfmathsetmacro{\y}{10*\i}
+            \pgfmathtruncatemacro{\label}{10*\i}
+
+            \node[
+                anchor=west,
+                font=\LectureRulerLabelFont,
+                text=LectureRulerLabelColor,
+                inner sep=0pt
+            ]
+            at ($(NotesSW)+(1.2mm,\y mm-1.0mm)$)
+            {\label};
+        }
+
+        % ----------------------------
+        % BOTTOM HORIZONTAL NUMBERED INDEX
+        % ----------------------------
+        \pgfmathsetmacro{\MaxLabels}{int(\LectureNotesColumnWidth/10mm)}
+
+        \foreach \i in {1,...,\MaxLabels} {
+            \pgfmathsetmacro{\x}{10*\i}
+            \pgfmathtruncatemacro{\label}{10*\i}
+
+            \node[
+                anchor=south,
+                font=\LectureBottomIndexFont,
+                text=LectureBottomIndexColor,
+                inner sep=0pt
+            ]
+            at ([xshift=\x mm-2.0mm,yshift=\LectureBottomIndexYOffset]NotesSW)
+            {\label};
+        }
+
+        % ----------------------------
+        % FRAME
+        % ----------------------------
+        \draw[line width=\LectureNotesFrameThickness]
+            (NotesNW) rectangle (NotesSE);
+
+        % ----------------------------
+        % TITLE (centered, no white box)
+        % ----------------------------
+        \node[
+            anchor=north,
+            font=\LectureNotesTitleFont,
+            inner sep=1pt,
+            text=black
+        ] (NotesTitle) at ($(NotesNW)!0.5!(NotesNW -| NotesSE) + (0,-2.5mm)$)
+        {\LectureNotesTitle};
+
+        % ----------------------------
+        % HIGHLIGHT LINE UNDER TITLE
+        % ----------------------------
+        \draw[line width=0.8pt]
+        ($(NotesTitle.south)+(-1.2cm,-0.5mm)$)
+        --
+        ($(NotesTitle.south)+(1.2cm,-0.5mm)$);
+
+    \end{tikzpicture}%
+}
+
+% ---------------------------------------------------------------------
+% Environment for lecture note pages
+% ---------------------------------------------------------------------
+
+\NewDocumentEnvironment{NotesPage}{O{0.32\textwidth}}
+{%
+    \clearpage
+    
+    % Automatically apply the current lecture header
+    \SinglePageOuterHeader{\CurrentLectureHeader}
+
+    % Set widths for this specific page
+    \setlength{\LectureNotesColumnWidth}{#1}
+    \setlength{\LectureMainColumnWidth}{\dimexpr\textwidth-\LectureNotesColumnWidth-\LectureNotesGap\relax}
+
+    % Compute numerical ratios for paracol
+    \pgfmathsetmacro{\LectureColumnRatioMainValue}{\strip@pt\LectureMainColumnWidth/\strip@pt\textwidth}
+    \pgfmathsetmacro{\LectureColumnRatioNotesValue}{\strip@pt\LectureNotesColumnWidth/\strip@pt\textwidth}
+
+    % Draw background
+    \AddToShipoutPictureBG*{\DrawLectureNotesGrid}
+
+    % Start columns
+    \columnratio{\LectureColumnRatioMainValue,\LectureColumnRatioNotesValue}
+    \begin{paracol}{2}
+    \sloppy
+    \switchcolumn[0]
+}
+{%
+    \end{paracol}
+    \ClearShipoutPictureBG
+    \clearpage
+}
