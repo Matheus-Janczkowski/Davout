@@ -195,6 +195,10 @@ top=3cm, bottom=2cm}}\onehalfspacing\setlength{\parindent}{1.25cm}%
 
 \newcommand{\InnerProduct}[2]{\left\langle #1,#2 \right\rangle}
 
+% Command to break a line inside an equation
+
+\newcommand{\LineBreak}{\right.\nonumber\\\left.}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                  Statistics and stochastic processes                 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -231,7 +235,8 @@ top=3cm, bottom=2cm}}\onehalfspacing\setlength{\parindent}{1.25cm}%
 
 % Command to set the varlambda character
 
-\DeclareRobustCommand{\varlambda}{\text{\usefont{OML}{txmi}{m}{it}\symbol{"15}}}
+\DeclareRobustCommand{\varlambda}{\text{\usefont{OML}{txmi}{m}{it}%
+\symbol{"15}}}
 
 % Command to generate a bold fraktur letter
 
@@ -346,7 +351,8 @@ top=3cm, bottom=2cm}}\onehalfspacing\setlength{\parindent}{1.25cm}%
 
 % Command for higher-order partial derivative
 
-\newcommand{\HigherOrderPartialDerivative}[3]{\frac{\partial^{#3} #1}{\partial #2^{#3}}}
+\newcommand{\HigherOrderPartialDerivative}[3]{\frac{\partial^{#3} #1}{%
+\partial #2^{#3}}}
 
 % Command for total derivative
 
@@ -947,7 +953,8 @@ elsarticle-num-names}\bibliography{#1}}
 
 % Command to set some textual bits in Portuguese
 
-\newcommand{\SetTextualBitsInPortuguese}{\AtBeginDocument{\renewcommand{\refname}{Referências}%
+\newcommand{\SetTextualBitsInPortuguese}{\AtBeginDocument{\renewcommand{%
+\refname}{Referências}%
 \renewcommand{\figurename}{Figura}%
 \renewcommand{\tablename}{Tabela}%
 \renewcommand{\appendixname}{Apêndice}%
@@ -1205,7 +1212,8 @@ lefttitle=0pt, width=\linewidth, boxrule=0.5pt, arc=0pt, left=2pt}
 \newcommand{\Lecture}[1]{%
     \setcounter{section}{0}
     \refstepcounter{lecture}%
-    \gdef\CurrentLectureHeader{\textbf{\LectureName}\;\textbf{\Roman{lecture}}: #1}%
+    \gdef\CurrentLectureHeader{\textbf{\LectureName}\;\textbf{\Roman{%
+    lecture}}: #1}%
     \clearpage
     \phantomsection
     \addcontentsline{toc}{section}{\protect\textbf{\LectureName}\;\textbf{\Roman{lecture}}: #1}%
@@ -1254,7 +1262,8 @@ lefttitle=0pt, width=\linewidth, boxrule=0.5pt, arc=0pt, left=2pt}
 
 \setlength{\LectureNotesGap}{0.0mm}
 \setlength{\LectureNotesColumnWidth}{0.32\textwidth}
-\setlength{\LectureMainColumnWidth}{\dimexpr\textwidth-\LectureNotesColumnWidth-\LectureNotesGap\relax}
+\setlength{\LectureMainColumnWidth}{\dimexpr\textwidth-%
+\LectureNotesColumnWidth-\LectureNotesGap\relax}
 \setlength{\LectureNotesInnerMargin}{0mm}
 \setlength{\LectureNotesTitleHeight}{8mm}
 
