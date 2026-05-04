@@ -15,6 +15,8 @@ from ..tool_box import numerical_tools
 
 from ..tool_box import read_write_tools
 
+from ..tool_box import binary_tools
+
 from ..tool_box.parallelization_tools import mpi_xdmf_file, mpi_print, mpi_execute_function
 
 from ...PythonicUtilities import path_tools
@@ -50,6 +52,24 @@ def initialize_fieldSaving(data, direct_codeData, submesh_flag):
     visualization_copy = data[4]
 
     field_name = data[5]
+
+    saving_method = data[6]
+
+    # Verifies if saving method is available
+
+    available_saving_methods = ["xdmf", "binary"]
+
+    if not (saving_method in available_saving_methods):
+
+        available_names = ""
+
+        for name in available_saving_methods:
+
+            available_names += "\n"+str(name)
+
+        raise ValueError("'saving method' was selected as '"+str(
+        saving_method)+"' in 'SaveField' post-process. But it must be "+
+        "one of the following options:"+available_names)
 
     # Gets the functional data class
 
@@ -150,6 +170,10 @@ def initialize_fieldSaving(data, direct_codeData, submesh_flag):
 
                 self.base_fileName = file_name
 
+            # Sets the saving method
+
+            self.saving_method = saving_method
+
     # Initializes the output object
 
     output_object = OutputObject(file_name)
@@ -189,9 +213,38 @@ fields_namesDict):
 
         if field_number==-1:
 
+            # Verifies if a readable binary is to be used
+
+            if output_object.saving_method=="binary":
+
+                # Writes the field to the main file using the proper me-
+                # thod for writing a readable binary
+
+                writing_result = binary_tools.write_field_to_binary(
+                output_object.functional_data_dict, time=time, 
+                field_name=field_name, visualization_copy=
+                output_object.visualization_copy, close_file=False,
+                time_step=output_object.solution_steps-1, 
+                explicit_file_name=output_object.file_name, 
+                visualization_copy_file=
+                output_object.visualization_copy_file, 
+                code_given_mesh_data_class=output_object.mesh_data_class,
+                field_type=output_object.field_type, interpolation_function=
+                output_object.interpolation_function, polynomial_degree=
+                output_object.polynomial_degree, comm_object=
+                output_object.comm_object)
+
+                # Separates the readable file off the visualization copy
+                # file, if there is any
+
+                if output_object.visualization_copy:
+
+                    output_object.visualization_copy_file = (
+                    writing_result)
+
             # Verifies if a readable xdmf is to be used
 
-            if output_object.readable_xdmf_flag:
+            elif output_object.readable_xdmf_flag:
 
                 # Writes the field to the main file using the proper me-
                 # thod for writing a readable xdmf
@@ -238,9 +291,38 @@ fields_namesDict):
 
         else:
 
+            # Verifies if a readable binary is to be used
+
+            if output_object.saving_method=="binary":
+
+                # Writes the field to the main file using the proper me-
+                # thod for writing a readable binary
+
+                writing_result = binary_tools.write_field_to_binary(
+                output_object.functional_data_dict, time=time, 
+                field_name=field_name, visualization_copy=
+                output_object.visualization_copy, close_file=False,
+                time_step=output_object.solution_steps-1, 
+                explicit_file_name=output_object.file_name, 
+                visualization_copy_file=
+                output_object.visualization_copy_file, 
+                code_given_mesh_data_class=output_object.mesh_data_class,
+                field_type=output_object.field_type, interpolation_function=
+                output_object.interpolation_function, polynomial_degree=
+                output_object.polynomial_degree, comm_object=
+                output_object.comm_object)
+
+                # Separates the readable file off the visualization copy
+                # file, if there is any
+
+                if output_object.visualization_copy:
+
+                    output_object.visualization_copy_file = (
+                    writing_result)
+
             # Verifies if a readable xdmf is to be used
 
-            if output_object.readable_xdmf_flag:
+            elif output_object.readable_xdmf_flag:
 
                 # Writes the field to the main file using the proper me-
                 # thod for writing a readable xdmf
@@ -293,9 +375,38 @@ fields_namesDict):
 
         if field_number==-1:
 
+            # Verifies if a binary file is to used
+
+            if output_object.saving_method=="binary":
+
+                # Writes the field to the main file using the proper me-
+                # thod for writing a readable xdmf
+
+                writing_result = binary_tools.write_field_to_binary(
+                output_object.functional_data_dict, time=time, 
+                field_name=field_name, visualization_copy=
+                output_object.visualization_copy, close_file=False,
+                time_step=output_object.solution_steps-1, 
+                explicit_file_name=output_object.file_name, 
+                visualization_copy_file=
+                output_object.visualization_copy_file, 
+                code_given_mesh_data_class=output_object.mesh_data_class,
+                field_type=output_object.field_type, interpolation_function=
+                output_object.interpolation_function, polynomial_degree=
+                output_object.polynomial_degree, comm_object=
+                output_object.comm_object)
+
+                # Separates the readable file off the visualization copy
+                # file, if there is any
+
+                if output_object.visualization_copy:
+
+                    output_object.visualization_copy_file = (
+                    writing_result)
+
             # Verifies if a readable xdmf is to be used
 
-            if output_object.readable_xdmf_flag:
+            elif output_object.readable_xdmf_flag:
 
                 # Writes the field to the main file using the proper me-
                 # thod for writing a readable xdmf
@@ -338,9 +449,38 @@ fields_namesDict):
 
         else:
 
+            # Verifies if a readable binary is to be used
+
+            if output_object.saving_method=="binary":
+
+                # Writes the field to the main file using the proper me-
+                # thod for writing a readable binary
+
+                writing_result = binary_tools.write_field_to_binary(
+                output_object.functional_data_dict, time=time, 
+                field_name=field_name, visualization_copy=
+                output_object.visualization_copy, close_file=False,
+                time_step=output_object.solution_steps-1, 
+                explicit_file_name=output_object.file_name, 
+                visualization_copy_file=
+                output_object.visualization_copy_file, 
+                code_given_mesh_data_class=output_object.mesh_data_class,
+                field_type=output_object.field_type, interpolation_function=
+                output_object.interpolation_function, polynomial_degree=
+                output_object.polynomial_degree, comm_object=
+                output_object.comm_object)
+
+                # Separates the readable file off the visualization copy
+                # file, if there is any
+
+                if output_object.visualization_copy:
+
+                    output_object.visualization_copy_file = (
+                    writing_result)
+
             # Verifies if a readable xdmf is to be used
 
-            if output_object.readable_xdmf_flag:
+            elif output_object.readable_xdmf_flag:
 
                 # Writes the field to the main file using the proper me-
                 # thod for writing a readable xdmf

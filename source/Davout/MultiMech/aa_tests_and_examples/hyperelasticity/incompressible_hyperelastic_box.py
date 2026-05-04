@@ -34,7 +34,8 @@ post_processes = [["Displacement", dict()], ["Pressure", dict()]]
 
 post_processes[0][1]["SaveField"] = {"directory path": results_path, 
 "file name": "displacement_incompressible_box.xdmf", "readable xdmf fi"+
-"le": True, "visualization copy for readable xdmf": True}
+"le": True, "visualization copy for readable xdmf": True, "saving method":
+"binary"}
 
 post_processes[0][1]["SaveMeshVolumeRatioToReferenceVolume"] = {"director"+
 "y path": results_path, "file name": "volume_ratio_incompressible_box.txt"}
