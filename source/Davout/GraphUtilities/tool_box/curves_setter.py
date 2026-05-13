@@ -119,11 +119,15 @@ colors_class, marker_box_class, alignment_class):
         colors_class.verify_color_name, default_value="black", 
         necessary_type=str)
 
+        object_name = input_repeater("\nType the name of the object to"+
+        " be used as reference later: ", reviewer_function=None, 
+        default_value="unnominated", necessary_type=str)
+
         # Creates the dictionary to create this spline
 
         curve_dictionary = {"thickness": thickness, "arrow style": "no"+
         " arrow", "line style": line_style, "color": color, "spline po"+
-        "ints": points_list_copy}
+        "ints": points_list_copy, "object name": object_name}
 
     ####################################################################
     #                        Closed spline curve                       #
@@ -162,6 +166,10 @@ colors_class, marker_box_class, alignment_class):
         "completely opaque)", reviewer_function=None, default_value=1.0, 
         necessary_type=float)
 
+        object_name = input_repeater("\nType the name of the object to"+
+        " be used as reference later: ", reviewer_function=None, 
+        default_value="unnominated", necessary_type=str)
+
         # Creates the dictionary to create this spline
 
         curve_dictionary = {"thickness": thickness, "arrow style": "no"+
@@ -169,7 +177,7 @@ colors_class, marker_box_class, alignment_class):
         "ints": points_list_copy, "closed path": True, "fill path with"+
         " color": fill_color, "contour transparency": 
         contour_transparency, "background transparency": 
-        fill_transparency}
+        fill_transparency, "object name": object_name}
 
     ####################################################################
     #                      Arrow with spline stem                      #
@@ -201,11 +209,16 @@ colors_class, marker_box_class, alignment_class):
         " head: ", reviewer_function=None, default_value=0.5, 
         necessary_type=float)
 
+        object_name = input_repeater("\nType the name of the object to"+
+        " be used as reference later: ", reviewer_function=None, 
+        default_value="unnominated", necessary_type=str)
+
         # Creates the dictionary to create this spline
 
         curve_dictionary = {"thickness": thickness, "arrow style": 
         arrow_style, "line style": line_style, "color": color, "spline"+
-        " points": points_list_copy, "arrow head size": arrow_head_size}
+        " points": points_list_copy, "arrow head size": arrow_head_size, 
+        "object name": object_name}
 
     ####################################################################
     #                          Polygonal curve                         #
@@ -228,11 +241,15 @@ colors_class, marker_box_class, alignment_class):
         colors_class.verify_color_name, default_value="black", 
         necessary_type=str)
 
+        object_name = input_repeater("\nType the name of the object to"+
+        " be used as reference later: ", reviewer_function=None, 
+        default_value="unnominated", necessary_type=str)
+
         # Creates the dictionary to create this polygonal curve
 
         curve_dictionary = {"thickness": thickness, "arrow style": "no"+
         " arrow", "line style": line_style, "color": color, "polygonal"+
-        " points": points_list_copy}
+        " points": points_list_copy, "object name": object_name}
 
     ####################################################################
     #                      Closed polygonal curve                      #
@@ -271,6 +288,10 @@ colors_class, marker_box_class, alignment_class):
         "completely opaque)", reviewer_function=None, default_value=1.0, 
         necessary_type=float)
 
+        object_name = input_repeater("\nType the name of the object to"+
+        " be used as reference later: ", reviewer_function=None, 
+        default_value="unnominated", necessary_type=str)
+
         # Creates the dictionary to create this polygonal curve
 
         curve_dictionary = {"thickness": thickness, "arrow style": "no"+
@@ -278,7 +299,7 @@ colors_class, marker_box_class, alignment_class):
         " points": points_list_copy, "closed path": True, "fill path w"+
         "ith color": fill_color, "contour transparency": 
         contour_transparency, "background transparency": 
-        fill_transparency}
+        fill_transparency, "object name": object_name}
 
     ####################################################################
     #                     Arrow with polygonal stem                    #
@@ -310,12 +331,16 @@ colors_class, marker_box_class, alignment_class):
         " head: ", reviewer_function=None, default_value=0.5, 
         necessary_type=float)
 
+        object_name = input_repeater("\nType the name of the object to"+
+        " be used as reference later: ", reviewer_function=None, 
+        default_value="unnominated", necessary_type=str)
+
         # Creates the dictionary to create this spline
 
         curve_dictionary = {"thickness": thickness, "arrow style": 
         arrow_style, "line style": line_style, "color": color, "polygo"+
         "nal points": points_list_copy, "arrow head size": 
-        arrow_head_size}
+        arrow_head_size, "object name": object_name}
 
     ####################################################################
     #                          Box and markers                         #
@@ -383,6 +408,10 @@ colors_class, marker_box_class, alignment_class):
             "es of the polygon and press enter: ", reviewer_function=
             None, default_value=None, necessary_type=int)
 
+        object_name = input_repeater("\nType the name of the object to"+
+        " be used as reference later: ", reviewer_function=None, 
+        default_value="unnominated", necessary_type=str)
+
         # Creates the dictionary to create this marker. Adds the last 
         # point of the points list as position
 
@@ -392,7 +421,7 @@ colors_class, marker_box_class, alignment_class):
         "osition": points_list[-1], "origin point": origin_point, "num"+
         "ber of sides": number_of_sides, "contour transparency": 
         contour_transparency, "background transparency": 
-        fill_transparency}
+        fill_transparency, "object name": object_name}
 
     ####################################################################
     #                           Text excerpts                          #
@@ -423,12 +452,17 @@ colors_class, marker_box_class, alignment_class):
         " enter: ", reviewer_function=colors_class.verify_color_name, 
         default_value="black", necessary_type=str)
 
+        object_name = input_repeater("\nType the name of the object to"+
+        " be used as reference later: ", reviewer_function=None, 
+        default_value="unnominated", necessary_type=str)
+
         # Creates the dictionary to create this text excerpt. Adds the 
         # last point of the points list as position
 
         text_dictionary = {"text": text_excerpt, "font size": font_size, 
         "color": color, "position": points_list[-1], "origin point": 
-        origin_point, "rotation in degrees": rotation_in_degrees}
+        origin_point, "rotation in degrees": rotation_in_degrees, 
+        "object name": object_name}
 
     print("\nThe graphic element has been successfully introduced. Pre"+
     "ss R to redraw if you want to see it immediately\n")

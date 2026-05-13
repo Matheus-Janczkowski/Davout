@@ -77,7 +77,8 @@ vanishing_points_list=None, save_lists_to_txt=True, interactive_preview=
 False, arrows_and_lines_file=None, boxes_list_file=None, text_list_file=
 None, size_template=None, export_selection=None, image_interpolation=
 None, backend=None, compress_level=None, 
-concatenate_read_lists_with_argument_lists=True):
+concatenate_read_lists_with_argument_lists=True, ignore_read_repetitions=
+False):
     
     # Verifies if the files to save the lists are None
 
@@ -249,11 +250,9 @@ concatenate_read_lists_with_argument_lists=True):
 
                     # Concatenates both
 
-                    for new_box in read_boxes_list:
-
-                        if new_box not in boxes_list:
-
-                            boxes_list.append(new_box)
+                    boxes_list = input_lists_concatenation(
+                    read_boxes_list, boxes_list, ignore_read_repetitions=
+                    ignore_read_repetitions)
 
                     # Then, saves it
 
@@ -385,11 +384,9 @@ concatenate_read_lists_with_argument_lists=True):
 
                     # Concatenates both
 
-                    for new_text in read_input_text_list:
-
-                        if new_text not in input_text_list:
-
-                            input_text_list.append(new_text)
+                    input_text_list = input_lists_concatenation(
+                    read_input_text_list, input_text_list, 
+                    ignore_read_repetitions=ignore_read_repetitions)
 
                     # Then, saves it
 
@@ -478,11 +475,9 @@ concatenate_read_lists_with_argument_lists=True):
 
                     # Concatenates both
 
-                    for new_arrow in read_arrows_and_lines_list:
-
-                        if new_arrow not in arrows_and_lines_list:
-
-                            arrows_and_lines_list.append(new_arrow)
+                    arrows_and_lines_list = input_lists_concatenation(
+                    read_arrows_and_lines_list, arrows_and_lines_list, 
+                    ignore_read_repetitions=ignore_read_repetitions)
 
                     # Then, saves it
 
@@ -1001,3 +996,74 @@ def save_plot(output_file, dpi, backend, bbox_inches=None, pad_inches=
 
         print("Finishes saving the figure at "+str(output_file)+"\nSav"+
         "ing took "+str(time()-saving_time)+" seconds\n")
+
+# Defines a function to concatenate the read list and the input list to-
+# gether. However, care is taken to superscribe same objects
+
+def input_lists_concatenation(read_input_list, input_list, 
+ignore_read_repetitions=False):
+    
+    # If named objects are to be overwritten
+
+    if ignore_read_repetitions:
+
+        # Iterates through the input list that was read from a txt file
+
+        for new_input in read_input_list:
+
+            # Verifies if the object is named
+
+            if isinstance(new_input, dict) and ("object name" in (
+            new_input)):
+                
+                # Recovers the object name
+
+                object_name = new_input["object name"]
+
+                # Initializes a flag to ignore the read item or not
+
+                ignore_item = False
+                
+                # Searches in the input list for a dictionary with this
+                # key
+
+                for input_object in input_list:
+
+                    if isinstance(input_object, dict) and ("object nam"+
+                    "e" in input_object) and (input_object["object nam"+
+                    "e"]==object_name):
+                        
+                        # Stops the search and ignores the read item
+
+                        ignore_item = True
+
+                        break
+
+                # If the item is to be ignored, continue 
+
+                if ignore_item:
+
+                    continue
+
+            # If it is not a named object and it's not in the input list,
+            # appends it
+
+            elif new_input not in input_list:
+
+                input_list.append(new_input)
+
+    # Otherwise, concatenates everything
+
+    else:
+
+        # Iterates through the input list that was read from a txt file
+
+        for new_input in read_input_list:
+
+            if new_input not in input_list:
+
+                input_list.append(new_input)
+
+    # Returns the input list
+
+    return input_list
