@@ -33,6 +33,8 @@ from ...PythonicUtilities.file_handling_tools import save_string_into_txt, txt_t
 
 from ...PythonicUtilities.path_tools import verify_file_existence
 
+from ...PythonicUtilities.user_interaction_tools import input_repeater
+
 # Sets a class of data that is communicated from and to the interactive
 # window
 
@@ -292,7 +294,10 @@ marker_box_class, alignment_class, verbose=False):
 
     def on_key(event):
 
-        nonlocal points_list, general_axes, manual_close, arrows_and_lines_list, flag_input, interactive_window_info, boxes_list, text_list, depth_order
+        nonlocal points_list, general_axes, manual_close, \
+        arrows_and_lines_list, flag_input, interactive_window_info, \
+        boxes_list, text_list, depth_order, arrows_and_lines_file, \
+        boxes_list_file, text_list_file, input_path
 
         # If enter is pressed, saves the image and do not resume redraw-
         # ing
@@ -304,6 +309,25 @@ marker_box_class, alignment_class, verbose=False):
             manual_close = False
 
             plt.close(collage)
+
+        # If M is pressed, enables shifting the position of an object
+
+        elif event.key=="m":
+
+            (arrows_and_lines_list, boxes_list, text_list
+            ) = shift_named_object(arrows_and_lines_list, boxes_list, 
+            text_list, arrows_and_lines_file, boxes_list_file, 
+            text_list_file, input_path)
+
+            # Redraws the canvas automatically
+
+            interactive_window_info.flag_redraw = True
+
+            manual_close = False
+
+            # Sets a variable informing to close the figure
+
+            plt.close()
 
         # If C is pressed, toggle the addition of grid
 
@@ -890,7 +914,13 @@ marker_box_class, alignment_class, verbose=False):
     print("\n9. Text excerpts:")
 
     print("Press key T .............................. => add a text ex"+
-    "cerpt. Use $your equation$ if you want to put any LaTeX equation", flush=True)
+    "cerpt. Use $your equation$ if you want to put any LaTeX equation", 
+    flush=True)
+
+    print("\n10. Movement of objects:")
+
+    print("Press key M .............................. => shift an obje"+
+    "ct on the canvas", flush=True)
 
     # Shows the image
 
@@ -903,3 +933,183 @@ marker_box_class, alignment_class, verbose=False):
     general_axes.set_ylim(old_y_min, old_y_max)
 
     return interactive_window_info, depth_order
+
+# Defines a function to look for a named object
+
+def search_object(object_name, arrows_and_lines, boxes_list, text_list, 
+arrows_and_lines_file, boxes_list_file, text_list_file, x_shift, 
+y_shift, input_path):
+    
+    # Searches for the object in the list of arrows and lines
+
+    for object_index, line in enumerate(arrows_and_lines):
+
+        if ("object name" in line) and line["object name"]==object_name:
+
+            # Verifies if the object is a polygonal line or a spline
+
+            if "spline points" in line:
+
+                # Gets the spline_points and shifts them
+
+                shifted_points_list = [[point[0]+x_shift, (point[1]+
+                y_shift)] for point in line["spline points"]]
+
+                # Reassembles the points into the dictionary of the ob-
+                # ject
+
+                arrows_and_lines[object_index]["spline points"] = (
+                shifted_points_list)
+
+                # Saves the file
+
+                list_toTxt(arrows_and_lines, arrows_and_lines_file, 
+                parent_path=input_path)
+
+                return object_name, (arrows_and_lines, 
+                boxes_list, text_list)
+
+            elif "polygonal points" in line:
+
+                # Gets the polygonal points and shifts them
+
+                shifted_points_list = [[point[0]+x_shift, (point[1]+
+                y_shift)] for point in line["polygonal points"]]
+
+                # Reassembles the points into the dictionary of the ob-
+                # ject
+
+                arrows_and_lines[object_index]["polygonal points"
+                ] = shifted_points_list
+
+                # Saves the file
+
+                list_toTxt(arrows_and_lines, arrows_and_lines_file, 
+                parent_path=input_path)
+
+                return object_name, (arrows_and_lines, boxes_list, 
+                text_list)
+            
+            else:
+
+                raise NameError("Object '"+str(object_name)+"' is to b"+
+                "e shifted. It was found in the list of arrows and lin"+
+                "es, but the corresponding dictionary does not have ke"+
+                "y 'spline points' nor 'polygonal points'")
+    
+    # Searches for the object in the list boxes
+
+    for object_index, object_dictionary in enumerate(boxes_list):
+
+        if ("object name" in object_dictionary) and object_dictionary[
+        "object name"]==object_name:
+
+            # Verifies if the object is a polygonal line or a spline
+
+            if "position" in object_dictionary:
+
+                # Gets the position point and shifts it
+
+                point = object_dictionary["position"]
+
+                shifted_point_list = [point[0]+x_shift, (point[1]+
+                y_shift)]
+
+                # Corrects the position
+
+                boxes_list[object_index]["position"] = (
+                shifted_point_list)
+
+                # Saves the file
+
+                list_toTxt(boxes_list, boxes_list_file, parent_path=
+                input_path)
+
+                return object_name, (arrows_and_lines, boxes_list, 
+                text_list)
+            
+            else:
+
+                raise NameError("Object '"+str(object_name)+"' is to b"+
+                "e shifted. It was found in the list of boxes, but the"+
+                " corresponding dictionary does not have key 'position"+
+                "'")
+    
+    # Searches for the object in the list of texts
+
+    for object_index, object_dictionary in enumerate(text_list):
+
+        if ("object name" in object_dictionary) and object_dictionary[
+        "object name"]==object_name:
+
+            # Verifies if the object is a polygonal line or a spline
+
+            if "position" in object_dictionary:
+
+                # Gets the position point and shifts it
+
+                point = object_dictionary["position"]
+
+                shifted_point_list = [point[0]+x_shift, (point[1]+
+                y_shift)]
+
+                # Corrects the position
+
+                text_list[object_index]["position"] = (
+                shifted_point_list)
+
+                # Saves the file
+
+                list_toTxt(text_list, text_list_file, parent_path=
+                input_path)
+
+                return object_name, (arrows_and_lines, boxes_list, 
+                text_list)
+            
+            else:
+
+                raise NameError("Object '"+str(object_name)+"' is to b"+
+                "e shifted. It was found in the list of texts, but the"+
+                " corresponding dictionary does not have key 'position"+
+                "'")
+            
+    # If it was not found, return None
+
+    return None
+
+# Defines a function to shift a named object
+
+def shift_named_object(arrows_and_lines, boxes_list, text_list, 
+arrows_and_lines_file, boxes_list_file, text_list_file, input_path):
+    
+    # Asks for the shift in the x direction
+    
+    x_shift = input_repeater("\nType the shift in the x-axis and press"+
+    " enter: ", reviewer_function=None, default_value=0.0, 
+    necessary_type=float)
+    
+    # Asks for the shift in the y direction
+    
+    y_shift = input_repeater("\nType the shift in the y-axis and press"+
+    " enter: ", reviewer_function=None, default_value=0.0, 
+    necessary_type=float)
+
+    # Defines the review function to search in the lists of objects
+
+    reviewer_function = lambda answer: search_object(answer, 
+    arrows_and_lines, boxes_list, text_list, arrows_and_lines_file, 
+    boxes_list_file, text_list_file, x_shift, y_shift, input_path)
+
+    # Asks the user for the name of the object. The reviewer function
+    # will automatically retrieve the object list, the index of the ob-
+    # ject dictionary in the list (integer), and the key to the list of
+    # points (string). The object list is returned already updated
+
+    object_name, corrected_lists = input_repeater("\nType the name of "+
+    "the object to be shifted: ", reviewer_function=reviewer_function, 
+    necessary_type=str)
+
+    print("Shifts object '"+str(object_name)+"' in x-axis by "+str(
+    x_shift)+" and in y-axis by "+str(y_shift), flush=True)
+
+    return corrected_lists
