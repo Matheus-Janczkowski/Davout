@@ -161,6 +161,10 @@ plot_object=None, verbose=False, latex_package="amsmath", dpi=500):
 
     elif plot_type=="scatter":
 
+        # Forces highlight points to be False
+
+        highlight_points = False
+
         # If no element style has been provided sets X amrker as default
 
         if element_style is None:
@@ -540,7 +544,11 @@ plot_object=None, verbose=False, latex_package="amsmath", dpi=500):
 
                 color = [color for i in range(multiple_curves)]
 
-        elif not isinstance(color, list):
+        elif isinstance(color, tuple):
+
+            color = [color for i in range(multiple_curves)]
+
+        elif (not isinstance(color, list)):
 
             raise TypeError("Multiple curves were given to be plotted,"+
             " but the color variables is neither a string nor a list")
@@ -605,6 +613,12 @@ plot_object=None, verbose=False, latex_package="amsmath", dpi=500):
 
                 color_map = [color_map, color_barMinimum, 
                 color_barMaximum]
+
+        # Verifies if there is a single label
+
+        if isinstance(label, str):
+
+            label = [label for i in range(multiple_curves)]
             
     else:
 
@@ -1239,9 +1253,19 @@ plot_object=None, verbose=False, latex_package="amsmath", dpi=500):
 
                     else:
 
-                        plotted_entities = plot_object.scatter(x_data[
-                        i], y_data[i], marker=element_style[i], s=
-                        element_size[i]**2, color=color[i], zorder=3)
+                        if i==0:
+
+                            plotted_entities = plot_object.scatter(
+                            x_data[i], y_data[i], marker=element_style[i
+                            ], s=element_size[i]**2, color=color[i], 
+                            zorder=3, label=label[i])
+
+                        else:
+
+                            plotted_entities = plot_object.scatter(
+                            x_data[i], y_data[i], marker=element_style[i
+                            ], s=element_size[i]**2, color=color[i], 
+                            zorder=3)
 
                 else:
 
