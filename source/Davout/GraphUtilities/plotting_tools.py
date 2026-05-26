@@ -419,6 +419,14 @@ plot_object=None, verbose=False, latex_package="amsmath", dpi=500):
 
                 raise NameError("Error Message:"+str(error_message)+
                 "\nProbably this color map does not exist")
+            
+        # Verifies if color is a float
+
+        if isinstance(color, float):
+
+            # Converts using the color map
+
+            color = color_map(color)
 
     # Creates the figure and the subplots
 
