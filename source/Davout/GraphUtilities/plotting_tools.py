@@ -67,7 +67,8 @@ color_barIntegerTicks=False, color_barNumberOfTicks=5,
 color_barIncludeMinMaxTicks=False, x_ticksLabels=None, y_ticksLabels=
 None, ticks_fontsize=12, label_fontsize=14, legend_fontsize=12,
 highlight_pointsColors='black', parent_path=None, error_bar=None, 
-plot_object=None, verbose=False, latex_package="amsmath", dpi=500):
+plot_object=None, verbose=False, latex_package="amsmath", dpi=500,
+transparent_background=False):
     
     """
     You can provide an array of data, where the first column will be in
@@ -437,6 +438,13 @@ plot_object=None, verbose=False, latex_package="amsmath", dpi=500):
     if plot_object is None:
 
         figure, plot_object = plt.subplots()
+
+    else:
+
+        # Separates the plot object and the figure from the received tu-
+        # ple
+
+        figure, plot_object = plot_object
 
     # Gets the keys of valid line styles and of valid marker styles
 
@@ -1634,6 +1642,12 @@ plot_object=None, verbose=False, latex_package="amsmath", dpi=500):
 
     plt.tight_layout()
 
+    # Takes out the background
+
+    if transparent_background:
+
+        figure.patch.set_alpha(0)
+
     # Saves the plot or shows it
 
     if file_name is None:
@@ -1683,7 +1697,7 @@ plot_object=None, verbose=False, latex_package="amsmath", dpi=500):
 
         print("Finishes plotting\n")
 
-    return plot_object
+    return figure, plot_object
 
 ########################################################################
 #                          Matrices plotting                           #

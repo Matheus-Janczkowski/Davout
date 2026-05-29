@@ -141,9 +141,9 @@ if __name__=="__main__":
 
     limits = [[-3.0, 1.0], [-0.5, 1.5]]
 
-    n_ellipses = 7
+    n_ellipses = 8
 
-    n_points = 300
+    n_points = 500
 
     x_data = []
 
@@ -168,6 +168,6 @@ if __name__=="__main__":
 
             y_data[-1].append(point[1])
 
-    plane_plot("2D_ellipse", x_data=x_data, y_data=y_data, plot_type="scatter",
-    element_size=2.5, label=labels, title="$E^{p}\\left(\mathbf{D},\mathbf{x}_{c}\\right)$",
-    color_map="coolwarm", aspect_ratio=1.0)
+    plane_plot("2D_ellipse.png", x_data=x_data, y_data=y_data, plot_type="scatter",
+    element_size=2.5, label=labels, title="$E^{p}\\left(\mathbf{J},\mathbf{x}_{c},d=1\\right)$",
+    color_map="coolwarm", aspect_ratio=1.0, dpi=1500, transparent_background=True)
