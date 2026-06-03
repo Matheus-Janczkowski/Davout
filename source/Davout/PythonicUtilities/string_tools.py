@@ -493,9 +493,10 @@ True):
 
                     break 
 
-        # Otherwise, it must be a valid element to be read
+        # Verifies if the read element is empty and if the current cha-
+        # racter is a white space. Performs this to avoid leading spaces
 
-        else:
+        elif not (len(read_element)==0 and current_character==" "):
 
             read_element += current_character
 

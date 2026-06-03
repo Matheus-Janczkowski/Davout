@@ -257,6 +257,8 @@ def txt_toList(file_name, parent_path=None, do_not_raise_error=False):
 
     #print(repr(saved_string))
 
+    print(saved_string)
+
     read_list = string_tools.string_toList(saved_string)
 
     return read_list
