@@ -1015,6 +1015,113 @@ sub_meshMapping=None, parent_meshMapping=None, field_submesh=None):
     # Returns the submesh field
 
     return field_submesh
+
+########################################################################
+#                           Element finding                            #
+########################################################################
+
+# Defines a function find a finite element that envelopes a point in 
+# space
+
+def find_element_around_point(point_coordinates, mesh_data_class, 
+functional_data_class, field_name=None, get_dofs=False):
+
+    # Verifies if point coordinates is a list
+
+    if not isinstance(point_coordinates, list):
+
+        raise TypeError("'point_coordinates' is not a list in 'find_el"+
+        "ement_around_point'. It must be a list with three values---th"+
+        "e spatial coordinates of the point. Currently, it is:\n"+str(
+        point_coordinates))
+    
+    elif len(point_coordinates)!=3:
+
+        raise TypeError("Length of 'point_coordinates' is not 3 in 'fi"+
+        "nd_element_around_point'. It must be a list with three values"+
+        "---the spatial coordinates of the point. Currently, it is:\n"+
+        str(point_coordinates))
+
+    # Creates a tree of the mesh to search for and element efficiently
+
+    mesh_tree = mesh_data_class.mesh.bounding_box_tree()
+
+    # Searches for a finite element that contains a point or is closest
+    # to it. But converts the point coordinates to a Point object first
+
+    finite_element_number = mesh_tree.compute_first_entity_collision(
+    Point(*point_coordinates))
+
+    # Verifies if the found number is valid
+
+    finite_element = None
+
+    if finite_element_number<mesh_data_class.mesh.num_cells():
+
+        # Recovers the finite element object
+
+        finite_element = Cell(mesh_data_class.mesh, 
+        finite_element_number)
+
+    # Otherwise, throws an error
+
+    else:
+
+        raise IndexError("No finite element has been found around the "+
+        "point at "+str(point_coordinates))
+    
+    # If the DOFs of this element are to be given
+
+    if get_dofs:
+
+        # Gets the map of DOFs
+
+        monolithic_dofmap = None 
+
+        # Verifies if a field name is asked
+
+        if field_name is not None:
+
+            # Verifies if this field name belongs to the dictionary of 
+            # fields names
+
+            if not (field_name in (
+            functional_data_class.fields_names_dict)):
+
+                raise ValueError("The field '"+str(field_name)+"' does"+
+                " not belong to the dictionary of fields of this probl"+
+                "em. See the available fields:\n"+str(list(
+                functional_data_class.fields_names_dict.keys())))
+            
+            # Verifies if this problem has more than one field
+
+            if len(functional_data_class.fields_names_dict.keys())>1:
+
+                # Gets the map of DOFs for the selected field only
+
+                monolithic_dofmap = functional_data_class.monolithic_function_space.sub(
+                functional_data_class.fields_names_dict[field_name]
+                ).dofmap()
+
+        # If the map of DOFs was not created, the field name was not 
+        # provided or the problem has only one field 
+
+        if monolithic_dofmap is None:
+
+            monolithic_dofmap = functional_data_class.monolithic_function_space.dofmap()
+        
+        # Gets the list of DOFs of this element
+
+        element_dofs = monolithic_dofmap.cell_dofs(finite_element.index(
+        ))
+
+        # Returns the finite element object and the list of DOFs
+
+        return finite_element, element_dofs
+    
+    # Otherwise, returns the finite element object only
+
+    return finite_element
         
 ########################################################################
 #                             Node finding                             #

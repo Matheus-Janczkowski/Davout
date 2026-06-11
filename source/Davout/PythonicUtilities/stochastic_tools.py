@@ -10,10 +10,12 @@ import numpy as np
 # pse
 
 def get_random_point_on_elipsoid_surface(limits, return_as_list=True,
-p_norm_value=2):
+p_norm_value=2, number_of_samples=1):
 
     """
-    Get a random point on the surface of a n-dimensional elipsoid
+    Get a random point on the surface of a n-dimensional elipsoid to 
+    to return a single vector or list; or an array [n_samples, 
+    n_variables]
 
     limits: list of lists with the upper and lower limits of each 
     dimension. Example [[x_inf, x_sup], [y_inf, y_sup], [z_inf, z_sup]]
@@ -24,6 +26,47 @@ p_norm_value=2):
     p_norm_value: p value of the L_p norm. The default value is 2 
     (ellipse in the euclidean space)
     """
+    
+    # Verifies if a single sample must be generated
+
+    if number_of_samples==1:
+
+        return get_single_point_on_ellipsoid(limits, return_as_list=
+        return_as_list, p_norm_value=p_norm_value)
+    
+    # Otherwise, if multiple samples are to be generated, generates them
+    # iteratively
+
+    else:
+
+        # Initializes a list of samples
+
+        samples_list = []
+
+        # Iterates on the number of samples
+
+        for sample in range(number_of_samples):
+
+            # Creates the sample and appends to the list of samples
+
+            samples_list.append(get_single_point_on_ellipsoid(limits, 
+            return_as_list=True, p_norm_value=p_norm_value))
+
+        # If it not to return as a list
+
+        if not return_as_list:
+
+            return np.asarray(samples_list)
+        
+        # Otherwise, returns the list
+
+        return samples_list
+
+# Defines a function to get a single point on a surface of a n-dimensio-
+# nal ellipse
+
+def get_single_point_on_ellipsoid(limits, return_as_list=True,
+p_norm_value=2):
 
     # Verifies if limits is a list
 

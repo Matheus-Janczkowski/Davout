@@ -8,7 +8,7 @@ from .....Davout.MultiMech.tool_box.read_write_tools import write_field_to_xdmf
 
 from .....Davout.PythonicUtilities.path_tools import get_parent_path_of_file
 
-from .....Davout.MultiMech.tool_box.paraview_tools import frozen_snapshots
+from .....Davout.GraphUtilities.paraview_tools import frozen_snapshots
 
 # Creates a mesh for the field
 

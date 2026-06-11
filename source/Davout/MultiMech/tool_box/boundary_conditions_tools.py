@@ -2,6 +2,8 @@
 
 from dolfin import *
 
+import numpy as np
+
 from ..tool_box import mesh_handling_tools as mesh_tools
 
 from ..tool_box import numerical_tools
@@ -988,6 +990,61 @@ boundary_conditions=None, boundary_physicalGroups=None):
 
         print("Finishes creating simply supported boundary conditions."+
         "\n")
+
+    return boundary_conditions
+
+# Defines a function to construct remove rigid body motion of a single 
+# 3D finite element. This function fully constrains one node, constrains
+# two DOFs in another, and a single DOF in a third node
+
+def RemoveRigidBodyMotion(mesh_dataClass, functional_data_class, 
+constrained_element_centoid=None, boundary_conditions=None):
+    
+    # If the constrained element centroid has not been given, uses the
+    # centroid of the domain
+
+    if constrained_element_centoid is None:
+
+        # Evaluates the volume
+
+        volume = assemble(1.0*mesh_dataClass.dx)
+
+        # Evaluates the centroid of the domain
+
+        constrained_element_centoid = [(1/volume)*assemble(
+        mesh_dataClass.x[0]*mesh_dataClass.dx), (1/volume)*assemble(
+        mesh_dataClass.x[1]*mesh_dataClass.dx), (1/volume)*assemble(
+        mesh_dataClass.x[2]*mesh_dataClass.dx)]
+
+    # Gets a list of DOFs of the finite element closest to the given 
+    # point
+
+    _, element_dofs = mesh_tools.find_element_around_point(
+    constrained_element_centoid, mesh_dataClass, functional_data_class,
+    field_name="Displacement", get_dofs=True)
+
+    # Gets the three DOFs of the first node, then two DOFs of the second
+    # node, and, finally, one DOF of the third node
+
+    constrained_DOFs = list(element_dofs[0:5])
+
+    constrained_DOFs.extend(element_dofs[6:7])
+
+    constrained_DOFs = np.array(constrained_DOFs, dtype=np.int32)
+
+    # Appends the object of Dirichlet boundary condition
+
+    boundary_conditions.append(DirichletBC(
+    functional_data_class.monolithic_function_space, Constant(0.0),
+    constrained_DOFs, 
+    functional_data_class.monolithic_function_space.dofmap()))
+
+    # Returns the boundary conditions list
+
+    if mesh_dataClass.verbose:
+
+        print("Finishes creating boundary conditions to remove rigid b"+
+        "ody motion\n")
 
     return boundary_conditions
 

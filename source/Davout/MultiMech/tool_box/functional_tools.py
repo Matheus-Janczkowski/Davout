@@ -63,7 +63,8 @@ dirichlet_loads=None):
     method_arguments = {"field_functionSpace": monolithic_functionSpace, 
     "mesh_dataClass": mesh_dataClass, "fields_namesDict": 
     fields_namesDict, "complex_bcsFunctionsDict": 
-    complex_bcsFunctionsDict}
+    complex_bcsFunctionsDict, "functional_data_class": 
+    functional_data_class}
 
     # Iterates through the physical groups
 

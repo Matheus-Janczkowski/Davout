@@ -78,6 +78,98 @@ parametric_load_curve="linear"):
 
     return T, time_update
 
+# Defines a function to construct a prescribed a constant first Piola-
+# Kirchhoff stress tensor on a surface in the referential configuration
+
+def ReferentialPrescribedStress(mesh_dataClass, stress_tensor_components, 
+physical_group, t=0.0, t_final=1.0, parametric_load_curve="linear"):
+    
+    # Verifies if the parametric load curve is a string and, then, uses
+    # it to convert to an actual function
+
+    if isinstance(parametric_load_curve, str):
+
+        parametric_load_curve = numerical_tools.generate_loadingParametricCurves(
+        parametric_load_curve)
+
+    # Verifies if the stress tensor contains all 9 components
+
+    if not isinstance(stress_tensor_components, list):
+
+        raise TypeError("'ReferentialPrescribedStress' at physical gro"+
+        "up '"+str(physical_group)+"' requires 'stress_tensor_componen"+
+        "ts' to be a list with 3 sublists organzied as such: [[P11, P1"+
+        "2, P13], [P21, P22, P23], [P31, P32, P33]]. Currently, it is:"+
+        " "+str(stress_tensor_components))
+
+    elif len(stress_tensor_components)!=3:
+
+        raise IndexError("'ReferentialPrescribedStress' at physical gr"+
+        "oup '"+str(physical_group)+"' requires 'stress_tensor_compone"+
+        "nts' to be a list with 3 sublists organzied as such: [[P11, P"+
+        "12, P13], [P21, P22, P23], [P31, P32, P33]]. Currently, it ha"+
+        "s only "+str(len(stress_tensor_components))+" sublists. The g"+
+        "iven 'stress_tensor_components' is: "+str(
+        stress_tensor_components))
+    
+    # Transforms the list of stress components to a numpy array
+
+    stress_tensor_components = np.asarray(stress_tensor_components)
+
+    # Creates the time constants
+
+    time_constant = Constant(t)
+
+    maximum_time = Constant(t_final)
+
+    # Evaluates the first Piola-Kirchhoff stress tensor
+
+    P = Constant([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]])
+
+    # Gets the normal vector in the referential configuration and the 
+    # traction vector as an expression of P
+
+    normal_vector = mesh_dataClass.n
+
+    T = dot(P, normal_vector)
+
+    # Creates the updating class
+
+    class TimeUpdate:
+
+        def __init__(self):
+            
+            self.t = time_constant
+
+            self.P = P
+
+        def update_load(self, t):
+
+            self.t.assign(Constant(t))
+
+            # Evaluates the load curve
+
+            load_value = float(parametric_load_curve(time_constant/
+            maximum_time))
+
+            # Updates the first Piola-Kirchhoff stress tensor
+
+            self.P.assign(Constant(load_value*stress_tensor_components))
+
+            # Annuntiates the corrections
+
+            print("\nThe prescribed first Piola-Kirchhoff stress tenso"+
+            "r at physical group '"+str(physical_group)+"':\n"+str(
+            self.P.values().reshape(P.ufl_shape).tolist())+"\n\n"+str(
+            load_value*100)+"% of the final load is applied using the "+
+            "parametric load curve\n")
+
+    time_update = TimeUpdate()
+
+    # Returns the traction and the time constant
+
+    return T, time_update
+
 # Defines a function to construct a torsion in the referential configu-
 # ration
 
