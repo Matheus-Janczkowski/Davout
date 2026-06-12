@@ -1024,7 +1024,19 @@ sub_meshMapping=None, parent_meshMapping=None, field_submesh=None):
 # space
 
 def find_element_around_point(point_coordinates, mesh_data_class, 
-functional_data_class, field_name=None, get_dofs=False):
+functional_data_class, field_name=None, get_dofs=False, 
+get_vertex_nodes_indices=False, get_vertex_nodes_coordinates=False):
+    
+    """
+    Find the finite element (cell) containing a given point and
+    optionally retrieve information associated with that element.
+
+    The search is performed using the mesh bounding-box tree. If a cell
+    containing the point is found, a dictionary containing the cell
+    object and any requested additional information is returned. The 
+    result is a dictionary with the keys 'finite element object', 
+    'nodes DOFs', 'vertex nodes indices', and 'vertex nodes coordinates'
+    """
 
     # Verifies if point coordinates is a list
 
@@ -1069,6 +1081,10 @@ functional_data_class, field_name=None, get_dofs=False):
 
         raise IndexError("No finite element has been found around the "+
         "point at "+str(point_coordinates))
+    
+    # Initializes the result as a list
+
+    result = {"finite element object": finite_element}
     
     # If the DOFs of this element are to be given
 
@@ -1115,13 +1131,30 @@ functional_data_class, field_name=None, get_dofs=False):
         element_dofs = monolithic_dofmap.cell_dofs(finite_element.index(
         ))
 
-        # Returns the finite element object and the list of DOFs
+        # Appends the element DOFs to the result list
 
-        return finite_element, element_dofs
+        result["nodes DOFs"] = (element_dofs)
     
-    # Otherwise, returns the finite element object only
+    # If the vertex nodes are to be found
 
-    return finite_element
+    if get_vertex_nodes_indices:
+
+        # Appends the list of indices of the nodes at the vertices
+
+        result["vertex nodes indices"] = (finite_element.entities(0))
+    
+    # If the coordinates of the vertex nodes are to be given
+
+    if get_vertex_nodes_coordinates:
+
+        # Appends the list of nodes coordinates to the result list
+
+        result["vertex nodes coordinates"] = (
+        mesh_data_class.mesh.coordinates()[finite_element.entities(0)])
+    
+    # Returns the dictionary
+
+    return result
         
 ########################################################################
 #                             Node finding                             #

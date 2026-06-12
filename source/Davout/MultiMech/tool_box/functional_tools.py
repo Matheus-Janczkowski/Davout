@@ -39,6 +39,11 @@ def construct_DirichletBCs(boundary_conditionsDict,
 functional_data_class, mesh_dataClass, boundary_conditions=None,
 dirichlet_loads=None):
     
+    print("###########################################################"+
+    "#############\n#                    Boundary conditions will be s"+
+    "et                   #\n#########################################"+
+    "###############################\n")
+    
     # Gets the function space information
     
     fields_namesDict = functional_data_class.fields_names_dict

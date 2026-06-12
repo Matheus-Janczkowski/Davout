@@ -6,8 +6,10 @@ from .....Davout.MultiMech.constitutive_models.hyperelasticity import isotropic_
 
 from .....Davout.MultiMech.physics import hyperelastic_cauchy_continuum as variational_framework
 
+from .....Davout.GraphUtilities.paraview_tools import frozen_snapshots
+
 def solve_BVP(results_path, displacement_file_name, young_modulus_file,
-mesh_file_name, stress_tensor_components):
+mesh_file_name, stress_tensor_components, save_snapshot=False):
 
     ####################################################################
     ####################################################################
@@ -105,7 +107,7 @@ mesh_file_name, stress_tensor_components):
 
     traction_dictionary = dict()
 
-    #traction_dictionary["bottom"] = traction_boundary
+    traction_dictionary["bottom"] = traction_boundary
 
     traction_dictionary["front"] = traction_boundary
 
@@ -125,7 +127,10 @@ mesh_file_name, stress_tensor_components):
 
     bcs_dictionary = dict()
 
-    bcs_dictionary["bottom"] = {"BC case": "FixedSupportDirichletBC"}
+    # Applies the boundary condition to any boundary surface (the top in
+    # this case), but the RemoveRigidBodyMotion is applied to the domain.
+    # Hence, the information of a boundary surface is just for consis-
+    # tency with the other BCs programming
 
     bcs_dictionary["top"] = {"BC case": "RemoveRigidBodyMotion"}
 
@@ -142,6 +147,26 @@ mesh_file_name, stress_tensor_components):
     t_final, post_processes, mesh_file_name, solver_parameters, 
     polynomial_degree=polynomial_degree, t=t, 
     dirichlet_boundaryConditions=bcs_dictionary, verbose=True)
+
+    # Saves a snapshot of the solution using the automatization of Para-
+    # View
+
+    if save_snapshot:
+
+        frozen_snapshots(displacement_file_name, "Displacement", 
+        input_path=get_parent_path_of_file(), 
+        camera_position=[2.0330282921191993, 1.8148603901320899, 1.2731417495411312],
+        camera_focal_point=[0.012529434003528184, 0.36158465784309013, 0.12076486597591955],
+        camera_up_direction=[-0.3230357774017903, -0.27010620502800287, 0.9070228908488427],
+        camera_parallel_scale=0.7098627676493106,
+        camera_rotation=[0.0, 0.0, 0.0],
+        legend_bar_position=[0.7242157236408994, 0.11000000000000004],
+        legend_bar_length=0.7600000000000029,
+        size_in_pixels={'aspect ratio': 0.6791171477079796, 'pixels in width': 589},
+        axes_color=[0.0, 0.0, 0.0], get_attributes_render=False, 
+        output_imageFileName="RVE_displacement.png", resolution_ratio=5, 
+        warp_by_vector=True, representation_type="Surface With Edges", 
+        set_camera_interactively=False, time=1.0)
 
 # Testing block
 
@@ -169,4 +194,4 @@ if __name__=="__main__":
     # Solves the boundary value problem
 
     solve_BVP(results_path, displacement_file_name, young_modulus_file,
-    mesh_file_name, stress_tensor_components)
+    mesh_file_name, stress_tensor_components, save_snapshot=True)

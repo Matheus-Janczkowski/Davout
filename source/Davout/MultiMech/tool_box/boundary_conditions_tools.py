@@ -1019,25 +1019,81 @@ constrained_element_centoid=None, boundary_conditions=None):
     # Gets a list of DOFs of the finite element closest to the given 
     # point
 
-    _, element_dofs = mesh_tools.find_element_around_point(
+    finite_element_dictionary = mesh_tools.find_element_around_point(
     constrained_element_centoid, mesh_dataClass, functional_data_class,
-    field_name="Displacement", get_dofs=True)
+    field_name="Displacement", get_vertex_nodes_coordinates=True)
 
-    # Gets the three DOFs of the first node, then two DOFs of the second
-    # node, and, finally, one DOF of the third node
+    # Gets the dictionary of fields names to the corresponding indices
 
-    constrained_DOFs = list(element_dofs[0:5])
+    fields_names_dict =  functional_data_class.fields_names_dict
 
-    constrained_DOFs.extend(element_dofs[6:7])
+    # Initializes the function space object
 
-    constrained_DOFs = np.array(constrained_DOFs, dtype=np.int32)
+    function_space_object = None
 
-    # Appends the object of Dirichlet boundary condition
+    # Check if there is a 'Displacement' field
 
-    boundary_conditions.append(DirichletBC(
-    functional_data_class.monolithic_function_space, Constant(0.0),
-    constrained_DOFs, 
-    functional_data_class.monolithic_function_space.dofmap()))
+    if not ("Displacement" in fields_names_dict):
+
+        available_names = ""
+
+        for name in fields_names_dict:
+
+            available_names += "\n"+str(name)
+
+        raise ValueError("There is no field named 'Displacement' in th"+
+        "is problem. Thus, 'RemoveRigidBodyMotion' cannot be applied a"+
+        "s boundary condition. Check the available fields' names:"+
+        available_names)
+    
+    # Verifies if there is a single field in the problem
+
+    elif len(fields_names_dict.keys())==1:
+
+        function_space_object = (
+        functional_data_class.monolithic_function_space)
+
+    # Otherwise, if there are multiple fields
+
+    else:
+
+        function_space_object = (
+        functional_data_class.monolithic_function_space.sub(
+        fields_names_dict["Displacement"]))
+
+    # Creates a subdomain for each one of the three vertex nodes of the
+    # element
+
+    nodes_coordinates = finite_element_dictionary["vertex nodes coordi"+
+    "nates"]
+
+    subdomain_node_1 = generate_nodeSubdomain(None, mesh_dataClass, 
+    node_coordinates=nodes_coordinates[0])
+
+    subdomain_node_2 = generate_nodeSubdomain(None, mesh_dataClass, 
+    node_coordinates=nodes_coordinates[1])
+
+    subdomain_node_3 = generate_nodeSubdomain(None, mesh_dataClass, 
+    node_coordinates=nodes_coordinates[2])
+
+    # Appends the object of Dirichlet boundary condition to fully fix 
+    # the first node
+
+    boundary_conditions.append(DirichletBC(function_space_object,
+    Constant((0.0, 0.0, 0.0)), subdomain_node_1, method="pointwise"))
+
+    # Appends the objects to fix the two DOFs of the second node
+
+    boundary_conditions.append(DirichletBC(function_space_object.sub(0),
+    Constant(0.0), subdomain_node_2, method="pointwise"))
+
+    boundary_conditions.append(DirichletBC(function_space_object.sub(1),
+    Constant(0.0), subdomain_node_2, method="pointwise"))
+
+    # Appends the objects to fix only one DOF of the third node
+
+    boundary_conditions.append(DirichletBC(function_space_object.sub(0),
+    Constant(0.0), subdomain_node_3, method="pointwise"))
 
     # Returns the boundary conditions list
 
@@ -1056,12 +1112,14 @@ constrained_element_centoid=None, boundary_conditions=None):
 # a node
 
 def generate_nodeSubdomain(point_coordinates, mesh_dataClass, tolerance=
-1E-5):
+1E-5, node_coordinates=None):
 
     # Gets the coordinates of the node closest to the point required
 
-    _, node_coordinates = mesh_tools.find_nodeClosestToPoint(
-    mesh_dataClass, point_coordinates, None, None)
+    if node_coordinates is None:
+
+        _, node_coordinates = mesh_tools.find_nodeClosestToPoint(
+        mesh_dataClass, point_coordinates, None, None)
 
     # Defines the class
 
