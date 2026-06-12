@@ -152,14 +152,53 @@ def initialize_fieldSaving(data, direct_codeData, submesh_flag):
                 field_name]["polynomial degree"]
 
             else:
+
+                # A visualization copy can be asked when the field is 
+                # saved in a binary format
+
+                if visualization_copy:
+
+                    # Creates an instance of the FunctionalData class to 
+                    # store solution and function spaces
+
+                    self.functional_data_dict = functional_data_class
+
+                    self.mesh_data_class = mesh_data_class
+
+                    self.file_name = file_name
+
+                    # Sets the information for visualization copies, 
+                    # since the readable xdmf files might not appear in 
+                    # some computers
+
+                    self.visualization_copy = visualization_copy
+
+                    self.visualization_copy_file = None
+
+                    # Saves into the class the information to build the 
+                    # mock functional data class for the visualization 
+                    # copy
+
+                    self.field_type = functional_data_class.elements_dictionary_copy[
+                    field_name]["field type"]
+
+                    self.interpolation_function = functional_data_class.elements_dictionary_copy[
+                    field_name]["interpolation function"]
+
+                    self.polynomial_degree = functional_data_class.elements_dictionary_copy[
+                    field_name]["polynomial degree"]
+
+                else:
+
+                    # Creates a dummy functional data class
+
+                    self.functional_data_dict = None
+
+                    self.mesh_data_class = None
+
+                # Initializes the result object
             
                 self.result = mpi_xdmf_file(comm_object, file_name+".xdmf")
-
-                # Createa a dummy functional data class
-
-                self.functional_data_dict = None
-
-                self.mesh_data_class = None
 
             # Sets the result. It can be either a single file or a set 
             # of files when the solution is to be independently saved

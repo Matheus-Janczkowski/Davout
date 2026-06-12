@@ -998,7 +998,8 @@ boundary_conditions=None, boundary_physicalGroups=None):
 # two DOFs in another, and a single DOF in a third node
 
 def RemoveRigidBodyMotion(mesh_dataClass, functional_data_class, 
-constrained_element_centoid=None, boundary_conditions=None):
+constrained_element_centoid=None, boundary_conditions=None, 
+constrain_translation_only=False):
     
     # If the constrained element centroid has not been given, uses the
     # centroid of the domain
@@ -1082,18 +1083,31 @@ constrained_element_centoid=None, boundary_conditions=None):
     boundary_conditions.append(DirichletBC(function_space_object,
     Constant((0.0, 0.0, 0.0)), subdomain_node_1, method="pointwise"))
 
-    # Appends the objects to fix the two DOFs of the second node
+    # If translation is the mode to be removed, do not add more cons-
+    # trained
 
-    boundary_conditions.append(DirichletBC(function_space_object.sub(0),
-    Constant(0.0), subdomain_node_2, method="pointwise"))
+    if not constrain_translation_only:
 
-    boundary_conditions.append(DirichletBC(function_space_object.sub(1),
-    Constant(0.0), subdomain_node_2, method="pointwise"))
+        print("Rigid body modes of rotation and translation will be co"+
+        "nstrained\n")
 
-    # Appends the objects to fix only one DOF of the third node
+        # Appends the objects to fix the two DOFs of the second node
 
-    boundary_conditions.append(DirichletBC(function_space_object.sub(0),
-    Constant(0.0), subdomain_node_3, method="pointwise"))
+        boundary_conditions.append(DirichletBC(function_space_object.sub(
+        0), Constant(0.0), subdomain_node_2, method="pointwise"))
+
+        boundary_conditions.append(DirichletBC(function_space_object.sub(
+        1), Constant(0.0), subdomain_node_2, method="pointwise"))
+
+        # Appends the objects to fix only one DOF of the third node
+
+        boundary_conditions.append(DirichletBC(function_space_object.sub(
+        0), Constant(0.0), subdomain_node_3, method="pointwise"))
+
+    else:
+
+        print("Rigid body modes of translation only will be constraine"+
+        "d\n")
 
     # Returns the boundary conditions list
 

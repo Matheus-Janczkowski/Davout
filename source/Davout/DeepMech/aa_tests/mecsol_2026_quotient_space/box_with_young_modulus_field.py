@@ -30,7 +30,7 @@ mesh_file_name, stress_tensor_components, save_snapshot=False):
     # null values in ParaView
 
     post_processes["SaveField"] = {"directory path":results_path, 
-    "file name": displacement_file_name, "saving method": "xdmf", 
+    "file name": displacement_file_name, "saving method": "binary", 
     "visualization copy for readable xdmf": True}
 
     ####################################################################
@@ -75,9 +75,9 @@ mesh_file_name, stress_tensor_components, save_snapshot=False):
 
     solver_parameters = dict()
 
-    solver_parameters["newton_relative_tolerance"] = 1e-4
+    solver_parameters["newton_relative_tolerance"] = 1e-6
 
-    solver_parameters["newton_absolute_tolerance"] = 1e-4
+    solver_parameters["newton_absolute_tolerance"] = 1e-6
 
     solver_parameters["newton_maximum_iterations"] = 15
 
@@ -132,7 +132,8 @@ mesh_file_name, stress_tensor_components, save_snapshot=False):
     # Hence, the information of a boundary surface is just for consis-
     # tency with the other BCs programming
 
-    bcs_dictionary["top"] = {"BC case": "RemoveRigidBodyMotion"}
+    bcs_dictionary["top"] = {"BC case": "RemoveRigidBodyMotion", "cons"+
+    "train_translation_only": False}
 
     ####################################################################
     ####################################################################
@@ -153,8 +154,8 @@ mesh_file_name, stress_tensor_components, save_snapshot=False):
 
     if save_snapshot:
 
-        frozen_snapshots(displacement_file_name, "Displacement", 
-        input_path=get_parent_path_of_file(), 
+        frozen_snapshots(displacement_file_name+"_visualization_copy", 
+        "Displacement", input_path=results_path, 
         camera_position=[2.0330282921191993, 1.8148603901320899, 1.2731417495411312],
         camera_focal_point=[0.012529434003528184, 0.36158465784309013, 0.12076486597591955],
         camera_up_direction=[-0.3230357774017903, -0.27010620502800287, 0.9070228908488427],
@@ -176,7 +177,7 @@ if __name__=="__main__":
 
     results_path = get_parent_path_of_file()
 
-    displacement_file_name = "displacement_young_modulus_field.xdmf"
+    displacement_file_name = "displacement_young_modulus_field"
 
     # Defines the mesh file name and the name of the file of the field 
     # of Young modulus

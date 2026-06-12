@@ -15,8 +15,8 @@ import numpy as np
 # Defines a function to generate a field of Young modulus
 
 def generate_field(cube_size, E_extremum, E_base, influence_radius, 
-damping_factor, radius_power, mesh_data_class, parent_path, 
-save_snapshot=False):
+damping_factor, radius_power, mesh_data_class, parent_path, file_name=
+"E_from_dict", save_snapshot=False):
 
     # Creates a python function for the field
 
@@ -45,20 +45,20 @@ save_snapshot=False):
 
     # Saves this field into a xdmf file
 
-    write_field_to_xdmf(functional_data_class, directory_path=
+    """write_field_to_xdmf(functional_data_class, directory_path=
     parent_path, visualization_copy=True, field_type="scalar",
-    interpolation_function="CG", polynomial_degree=1)
+    interpolation_function="CG", polynomial_degree=1)"""
 
     write_field_to_xdmf({"monolithic solution": E_field, "mesh file":
     mesh_data_class.mesh_file}, visualization_copy=True, 
-    explicit_file_name=parent_path+"//E_from_dict", field_type="scalar", 
+    explicit_file_name=parent_path+"//"+file_name, field_type="scalar", 
     interpolation_function="CG", polynomial_degree=1)
 
     # Saves a snapshot of the solution using the automatization of ParaView
 
     if save_snapshot:
 
-        frozen_snapshots("E_from_dict_visualization_copy.xdmf", "E", 
+        frozen_snapshots(file_name+"_visualization_copy.xdmf", "E", 
         input_path=parent_path, 
         camera_position=[1.352147972653376, 0.8655841453703876, 0.820538687418374],
         camera_focal_point=[0.1091743049381585, 0.210624339846976, 0.17486914104493073],
