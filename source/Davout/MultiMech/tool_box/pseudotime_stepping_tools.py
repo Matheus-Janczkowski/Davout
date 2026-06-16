@@ -642,6 +642,9 @@ None, fields_corrections=None):
 
     #solution_field.function_space().mesh()
 
+    print("FUNCTIONAL functional_data_class"+str(functional_data_class.elements_dictionary_copy[
+    "Displacement"]["field type"]))
+
     context_class = post_classes.PostProcessContext(mesh_dataClass, 
     constitutive_model, functional_data_class)
 

@@ -158,7 +158,8 @@ class TestANNTools(unittest.TestCase):
 
         # Dirichlet boundary conditions
 
-        bcs, dirichlet_loads = functional_tools.construct_DirichletBCs({
+        (bcs, dirichlet_loads, functional_data_class, elements_dictionary,
+        variational_form) = functional_tools.construct_DirichletBCs({
         "top": {"BC case": "PrescribedDirichletBC", "bc_information"+
         "sDict": {"load_function": "linear", "degrees_ofFreedomList": 2,
         "end_point": [1.0, dirichlet_load]}}, "bottom": {"BC case": "F"+

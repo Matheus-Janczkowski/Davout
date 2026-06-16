@@ -17,6 +17,8 @@ from ..tool_box import boundary_conditions_tools as bc_tools
 
 from ..tool_box import dirichlet_load_tools as dirichlet_tools
 
+from ..tool_box import weak_boundary_conditions_tools as weak_bcs_tools
+
 from ...PythonicUtilities import file_handling_tools as file_tools
 
 from ...PythonicUtilities import programming_tools
@@ -37,18 +39,13 @@ lambda: [], 'dirichlet_loads': lambda: []})
 
 def construct_DirichletBCs(boundary_conditionsDict, 
 functional_data_class, mesh_dataClass, boundary_conditions=None,
-dirichlet_loads=None):
+dirichlet_loads=None, verbose=False, elements_dictionary=None, 
+variational_form=0.0):
     
     print("###########################################################"+
     "#############\n#                    Boundary conditions will be s"+
     "et                   #\n#########################################"+
     "###############################\n")
-    
-    # Gets the function space information
-    
-    fields_namesDict = functional_data_class.fields_names_dict
-    
-    monolithic_functionSpace = functional_data_class.monolithic_function_space
 
     # Initializes a dictionary of functions that generate boundary con-
     # ditions
@@ -62,18 +59,206 @@ dirichlet_loads=None):
     complex_bcsFunctionsDict = programming_tools.dispatch_functions([], 
     dirichlet_tools)[1]
 
+    # Initializes a dictionary of functions that generate cases of boun-
+    # dary conditions that need Lagrange multipliers
+
+    weak_bcs_functions_dict = programming_tools.dispatch_functions([],
+    weak_bcs_tools)[1]
+
     # Initializes a dictionary with common arguments to the boundary 
     # condition generation functions
 
-    method_arguments = {"field_functionSpace": monolithic_functionSpace, 
-    "mesh_dataClass": mesh_dataClass, "fields_namesDict": 
-    fields_namesDict, "complex_bcsFunctionsDict": 
-    complex_bcsFunctionsDict, "functional_data_class": 
-    functional_data_class}
+    method_arguments = {"mesh_dataClass": mesh_dataClass,"complex_bcsF"+
+    "unctionsDict": complex_bcsFunctionsDict}
+
+    # Initializes a dictionary of strongly-imposed boundary conditions
+
+    strong_boundary_conditions_dict = {}
+
+    # Initializes a list of instances of classes of the generators of
+    # weakly imposed boundary conditions. These instances will be used 
+    # to update the variational form once the functional data class is
+    # finally created with the updated dictionary of finite elements
+
+    weakly_imposed_BCs_classes = []
+
+    # Verifies if any of the boundary conditions are weakly imposed
+
+    for physical_group, bc_dictionary in boundary_conditionsDict.items():
+
+        # Initializes a flag to inform if the boundary condition is in-
+        # deed weak or strong
+
+        strong_boundary_condition = True
+
+        # If the boundary condition is a dictionary
+
+        if isinstance(bc_dictionary, dict):
+
+            # Verifies if it has the key 'BC case'
+
+            if not ("BC case" in bc_dictionary):
+
+                raise KeyError("The dictionary of information for cons"+
+                "tructing boundary conditions does not have the key 'B"+
+                "C case'. It must have this key to find the appropriat"+
+                "e method to generate the Dirichlet boundary condition")
+            
+            # Gets the BC case
+
+            BC_case = bc_dictionary["BC case"]
+
+            # Verifies if this case is one of the available methods for
+            # for generating weakly imposed boundary conditions
+
+            if BC_case in weak_bcs_functions_dict:
+
+                # Updates the flag to tell that this BC is indeed weakly
+                # imposed
+
+                strong_boundary_condition = False
+
+                # Gets the user-given data
+
+                user_data = dict()
+
+                for key, value in bc_dictionary.items():
+
+                    if key!="BC case":
+
+                        user_data[key] = value
+
+                # Adds the physical_group to the dictionary of arguments,
+                # and also the current list of boundary conditions
+
+                method_arguments["boundary_physicalGroups"] = physical_group
+
+                method_arguments["boundary_conditions"] = boundary_conditions
+
+                # Adds the list of classes that control the applica-
+                # tion of displacements along the time steps
+
+                method_arguments["dirichtlet_loads"] = dirichlet_loads
+
+                # Updates the dictionary of finite elements
+
+                method_arguments["elements_dictionary"] = elements_dictionary
+
+                # Gets the boundary conditions list and (if necessa-
+                # ry) the loading parameter
+
+                result = programming_tools.dispatch_functions(
+                BC_case, None, fixed_inputVariablesDict=
+                method_arguments, second_sourceFixedArguments=
+                user_data, methods_functionsDict=weak_bcs_functions_dict, 
+                return_list=True, return_singleFunction=True,
+                all_argumentsFixed=True)[0]()
+
+                # Verifies if the result is a tuple of length 3
+
+                if len(result)==3:
+
+                    # Appends the class to update the variational form
+
+                    weakly_imposed_BCs_classes.append(result[0])
+
+                    dirichlet_loads = result[1]
+
+                    elements_dictionary = result[2]
+
+                # If the result has just two outputs
+
+                elif len(result)==2:
+
+                    # Appends the class to update the variational form
+
+                    weakly_imposed_BCs_classes.append(result[0])
+
+                    elements_dictionary = result[1]
+
+                # If the result has just one output
+
+                else:
+
+                    n_outputs = 1
+
+                    if isinstance(result, tuple):
+
+                        n_outputs = len(result)
+
+                    raise IndexError("The weak BC generator '"+str(
+                    BC_case)+"' was not properly implemented, because "+
+                    "it yields "+str(n_outputs)+" outputs. However, it"+
+                    " should have 3 outputs (boundary condition class "+
+                    "with the method to update the variational form, D"+
+                    "irichlet load, and dictionary of finite elements)"+
+                    ", or 2 outputs (boundary condition class with the"+
+                    " method to update the variational form, and dicti"+
+                    "onary of finite elements)")
+                
+        # If the boundary condition is strongly imposed, updates the 
+        # dictionary of strong boundary conditions
+
+        if strong_boundary_condition:
+
+            strong_boundary_conditions_dict[physical_group] = (
+            bc_dictionary)
+
+    # If the functional data class is None, builds it
+
+    if (functional_data_class is None) or len(
+    weakly_imposed_BCs_classes)>0:
+        
+        print("Updates the dictionary of finite elements and the class"+
+        " of functional data to weakly impose boundary conditions\n")
+
+        # Verifies if the dictionary of elements was given
+
+        if elements_dictionary is None:
+
+            raise ValueError("'functional_data_class' was not given, n"+
+            "either was 'elements_dictionary'. When the functional dat"+
+            "a class is not provided, the dictionary of elements must "+
+            "to execute 'construct_DirichletBCs'")
+
+        functional_data_class = construct_monolithicFunctionSpace(
+        elements_dictionary, mesh_dataClass, verbose=verbose)
+
+    # Iterates through the list of classes to update the variational 
+    # form considering weakly-imposed boundary conditions
+
+    for weak_BC_class in weakly_imposed_BCs_classes:
+
+        # Uses the corresponding method in the class
+
+        variational_form += weak_BC_class.variational_form_update(
+        functional_data_class)
+
+    # Concatenates the dictionary of weakly-imposed BCs generators to 
+    # the dictionary of BCs generators to enable the verifier ahead to
+    # point to non-existing methods. This way, the weakly-imposed BCs 
+    # methods can be suggested as well
+
+    bcs_functionsDict.update(weak_bcs_functions_dict)
+    
+    # Gets the function space information
+    
+    fields_namesDict = functional_data_class.fields_names_dict
+    
+    monolithic_functionSpace = functional_data_class.monolithic_function_space
+
+    # Updates the dictionary of common arguments of the BCs generators
+    # with function space information
+
+    method_arguments["field_functionSpace"] = monolithic_functionSpace
+
+    method_arguments["fields_namesDict"] = fields_namesDict
+    
+    method_arguments["functional_data_class"] = functional_data_class
 
     # Iterates through the physical groups
 
-    for physical_group, bc_dictionary in boundary_conditionsDict.items():
+    for physical_group, bc_dictionary in strong_boundary_conditions_dict.items():
 
         # Verifies if the bc_dictionary is in fact a list, thus, adding 
         # multiple boundary conditions to a single physical group
@@ -170,16 +355,6 @@ dirichlet_loads=None):
             # Checks if this component is a dictionary
 
             if isinstance(bc_dictionary, dict):
-
-                # Verifies if it has the key 'BC case'
-
-                if not ("BC case" in bc_dictionary):
-
-                    raise KeyError("The dictionary of information for "+
-                    "constructing boundary conditions does not have th"+
-                    "e key 'BC case'. It must have this key to find th"+
-                    "e appropriate method to generate the Dirichlet bo"+
-                    "undary condition")
                 
                 # Gets the BC case
 
@@ -260,7 +435,8 @@ dirichlet_loads=None):
     # Returns the boundary conditions' list and the list of controlling
     # Dirichlet boundary conditions loads
 
-    return boundary_conditions, dirichlet_loads
+    return (boundary_conditions, dirichlet_loads, functional_data_class,
+    elements_dictionary, variational_form)
 
 ########################################################################
 #                            Solver setting                            #
@@ -1083,6 +1259,8 @@ all_data_must_be_provided=False):
     # Makes a copy of the dictionary of elements
 
     elements_dictionary_copy = deepcopy(elements_dictionary)
+
+    print("COPY: elements dictionary\n"+str(elements_dictionary_copy))
     
     # Transforms the dictionary of instructions into real finite elements
     # and get the names of the fields
@@ -1185,11 +1363,15 @@ all_data_must_be_provided=False):
 
     # Sets a list of allowed interpolation functions
 
-    allowed_interpolationFunction = ["CG", "DG", "Lagrange"]
+    allowed_interpolationFunction = ["CG", "DG", "Lagrange", "Real"]
 
     # Initializes a list of names of the fields
 
     fields_names = []
+
+    # Gets the dimension of the space
+
+    space_dimension = mesh_dataClass.mesh.topology().dim()
 
     # Iterates through the dictionary of elements
     
@@ -1265,7 +1447,9 @@ all_data_must_be_provided=False):
                         raise NameError("The interpolation function '"+
                         str(interpolation_function)+"' is not one of t"+
                         "he admissible functions. Check the list ahead"+
-                        ": "+str(allowed_interpolationFunction))
+                        ": "+str(allowed_interpolationFunction)+"\nChe"+
+                        "ck out the provided dictionary: "+str(
+                        element_dictionary))
 
                 elif all_data_must_be_provided:
 
@@ -1311,11 +1495,46 @@ all_data_must_be_provided=False):
 
                     elif element_type=="tensor":
 
-                        # Creates the element
+                        # If the tensor order is given
 
-                        elements_dictionary[field_name] = TensorElement(
-                        interpolation_function, 
-                        mesh_dataClass.mesh.ufl_cell(), polynomial_degree)
+                        if "tensor order" in element_dictionary:
+
+                            tensor_order = element_dictionary["tensor "+
+                            "order"]
+
+                            # Verifies if it is an integer
+
+                            if not isinstance(tensor_order, int):
+
+                                raise TypeError("'tensor order' in the"+
+                                " dictionary of the element for field "+
+                                "'"+str(field_name)+"' must be an inte"+
+                                "ger. Currently, it is:\n"+str(
+                                tensor_order))
+                            
+                            # Creates the dimension tuple
+
+                            dimension_tuple = [space_dimension for (
+                            index) in range(tensor_order)]
+
+
+                            # Creates the element
+
+                            elements_dictionary[field_name] = TensorElement(
+                            interpolation_function, 
+                            mesh_dataClass.mesh.ufl_cell(), 
+                            polynomial_degree, tuple(dimension_tuple))
+
+                        # Otherwise
+
+                        else:
+
+                            # Creates the element
+
+                            elements_dictionary[field_name] = TensorElement(
+                            interpolation_function, 
+                            mesh_dataClass.mesh.ufl_cell(), 
+                            polynomial_degree)
 
                     else:
 

@@ -122,7 +122,10 @@ save_snapshot_displacement=False):
             list_toTxt(completed_simulations, "completed_simulations", 
             parent_path=results_path)
 
-        except:
+        except Exception as e:
+
+            print("The "+str(i+1)+"-th simulation failed. The error me"+
+            "ssage is:\n"+str(e))
 
             # Updates the counter of failed simulations
 

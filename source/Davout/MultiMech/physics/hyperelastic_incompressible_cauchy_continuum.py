@@ -96,9 +96,12 @@ False, run_in_parallel=False, comm=None):
     # Defines the boundary conditions and the list of displacement loads
     # using the dictionary of boundary conditions
 
-    bc, dirichlet_loads = functional_tools.construct_DirichletBCs(
-    dirichlet_boundaryConditions, functional_data_class, mesh_data_class, 
-    dirichlet_loads=dirichlet_loads)
+    (bc, dirichlet_loads, functional_data_class, elements_dictionary,
+    variational_form) = (
+    functional_tools.construct_DirichletBCs(dirichlet_boundaryConditions, 
+    functional_data_class, mesh_data_class, dirichlet_loads=
+    dirichlet_loads, verbose=verbose, elements_dictionary=
+    elements_dictionary))
 
     ####################################################################
     #                         Variational forms                        #
@@ -148,7 +151,8 @@ False, run_in_parallel=False, comm=None):
     # Assembles the residual and the nonlinear problem object. Sets the
     # solver parameters too
 
-    residual_form = internal_VarForm-traction_VarForm-body_forcesVarForm
+    residual_form = (variational_form+internal_VarForm-traction_VarForm-
+    body_forcesVarForm)
 
     solver = functional_tools.set_nonlinearProblem(residual_form, 
     functional_data_class, bc, solver_parameters=solver_parameters)

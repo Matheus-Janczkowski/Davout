@@ -201,7 +201,8 @@ class TestANNTools:
 
             for dirichlet_load in self.base_dirichlet_load:
 
-                bcs, dirichlet_loads = functional_tools.construct_DirichletBCs(
+                (bcs, dirichlet_loads, functional_data_class, 
+                elements_dictionary, variational_form) = functional_tools.construct_DirichletBCs(
                 {"top": {"BC case": "PrescribedDirichletBC", "bc_infor"+
                 "mationsDict": {"load_function": "linear", "degrees_of"+
                 "FreedomList": 2, "end_point": [1.0, dirichlet_load]}}, 

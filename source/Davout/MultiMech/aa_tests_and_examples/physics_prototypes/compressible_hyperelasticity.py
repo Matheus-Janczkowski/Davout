@@ -42,9 +42,10 @@ functional_data_class = functional_tools.construct_monolithicFunctionSpace(
 
 # Dirichlet boundary conditions
 
-bc, dirichlet_loads = functional_tools.construct_DirichletBCs({"bottom": 
+bc, dirichlet_loads, functional_data_class, elements_dictionary, variational_form = (
+functional_tools.construct_DirichletBCs({"bottom": 
 {"BC case": "FixedSupportDirichletBC", "sub_fieldsToApplyBC": "Displac"+
-"ement"}}, functional_data_class, mesh_data_class)
+"ement"}}, functional_data_class, mesh_data_class))
 
 # Variational form of the exterior work using an uniform referential 
 # traction

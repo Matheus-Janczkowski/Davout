@@ -62,8 +62,10 @@ return_residual_vector_only=False):
     # functions, solution function. Everything is split and named by ac-
     # cording to the element's name
 
-    functional_data_class = functional_tools.construct_monolithicFunctionSpace(
-    elements_dictionary, mesh_dataClass, verbose=verbose)
+    functional_data_class = None
+
+    #functional_data_class = functional_tools.construct_monolithicFunctionSpace(
+    #elements_dictionary, mesh_dataClass, verbose=verbose)
 
     ####################################################################
     #                   Constitutive model validation                  #
@@ -79,9 +81,12 @@ return_residual_vector_only=False):
     # Defines the boundary conditions and the list of displacement loads
     # using the dictionary of boundary conditions
 
-    bc, dirichlet_loads = functional_tools.construct_DirichletBCs(
+    (bc, dirichlet_loads, functional_data_class, elements_dictionary, 
+    variational_form) = (
+    functional_tools.construct_DirichletBCs(
     dirichlet_boundaryConditions, functional_data_class, mesh_dataClass, 
-    dirichlet_loads=dirichlet_loads)
+    dirichlet_loads=dirichlet_loads, verbose=verbose, 
+    elements_dictionary=elements_dictionary))
 
     ####################################################################
     #                         Variational forms                        #
@@ -112,7 +117,8 @@ return_residual_vector_only=False):
     # Assembles the residual and the nonlinear problem object. Sets the
     # solver parameters too
 
-    residual_form = internal_VarForm-traction_VarForm-body_forcesVarForm
+    residual_form = (variational_form+internal_VarForm-traction_VarForm-
+    body_forcesVarForm)
 
     # If only the residual vector if to be returned
 
@@ -131,10 +137,18 @@ return_residual_vector_only=False):
 
     # Iterates through the pseudotime stepping algortihm 
 
-    newton_raphson_tools.newton_raphsonSingleField(solver, 
+    """newton_raphson_tools.newton_raphsonSingleField(solver, 
     functional_data_class, mesh_dataClass, constitutive_model, 
     post_processesDict=post_processes, post_processesSubmeshDict=
     post_processesSubmesh, neumann_loads=neumann_loads, dirichlet_loads=
     dirichlet_loads, solution_name=solution_name, 
     volume_physGroupsSubmesh=volume_physGroupsSubmesh, t=t, t_final=
+    t_final, maximum_loadingSteps=maximum_loadingSteps)"""
+
+    newton_raphson_tools.newton_raphsonMultipleFields(solver, 
+    functional_data_class, mesh_dataClass, constitutive_model, 
+    post_processesList=post_processes, post_processesSubmeshList=
+    post_processesSubmesh, dirichlet_loads=dirichlet_loads, 
+    neumann_loads=neumann_loads, volume_physGroupsSubmesh=
+    volume_physGroupsSubmesh, solution_name=solution_name, t=t, t_final=
     t_final, maximum_loadingSteps=maximum_loadingSteps)
