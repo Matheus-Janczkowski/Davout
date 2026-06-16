@@ -38,6 +38,21 @@ solution_name=None, volume_physGroupsSubmesh=None,
 macro_quantitiesClasses=None, t=None, t_final=None, maximum_loadingSteps=
 None, field_correction=None):
     
+    # Verifies if a problem with more fields was mistakenly given to the
+    # single-field Newton-Raphson scheme
+
+    if len(functional_data_class.fields_names_dict.keys())>1:
+
+        return newton_raphsonMultipleFields(solver, 
+        functional_data_class, mesh_dataClass, constitutive_model, 
+        post_processesList=post_processesDict, post_processesSubmeshList=
+        post_processesSubmeshDict, dirichlet_loads=dirichlet_loads, 
+        neumann_loads=neumann_loads, solution_name=solution_name, 
+        volume_physGroupsSubmesh=volume_physGroupsSubmesh, 
+        macro_quantitiesClasses=macro_quantitiesClasses, t=t, t_final=
+        t_final, maximum_loadingSteps=maximum_loadingSteps, 
+        fields_corrections=field_correction)
+    
     # If no solution name was provided
 
     if len(solution_name)==0:
@@ -623,10 +638,10 @@ None, fields_corrections=None):
         t_final, maximum_loadingSteps=maximum_loadingSteps,
         field_correction=fields_corrections)
     
-    mpi_print(mesh_dataClass.comm, "\n#########################################################"+
-    "###############\n#              The Newton-Raphson scheme will be"+
-    " initiated             #\n#######################################"+
-    "#################################\n")
+    mpi_print(mesh_dataClass.comm, "\n################################"+
+    "########################################\n#              The Newt"+
+    "on-Raphson scheme will be initiated             #\n##############"+
+    "##########################################################\n")
 
     # Splits the solution to show how many DOFs are at each field
 
@@ -634,16 +649,14 @@ None, fields_corrections=None):
 
     for i in range(n_fields):
 
-        mpi_print(mesh_dataClass.comm, "There are "+str(len(split_solution[i].vector()))+" degrees "+
-        "of freedom in the "+str(i+1)+"-th field of the mesh\n")
+        mpi_print(mesh_dataClass.comm, "There are "+str(len(
+        split_solution[i].vector()))+" degrees of freedom in the "+str(
+        i+1)+"-th field of the mesh\n")
 
     # Constructs the class of code-provided information for the post-
     # processes
 
     #solution_field.function_space().mesh()
-
-    print("FUNCTIONAL functional_data_class"+str(functional_data_class.elements_dictionary_copy[
-    "Displacement"]["field type"]))
 
     context_class = post_classes.PostProcessContext(mesh_dataClass, 
     constitutive_model, functional_data_class)
@@ -654,7 +667,8 @@ None, fields_corrections=None):
 
         raise ValueError("post_processesList must be a list of diction"+
         "aries in newton_raphsonMultipleFields, because there must be "+
-        "post-processing steps for each field.")
+        "post-processing steps for each field. Currently, it is:\n"+str(
+        post_processesList))
 
     # Verifies if the post processes for the submesh is a list
 
@@ -662,7 +676,8 @@ None, fields_corrections=None):
 
         raise ValueError("post_processesSubmeshList must be a list of "+
         "dictionaries in newton_raphsonMultipleFields, because there m"+
-        "ust be post-processing steps for each field.")
+        "ust be post-processing steps for each field. Currently, it is"+
+        "\n"+str(post_processesSubmeshList))
 
     # Transforms the list of dictionaries of post-processing methods 
     # instructions into a list of live-wire dictionaries with the proper 

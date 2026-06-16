@@ -182,10 +182,6 @@ def initialize_fieldSaving(data, direct_codeData, submesh_flag):
                     self.field_type = functional_data_class.elements_dictionary_copy[
                     field_name]["field type"]
 
-                    print("FIELD TYPE: "+str(self.field_type))
-
-                    print("FIELD NAME "+str(field_name))
-
                     self.interpolation_function = functional_data_class.elements_dictionary_copy[
                     field_name]["interpolation function"]
 

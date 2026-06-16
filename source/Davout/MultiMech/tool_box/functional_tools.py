@@ -40,7 +40,8 @@ lambda: [], 'dirichlet_loads': lambda: []})
 def construct_DirichletBCs(boundary_conditionsDict, 
 functional_data_class, mesh_dataClass, boundary_conditions=None,
 dirichlet_loads=None, verbose=False, elements_dictionary=None, 
-variational_form=0.0):
+variational_form=0.0, t=0.0, t_final=1.0, post_processes=None, 
+post_processesSubmesh=None, solution_name=None):
     
     print("###########################################################"+
     "#############\n#                    Boundary conditions will be s"+
@@ -69,7 +70,8 @@ variational_form=0.0):
     # condition generation functions
 
     method_arguments = {"mesh_dataClass": mesh_dataClass,"complex_bcsF"+
-    "unctionsDict": complex_bcsFunctionsDict}
+    "unctionsDict": complex_bcsFunctionsDict, "t": t, "t_initial": t,
+    "t_final": t_final}
 
     # Initializes a dictionary of strongly-imposed boundary conditions
 
@@ -81,6 +83,14 @@ variational_form=0.0):
     # finally created with the updated dictionary of finite elements
 
     weakly_imposed_BCs_classes = []
+
+    # Gets the fields that were set up before the imposition of weak BCs
+
+    initial_fields_names = None
+
+    if isinstance(elements_dictionary, dict):
+
+        initial_fields_names = list(elements_dictionary.keys())
 
     # Verifies if any of the boundary conditions are weakly imposed
 
@@ -162,7 +172,7 @@ variational_form=0.0):
 
                     weakly_imposed_BCs_classes.append(result[0])
 
-                    dirichlet_loads = result[1]
+                    dirichlet_loads.append(result[1])
 
                     elements_dictionary = result[2]
 
@@ -206,11 +216,10 @@ variational_form=0.0):
 
     # If the functional data class is None, builds it
 
-    if (functional_data_class is None) or len(
-    weakly_imposed_BCs_classes)>0:
+    if (functional_data_class is None):
         
         print("Updates the dictionary of finite elements and the class"+
-        " of functional data to weakly impose boundary conditions\n")
+        " of functional\ndata to weakly impose boundary conditions\n")
 
         # Verifies if the dictionary of elements was given
 
@@ -220,9 +229,75 @@ variational_form=0.0):
             "either was 'elements_dictionary'. When the functional dat"+
             "a class is not provided, the dictionary of elements must "+
             "to execute 'construct_DirichletBCs'")
+        
+        # Creates the class with functional information, such as function
+        # spaces
 
         functional_data_class = construct_monolithicFunctionSpace(
         elements_dictionary, mesh_dataClass, verbose=verbose)
+
+    # Updates post-processes and solution name if weakly imposed BCs are
+    # present
+
+    if len(weakly_imposed_BCs_classes)>0:
+
+        # Verifies if the list of initial fields' names is empty
+
+        if initial_fields_names is None:
+
+            raise ValueError("The dictionary of finite elements 'eleme"+
+            "nts_dictionary' was given as None, but new finite element"+
+            "s have been added due to weakly-imposed boundary conditio"+
+            "ns. Something is wrong with the implementation of the phy"+
+            "sics")
+
+        # Verifies if the post-processes are dictionaries, which means
+        # they were defined for a single-field problem
+
+        if isinstance(post_processes, dict) and len(initial_fields_names
+        )==1:
+            
+            print("Updates the dictionary of post-processes to a list "+
+            "due to the addition of new fields for weakly-imposed boun"+
+            "dary conditions. The new 'post_processes' is:\n"+str(
+            post_processes)+"\n")
+
+            post_processes = [[initial_fields_names[0], post_processes]]
+
+        if isinstance(post_processesSubmesh, dict) and len(
+        initial_fields_names)==1:
+            
+            print("Updates the dictionary of post-processes of the sub"+
+            "mesh to a list due to the addition of new fields for weak"+
+            "ly-imposed boundary conditions. The new 'post_processesSu"+
+            "bmesh' is:\n"+str(post_processesSubmesh)+"\n")
+
+            post_processesSubmesh = [[initial_fields_names[0], 
+            post_processesSubmesh]]
+
+        # Updates the solution name if the names given are exclusively
+        # the initial ones (except the newly added ones for the weak BCs)
+
+        if isinstance(solution_name, list) and (len(solution_name)==len(
+        initial_fields_names) or isinstance(solution_name[0], str)):
+            
+            # If just one field has been given, encapsulates the infor-
+            # mation into a sublist
+
+            if isinstance(solution_name[0], str):
+
+                solution_name = [solution_name]
+            
+            # Iterates through all fields
+            
+            for field_name in elements_dictionary.keys():
+
+                # Verifies if this field is not in the initial list of
+                # fields' names
+
+                if not (field_name in initial_fields_names):
+
+                    solution_name.append([field_name, "DNS"])
 
     # Iterates through the list of classes to update the variational 
     # form considering weakly-imposed boundary conditions
@@ -436,7 +511,8 @@ variational_form=0.0):
     # Dirichlet boundary conditions loads
 
     return (boundary_conditions, dirichlet_loads, functional_data_class,
-    elements_dictionary, variational_form)
+    elements_dictionary, variational_form, post_processes,
+    post_processesSubmesh, solution_name)
 
 ########################################################################
 #                            Solver setting                            #
@@ -1259,8 +1335,6 @@ all_data_must_be_provided=False):
     # Makes a copy of the dictionary of elements
 
     elements_dictionary_copy = deepcopy(elements_dictionary)
-
-    print("COPY: elements dictionary\n"+str(elements_dictionary_copy))
     
     # Transforms the dictionary of instructions into real finite elements
     # and get the names of the fields

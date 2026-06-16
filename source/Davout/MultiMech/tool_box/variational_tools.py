@@ -250,7 +250,7 @@ mesh_dataClass):
         # Initializes objects for the stresses at the reference configu-
         # ration
 
-        result = constitutive_model.first_piolaStress([
+        result = constitutive_modelDictionary.first_piolaStress([
         displacement_trialFunction, microrotation_trialFunction])
 
         first_piola = programming_tools.get_result(result, "first_piol"+
@@ -260,8 +260,9 @@ mesh_dataClass):
         "le_first_piola_kirchhoff")
 
         kirchhoff = programming_tools.get_result(
-        constitutive_model.kirchhoff_stress([displacement_trialFunction, 
-        microrotation_trialFunction]), "kirchhoff")
+        constitutive_modelDictionary.kirchhoff_stress([
+        displacement_trialFunction, microrotation_trialFunction]), "ki"+
+        "rchhoff")
 
         # Constructs the variational forms for the inner work of the
         # first Piola-Kirchhoff stress

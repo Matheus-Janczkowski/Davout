@@ -95,9 +95,7 @@ material_properties["gamma"] = gamma
 
 # Sets the material as a HGO material
 
-constitutive_model = dict()
-
-constitutive_model[tuple([1,2,3])] = micropolar_constitutiveModels.Micropolar_Neo_Hookean(
+constitutive_model = micropolar_constitutiveModels.Micropolar_Neo_Hookean(
 material_properties)
 
 #constitutive_model[tuple(["annulus fibrosus", "nucleus pulposus", ("en"+
@@ -115,10 +113,14 @@ material_properties)
 # le termination, e.g. .msh or .xdmf; both options will be saved automa-
 # tically
 
-file_directory = (get_parent_path_of_file(path_bits_to_be_excluded=2)+
-"//test_meshes")
+H = 1.0
 
-mesh_fileName = "intervertebral_disc"
+W = 0.2
+
+mesh_fileName = {"length x": 0.3, "length y": W, "length z": H, "numbe"+
+"r of divisions in x": 5, "number of divisions in y": 5, "number of di"+
+"visions in z": 25, "verbose": False, "mesh file name": "box_mesh", "m"+
+"esh file directory": get_parent_path_of_file()}
 
 # Defines a set of physical groups to create a submesh
 
@@ -218,8 +220,8 @@ verbose = True
 
 variational_framework.hyperelasticity_displacementMicrorotationBased(
 constitutive_model, traction_dictionary, moment_dictionary, 
-maximum_loadingSteps, t_final, post_processes, file_directory+"//"+
-mesh_fileName, solver_parameters, polynomial_degreeDisplacement=
+maximum_loadingSteps, t_final, post_processes, mesh_fileName, 
+solver_parameters, polynomial_degreeDisplacement=
 polynomial_degreeDisplacement, polynomial_degreeMicrorotation=
 polynomial_degreeMicrorotation, t=t, solution_name=[["Displacement", 
 "DNS"], ["Microrotation", "DNS"]], volume_physGroupsSubmesh=

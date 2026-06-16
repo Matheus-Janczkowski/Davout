@@ -58,14 +58,6 @@ False, run_in_parallel=False, comm=None):
     "interpolation function": "CG", "polynomial degree": 
     polynomial_degree_pressure}}
 
-    # From the dictionary of elements, the finite elements are created,
-    # then, all the rest is created: the function spaces, trial and test 
-    # functions, solution function. Everything is split and named by ac-
-    # cording to the element's name
-
-    functional_data_class = functional_tools.construct_monolithicFunctionSpace(
-    elements_dictionary, mesh_data_class, verbose=verbose)
-
     ####################################################################
     #                   Constitutive model validation                  #
     ####################################################################
@@ -97,11 +89,13 @@ False, run_in_parallel=False, comm=None):
     # using the dictionary of boundary conditions
 
     (bc, dirichlet_loads, functional_data_class, elements_dictionary,
-    variational_form) = (
-    functional_tools.construct_DirichletBCs(dirichlet_boundaryConditions, 
-    functional_data_class, mesh_data_class, dirichlet_loads=
+    variational_form, post_processes, post_processesSubmesh, 
+    solution_name) = functional_tools.construct_DirichletBCs(
+    dirichlet_boundaryConditions, None, mesh_data_class, dirichlet_loads=
     dirichlet_loads, verbose=verbose, elements_dictionary=
-    elements_dictionary))
+    elements_dictionary, post_processes=post_processes, 
+    post_processesSubmesh=post_processesSubmesh, t=t, t_final=t_final,
+    solution_name=solution_name)
 
     ####################################################################
     #                         Variational forms                        #

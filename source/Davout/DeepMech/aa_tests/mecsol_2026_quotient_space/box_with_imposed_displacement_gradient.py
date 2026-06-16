@@ -21,7 +21,7 @@ mesh_file_name, displacement_gradient_components, save_snapshot=False):
     #                        Simulation results                        #
     ####################################################################
 
-    post_processes = [["Displacement", dict()]]
+    post_processes = {}
 
     # The flag "readable xdmf file" makes the file able to be read into 
     # a function afterwards. The flag "visualization copy for readable 
@@ -29,7 +29,7 @@ mesh_file_name, displacement_gradient_components, save_snapshot=False):
     # tional method of saving. The readable file can sometimes feature 
     # null values in ParaView
 
-    post_processes[0][1]["SaveField"] = {"directory path": results_path, 
+    post_processes["SaveField"] = {"directory path": results_path, 
     "file name": displacement_file_name, "saving method": "binary", 
     "visualization copy for readable xdmf": True}
 
@@ -133,8 +133,8 @@ mesh_file_name, displacement_gradient_components, save_snapshot=False):
     constitutive_model, traction_dictionary, maximum_loadingSteps, 
     t_final, post_processes, mesh_file_name, solver_parameters, 
     polynomial_degree=polynomial_degree, t=t, 
-    dirichlet_boundaryConditions=bcs_dictionary, verbose=True, post_processesSubmesh=[],
-    solution_name=[["Displacement", "DNS"], ["Lagrange", "DNS"]])
+    dirichlet_boundaryConditions=bcs_dictionary, verbose=True, 
+    post_processesSubmesh=[])
 
     # Saves a snapshot of the solution using the automatization of Para-
     # View
@@ -176,8 +176,8 @@ if __name__=="__main__":
     # Defines the components of the volume average of the displacement
     # gradient
 
-    displacement_gradient_components = [[0.25, 0.0, 0.0], [0.0, 0.25, 0.0], 
-    [0.0, 0.0, 0.25]]
+    displacement_gradient_components = [[-0.060, 0.0, 0.0], [0.0, -0.060, 0.0], 
+    [0.0, 0.0, -0.060]]
 
     # Solves the boundary value problem
 
