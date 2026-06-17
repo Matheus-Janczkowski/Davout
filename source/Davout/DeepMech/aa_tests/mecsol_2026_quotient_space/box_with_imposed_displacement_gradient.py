@@ -32,7 +32,7 @@ lagrange_multiplier_file_name, save_snapshot=False):
     # null values in ParaView
 
     post_processes[0][1]["SaveField"] = {"directory path": results_path, 
-    "file name": displacement_file_name, "saving method": "readable xdmf", 
+    "file name": displacement_file_name, "saving method": "xdmf", 
     "visualization copy for readable xdmf": True}
 
     post_processes[0][1]["HomogenizeFieldsGradient"] = {"directory path":

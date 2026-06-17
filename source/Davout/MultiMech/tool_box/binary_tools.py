@@ -572,10 +572,6 @@ None, verbose=True):
         mpi_print(comm_object, "Saves the visualization copy at file '"+
         str(copy_file_name)+"'\n")
 
-    # Verifies if this file has already been created. If not, creates it
-
-    if verbose:
-
         mpi_print(comm_object, "Creates a new XDMFFile instance fo"+
         "r the visualization copy file\n")
 

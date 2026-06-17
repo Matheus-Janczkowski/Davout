@@ -82,6 +82,8 @@ def initialize_fieldSaving(data, direct_codeData, submesh_flag):
 
         readable_xdmf_flag = True
 
+    print("VISUALIZATION COPY FLAG: "+str(visualization_copy))
+
     # Gets the functional data class
 
     functional_data_class = direct_codeData[0]
