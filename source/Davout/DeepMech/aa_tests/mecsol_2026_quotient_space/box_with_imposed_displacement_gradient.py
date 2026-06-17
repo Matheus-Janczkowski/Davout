@@ -9,7 +9,8 @@ from .....Davout.MultiMech.physics import hyperelastic_cauchy_continuum as varia
 from .....Davout.GraphUtilities.paraview_tools import frozen_snapshots
 
 def solve_BVP(results_path, displacement_file_name, young_modulus_file,
-mesh_file_name, displacement_gradient_components, save_snapshot=False):
+mesh_file_name, displacement_gradient_components, 
+lagrange_multiplier_file_name, save_snapshot=False):
 
     ####################################################################
     ####################################################################
@@ -21,7 +22,8 @@ mesh_file_name, displacement_gradient_components, save_snapshot=False):
     #                        Simulation results                        #
     ####################################################################
 
-    post_processes = {}
+    post_processes = [["Displacement", {}], ["Lagrange multiplier disp"+
+    "lacement gradient average", {}]]
 
     # The flag "readable xdmf file" makes the file able to be read into 
     # a function afterwards. The flag "visualization copy for readable 
@@ -29,9 +31,21 @@ mesh_file_name, displacement_gradient_components, save_snapshot=False):
     # tional method of saving. The readable file can sometimes feature 
     # null values in ParaView
 
-    post_processes["SaveField"] = {"directory path": results_path, 
-    "file name": displacement_file_name, "saving method": "binary", 
+    post_processes[0][1]["SaveField"] = {"directory path": results_path, 
+    "file name": displacement_file_name, "saving method": "readable xdmf", 
     "visualization copy for readable xdmf": True}
+
+    post_processes[0][1]["HomogenizeFieldsGradient"] = {"directory path":
+    results_path, "file name": "homogenized_displacement_gradient", 
+    "subdomain": "volume 1"}
+
+    post_processes[0][1]["HomogenizeFirstPiola"] = {"directory path":
+    results_path, "file name": "homogenized_first_piola", 
+    "subdomain": "volume 1"}
+
+    post_processes[1][1]["SaveField"] = {"directory path": results_path, 
+    "file name": lagrange_multiplier_file_name, "saving method": "bina"+
+    "ry", "txt copy": True}
 
     ####################################################################
     #                       Material properties                        #
@@ -152,7 +166,7 @@ mesh_file_name, displacement_gradient_components, save_snapshot=False):
         legend_bar_length=0.7600000000000029,
         size_in_pixels={'aspect ratio': 0.6791171477079796, 'pixels in width': 589},
         axes_color=[0.0, 0.0, 0.0], get_attributes_render=False, 
-        output_imageFileName="RVE_displacement.png", resolution_ratio=5, 
+        output_imageFileName="RVE_displacement_imposed_gradient.png", resolution_ratio=5, 
         warp_by_vector=True, representation_type="Surface With Edges", 
         set_camera_interactively=False, time=1.0)
 
@@ -166,6 +180,8 @@ if __name__=="__main__":
 
     displacement_file_name = "displacement_with_imposed_displacement_gradient"
 
+    lagrange_multiplier_file_name = "lagrange_multiplier_displacement_gradient"
+
     # Defines the mesh file name and the name of the file of the field 
     # of Young modulus
 
@@ -176,10 +192,11 @@ if __name__=="__main__":
     # Defines the components of the volume average of the displacement
     # gradient
 
-    displacement_gradient_components = [[-0.060, 0.0, 0.0], [0.0, -0.060, 0.0], 
-    [0.0, 0.0, -0.060]]
+    displacement_gradient_components = [[2.5, 0.0, 0.0], [0.0, 2.5, 0.0], 
+    [0.0, 0.0, 2.5]]
 
     # Solves the boundary value problem
 
     solve_BVP(results_path, displacement_file_name, young_modulus_file,
-    mesh_file_name, displacement_gradient_components, save_snapshot=True)
+    mesh_file_name, displacement_gradient_components, 
+    lagrange_multiplier_file_name, save_snapshot=True)

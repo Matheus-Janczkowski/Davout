@@ -92,8 +92,9 @@ class SaveField(PostProcessMethod):
         post_functions.update_fieldSaving, ["directory path", 
         "file name", ["intermediate saving flag", False], ["readable x"+
         "dmf file", False], ["visualization copy for readable xdmf",
-        False], ["field name", None], ["saving method", "xdmf"]], [
-        context.functional_data_class, context.mesh_data_class])
+        False], ["field name", None], ["saving method", "xdmf"], ["txt"+
+        " copy", False]], [context.functional_data_class, 
+        context.mesh_data_class])
 
 # Sets a class for the method to save the Cauchy stress field
 

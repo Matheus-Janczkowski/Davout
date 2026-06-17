@@ -94,24 +94,20 @@ t_final=1.0):
             
             self.average_gradient = average_gradient
 
-            # Evaluates the volume of the domain
-
-            self.volume_inverse = 1.0/assemble(1.0*mesh_dataClass.dx)
-
         # Defines a function to generate the corresponding portion of 
         # the variational form
 
         def variational_form_update(self, functional_data_class):
 
-            return ((inner(functional_data_class.solution_fields["Lagra"+
-            "nge multiplier displacement gradient average"], 
-            self.volume_inverse*grad(
+            return ((inner(functional_data_class.variation_fields["Lag"+
+            "range multiplier displacement gradient average"], 
+            self.average_gradient-grad(
+            functional_data_class.solution_fields["Displacement"]))
+            *mesh_dataClass.dx)-(inner(
+            functional_data_class.solution_fields["Lagrange multiplier"+
+            " displacement gradient average"], grad(
             functional_data_class.variation_fields["Displacement"]))*
-            mesh_dataClass.dx)+(inner(
-            functional_data_class.variation_fields["Lagrange multiplie"+
-            "r displacement gradient average"], self.volume_inverse*(
-            grad(functional_data_class.solution_fields["Displacement"])
-            -self.average_gradient))*mesh_dataClass.dx))
+            mesh_dataClass.dx))
         
     # Returns the class and the dictionary of finite elements
 

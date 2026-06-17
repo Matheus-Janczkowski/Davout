@@ -12,6 +12,8 @@ from .mesh_handling_tools import read_mshMesh
 
 from ...PythonicUtilities.path_tools import get_parent_path_of_file, decapitalize_and_insert_underline, verify_file_existence, take_outFileNameTermination, verify_path
 
+from ...PythonicUtilities.file_handling_tools import list_toTxt
+
 ########################################################################
 ########################################################################
 ##                                Write                               ##
@@ -25,7 +27,8 @@ def write_field_to_binary(functional_data_class, time=0.0, field_name=None,
 directory_path=None, visualization_copy=False, close_file=True, 
 visualization_copy_file=None, time_step=0, explicit_file_name=None,
 code_given_mesh_data_class=None, field_type=None, interpolation_function=
-None, polynomial_degree=None, comm_object=None, verbose=True):
+None, polynomial_degree=None, comm_object=None, verbose=True, txt_copy=
+False):
     
     """
     Function for writing a FEniCS function to xdmf files.
@@ -205,10 +208,11 @@ None, polynomial_degree=None, comm_object=None, verbose=True):
                 individual_field.rename(field_name, "DNS")
 
                 # Verifies if this file has already been created. If 
-                # not, creates it
+                # not, creates it. Creates a new file also if the time 
+                # step is the first one
 
-                if not verify_file_existence(explicit_file_name,
-                do_not_raise_error=True):
+                if (not verify_file_existence(explicit_file_name,
+                do_not_raise_error=True)) or time_step==0:
 
                     if verbose:
 
@@ -234,6 +238,13 @@ None, polynomial_degree=None, comm_object=None, verbose=True):
 
                 np.save(explicit_file_name, 
                 array_of_vector_of_parameters)
+
+                # If a txt copy is to be saved
+
+                if txt_copy:
+
+                    list_toTxt(array_of_vector_of_parameters.tolist(), 
+                    explicit_file_name[0:-4])
 
             else:
 
@@ -271,10 +282,11 @@ None, polynomial_degree=None, comm_object=None, verbose=True):
                 individual_field.rename(field_name, "DNS")
                 
                 # Verifies if this file has already been created. If 
-                # not, creates it
+                # not, creates it. Creates a new file also if the time 
+                # step is the first one
 
-                if not verify_file_existence(explicit_file_name,
-                do_not_raise_error=True):
+                if (not verify_file_existence(explicit_file_name,
+                do_not_raise_error=True)) or time_step==0:
 
                     if verbose:
 
@@ -300,6 +312,13 @@ None, polynomial_degree=None, comm_object=None, verbose=True):
 
                 np.save(explicit_file_name, 
                 array_of_vector_of_parameters)
+
+                # If a txt copy is to be saved
+
+                if txt_copy:
+
+                    list_toTxt(array_of_vector_of_parameters.tolist(), 
+                    explicit_file_name[0:-4])
 
     # For single field problems
 
@@ -333,10 +352,11 @@ None, polynomial_degree=None, comm_object=None, verbose=True):
                 individual_field.rename(field_name, "DNS")
 
                 # Verifies if this file has already been created. If 
-                # not, creates it
+                # not, creates it. Creates a new file also if the time 
+                # step is the first one
 
-                if not verify_file_existence(explicit_file_name,
-                do_not_raise_error=True):
+                if (not verify_file_existence(explicit_file_name,
+                do_not_raise_error=True)) or time_step==0:
 
                     if verbose:
 
@@ -362,6 +382,13 @@ None, polynomial_degree=None, comm_object=None, verbose=True):
 
                 np.save(explicit_file_name, 
                 array_of_vector_of_parameters)
+
+                # If a txt copy is to be saved
+
+                if txt_copy:
+
+                    list_toTxt(array_of_vector_of_parameters.tolist(), 
+                    explicit_file_name[0:-4])
 
             else:
 
@@ -400,10 +427,11 @@ None, polynomial_degree=None, comm_object=None, verbose=True):
             individual_field.rename(field_name, "DNS")
 
             # Verifies if this file has already been created. If not,
-            # creates it
+            # creates it. Creates a new file also if the time step is 
+            # the first one
 
-            if not verify_file_existence(explicit_file_name,
-            do_not_raise_error=True):
+            if (not verify_file_existence(explicit_file_name,
+            do_not_raise_error=True)) or time_step==0:
 
                 if verbose:
 
@@ -429,6 +457,13 @@ None, polynomial_degree=None, comm_object=None, verbose=True):
 
             np.save(explicit_file_name, 
             array_of_vector_of_parameters)
+
+            # If a txt copy is to be saved
+
+            if txt_copy:
+
+                list_toTxt(array_of_vector_of_parameters.tolist(), 
+                explicit_file_name[0:-4])
     
     # Verifies if a visualization copy must be made
 
@@ -506,17 +541,22 @@ None, verbose=True):
         mpi_print(comm_object, "Creates a visualization copy for the f"+
         "ield '"+str(code_given_field_name)+"'\n")
 
+    # Creates a time step list to generate a xdmf file with all steps
+
+    time_step_list = [step for step in range(time_step+1)]
+
     # Reads the file back only if the code is not being run in parallel
 
     read_function = None 
 
     if comm_object is None:
 
-        read_function = read_field_from_binary(file_name, mesh_file,
-        functional_data_dictionary, time_step=time_step, rename_function=
-        True, code_given_mesh_data_class=code_given_mesh_data_class,
-        code_given_field_name=code_given_field_name, comm_object=
-        comm_object)
+        read_function, function_space_info = read_field_from_binary(
+        file_name, mesh_file, functional_data_dictionary, time_step=
+        time_step_list, rename_function=True, code_given_mesh_data_class=
+        code_given_mesh_data_class, code_given_field_name=
+        code_given_field_name, comm_object=comm_object, 
+        return_functional_data_class=True)
 
     else:
 
@@ -534,17 +574,20 @@ None, verbose=True):
 
     # Verifies if this file has already been created. If not, creates it
 
-    if not isinstance(visualization_copy_file, XDMFFile):
+    if verbose:
 
-        if verbose:
+        mpi_print(comm_object, "Creates a new XDMFFile instance fo"+
+        "r the visualization copy file\n")
 
-            mpi_print(comm_object, "Creates a new XDMFFile instance fo"+
-            "r the visualization copy file\n")
+    visualization_copy_file = XDMFFile(
+    function_space_info.monolithic_solution.function_space().mesh(
+    ).mpi_comm(), copy_file_name)
 
-        visualization_copy_file = XDMFFile(read_function.function_space(
-        ).mesh().mpi_comm(), copy_file_name)
+    # Writes the individual time steps
 
-    visualization_copy_file.write(read_function, time)
+    for step, time_point in enumerate(time_step_list):
+
+        visualization_copy_file.write(read_function[step], time_point)
 
     # Closes the file
 
@@ -819,9 +862,12 @@ return_functional_data_class=False, verbose=True):
 
                 # Stores a copy
 
-                solutions_across_time_steps.append(
-                function_space_info.monolithic_solution.copy(
-                deepcopy=True))
+                solution_copy = function_space_info.monolithic_solution.copy(
+                deepcopy=True)
+
+                solution_copy.rename(field_name, "DNS")
+
+                solutions_across_time_steps.append(solution_copy)
 
         # Otherwise, reads the only time step
 

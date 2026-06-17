@@ -8,6 +8,8 @@ from .....Davout.MultiMech.physics import hyperelastic_cauchy_continuum as varia
 
 from .....Davout.GraphUtilities.paraview_tools import frozen_snapshots
 
+import numpy as np
+
 def solve_BVP(results_path, displacement_file_name, young_modulus_file,
 mesh_file_name, stress_tensor_components, save_snapshot=False):
 
@@ -30,8 +32,12 @@ mesh_file_name, stress_tensor_components, save_snapshot=False):
     # null values in ParaView
 
     post_processes["SaveField"] = {"directory path":results_path, 
-    "file name": displacement_file_name, "saving method": "binary", 
+    "file name": displacement_file_name, "saving method": "readable xdmf", 
     "visualization copy for readable xdmf": True}
+
+    post_processes["HomogenizeFieldsGradient"] = {"directory path":
+    results_path, "file name": "homogenized_displacement_gradient_impo"+
+    "sed_stress", "subdomain": "volume 1"}
 
     ####################################################################
     #                       Material properties                        #
@@ -165,7 +171,7 @@ mesh_file_name, stress_tensor_components, save_snapshot=False):
         legend_bar_length=0.7600000000000029,
         size_in_pixels={'aspect ratio': 0.6791171477079796, 'pixels in width': 589},
         axes_color=[0.0, 0.0, 0.0], get_attributes_render=False, 
-        output_imageFileName="RVE_displacement.png", resolution_ratio=5, 
+        output_imageFileName="RVE_displacement_imposed_stress.png", resolution_ratio=5, 
         warp_by_vector=True, representation_type="Surface With Edges", 
         set_camera_interactively=False, time=1.0)
 
@@ -189,8 +195,9 @@ if __name__=="__main__":
     # Defines the components of the first Piola-Kirchhoff stress tensor
     # prescribed to all facets
 
-    stress_tensor_components = [[10E5, 0.0, 0.0], [0.0, 10E5, 0.0], [
-    0.0, 0.0, 10E5]]
+    stress_tensor_components = [[2283538.0731331436,-9490.759281026269,-486.883852706879],
+    [-10079.298628478124,2283820.523737777,-9997.493987340664],
+    [-208.8868858364458,-10064.089398905406,2284106.145453561]]
 
     # Solves the boundary value problem
 

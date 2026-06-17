@@ -55,9 +55,11 @@ def initialize_fieldSaving(data, direct_codeData, submesh_flag):
 
     saving_method = data[6]
 
+    txt_copy = data[7]
+
     # Verifies if saving method is available
 
-    available_saving_methods = ["xdmf", "binary"]
+    available_saving_methods = ["xdmf", "binary", "readable xdmf"]
 
     if not (saving_method in available_saving_methods):
 
@@ -70,6 +72,15 @@ def initialize_fieldSaving(data, direct_codeData, submesh_flag):
         raise ValueError("'saving method' was selected as '"+str(
         saving_method)+"' in 'SaveField' post-process. But it must be "+
         "one of the following options:"+available_names)
+    
+    # If the given method is 'readable xdmf', makes it "xdmf" and the 
+    # flag for readable True
+
+    if saving_method=="readable xdmf":
+
+        saving_method = "xdmf"
+
+        readable_xdmf_flag = True
 
     # Gets the functional data class
 
@@ -114,6 +125,30 @@ def initialize_fieldSaving(data, direct_codeData, submesh_flag):
 
             self.solution_steps = 0
 
+            # Sets the information for visualization copies
+
+            self.visualization_copy = visualization_copy
+
+            self.visualization_copy_file = None
+
+            self.file_name = file_name
+
+            # Saves into the class the information to build the mock
+            # functional data class for the visualization copy
+
+            self.field_type = functional_data_class.elements_dictionary_copy[
+            field_name]["field type"]
+
+            self.interpolation_function = functional_data_class.elements_dictionary_copy[
+            field_name]["interpolation function"]
+
+            self.polynomial_degree = functional_data_class.elements_dictionary_copy[
+            field_name]["polynomial degree"]
+
+            # If a txt copy is to be created
+
+            self.txt_copy = txt_copy
+
             # Creates the file to have all the time steps. If a readable
             # xdmf file is to be use, creates a None object first, as the
             # write_field_to_xdmf will take control of everything
@@ -129,72 +164,22 @@ def initialize_fieldSaving(data, direct_codeData, submesh_flag):
 
                 self.mesh_data_class = mesh_data_class
 
-                self.file_name = file_name
+            elif saving_method=="binary":
 
-                # Sets the information for visualization copies, since
-                # the readable xdmf files might not appear in some com-
-                # puters
+                # Creates an instance of the FunctionalData class to 
+                # store solution and function spaces
 
-                self.visualization_copy = visualization_copy
+                self.functional_data_dict = functional_data_class
 
-                self.visualization_copy_file = None
-
-                # Saves into the class the information to build the mock
-                # functional data class for the visualization copy
-
-                self.field_type = functional_data_class.elements_dictionary_copy[
-                field_name]["field type"]
-
-                self.interpolation_function = functional_data_class.elements_dictionary_copy[
-                field_name]["interpolation function"]
-
-                self.polynomial_degree = functional_data_class.elements_dictionary_copy[
-                field_name]["polynomial degree"]
+                self.mesh_data_class = mesh_data_class
 
             else:
 
-                # A visualization copy can be asked when the field is 
-                # saved in a binary format
+                # Creates a dummy functional data class
 
-                if visualization_copy:
+                self.functional_data_dict = None
 
-                    # Creates an instance of the FunctionalData class to 
-                    # store solution and function spaces
-
-                    self.functional_data_dict = functional_data_class
-
-                    self.mesh_data_class = mesh_data_class
-
-                    self.file_name = file_name
-
-                    # Sets the information for visualization copies, 
-                    # since the readable xdmf files might not appear in 
-                    # some computers
-
-                    self.visualization_copy = visualization_copy
-
-                    self.visualization_copy_file = None
-
-                    # Saves into the class the information to build the 
-                    # mock functional data class for the visualization 
-                    # copy
-
-                    self.field_type = functional_data_class.elements_dictionary_copy[
-                    field_name]["field type"]
-
-                    self.interpolation_function = functional_data_class.elements_dictionary_copy[
-                    field_name]["interpolation function"]
-
-                    self.polynomial_degree = functional_data_class.elements_dictionary_copy[
-                    field_name]["polynomial degree"]
-
-                else:
-
-                    # Creates a dummy functional data class
-
-                    self.functional_data_dict = None
-
-                    self.mesh_data_class = None
+                self.mesh_data_class = None
 
                 # Initializes the result object
             
@@ -225,7 +210,11 @@ def update_fieldSaving(output_object, field, field_number, time,
 fields_namesDict):
     
     mpi_print(output_object.comm_object, "Updates the saving of the "+
-    str(field_number)+" field\n")
+    str(field_number)+" field\nThe intermediate saving flag is: "+str(
+    output_object.intermediate_saving)+"\nThe saving method is: "+str(
+    output_object.saving_method)+"\nThe flag for a readable xdmf file "+
+    "is: "+str(output_object.readable_xdmf_flag)+"\nThe flag for a vis"+
+    "ualization copy is: "+str(output_object.visualization_copy)+"\n")
 
     # Gets the name of the field
 
@@ -271,7 +260,8 @@ fields_namesDict):
                 field_type=output_object.field_type, interpolation_function=
                 output_object.interpolation_function, polynomial_degree=
                 output_object.polynomial_degree, comm_object=
-                output_object.comm_object)
+                output_object.comm_object, txt_copy=
+                output_object.txt_copy)
 
                 # Separates the readable file off the visualization copy
                 # file, if there is any
@@ -349,7 +339,8 @@ fields_namesDict):
                 field_type=output_object.field_type, interpolation_function=
                 output_object.interpolation_function, polynomial_degree=
                 output_object.polynomial_degree, comm_object=
-                output_object.comm_object)
+                output_object.comm_object, txt_copy=
+                output_object.txt_copy)
 
                 # Separates the readable file off the visualization copy
                 # file, if there is any
@@ -410,6 +401,10 @@ fields_namesDict):
 
     else:
 
+        # Updates the counter of solution steps
+
+        output_object.solution_steps += 1
+
         # If the problem has a single field
 
         if field_number==-1:
@@ -433,7 +428,8 @@ fields_namesDict):
                 field_type=output_object.field_type, interpolation_function=
                 output_object.interpolation_function, polynomial_degree=
                 output_object.polynomial_degree, comm_object=
-                output_object.comm_object)
+                output_object.comm_object, txt_copy=
+                output_object.txt_copy)
 
                 # Separates the readable file off the visualization copy
                 # file, if there is any
@@ -507,7 +503,8 @@ fields_namesDict):
                 field_type=output_object.field_type, interpolation_function=
                 output_object.interpolation_function, polynomial_degree=
                 output_object.polynomial_degree, comm_object=
-                output_object.comm_object)
+                output_object.comm_object, txt_copy=
+                output_object.txt_copy)
 
                 # Separates the readable file off the visualization copy
                 # file, if there is any
@@ -2244,6 +2241,9 @@ def initialize_fieldHomogenization(data, direct_codeData, submesh_flag):
             physical_groupsNamesToTags)
 
             volume = assemble(1*dx(subdomain))
+
+    print("Updates the volume of the mesh to homogenize a field to: "+
+    str(volume)+"\n")
 
     # Initializes the homogenized field list
 
