@@ -549,9 +549,11 @@ None, verbose=True):
 
     read_function = None 
 
+    time_points = time*1.0
+
     if comm_object is None:
 
-        read_function, function_space_info = read_field_from_binary(
+        read_function, function_space_info, time_points = read_field_from_binary(
         file_name, mesh_file, functional_data_dictionary, time_step=
         time_step_list, rename_function=True, code_given_mesh_data_class=
         code_given_mesh_data_class, code_given_field_name=
@@ -581,7 +583,7 @@ None, verbose=True):
 
     # Writes the individual time steps
 
-    for step, time_point in enumerate(time_step_list):
+    for step, time_point in enumerate(time_points):
 
         visualization_copy_file.write(read_function[step], time_point)
 
@@ -814,6 +816,10 @@ return_functional_data_class=False, verbose=True):
 
     solutions_across_time_steps = []
 
+    # Initializes a list of time points
+
+    time_points = []
+
     # Gets the number of DOFs
 
     DOFs_number = function_space_info.monolithic_solution.vector(
@@ -865,6 +871,10 @@ return_functional_data_class=False, verbose=True):
 
                 solutions_across_time_steps.append(solution_copy)
 
+                # Updates the list of time points
+
+                time_points.append(data[step, 0])
+
         # Otherwise, reads the only time step
 
         else:
@@ -877,6 +887,10 @@ return_functional_data_class=False, verbose=True):
 
             function_space_info.monolithic_solution.vector().apply("in"+
             "sert")
+
+            # Updates the list of time points
+
+            time_points.append(data[time_step, 0])
 
     except Exception as e:
 
@@ -897,15 +911,19 @@ return_functional_data_class=False, verbose=True):
     if len(solutions_across_time_steps)==0:
 
         solutions_across_time_steps = function_space_info.monolithic_solution
+
+        # And the list of time points the proper time value
+
+        time_points = time_points[0]
     
     # If the functional data class is to be spit out too
 
     if return_functional_data_class:
 
-        return solutions_across_time_steps, function_space_info
+        return solutions_across_time_steps, function_space_info, time_points
 
     # Returns the function
 
     else:
 
-        return solutions_across_time_steps
+        return solutions_across_time_steps, time_points

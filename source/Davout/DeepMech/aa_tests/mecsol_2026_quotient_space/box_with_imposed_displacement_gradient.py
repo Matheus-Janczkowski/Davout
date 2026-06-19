@@ -32,7 +32,7 @@ lagrange_multiplier_file_name, save_snapshot=False):
     # null values in ParaView
 
     post_processes[0][1]["SaveField"] = {"directory path": results_path, 
-    "file name": displacement_file_name, "saving method": "xdmf", 
+    "file name": displacement_file_name, "saving method": "binary", 
     "visualization copy for readable xdmf": True}
 
     post_processes[0][1]["HomogenizeFieldsGradient"] = {"directory path":
@@ -157,14 +157,14 @@ lagrange_multiplier_file_name, save_snapshot=False):
 
         frozen_snapshots(displacement_file_name+"_visualization_copy", 
         "Displacement", input_path=results_path, 
-        camera_position=[2.0330282921191993, 1.8148603901320899, 1.2731417495411312],
-        camera_focal_point=[0.012529434003528184, 0.36158465784309013, 0.12076486597591955],
-        camera_up_direction=[-0.3230357774017903, -0.27010620502800287, 0.9070228908488427],
-        camera_parallel_scale=0.7098627676493106,
+        camera_position=[3.295421262287293, -4.617612102822565, 3.7314785394692436],
+        camera_focal_point=[0.3868267767658733, -0.07264176288584451, 0.4047648861287915],
+        camera_up_direction=[-0.14883962531451048, 0.5202719201071424, 0.8409303746947565],
+        camera_parallel_scale=1.6406698504546489,
         camera_rotation=[0.0, 0.0, 0.0],
-        legend_bar_position=[0.7242157236408994, 0.11000000000000004],
-        legend_bar_length=0.7600000000000029,
-        size_in_pixels={'aspect ratio': 0.6791171477079796, 'pixels in width': 589},
+        legend_bar_position=[0.785724255357283, 0.10503211991434691],
+        legend_bar_length=0.7389935760171309,
+        size_in_pixels={'aspect ratio': 0.6768115942028986, 'pixels in width': 690},
         axes_color=[0.0, 0.0, 0.0], get_attributes_render=False, 
         output_imageFileName="RVE_displacement_imposed_gradient.png", resolution_ratio=5, 
         warp_by_vector=True, representation_type="Surface With Edges", 
