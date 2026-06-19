@@ -1,16 +1,16 @@
 # Routine to give a material parameter as a field
 
-from ....MultiMech.tool_box.mesh_handling_tools import read_mshMesh
+from .....Davout.MultiMech.tool_box.mesh_handling_tools import read_mshMesh
 
-from ....PythonicUtilities.path_tools import get_parent_path_of_file
+from .....Davout.PythonicUtilities.path_tools import get_parent_path_of_file
 
-from ....PythonicUtilities.stochastic_tools import get_random_point_on_elipsoid_surface
+from .....Davout.PythonicUtilities.stochastic_tools import get_random_point_on_elipsoid_surface
 
-from ....PythonicUtilities.file_handling_tools import list_toTxt
+from .....Davout.PythonicUtilities.file_handling_tools import list_toTxt
 
-from .box_with_young_modulus_field import solve_BVP
+from .....Davout.DeepMech.aa_tests.mecsol_2026_quotient_space.box_with_young_modulus_field import solve_BVP
 
-from .young_modulus_field_generator import generate_field
+from .....Davout.DeepMech.aa_tests.mecsol_2026_quotient_space.young_modulus_field_generator import generate_field
 
 import numpy as np
 

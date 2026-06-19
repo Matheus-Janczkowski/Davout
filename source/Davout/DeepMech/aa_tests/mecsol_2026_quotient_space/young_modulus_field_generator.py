@@ -1,14 +1,14 @@
 # Routine to give a material parameter as a field
 
-from ....MultiMech.tool_box.mesh_handling_tools import read_mshMesh
+from .....Davout.MultiMech.tool_box.mesh_handling_tools import read_mshMesh
 
-from ....MultiMech.tool_box.expressions_tools import interpolate_scalar_function
+from .....Davout.MultiMech.tool_box.expressions_tools import interpolate_scalar_function
 
-from ....MultiMech.tool_box.read_write_tools import write_field_to_xdmf
+from .....Davout.MultiMech.tool_box.read_write_tools import write_field_to_xdmf
 
-from ....PythonicUtilities.path_tools import get_parent_path_of_file
+from .....Davout.PythonicUtilities.path_tools import get_parent_path_of_file
 
-from ....GraphUtilities.paraview_tools import frozen_snapshots
+from .....Davout.GraphUtilities.paraview_tools import frozen_snapshots
 
 import numpy as np
 
