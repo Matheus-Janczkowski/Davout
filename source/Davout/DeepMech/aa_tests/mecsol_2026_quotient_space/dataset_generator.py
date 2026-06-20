@@ -2,13 +2,15 @@
 
 from .....Davout.MultiMech.tool_box.mesh_handling_tools import read_mshMesh
 
+from .....Davout.MultiMech.tool_box.numerical_tools import rotation_tensorEulerRodrigues
+
 from .....Davout.PythonicUtilities.path_tools import get_parent_path_of_file
 
 from .....Davout.PythonicUtilities.stochastic_tools import get_random_point_on_elipsoid_surface
 
 from .....Davout.PythonicUtilities.file_handling_tools import list_toTxt
 
-from .....Davout.DeepMech.aa_tests.mecsol_2026_quotient_space.box_with_young_modulus_field import solve_BVP
+from .....Davout.DeepMech.aa_tests.mecsol_2026_quotient_space.box_with_imposed_displacement_gradient import solve_BVP
 
 from .....Davout.DeepMech.aa_tests.mecsol_2026_quotient_space.young_modulus_field_generator import generate_field
 
@@ -18,16 +20,38 @@ from time import time
 
 # Defines a function to generate the dataset of a cube
 
-def generate_dataset(n_samples, limits_dict, p_norm, results_path,
+def generate_dataset(n_samples, limits_list, p_norm_list, results_path,
 displacement_file_name, young_modulus_file, mesh_file_name, cube_size,
 influence_radius, damping_factor, radius_power, mesh_data_class, 
-save_snapshot_displacement=False):
+lagrange_multiplier_file_name, save_snapshot_displacement=False):
+    
+    # Initializes the list of samples
 
-    # Gets the names of the variables
+    samples_list = []
 
-    variables_names = [key for key in limits_dict.keys()]
+    # Gets the names of the variables 
 
-    variables_limits = [limits_dict[name] for name in variables_names]
+    variables_names = []
+
+    for p_norm, limits_dict in zip(p_norm_list, limits_list):
+
+        new_variables_names = [key for key in limits_dict.keys()]
+
+        variables_names.extend(new_variables_names)
+
+        variables_limits = [limits_dict[name] for name in (
+        new_variables_names)]
+
+        # Generates the list of samples
+
+        samples_list.append(get_random_point_on_elipsoid_surface(
+        variables_limits, p_norm_value=p_norm, number_of_samples=
+        n_samples, return_as_list=False))
+
+    # Stacks the samples array into a single array. Then, converts it to
+    # a list
+
+    samples_list = np.hstack(samples_list).tolist()
 
     # Creates a dictionary of variable names and their column in the da-
     # ta matrix to guarantee ordering consistency (dictionaries do not
@@ -35,12 +59,6 @@ save_snapshot_displacement=False):
 
     variables_indices = {name: i for i, name in enumerate(
     variables_names)}
-
-    # Generates the list of samples
-
-    samples_list = get_random_point_on_elipsoid_surface(variables_limits, 
-    p_norm_value=p_norm, number_of_samples=n_samples, return_as_list=
-    True)
 
     # Adds a header and saves the list of samples in a txt file
 
@@ -83,21 +101,28 @@ save_snapshot_displacement=False):
         damping_factor, radius_power, mesh_data_class, 
         get_parent_path_of_file(), file_name=young_modulus_file)
 
+        # Gets the displacement gradient as a list from the polar decom-
+        # position
+
+        displacement_gradient = get_displacement_gradient(sample_data[
+        variables_indices["stretch 1"]], sample_data[variables_indices[
+        "stretch 2"]], sample_data[variables_indices["stretch 3"]], 
+        sample_data[variables_indices["stretch rotation 1"]], 
+        sample_data[variables_indices["stretch rotation 2"]], 
+        sample_data[variables_indices["stretch rotation 3"]], 
+        sample_data[variables_indices["polar rotation 1"]], sample_data[
+        variables_indices["polar rotation 2"]], sample_data[
+        variables_indices["polar rotation 3"]])
+
         try:
 
             # Calls the solution scheme
 
-            solve_BVP(results_path, displacement_file_name, 
+            solve_BVP(results_path, displacement_file_name+"_"+str(i+1), 
             get_parent_path_of_file()+"//"+young_modulus_file, 
-            get_parent_path_of_file()+"//"+mesh_file_name, [[sample_data[
-            variables_indices["P11"]], sample_data[variables_indices[
-            "P12"]], sample_data[variables_indices["P13"]]], [
-            sample_data[variables_indices["P21"]], sample_data[
-            variables_indices["P22"]], sample_data[variables_indices[
-            "P23"]]], [sample_data[variables_indices["P31"]], 
-            sample_data[variables_indices["P32"]], sample_data[
-            variables_indices["P33"]]]], save_snapshot=
-            save_snapshot_displacement)
+            get_parent_path_of_file()+"//"+mesh_file_name, 
+            displacement_gradient, lagrange_multiplier_file_name+"_"+str(
+            i+1), save_snapshot=save_snapshot_displacement)
 
             # If the simulation was succesful, reads the displacement 
             # field and updates it to the succesful data
@@ -105,7 +130,18 @@ save_snapshot_displacement=False):
             succesful_displacement.append(np.load(results_path+"//"+
             displacement_file_name+".npy").tolist())
 
-            succesful_data.append(sample_data)
+            # Adds the Young modulus data and the displacement gradient
+
+            successful_sample_data = [sample_data[variables_indices["p"+
+            "eak E"]], sample_data[variables_indices["base E"]]]
+
+            successful_sample_data.extend(displacement_gradient[0])
+
+            successful_sample_data.extend(displacement_gradient[1])
+
+            successful_sample_data.extend(displacement_gradient[2])
+
+            succesful_data.append(successful_sample_data)
 
             # Updates the list of completed simulations
 
@@ -157,6 +193,58 @@ save_snapshot_displacement=False):
         "#############################################################"+
         "######\n")
 
+# Defines a function to take a vector of eigenvalues and a rotation axial
+# vector to generate a positive definite stretch tensor. This function 
+# also takes another rotation axial vector to generate the polar decom-
+# position. Then, results the displacement gradient by subtracting the
+# identity tensor
+
+def get_displacement_gradient(stretch_1, stretch_2, stretch_3, 
+stretch_rotation_1, stretch_rotation_2, stretch_rotation_3, 
+polar_rotation_1, polar_rotation_2, polar_rotation_3):
+    
+    # Gets the rotation tensor of the spectral decomposition of the
+    # stretch tensor
+
+    stretch_rotation_tensor = rotation_tensorEulerRodrigues([
+    stretch_rotation_1, stretch_rotation_2, stretch_rotation_3],
+    return_numpy_array=True)
+
+    # Gets the rotation tensor for the polar decomposition of the defor-
+    # mation tensor
+
+    polar_rotation_tensor = rotation_tensorEulerRodrigues([
+    polar_rotation_1, polar_rotation_2, polar_rotation_3], 
+    return_numpy_array=True)
+
+    # Creates the stretch tensor in matrix format using the spectral de-
+    # composition
+
+    stretch_tensor = stretch_rotation_tensor@(np.array([[stretch_1, 
+    0.0, 0.0], [0.0, stretch_2, 0.0], [0.0, 0.0, stretch_3]])@
+    stretch_rotation_tensor.T)
+
+    # Creates the deformation gradient from the polar decomposition
+
+    deformation_gradient = polar_rotation_tensor@stretch_tensor
+
+    # Subtracts the identity to return the displacement gradient. Then,
+    # returns it as a list
+
+    displacement_gradient = (deformation_gradient-np.eye(3)).tolist()
+
+    print("\n\nThe eigenvalues of the stretch tensor are:\n"+str(
+    np.sqrt(np.linalg.eigvals(deformation_gradient.T@deformation_gradient
+    )))+"\nThe eigenvalues of the right Cauchy-Green tensor are:\n"+str(
+    np.linalg.eigvals(deformation_gradient.T@deformation_gradient))+
+    "\nThe given stretches are:\n"+
+    str([stretch_1, stretch_2, stretch_3])+"\nThe given displacement g"+
+    "radient is:\n"+str(displacement_gradient)+"\n\n")
+
+    #float(a)
+
+    return displacement_gradient
+
 # Testing block
 
 if __name__=="__main__":
@@ -164,43 +252,44 @@ if __name__=="__main__":
     # Sets the number of samples, stress limits, and the limits of the
     # modulus
 
-    n_samples = 3
+    n_samples = 1000
 
-    limits_U11 = [-10E-1, 10E-1]
+    limits_stretch_1 = [0.85, 2.5]
 
-    limits_U12 = [-10E-2, 10E-2]
+    limits_stretch_2 = [0.85, 2.5]
 
-    limits_U13 = [-10E-2, 10E-2]
+    limits_stretch_3 = [0.85, 2.5]
 
-    limits_U22 = [-10E-1, 10E-1]
+    limits_rotation_stretch_1 = [-180.0, 180.0]
 
-    limits_U23 = [-10E-2, 10E-2]
+    limits_rotation_stretch_2 = [-180.0, 180.0]
 
-    limits_U33 = [-10E-1, 10E-1]
+    limits_rotation_stretch_3 = [-180.0, 180.0]
 
-    limits_sigma11 = [-10E-1, 10E-1]
+    limits_polar_rotation_1 = [-180.0, 180.0]
 
-    limits_sigma12 = [-10E-2, 10E-2]
+    limits_polar_rotation_2 = [-180.0, 180.0]
 
-    limits_sigma13 = [-10E-2, 10E-2]
-
-    limits_sigma22 = [-10E-1, 10E-1]
-
-    limits_sigma23 = [-10E-2, 10E-2]
-
-    limits_sigma33 = [-10E-1, 10E-1]
+    limits_polar_rotation_3 = [-180.0, 180.0]
 
     limits_base_E = [12E6, 15E6]
 
     limits_maximum_E = [60E6, 65E6]
 
-    limits_dict = {"U11": limits_U11, "U12": limits_U12, "U13": 
-    limits_U13, "U22": limits_U22, "U23": limits_U23, "U33": limits_U33, 
-    "base E": limits_base_E, "peak E": limits_maximum_E}
+    limits_list = [{"stretch 1": limits_stretch_1, "stretch 2": 
+    limits_stretch_2, "stretch 3": limits_stretch_3}, {"stretch rotati"+
+    "on 1": limits_rotation_stretch_1, "stretch rotation 2": 
+    limits_rotation_stretch_2, "stretch rotation 3": 
+    limits_rotation_stretch_3, "polar rotation 1": 
+    limits_polar_rotation_1, "polar rotation 2": limits_polar_rotation_2,
+    "polar rotation 3": limits_polar_rotation_3, "base E": limits_base_E, 
+    "peak E": limits_maximum_E}]
 
-    # Sets the p of the L-p norm for the ellipsoid sampling
+    # Sets the p of the L-p norm for the ellipsoid sampling as a list.
+    # One norm is for the stretch eigenvalues and the other for every-
+    # thing else
 
-    p_norm = 16
+    p_norm_list = [2, 16]
 
     # Creates a mesh for the field
 
@@ -226,6 +315,8 @@ if __name__=="__main__":
 
     displacement_file_name = "displacement_young_modulus_field"
 
+    lagrange_multiplier_file_name = "lagrange_multiplier_young_modulus"
+
     young_modulus_file = "young_modulus_field"
 
     mesh_file_name = "box_mesh_mecsol"
@@ -242,7 +333,7 @@ if __name__=="__main__":
 
     # Constructs the field
 
-    generate_dataset(n_samples, limits_dict, p_norm, results_path,
+    generate_dataset(n_samples, limits_list, p_norm_list, results_path,
     displacement_file_name, young_modulus_file, mesh_file_name, cube_size,
     influence_radius, damping_factor, radius_power, mesh_data_class,
-    save_snapshot_displacement=True)
+    lagrange_multiplier_file_name, save_snapshot_displacement=False)

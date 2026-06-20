@@ -89,7 +89,7 @@ lagrange_multiplier_file_name, save_snapshot=False):
 
     # Sets the initial time
 
-    t = 0.0
+    t = 0.2
 
     # Sets the final pseudotime of the simulation
 
