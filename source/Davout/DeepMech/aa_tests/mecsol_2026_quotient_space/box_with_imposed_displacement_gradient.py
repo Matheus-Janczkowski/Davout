@@ -33,11 +33,11 @@ lagrange_multiplier_file_name, save_snapshot=False):
 
     post_processes[0][1]["SaveField"] = {"directory path": results_path, 
     "file name": displacement_file_name, "saving method": "binary", 
-    "visualization copy for readable xdmf": True}
+    "visualization copy for readable xdmf": False}
 
     post_processes[1][1]["SaveField"] = {"directory path": results_path, 
     "file name": lagrange_multiplier_file_name, "saving method": "bina"+
-    "ry", "txt copy": True}
+    "ry", "txt copy": False}
 
     ####################################################################
     #                       Material properties                        #
