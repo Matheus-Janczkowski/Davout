@@ -16,6 +16,8 @@ from .....Davout.DeepMech.aa_tests.mecsol_2026_quotient_space.young_modulus_fiel
 
 import numpy as np
 
+import traceback
+
 from time import time
 
 # Defines a function to generate the dataset of a cube
@@ -86,6 +88,10 @@ lagrange_multiplier_file_name, save_snapshot_displacement=False):
 
     initial_t = time()
 
+    # Gets the number of characteres in the number of samples
+
+    n_algorisms = len(str(n_samples))
+
     # Iterates through the samples to evaluate the simulation
 
     for i in range(n_samples):
@@ -93,6 +99,18 @@ lagrange_multiplier_file_name, save_snapshot_displacement=False):
         # Gets the data for this sample
 
         sample_data = samples_list[i+1]
+
+        # Gets the simulation number
+
+        simulation_number = str(i+1)
+
+        # If the number of algorisms is different, adds trailing zeros
+
+        if len(simulation_number)!=n_algorisms:
+
+            for algorism in range(n_algorisms-len(simulation_number)):
+
+                simulation_number = "0"+simulation_number
 
         # Generates the field of Young modulus
 
@@ -118,17 +136,18 @@ lagrange_multiplier_file_name, save_snapshot_displacement=False):
 
             # Calls the solution scheme
 
-            solve_BVP(results_path, displacement_file_name+"_"+str(i+1), 
-            get_parent_path_of_file()+"//"+young_modulus_file, 
-            get_parent_path_of_file()+"//"+mesh_file_name, 
-            displacement_gradient, lagrange_multiplier_file_name+"_"+str(
-            i+1), save_snapshot=save_snapshot_displacement)
+            solve_BVP(results_path, displacement_file_name+"_"+
+            simulation_number, get_parent_path_of_file()+"//"+
+            young_modulus_file, get_parent_path_of_file()+"//"+
+            mesh_file_name, displacement_gradient, 
+            lagrange_multiplier_file_name+"_"+simulation_number, 
+            save_snapshot=save_snapshot_displacement)
 
             # If the simulation was succesful, reads the displacement 
             # field and updates it to the succesful data
 
             succesful_displacement.append(np.load(results_path+"//"+
-            displacement_file_name+".npy").tolist())
+            displacement_file_name+"_"+simulation_number+".npy").tolist())
 
             # Adds the Young modulus data and the displacement gradient
 
@@ -149,19 +168,19 @@ lagrange_multiplier_file_name, save_snapshot_displacement=False):
 
             # Saves the lists into txt files
 
-            list_toTxt(succesful_displacement, "succesful_displacement"+
-            "_matrix", parent_path=results_path)
+            list_toTxt(succesful_displacement, "00_succesful_displacem"+
+            "ent_matrix", parent_path=results_path)
 
-            list_toTxt(succesful_data, "successful_data_matrix", 
+            list_toTxt(succesful_data, "00_successful_data_matrix", 
             parent_path=results_path)
 
-            list_toTxt(completed_simulations, "completed_simulations", 
+            list_toTxt(completed_simulations, "00_completed_simulations", 
             parent_path=results_path)
 
-        except Exception as e:
+        except Exception:
 
             print("The "+str(i+1)+"-th simulation failed. The error me"+
-            "ssage is:\n"+str(e))
+            "ssage is:\n"+str(traceback.format_exc()))
 
             # Updates the counter of failed simulations
 
@@ -173,7 +192,7 @@ lagrange_multiplier_file_name, save_snapshot_displacement=False):
 
             # Saves this list into a txt file
 
-            list_toTxt(completed_simulations, "completed_simulations", 
+            list_toTxt(completed_simulations, "00_completed_simulations", 
             parent_path=results_path)
 
         print("\n"+str(n_failed_simulations)+" simulations out of "+
@@ -252,13 +271,13 @@ if __name__=="__main__":
     # Sets the number of samples, stress limits, and the limits of the
     # modulus
 
-    n_samples = 1000
+    n_samples = 4
 
-    limits_stretch_1 = [0.85, 2.5]
+    limits_stretch_1 = [0.75, 2.5]
 
-    limits_stretch_2 = [0.85, 2.5]
+    limits_stretch_2 = [0.75, 2.5]
 
-    limits_stretch_3 = [0.85, 2.5]
+    limits_stretch_3 = [0.75, 2.5]
 
     limits_rotation_stretch_1 = [-180.0, 180.0]
 
