@@ -35,10 +35,6 @@ lagrange_multiplier_file_name, save_snapshot=False):
     "file name": displacement_file_name, "saving method": "binary", 
     "visualization copy for readable xdmf": False}
 
-    post_processes[0][1]["HomogenizeFieldsGradient"] = {"directory path":
-    results_path, "file name": "homogenized_displacement_gradient_impo"+
-    "sed_stress.txt", "subdomain": "volume 1"}
-
     post_processes[1][1]["SaveField"] = {"directory path": results_path, 
     "file name": lagrange_multiplier_file_name, "saving method": "bina"+
     "ry", "txt copy": False}
