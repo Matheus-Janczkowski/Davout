@@ -17,7 +17,7 @@ from .....Davout.PythonicUtilities.path_tools import get_parent_path_of_file
 
 def train_surrogate_model(displacement_data_file, input_data_file, 
 saved_model_file, results_path, n_training_samples, 
-quotient_space_dimension):
+quotient_space_dimension, n_monte_carlo_realizations):
 
     # Reads the two files
 
@@ -82,6 +82,19 @@ quotient_space_dimension):
     elapsed_time = time()-t_initial
 
     print("\nTrains at "+str(elapsed_time)+" seconds")
+
+    # Tests Monte Carlo training
+
+    training_class.monte_carlo_training(n_realizations=
+    n_monte_carlo_realizations, best_models_rank_size=5, 
+    show_reinitialization_distance=True)
+
+    # Checks the loss again with the best model of the Monte Carlo
+    # training
+
+    print("\nThe loss function evaluated again over the set of trainin"+
+    "g data for the best model is "+str(training_class.loss_unseen_data(
+    training_true_values, training_data, output_as_numpy=True)))
 
 # Defines a function to test the model
 
@@ -160,13 +173,15 @@ if __name__=="__main__":
 
     # Trains a new model
 
+    n_monte_carlo_realizations = 10
+
     training_flag = False 
 
     if training_flag:
 
         train_surrogate_model(displacement_data_file, input_data_file, 
         saved_model_file, results_path, n_training_samples,
-        quotient_space_dimension)
+        quotient_space_dimension, n_monte_carlo_realizations)
 
     test_surrogate_model(displacement_data_file, input_data_file,
     saved_model_file, results_path, n_training_samples,
