@@ -199,8 +199,8 @@ marker_box_class, alignment_class, verbose=False):
 
             y_coordinate = event.ydata
 
-            print(f"[CLICK] x = {x_coordinate:.4f}, y = {(y_coordinate
-            ):.4f}", flush=True)
+            print("[CLICK] x = "+str(x_coordinate)+", y = "+str(
+            y_coordinate), flush=True)
 
             # Saves the point into the list
 

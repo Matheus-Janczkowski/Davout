@@ -75,8 +75,9 @@ inverse_volume, dx, subdomain, file_name, comm):
 
             for index_combination in indexes_combinations:
 
-                homogenized_value[*index_combination] = (inverse_volume*
-                assemble(field[*index_combination]*dx(subdomain)))
+                homogenized_value[tuple(index_combination)] = (
+                inverse_volume*assemble(field[tuple(index_combination)]*
+                dx(subdomain)))
                 
         elif isinstance(subdomain, tuple):
 
@@ -86,9 +87,9 @@ inverse_volume, dx, subdomain, file_name, comm):
 
                 for subsubdomain in subdomain:
 
-                    homogenized_value[*index_combination] += (
-                    inverse_volume*assemble(field[*index_combination]*
-                    dx(subsubdomain)))
+                    homogenized_value[tuple(index_combination)] += (
+                    inverse_volume*assemble(field[tuple(
+                    index_combination)]*dx(subsubdomain)))
 
         else:
 
@@ -96,8 +97,9 @@ inverse_volume, dx, subdomain, file_name, comm):
 
             for index_combination in indexes_combinations:
 
-                homogenized_value[*index_combination] = (inverse_volume*
-                assemble(field[*index_combination]*dx))
+                homogenized_value[tuple(index_combination)] = (
+                inverse_volume*assemble(field[tuple(index_combination)]*
+                dx))
 
         # Gets the homogenized value back to a list
 
@@ -225,8 +227,8 @@ comm):
                         for index in tensor_indexes:
 
                             homogenized_tensor[index[0]][index[1]] += (
-                            inverse_volume*assemble(stress_field[*index
-                            ]*dx(sub)))
+                            inverse_volume*assemble(stress_field[tuple(
+                            index)]*dx(sub)))
 
             else:
 
@@ -248,8 +250,8 @@ comm):
                     for index in tensor_indexes:
 
                         homogenized_tensor[index[0]][index[1]] += (
-                        inverse_volume*assemble(stress_field[*index]*
-                        dx(local_subdomain)))
+                        inverse_volume*assemble(stress_field[tuple(index
+                        )]*dx(local_subdomain)))
 
     else:
 
@@ -271,7 +273,7 @@ comm):
             for index in tensor_indexes:
 
                 homogenized_tensor[index[0]][index[1]] += (
-                inverse_volume*assemble(stress_field[*index]*dx))
+                inverse_volume*assemble(stress_field[tuple(index)]*dx))
 
         else:
 
@@ -280,8 +282,8 @@ comm):
                 for index in tensor_indexes:
 
                     homogenized_tensor[index[0]][index[1]] += (
-                    inverse_volume*assemble(stress_field[*index]*dx(
-                    domain)))
+                    inverse_volume*assemble(stress_field[tuple(index)]*
+                    dx(domain)))
 
     # Adds the homogenized tensor to the list
 
@@ -411,8 +413,8 @@ physical_groupsNamesToTags, fields_namesDict, required_fieldsNames, comm):
                         for index in tensor_indexes:
 
                             homogenized_tensor[index[0]][index[1]] += (
-                            inverse_volume*assemble(stress_field[*index
-                            ]*dx(sub)))
+                            inverse_volume*assemble(stress_field[tuple(
+                            index)]*dx(sub)))
 
             else:
 
@@ -434,8 +436,8 @@ physical_groupsNamesToTags, fields_namesDict, required_fieldsNames, comm):
                     for index in tensor_indexes:
 
                         homogenized_tensor[index[0]][index[1]] += (
-                        inverse_volume*assemble(stress_field[*index]*
-                        dx(local_subdomain)))
+                        inverse_volume*assemble(stress_field[tuple(index
+                        )]*dx(local_subdomain)))
 
     else:
 
@@ -468,7 +470,7 @@ physical_groupsNamesToTags, fields_namesDict, required_fieldsNames, comm):
             for index in tensor_indexes:
 
                 homogenized_tensor[index[0]][index[1]] += (
-                inverse_volume*assemble(stress_field[*index]*dx))
+                inverse_volume*assemble(stress_field[tuple(index)]*dx))
 
         else:
 
@@ -477,8 +479,8 @@ physical_groupsNamesToTags, fields_namesDict, required_fieldsNames, comm):
                 for index in tensor_indexes:
 
                     homogenized_tensor[index[0]][index[1]] += (
-                    inverse_volume*assemble(stress_field[*index]*dx(
-                    domain)))
+                    inverse_volume*assemble(stress_field[tuple(index)]*
+                    dx(domain)))
 
     # Adds the homogenized tensor to the list
 

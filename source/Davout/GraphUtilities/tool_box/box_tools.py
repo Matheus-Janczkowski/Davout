@@ -175,8 +175,8 @@ alignments_class, marker_box_class, depth_order, verbose=False):
 
             # Alters box style to insert the corner radius
 
-            boxstyle=f"round,pad=0.0,rounding_size={input_dictionary[
-            "corner radius"]}"
+            boxstyle="round,pad=0.0,rounding_size="+str(
+            input_dictionary["corner radius"])
 
         # Verifies if a depth number has been given
 
