@@ -2,6 +2,8 @@
 
 import tensorflow as tf
 
+import sys
+
 import numpy as np
 
 from tqdm import tqdm
@@ -182,13 +184,18 @@ class ModelCustomTraining:
     def __init__(self, model, training_inputArray, training_trueArray,
     loss_metric, optimizer="CG", n_iterations=1000, gradient_tolerance=
     1E-3, float_type=None, verbose_deltaIterations=100, verbose=False, 
-    save_model_file="trained_model.keras", parent_path=None):
+    save_model_file="trained_model.keras", parent_path=None, 
+    match_data_float_type_to_trainables=False):
         
         """
         Class for training a model whose trainable parameters (weights
         and biases are) used as a flatten vector to be trained using a
         scipy framework. Tensorflow is used to evaluate derivatives and
         the loss function only"""
+
+        # Initializes a counter of iterations 
+
+        self.n_completed_iterations = 0
         
         # Retrieves the model and the optimization parameters
 
@@ -216,6 +223,10 @@ class ModelCustomTraining:
             self.parent_path = path_tools.get_parent_path_of_file(
             function_calls_to_retrocede=2)
 
+        else:
+
+            self.parent_path = parent_path
+
         # Unites the parent path to the model file name, but takes out
         # the termination and forces it to be .keras
 
@@ -233,6 +244,10 @@ class ModelCustomTraining:
         # trainable parameters as master type
 
         if float_type is None:
+
+            print("Automatically sets the same float type of the model"+
+            " trainable parameters to the training data, "+str(
+            model_parameters_dtype)+"\n")
 
             self.float_type = model_parameters_dtype
 
@@ -254,18 +269,20 @@ class ModelCustomTraining:
 
         if hasattr(training_inputArray, "dtype"):
 
-            if training_inputArray.dtype!=float_type:
+            if training_inputArray.dtype!=self.float_type and (not (
+            match_data_float_type_to_trainables)):
 
                 raise TypeError("The type of the training input array,"+
                 " "+str(training_inputArray.dtype)+", is different to "+
-                "the float type required, "+str(float_type))
+                "the float type required, "+str(self.float_type))
 
         self.training_input = tf.constant(training_inputArray, dtype=
         self.float_type)
 
         if hasattr(training_trueArray, "dtype"):
 
-            if training_trueArray.dtype!=self.float_type:
+            if training_trueArray.dtype!=self.float_type and (not (
+            match_data_float_type_to_trainables)):
 
                 raise TypeError("The type of the training input array,"+
                 " "+str(training_trueArray.dtype)+", is different to t"+
@@ -397,6 +414,28 @@ class ModelCustomTraining:
             return loss_value.numpy()
         
         return loss_value
+
+    # Defines a function to print optimizer's information during training
+
+    def callback(self, xk):
+
+        # Updates the iteration counter
+
+        self.n_completed_iterations += 1
+
+        # Gets the average time per iterations
+
+        average_time_per_iteration = ((time.time()-self.initial_time)/
+        self.n_completed_iterations)
+
+        sys.stdout.write("\rIteration "+str(self.n_completed_iterations
+        )+" of "+str(self.maximum_iterations_per_cycle)+". The average"+
+        " time per iteration is "+str(average_time_per_iteration)+" s."+
+        " The estimated time left for completing this cycle is "+str(
+        (self.maximum_iterations_per_cycle-self.n_completed_iterations)*
+        average_time_per_iteration))
+
+        sys.stdout.flush()
     
     # Defines a method for training, it assembles the optimization pro-
     # blem and runs it
@@ -408,7 +447,8 @@ class ModelCustomTraining:
 
         minimization_problem = minimize(self.loss_class, 
         self.model_parameters, method=self.optimizer, jac=True, tol=
-        self.gradient_tolerance, options={"maxiter": n_max_iterations})
+        self.gradient_tolerance, options={"maxiter": n_max_iterations}, 
+        callback=self.callback)
 
         # Updates the model parameters
 
@@ -430,9 +470,17 @@ class ModelCustomTraining:
 
         max_digits = len(str(self.n_iterations))
 
+        # Sets the initial time
+
+        self.initial_time = time.time()
+
         # Verifies if the verbose flag is True
 
         if self.verbose:
+
+            # Sets the number of maximum iterations per cycle
+
+            self.maximum_iterations_per_cycle = self.verbose_deltaIterations
 
             # Gets the number of iterations for each step, where at the
             # end the convergence information will be printed
@@ -445,6 +493,13 @@ class ModelCustomTraining:
                 print("\n\nStarts the "+str(i+1)+"-th group of "+str(
                 self.verbose_deltaIterations)+" optimization iteration"+
                 "s\n")
+
+                # Reinitializes the number of completed training itera-
+                # tions
+
+                self.n_completed_iterations = 0
+
+                self.initial_time = time.time()
 
                 # Calls the optimization procedure. Using the custom op-
                 # timizer
@@ -474,11 +529,17 @@ class ModelCustomTraining:
 
                 print("Iteration group "+integer_toString(i, max_digits)
                 +": loss="+format(loss_value.numpy(), '.5e')+", gradie"+
-                "nt norm: "+format(gradient_value, '.5e'))
+                "nt norm: "+format(gradient_value, '.5e')+"\nThis cycl"+
+                "e took "+str(time.time()-self.initial_time)+" to comp"+
+                "lete\n")
 
         # Otherwise, just call the training function
 
         else:
+
+            # Sets the number of maximum iterations per cycle
+
+            self.maximum_iterations_per_cycle = self.n_iterations
 
             self.set_training(self.n_iterations)
 

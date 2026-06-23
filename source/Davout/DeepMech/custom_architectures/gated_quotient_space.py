@@ -11,7 +11,9 @@ from ...PythonicUtilities.dictionary_tools import verify_obligatory_and_optional
 
 # Defines a class for a neural network that operates on a quotient space
 # defined by a gate function. This function nullifies a subset of input
-# neurons once the other set is null. All layers are biasless
+# neurons once the other set is null. All layers are biasless. The first
+# m_u neurons are the ones related to quotient space; the remaining are
+# the m_w neurons unrelated to the quotient space
 
 class GatedQuotientSpace:
 

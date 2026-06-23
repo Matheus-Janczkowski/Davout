@@ -144,10 +144,11 @@ lagrange_multiplier_file_name, save_snapshot_displacement=False):
             save_snapshot=save_snapshot_displacement)
 
             # If the simulation was succesful, reads the displacement 
-            # field and updates it to the succesful data
+            # field and updates it to the succesful data. Discards the
+            # first column because it contains the time values
 
-            succesful_displacement.append(np.load(results_path+"//"+
-            displacement_file_name+"_"+simulation_number+".npy").tolist())
+            succesful_displacement.extend(np.load(results_path+"//"+
+            displacement_file_name+"_"+simulation_number+".npy")[:,1:].tolist())
 
             # Adds the Young modulus data and the displacement gradient
 
@@ -166,13 +167,18 @@ lagrange_multiplier_file_name, save_snapshot_displacement=False):
 
             completed_simulations.append([i+1, True])
 
-            # Saves the lists into txt files
+            print("The shape of the displacement data is: "+str(
+            np.array(succesful_displacement).shape)+"\nand the shape o"+
+            "f the input data is: "+str(np.array(succesful_data).shape)+
+            "\n")
 
-            list_toTxt(succesful_displacement, "00_succesful_displacem"+
-            "ent_matrix", parent_path=results_path)
+            # Saves the lists into binary and txt files
 
-            list_toTxt(succesful_data, "00_successful_data_matrix", 
-            parent_path=results_path)
+            np.save(results_path+"//00_succesful_displacement_matrix.n"+
+            "py", np.array(succesful_displacement))
+
+            np.save(results_path+"//00_successful_data_matrix.npy", 
+            np.array(succesful_data))
 
             list_toTxt(completed_simulations, "00_completed_simulations", 
             parent_path=results_path)
@@ -196,7 +202,8 @@ lagrange_multiplier_file_name, save_snapshot_displacement=False):
             parent_path=results_path)
 
         print("\n"+str(n_failed_simulations)+" simulations out of "+
-        "a total of "+str(n_samples)+" failed\n")
+        "a total of "+str(n_samples)+" failed\n"+str(i+1-
+        n_failed_simulations)+" have been successful so far\n")
 
         # Updates the time 
 
@@ -271,13 +278,13 @@ if __name__=="__main__":
     # Sets the number of samples, stress limits, and the limits of the
     # modulus
 
-    n_samples = 4
+    n_samples = 10000
 
-    limits_stretch_1 = [0.75, 2.5]
+    limits_stretch_1 = [0.85, 2.5]
 
-    limits_stretch_2 = [0.75, 2.5]
+    limits_stretch_2 = [0.85, 2.5]
 
-    limits_stretch_3 = [0.75, 2.5]
+    limits_stretch_3 = [0.85, 2.5]
 
     limits_rotation_stretch_1 = [-180.0, 180.0]
 
