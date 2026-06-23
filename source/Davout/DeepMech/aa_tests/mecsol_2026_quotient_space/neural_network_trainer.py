@@ -9,6 +9,8 @@ from time import time
 
 from .....Davout.DeepMech.tool_box import ANN_tools, training_tools
 
+from .....Davout.DeepMech.tool_box.loss_assembler_classes import MaximumAbsoluteError
+
 from .....Davout.PythonicUtilities.path_tools import get_parent_path_of_file
 
 # Defines a function to train the neural network model
@@ -125,7 +127,20 @@ quotient_space_dimension):
     test_loss = loss_metric(test_true_values, output_model)
 
     print("\nLoss function on test set:", format(test_loss.numpy(),'.5'+
-    'e'))
+    'e')+"\n")
+
+    # Verifies with the maximum absolute error
+
+    maximum_absolute_error = MaximumAbsoluteError()
+
+    maximum_absolute_value = maximum_absolute_error(test_true_values, 
+    output_model)
+
+    print("\nMaximum absolute error on test set:"+str(format(
+    maximum_absolute_value.numpy(),'.5e'))+"\nwhereas the minimum abso"+
+    "lute error is "+str(format(
+    maximum_absolute_error.minimum_absolute_error(test_true_values, 
+    output_model).numpy(), '.5e'))+"\n")
 
 # Testing block
 
@@ -143,9 +158,15 @@ if __name__=="__main__":
 
     quotient_space_dimension = 9
 
-    train_surrogate_model(displacement_data_file, input_data_file, 
-    saved_model_file, results_path, n_training_samples,
-    quotient_space_dimension)
+    # Trains a new model
+
+    training_flag = False 
+
+    if training_flag:
+
+        train_surrogate_model(displacement_data_file, input_data_file, 
+        saved_model_file, results_path, n_training_samples,
+        quotient_space_dimension)
 
     test_surrogate_model(displacement_data_file, input_data_file,
     saved_model_file, results_path, n_training_samples,

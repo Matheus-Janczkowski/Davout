@@ -946,3 +946,23 @@ class QuadraticLossOverAnyResidualAssembler(tf.keras.losses.Loss):
         self.dR_du.dtype.name})
 
         return config
+    
+########################################################################
+#                          Conventional losses                         #
+########################################################################
+
+# Defines a function for the maximum absolute error
+
+class MaximumAbsoluteError(tf.keras.losses.Loss):
+
+    # Defines just the call method to return the maximum absolute value
+
+    def call(self, y_true, y_pred):
+
+        return tf.reduce_max(tf.abs(y_true - y_pred))
+    
+    # Defines a function to get the minimum absolute value
+
+    def minimum_absolute_error(self, y_true, y_pred):
+
+        return tf.reduce_min(tf.abs(y_true - y_pred))
