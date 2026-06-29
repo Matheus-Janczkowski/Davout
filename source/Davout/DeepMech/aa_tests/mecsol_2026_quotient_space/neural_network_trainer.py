@@ -17,7 +17,7 @@ from .....Davout.PythonicUtilities.path_tools import get_parent_path_of_file
 
 def train_surrogate_model(displacement_data_file, input_data_file, 
 saved_model_file, results_path, n_training_samples, 
-quotient_space_dimension, n_monte_carlo_realizations):
+quotient_space_dimension, n_monte_carlo_realizations, n_best_models):
 
     # Reads the two files
 
@@ -86,7 +86,7 @@ quotient_space_dimension, n_monte_carlo_realizations):
     # Tests Monte Carlo training
 
     training_class.monte_carlo_training(n_realizations=
-    n_monte_carlo_realizations, best_models_rank_size=5, 
+    n_monte_carlo_realizations, best_models_rank_size=n_best_models, 
     show_reinitialization_distance=True)
 
     # Checks the loss again with the best model of the Monte Carlo
@@ -99,8 +99,8 @@ quotient_space_dimension, n_monte_carlo_realizations):
 # Defines a function to test the model
 
 def test_surrogate_model(displacement_data_file, input_data_file, 
-saved_model_file, results_path, n_training_samples, 
-quotient_space_dimension):
+results_path, n_training_samples, quotient_space_dimension, 
+n_best_models):
 
     # Reads the two files
 
@@ -122,38 +122,44 @@ quotient_space_dimension):
 
     test_true_values = output_data[n_training_samples:,:]
 
-    # Loads it back
-
-    loaded_model = tf.keras.models.load_model(results_path+"//"+
-    saved_model_file)
-
     # Defines the loss function metric
 
     loss_metric = tf.keras.losses.MeanAbsoluteError()
 
-    # Gets the output of the loaded model
+    # Iterates through the best models
 
-    output_model = loaded_model(test_data)
+    for i in range(n_best_models):
 
-    # Gets the loss of the test data
+        # Loads the i-th best model back
 
-    test_loss = loss_metric(test_true_values, output_model)
+        loaded_model = tf.keras.models.load_model(results_path+"//"+str(
+        i+1)+"_best_model.keras")
 
-    print("\nLoss function on test set:", format(test_loss.numpy(),'.5'+
-    'e')+"\n")
+        # Gets the output of the loaded model
 
-    # Verifies with the maximum absolute error
+        output_model = loaded_model(test_data)
 
-    maximum_absolute_error = MaximumAbsoluteError()
+        # Gets the loss of the test data
 
-    maximum_absolute_value = maximum_absolute_error(test_true_values, 
-    output_model)
+        test_loss = loss_metric(test_true_values, output_model)
 
-    print("\nMaximum absolute error on test set:"+str(format(
-    maximum_absolute_value.numpy(),'.5e'))+"\nwhereas the minimum abso"+
-    "lute error is "+str(format(
-    maximum_absolute_error.minimum_absolute_error(test_true_values, 
-    output_model).numpy(), '.5e'))+"\n")
+        print("Loads the "+str(i+1)+"-th best model")
+
+        print("Loss function on test set:", format(test_loss.numpy(),
+        '.5e')+"\n")
+
+        # Verifies with the maximum absolute error
+
+        maximum_absolute_error = MaximumAbsoluteError()
+
+        maximum_absolute_value = maximum_absolute_error(test_true_values, 
+        output_model)
+
+        print("Maximum absolute error on test set:"+str(format(
+        maximum_absolute_value.numpy(),'.5e'))+"\nwhereas the minimum abso"+
+        "lute error is "+str(format(
+        maximum_absolute_error.minimum_absolute_error(test_true_values, 
+        output_model).numpy(), '.5e'))+"\n")
 
 # Testing block
 
@@ -175,14 +181,17 @@ if __name__=="__main__":
 
     n_monte_carlo_realizations = 10
 
+    n_best_models = 5
+
     training_flag = False 
 
     if training_flag:
 
         train_surrogate_model(displacement_data_file, input_data_file, 
         saved_model_file, results_path, n_training_samples,
-        quotient_space_dimension, n_monte_carlo_realizations)
+        quotient_space_dimension, n_monte_carlo_realizations, 
+        n_best_models)
 
     test_surrogate_model(displacement_data_file, input_data_file,
-    saved_model_file, results_path, n_training_samples,
-    quotient_space_dimension)
+    results_path, n_training_samples, quotient_space_dimension, 
+    n_best_models)

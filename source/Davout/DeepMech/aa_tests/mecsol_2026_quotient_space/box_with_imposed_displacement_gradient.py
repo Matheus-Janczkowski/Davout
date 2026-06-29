@@ -10,7 +10,8 @@ from .....Davout.GraphUtilities.paraview_tools import frozen_snapshots
 
 def solve_BVP(results_path, displacement_file_name, young_modulus_file,
 mesh_file_name, displacement_gradient_components, 
-lagrange_multiplier_file_name, save_snapshot=False):
+lagrange_multiplier_file_name, save_snapshot=False, snapshot_file_name=
+"RVE_displacement_imposed_gradient.png"):
 
     ####################################################################
     ####################################################################
@@ -33,7 +34,7 @@ lagrange_multiplier_file_name, save_snapshot=False):
 
     post_processes[0][1]["SaveField"] = {"directory path": results_path, 
     "file name": displacement_file_name, "saving method": "binary", 
-    "visualization copy for readable xdmf": False}
+    "visualization copy for readable xdmf": True}
 
     post_processes[1][1]["SaveField"] = {"directory path": results_path, 
     "file name": lagrange_multiplier_file_name, "saving method": "bina"+
@@ -149,18 +150,18 @@ lagrange_multiplier_file_name, save_snapshot=False):
 
         frozen_snapshots(displacement_file_name+"_visualization_copy", 
         "Displacement", input_path=results_path, 
-        camera_position=[3.295421262287293, -4.617612102822565, 3.7314785394692436],
-        camera_focal_point=[0.3868267767658733, -0.07264176288584451, 0.4047648861287915],
-        camera_up_direction=[-0.14883962531451048, 0.5202719201071424, 0.8409303746947565],
-        camera_parallel_scale=1.6406698504546489,
+        camera_position=[4.451171571468425, -3.797472604571211, 4.430154873929185],
+        camera_focal_point=[0.7984414053662643, 0.5769704993902152, 0.33475865213051903],
+        camera_up_direction=[-0.3606934051472985, 0.45896443721366265, 0.8119432941138149],
+        camera_parallel_scale=1.8163576931289542,
         camera_rotation=[0.0, 0.0, 0.0],
-        legend_bar_position=[0.785724255357283, 0.10503211991434691],
-        legend_bar_length=0.7389935760171309,
-        size_in_pixels={'aspect ratio': 0.6768115942028986, 'pixels in width': 690},
+        legend_bar_position=[0.7406134390037274, 0.14364425162689798],
+        legend_bar_length=0.640195227765729,
+        size_in_pixels={'aspect ratio': 0.6739766081871345, 'pixels in width': 684},
         axes_color=[0.0, 0.0, 0.0], get_attributes_render=False, 
-        output_imageFileName="RVE_displacement_imposed_gradient.png", resolution_ratio=5, 
+        output_imageFileName=snapshot_file_name, resolution_ratio=5, 
         warp_by_vector=True, representation_type="Surface With Edges", 
-        set_camera_interactively=False, time=1.0)
+        set_camera_interactively=False, time=1.0, transparent_background=True)
 
 # Testing block
 
@@ -174,6 +175,8 @@ if __name__=="__main__":
 
     lagrange_multiplier_file_name = "lagrange_multiplier_displacement_gradient"
 
+    snapshot_file_name = "RVE_shear.png"
+
     # Defines the mesh file name and the name of the file of the field 
     # of Young modulus
 
@@ -186,9 +189,13 @@ if __name__=="__main__":
 
     displacement_gradient_components = [[2.5, 0.0, 0.0], [0.0, 2.5, 0.0], 
     [0.0, 0.0, 2.5]]
+    
+    displacement_gradient_components = [[3.0, 0.5, 0.0], [0.5, 2.5, 0.0], 
+    [0.0, 0.0, 2.0]]
 
     # Solves the boundary value problem
 
     solve_BVP(results_path, displacement_file_name, young_modulus_file,
     mesh_file_name, displacement_gradient_components, 
-    lagrange_multiplier_file_name, save_snapshot=True)
+    lagrange_multiplier_file_name, save_snapshot=True, 
+    snapshot_file_name=snapshot_file_name)
