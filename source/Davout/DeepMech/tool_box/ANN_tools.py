@@ -219,6 +219,10 @@ class MultiLayerModel:
 
         input_layer = tf.keras.Input(shape=(self.input_dimension,))
 
+        # Initializes a list with the number of neurons in each layer
+
+        number_neurons_per_main_layer = [self.input_dimension]
+
         # Gets the first layer. Here the class is used as a function di-
         # rectly due to the call function. It goes directly there. Takes
         # care with the case of an accessory network
@@ -227,7 +231,7 @@ class MultiLayerModel:
 
         code_given_info_class = CodeGivenLayerInfo(
         self.input_size_main_network, self.input_size_main_network, 0,
-        self.parameters_dtype)
+        self.parameters_dtype, tuple(number_neurons_per_main_layer))
 
         output_eachLayer = MixedActivationLayer(self.layers_info[0], 
         self.custom_activations_class, code_given_info_class,
@@ -238,30 +242,30 @@ class MultiLayerModel:
 
         for i in range(1,len(self.layers_info)):
 
-            # Evaluates the quantities for the case of accessory layers
+            # Sums up the neurons of the previous main layer
 
-            if self.input_size_main_network is not None:
+            input_size_main_layer = 0
 
-                # Sums up the neurons of the previous main layer
+            for value in self.layers_info[i-1].values():
 
-                input_size_main_layer = 0
+                if isinstance(value, int):
 
-                for value in self.layers_info[i-1].values():
+                    input_size_main_layer += value 
 
-                    if isinstance(value, int):
+                elif "number of neurons" in value:
 
-                        input_size_main_layer += value 
+                    input_size_main_layer += value["number of neur"+
+                    "ons"]
 
-                    elif "number of neurons" in value:
+                else:
 
-                        input_size_main_layer += value["number of neur"+
-                        "ons"]
+                    raise KeyError("The bit '"+str(value)+"' of th"+
+                    "e dictionary of layer info does not have the "+
+                    "key 'number of neurons'")
 
-                    else:
+            # Updates the list of numbers of neurons per layer
 
-                        raise KeyError("The bit '"+str(value)+"' of th"+
-                        "e dictionary of layer info does not have the "+
-                        "key 'number of neurons'")
+            number_neurons_per_main_layer.append(input_size_main_layer)
                     
             # Gets the layer number. If it is the last layer, gives -1
     
@@ -271,11 +275,39 @@ class MultiLayerModel:
 
                 layer_number = -1
 
+                # If this is the last layer, adds the number of neurons
+                # in the output main layer as well
+
+                output_size_main_layer = 0
+
+                for value in self.layers_info[i].values():
+
+                    if isinstance(value, int):
+
+                        output_size_main_layer += value 
+
+                    elif "number of neurons" in value:
+
+                        output_size_main_layer += value["number of neu"+
+                        "rons"]
+
+                    else:
+
+                        raise KeyError("The bit '"+str(value)+"' of th"+
+                        "e dictionary of layer info does not have the "+
+                        "key 'number of neurons'")
+                    
+                # Updates the list of numbers of neurons per layer
+
+                number_neurons_per_main_layer.append(
+                output_size_main_layer)
+
             # Gets the output of this layer
 
             code_given_info_class = CodeGivenLayerInfo(
             self.input_size_main_network, input_size_main_layer, 
-            layer_number, self.parameters_dtype)
+            layer_number, self.parameters_dtype, tuple(
+            number_neurons_per_main_layer))
 
             output_eachLayer = MixedActivationLayer(self.layers_info[i],
             self.custom_activations_class, code_given_info_class, 
@@ -418,7 +450,7 @@ def insert_call_with_parameters_to_keras(model):
 class CodeGivenLayerInfo:
 
     def __init__(self, input_size_main_network, input_size_main_layer,
-    layer, float_dtype):
+    layer, float_dtype, number_neurons_per_main_layer):
         
         self.input_size_main_network = input_size_main_network
 
@@ -427,6 +459,8 @@ class CodeGivenLayerInfo:
         self.layer = layer
 
         self.float_dtype = float_dtype
+
+        self.number_neurons_per_main_layer = number_neurons_per_main_layer
 
 # Defines a class to construct a layer with different activation 
 # functions. Receives a dictionary of activation functions, the activa-
