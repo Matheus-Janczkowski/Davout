@@ -100,6 +100,8 @@ class SVDQuotientSpace:
 
         if (architecture_info_dict["weights modulating function"]=="id"+
         "entity"):
+            
+            self.modulation_option = "identity"
 
             # Sets the evaluator of the generic layer from input to the
             # method that multiplies the input vector by the chain of
@@ -109,9 +111,13 @@ class SVDQuotientSpace:
 
             self.generic_layers_from_input = self.identity_modulation_from_input
 
+            self.generic_layers_from_parameters = self.identity_modulation_call_with_parameters
+
         # Otherwise, gets the modulating function
 
         else:
+
+            self.modulation_option = "not identity"
 
             self.modulating_function = build_tensorflow_math_expressions(
             architecture_info_dict["weights modulating function"], 
@@ -122,6 +128,8 @@ class SVDQuotientSpace:
             # modulation mapping
 
             self.generic_layers_from_input = self.non_identity_modulation_from_input
+
+            self.generic_layers_from_parameters = self.non_identity_modulation_call_with_parameters
 
         # Defines the method to call this layer and get the forward res-
         # ponse. If this layer is the first layer
@@ -136,16 +144,7 @@ class SVDQuotientSpace:
             # Defines the method that will be used to call the layer's 
             # response when the trainable parameters are given
 
-            self.layer_self.call_given_parameters = self.first_layer_call_SVD_architecture_with_parameters
-
-            # Selects the method for reshaping the model parameters from 
-            # a flat vector
-
-            self.update_layer_parameters = self.first_layer_update_parameters
-
-            # Selects the method to update the model parameters in place
-
-            self.layer_self.apply_parameters_to_layer = self.apply_parameters_to_first_layer
+            self.layer_self.call_given_parameters = self.first_layer_call_with_parameters
 
         # If this layer is the output layer
 
@@ -159,16 +158,7 @@ class SVDQuotientSpace:
             # Defines the method that will be used to call the layer's 
             # response when the trainable parameters are given
 
-            self.layer_self.call_given_parameters = self.output_layer_call_SVD_architecture_with_parameters
-
-            # Selects the method for reshaping the model parameters from 
-            # a flat vector
-
-            self.update_layer_parameters = self.output_layer_update_parameters
-
-            # Selects the method to update the model parameters in place
-
-            self.layer_self.apply_parameters_to_layer = self.apply_parameters_to_output_layer
+            self.layer_self.call_given_parameters = self.output_layer_call_with_parameters
 
         # Otherwise, if it is any of the intermediate layers
 
@@ -182,16 +172,16 @@ class SVDQuotientSpace:
             # Defines the method that will be used to call the layer's 
             # response when the trainable parameters are given
 
-            self.layer_self.call_given_parameters = self.middle_layer_call_SVD_architecture_with_parameters
+            self.layer_self.call_given_parameters = self.generic_layers_from_parameters
 
-            # Selects the method for reshaping the model parameters from 
-            # a flat vector
+        # Selects the method for reshaping the model parameters from a
+        # flat vector
 
-            self.update_layer_parameters = self.middle_layer_update_parameters
+        self.update_layer_parameters = self.layer_update_parameters
 
-            # Selects the method to update the model parameters in place
+        # Selects the method to update the model parameters in place
 
-            self.layer_self.apply_parameters_to_layer = self.apply_parameters_to_middle_layer
+        self.layer_self.apply_parameters_to_layer = self.apply_parameters_layer
 
         # Gets the epsilon constant for the evaluation of the non-free
         # component of the Householder vector
@@ -230,28 +220,31 @@ class SVDQuotientSpace:
         zip(self.activation_list_acessory_network, 
         x_splits_accessory_layer))], axis=-1)
 
-        # Initializes the weight matrix as the identity
+        # Initializes the weight matrix as the identity. The number of
+        # rows of the initial matrix is the rank of the layer's weights
+        # matrix since the B matrix is transposed
 
-        weight_matrix = tf.eye(self.n_neurons_current_main_layer,
-        self.n_neurons_last_main_layer)
-
-        weight_matrix = tf.foldl(
-        self.update_B_matrix_with_householder_reflector, tf.range(
-        self.weights_rank), initializer=weight_matrix)
+        weight_matrix = self.update_B_matrix_with_householder_chain(
+        self.initial_weight_matrix, self.householder_reflectors_indices, 
+        self.householder_indices_B_matrix, 
+        self.layer_self.householder_parameters_B_matrix)
 
         # Multiplies this result by the singular values coming from the
         # accessory layer. The singular values are a tensor [n_samples,
         # rank]; the reconstructed weight matrix so far is a tensor [
         # rank, p_i]. The final result must be [n_samples, rank, p_i]
 
-        weight_matrix = output_activations_accessory_layer*weight_matrix
+        weight_matrix = (output_activations_accessory_layer[:,:,None]*
+        weight_matrix[None,:,:])
         
         # Multiplies by the A matrix of the SVD to reconstruct the SVD.
         # Then, uses the modulating function to get the weights matrix
 
-        weight_matrix = self.modulating_function(tf.foldl(
-        self.update_A_matrix_with_householder_reflector, tf.range(
-        self.weights_rank), initializer=(weight_matrix)))
+        weight_matrix = self.modulating_function(
+        self.update_A_matrix_with_householder_chain(weight_matrix, 
+        self.householder_reflectors_indices, 
+        self.householder_indices_A_matrix,
+        self.layer_self.householder_parameters_A_matrix))
 
         # Gets the output of the main network and splits it into the 
         # different families of activation functions for the main layer. 
@@ -302,18 +295,24 @@ class SVDQuotientSpace:
         x_splits_accessory_layer))], axis=-1)
 
         # Multiplies the incoming batched input vector by the transposed
-        # B matrix of the SVD
+        # B matrix of the SVD. Then multiplies it by the identity [rank,
+        # number of neurons of the last layer]
 
-        output_B = tf.foldl(self.multiply_B_matrix_householder_reflector,
-        tf.range(self.weights_rank), initializer=input[0])
+        output_B = self.multiply_input_vector_by_householder_chain(input[
+        0], self.householder_reflectors_indices, 
+        self.householder_indices_B_matrix, 
+        self.layer_self.householder_parameters_B_matrix)
 
         # Multiplies this result by the singular values coming from the
         # accessory layer and, then, multiplies by the A matrix of the 
-        # SVD
+        # SVD. Note that only the components of the output of B linked
+        # to the rank of the layer are used
 
-        output_A = tf.foldl(self.multiply_A_matrix_householder_reflector,
-        tf.range(self.weights_rank), initializer=(
-        output_activations_accessory_layer*output_B))
+        output_A = self.multiply_input_vector_by_householder_chain(
+        output_activations_accessory_layer*output_B[:,:self.weights_rank
+        ], self.householder_reflectors_indices, 
+        self.householder_indices_A_matrix, 
+        self.layer_self.householder_parameters_A_matrix)
 
         # Gets the output of the main network and splits it into the 
         # different families of activation functions for the main layer. 
@@ -369,13 +368,163 @@ class SVDQuotientSpace:
 
         return self.generic_layers_from_input(input)[0]
     
+    # Defines a method to evaluate the accessory and the main layers of
+    # a generic layer of the SVD-based architecture given the trainable
+    # parameters as a flat tensor. This method is dedicated to the case
+    # of a modulation mapping different than the identity
+
+    def non_identity_modulation_call_with_parameters(self, layer_input, 
+    parameters):
+
+        # Gets the trainable parameters
+
+        (W_accessory, b_accessory, householder_parameters_A_matrix, 
+        householder_parameters_B_matrix) = self.layer_update_parameters(
+        parameters)
+
+        # Gets the multiplication of the parcel of the accessory layer
+        # by its corresponding matrix. Then, splits the result into the
+        # different families of activation functions and evaluates the
+        # output of the accessory layer
+
+        x_splits_accessory_layer = tf.split(tf.matmul(layer_input[1], 
+        W_accessory)+b_accessory, 
+        self.layer_self.neurons_per_activation_acessory_layer, axis=-1)
+
+        # Applies the split multiplication to each activation function
+        # and, then, concatenates them back into a single vector
+
+        output_activations_accessory_layer = tf.concat(
+        [activation_function(split) for activation_function, split in (
+        zip(self.activation_list_acessory_network, 
+        x_splits_accessory_layer))], axis=-1)
+
+        # Initializes the weight matrix as the identity. The number of
+        # rows of the initial matrix is the rank of the layer's weights
+        # matrix since the B matrix is transposed
+
+        weight_matrix = self.update_B_matrix_with_householder_chain(
+        self.initial_weight_matrix, self.householder_reflectors_indices, 
+        self.householder_indices_B_matrix, 
+        householder_parameters_B_matrix)
+
+        # Multiplies this result by the singular values coming from the
+        # accessory layer. The singular values are a tensor [n_samples,
+        # rank]; the reconstructed weight matrix so far is a tensor [
+        # rank, p_i]. The final result must be [n_samples, rank, p_i]
+
+        weight_matrix = (output_activations_accessory_layer[:,:,None]*
+        weight_matrix[None,:,:])
+        
+        # Multiplies by the A matrix of the SVD to reconstruct the SVD.
+        # Then, uses the modulating function to get the weights matrix
+
+        weight_matrix = self.modulating_function(
+        self.update_A_matrix_with_householder_chain(weight_matrix, 
+        self.householder_reflectors_indices, 
+        self.householder_indices_A_matrix, 
+        householder_parameters_A_matrix))
+
+        # Gets the output of the main network and splits it into the 
+        # different families of activation functions for the main layer. 
+        # This keeps the input as a tensor
+
+        x_splits_main_layer = tf.split(tf.einsum('sij,sj->si', 
+        weight_matrix, layer_input[0]), 
+        self.layer_self.neurons_per_activation, axis=-1)
+
+        # Initializes a list of outputs for each family of neurons (or-
+        # ganized by their activation functions)
+
+        output_activations_main_layer = [activation_function(split
+        ) for activation_function, split in zip(self.activation_list, 
+        x_splits_main_layer)]
+
+        # Concatenates the response and returns it. Uses flag axis=-1 to
+        # concatenate next to the last row. Returns always the main layer 
+        # first, then the accessory layer
+
+        return (tf.concat(output_activations_main_layer, axis=-1), 
+        output_activations_accessory_layer)
+
+    # Defines a method to evaluate the accessory and the main layers of
+    # a generic layer of the SVD-based architecture given the trainable
+    # parameters as a flat tensor. This method is dedicated to the case
+    # of a modulation mapping equal to the identity
+
+    def identity_modulation_call_with_parameters(self, layer_input, 
+    parameters):
+
+        # Gets the trainable parameters
+
+        (W_accessory, b_accessory, householder_parameters_A_matrix, 
+        householder_parameters_B_matrix) = self.layer_update_parameters(
+        parameters)
+
+        # Gets the multiplication of the parcel of the accessory layer
+        # by its corresponding matrix. Then, splits the result into the
+        # different families of activation functions and evaluates the
+        # output of the accessory layer
+
+        x_splits_accessory_layer = tf.split(tf.matmul(layer_input[1], 
+        W_accessory)+b_accessory, 
+        self.layer_self.neurons_per_activation_acessory_layer, axis=-1)
+
+        # Applies the split multiplication to each activation function
+        # and, then, concatenates them back into a single vector
+
+        output_activations_accessory_layer = tf.concat(
+        [activation_function(split) for activation_function, split in (
+        zip(self.activation_list_acessory_network, 
+        x_splits_accessory_layer))], axis=-1)
+
+        # Multiplies the incoming batched input vector by the transposed
+        # B matrix of the SVD. Then multiplies it by the identity [rank,
+        # number of neurons of the last layer]
+
+        output_B = self.multiply_input_vector_by_householder_chain(
+        layer_input[0], self.householder_reflectors_indices, 
+        self.householder_indices_B_matrix, 
+        householder_parameters_B_matrix)
+
+        # Multiplies this result by the singular values coming from the
+        # accessory layer and, then, multiplies by the A matrix of the 
+        # SVD. Note that only the components of the output of B linked
+        # to the rank of the layer are used
+
+        output_A = self.multiply_input_vector_by_householder_chain(
+        output_activations_accessory_layer*output_B[:,:self.weights_rank
+        ], self.householder_reflectors_indices, 
+        self.householder_indices_A_matrix, 
+        householder_parameters_A_matrix)
+
+        # Gets the output of the main network and splits it into the 
+        # different families of activation functions for the main layer. 
+        # This keeps the input as a tensor
+
+        x_splits_main_layer = tf.split(output_A, 
+        self.layer_self.neurons_per_activation,  axis=-1)
+
+        # Initializes a list of outputs for each family of neurons (or-
+        # ganized by their activation functions)
+
+        output_activations_main_layer = [activation_function(split
+        ) for activation_function, split in zip(self.activation_list, 
+        x_splits_main_layer)]
+
+        # Concatenates the response and returns it. Uses flag axis=-1 to
+        # concatenate next to the last row. Returns always the main layer 
+        # first, then the accessory layer
+
+        return (tf.concat(output_activations_main_layer, axis=-1), 
+        output_activations_accessory_layer)
+    
     # Defines a method for getting the input vector of the NN and 
     # breaking it down into the main and accessory networks. This method
     # must be used during training to enforce orthogonality to the SVD
-    # matrices
+    # matrices, since the parameters are given in a flat tensor
 
-    def first_layer_call_SVD_architecture_with_parameters(self, 
-    layer_input, parameters):
+    def first_layer_call_with_parameters(self, layer_input, parameters):
         
         # If it's the first layer, the input tensor must be sliced: one
         # bit for the main network, the rest for the accessory network
@@ -384,190 +533,24 @@ class SVDQuotientSpace:
         self.input_size_main_network)], layer_input[..., 
         self.input_size_main_network:])
 
-        # Gets the trainable parameters
+        # Evaluates the layer using the parameters
 
-        (W_accessory, b_accessory, left_orthogonal_matrix, 
-        right_orthogonal_matrix) = self.first_layer_update_parameters(
+        return self.generic_layers_from_parameters(segmented_layer_input,
         parameters)
-
-        # Gets the multiplication of the parcel of the accessory layer
-        # by its corresponding matrix. Then, splits the result into the
-        # different families of activation functions and evaluates the
-        # output of the accessory layer
-
-        x_splits_accessory_layer = tf.split(tf.matmul(
-        segmented_layer_input[1], W_accessory)+b_accessory, 
-        self.layer_self.neurons_per_activation_acessory_layer, axis=-1)
-
-        # Applies the split multiplication to each activation function
-        # and, then, concatenates them back into a single vector
-
-        output_activations_accessory_layer = tf.concat(
-        [activation_function(split) for activation_function, split in (
-        zip(self.activation_list_acessory_network, 
-        x_splits_accessory_layer))], axis=-1)
-
-        # Reconstructs the weights matrix by the SVD decomposition and
-        # modulates it using the modulating function
-
-        weight_matrix = self.modulating_function(tf.einsum('ir,sr,jr->'+
-        'sij', left_orthogonal_matrix, 
-        output_activations_accessory_layer, right_orthogonal_matrix))
-
-        # Gets the output of the main network and splits it into the 
-        # different families of activation functions for the main layer. 
-        # This keeps the input as a tensor
-
-        x_splits_main_layer = tf.split(tf.einsum('sij,sj->si', 
-        weight_matrix, segmented_layer_input[0]), 
-        self.layer_self.neurons_per_activation,  axis=-1)
-
-        # Initializes a list of outputs for each family of neurons (or-
-        # ganized by their activation functions)
-
-        output_activations_main_layer = [activation_function(split
-        ) for activation_function, split in zip(self.activation_list, 
-        x_splits_main_layer)]
-
-        # Concatenates the response and returns it. Uses flag axis=-1 to
-        # concatenate next to the last row. Returns always the main layer 
-        # first, then the accessory layer
-
-        return (tf.concat(output_activations_main_layer, axis=-1), 
-        output_activations_accessory_layer)
     
-    # Defines a method to get the output of a middle layer given the in-
-    # puts of the main and accessory networks, respectively. This method
-    # must be used for training, since it enforeces the orthogonality
-    # constraints to the SVD matrices
+    # Defines a function to get the output of a layer. Only the result 
+    # of the main layer is returned
 
-    def middle_layer_call_SVD_architecture_with_parameters(self, 
-    layer_input, parameters):
+    def output_layer_call_with_parameters(self, layer_input, parameters):
         
-        # If it's the first layer, the input tensor must be sliced: one
-        # bit for the main network, the rest for the accessory network
+        # Evaluates the layer using the parameters
 
-        (W_accessory, b_accessory, left_orthogonal_matrix, 
-        right_orthogonal_matrix) = self.middle_layer_update_parameters(
-        parameters)
-
-        # Gets the multiplication of the parcel of the accessory layer
-        # by its corresponding matrix. Then, splits the result into the
-        # different families of activation functions and evaluates the
-        # output of the accessory layer
-
-        x_splits_accessory_layer = tf.split(tf.matmul(
-        layer_input[1], W_accessory)+b_accessory, 
-        self.layer_self.neurons_per_activation_acessory_layer, axis=-1)
-
-        # Applies the split multiplication to each activation function
-        # and, then, concatenates them back into a single vector
-
-        output_activations_accessory_layer = tf.concat(
-        [activation_function(split) for activation_function, split in (
-        zip(self.activation_list_acessory_network, 
-        x_splits_accessory_layer))], axis=-1)
-
-        # Reconstructs the weights matrix by the SVD decomposition and
-        # modulates it using the modulating function
-
-        weight_matrix = self.modulating_function(tf.einsum('ir,sr,jr->'+
-        'sij', left_orthogonal_matrix, 
-        output_activations_accessory_layer, right_orthogonal_matrix))
-
-        # Gets the output of the main network and splits it into the 
-        # different families of activation functions for the main layer. 
-        # This keeps the input as a tensor
-
-        x_splits_main_layer = tf.split(tf.einsum('sij,sj->si', 
-        weight_matrix, layer_input[0]), 
-        self.layer_self.neurons_per_activation,  axis=-1)
-
-        # Initializes a list of outputs for each family of neurons (or-
-        # ganized by their activation functions)
-
-        output_activations_main_layer = [activation_function(split
-        ) for activation_function, split in zip(self.activation_list, 
-        x_splits_main_layer)]
-
-        # Concatenates the response and returns it. Uses flag axis=-1 to
-        # concatenate next to the last row. Returns always the main layer 
-        # first, then the accessory layer
-
-        return (tf.concat(output_activations_main_layer, axis=-1), 
-        output_activations_accessory_layer)
-    
-    # Defines a function to get the output of a layer that constitutes a
-    # partially input-convex neural network (AMOS ET AL, Input Convex 
-    # Neural Networks). This function is for the output layer
-
-    def output_layer_call_SVD_architecture_with_parameters(self, 
-    layer_input, parameters):
-        
-        # If it's the first layer, the input tensor must be sliced: one
-        # bit for the main network, the rest for the accessory network
-
-        (W_accessory, b_accessory, left_orthogonal_matrix, 
-        right_orthogonal_matrix) = self.output_layer_update_parameters(
-        parameters)
-
-        # Gets the multiplication of the parcel of the accessory layer
-        # by its corresponding matrix. Then, splits the result into the
-        # different families of activation functions and evaluates the
-        # output of the accessory layer
-
-        x_splits_accessory_layer = tf.split(tf.matmul(
-        layer_input[1], W_accessory)+b_accessory, 
-        self.layer_self.neurons_per_activation_acessory_layer, axis=-1)
-
-        # Applies the split multiplication to each activation function
-        # and, then, concatenates them back into a single vector
-
-        output_activations_accessory_layer = tf.concat(
-        [activation_function(split) for activation_function, split in (
-        zip(self.activation_list_acessory_network, 
-        x_splits_accessory_layer))], axis=-1)
-
-        # Reconstructs the weights matrix by the SVD decomposition and
-        # modulates it using the modulating function
-
-        weight_matrix = self.modulating_function(tf.einsum('ir,sr,jr->'+
-        'sij', left_orthogonal_matrix, 
-        output_activations_accessory_layer, right_orthogonal_matrix))
-
-        # Gets the output of the main network and splits it into the 
-        # different families of activation functions for the main layer. 
-        # This keeps the input as a tensor
-
-        x_splits_main_layer = tf.split(tf.einsum('sij,sj->si', 
-        weight_matrix, layer_input[0]), 
-        self.layer_self.neurons_per_activation,  axis=-1)
-
-        # Initializes a list of outputs for each family of neurons (or-
-        # ganized by their activation functions)
-
-        output_activations_main_layer = [activation_function(split
-        ) for activation_function, split in zip(self.activation_list, 
-        x_splits_main_layer)]
-
-        # Concatenates the response and returns it. Uses flag axis=-1 to
-        # concatenate next to the last row. Returns the main layer only
-
-        return tf.concat(output_activations_main_layer, axis=-1)
+        return self.generic_layers_from_parameters(layer_input,
+        parameters)[0]
     
     # Defines a function to build this layer during serialization
 
     def mixed_layer_builder(self, input_shape):
-
-        # Constructs a dense layer with identity activation functions
-        # with no biases only if this is not the first layer. Because,
-        # at the first hidden layer, the whole input of the model is 
-        # simply fed into this first hidden layer
-
-        if self.layer_number!=0:
-
-            self.layer_self.dense = tf.keras.layers.Dense(
-            self.layer_self.total_neurons, use_bias=False, name="Wz")
 
         # Gets a list with the numbers of neurons per activation functi-
         # on for the accessory network (u)
@@ -577,210 +560,74 @@ class SVDQuotientSpace:
         value) in self.activations_accessory_layer_dict.values(
         )]
 
-        # Creates a dense layer for the accessory network
+        # Counts the number of neurons in the accessory layer that spits
+        # the singular values to the SVD of the weights matrix of the 
+        # main layer
+
+        self.number_of_neurons_accessory_layer = sum(
+        self.layer_self.neurons_per_activation_acessory_layer)
+
+        # Creates a dense layer with biases for the accessory network
 
         self.layer_self.dense_W_accessory = tf.keras.layers.Dense(
-        sum(self.layer_self.neurons_per_activation_acessory_layer), 
-        name="W_accessory")
+        self.number_of_neurons_accessory_layer, name="W_accessory", 
+        use_bias=True)
+
+        # Initializes all trainable parameters and indices for the
+        # Householder chains
+
+        self.initialize_householder_parameters()
 
         # Constructs the layer
 
         super(type(self.layer_self), self.layer_self).build(input_shape)
 
-        # Verifies if the dense layer is present
-
-        if hasattr(self.layer_self, "dense"):
-
-            self.layer_self.dense.build(input_shape[0])
-
     # Defines a function to get the flat and sliced parameters, then, 
     # converts it to tensors given the shapes of the trainables varia-
     # bles
 
-    def first_layer_update_parameters(self, flat_parameters):
+    def layer_update_parameters(self, flat_parameters):
 
         # If it's the first layer, the input tensor must be sliced: one
         # bit for the main network, the rest for the accessory network
 
-        W_tilde = tf.reshape(flat_parameters[0], 
+        W_accessory = tf.reshape(flat_parameters[0], 
         self.layer_self.trainable_variables_shapes[0])
         
-        b_tilde = tf.reshape(flat_parameters[1], 
+        b_accessory = tf.reshape(flat_parameters[1], 
         self.layer_self.trainable_variables_shapes[1])
         
-        W_yu = tf.reshape(flat_parameters[2], 
+        householder_parameters_A_matrix = tf.reshape(flat_parameters[2], 
         self.layer_self.trainable_variables_shapes[2])
         
-        b_y = tf.reshape(flat_parameters[3], 
-        self.layer_self.trainable_variables_shapes[3])
-        
-        W_u = tf.reshape(flat_parameters[4], 
-        self.layer_self.trainable_variables_shapes[4])
-        
-        b_layer = tf.reshape(flat_parameters[5], 
-        self.layer_self.trainable_variables_shapes[5])
-        
-        W_y = tf.reshape(flat_parameters[6], 
-        self.layer_self.trainable_variables_shapes[6])
-
-        return (W_tilde, b_tilde, W_yu, b_y, W_u, b_layer, W_y)
-
-    # Defines a function to get the flat and sliced parameters, then, 
-    # converts it to tensors given the shapes of the trainables varia-
-    # bles
-
-    def middle_layer_update_parameters(self, flat_parameters):
-
-        W_z = self.regularization_function(tf.reshape(flat_parameters[0], 
-        self.layer_self.trainable_variables_shapes[0]))
-
-        W_tilde = tf.reshape(flat_parameters[1], 
-        self.layer_self.trainable_variables_shapes[1])
-
-        b_tilde = tf.reshape(flat_parameters[2], 
-        self.layer_self.trainable_variables_shapes[2])
-
-        W_zu = tf.reshape(flat_parameters[3], 
+        householder_parameters_B_matrix = tf.reshape(flat_parameters[3], 
         self.layer_self.trainable_variables_shapes[3])
 
-        b_z = tf.reshape(flat_parameters[4], 
-        self.layer_self.trainable_variables_shapes[4])
-
-        W_yu = tf.reshape(flat_parameters[5], 
-        self.layer_self.trainable_variables_shapes[5])
-
-        b_y = tf.reshape(flat_parameters[6], 
-        self.layer_self.trainable_variables_shapes[6])
-
-        W_u = tf.reshape(flat_parameters[7], 
-        self.layer_self.trainable_variables_shapes[7])
-
-        b_layer = tf.reshape(flat_parameters[8], 
-        self.layer_self.trainable_variables_shapes[8])
-        
-        W_y = tf.reshape(flat_parameters[9], 
-        self.layer_self.trainable_variables_shapes[9])
-
-        return (W_z, W_tilde, b_tilde, W_zu, b_z, W_yu, b_y, W_u, 
-        b_layer, W_y)
-
-    # Defines a function to get the flat and sliced parameters, then, 
-    # converts it to tensors given the shapes of the trainables varia-
-    # bles
-
-    def output_layer_update_parameters(self, flat_parameters):
-
-        W_z = self.regularization_function(tf.reshape(flat_parameters[0], 
-        self.layer_self.trainable_variables_shapes[0]))
-
-        W_zu = tf.reshape(flat_parameters[1], 
-        self.layer_self.trainable_variables_shapes[1])
-
-        b_z = tf.reshape(flat_parameters[2], 
-        self.layer_self.trainable_variables_shapes[2])
-
-        W_yu = tf.reshape(flat_parameters[3], 
-        self.layer_self.trainable_variables_shapes[3])
-
-        b_y = tf.reshape(flat_parameters[4], 
-        self.layer_self.trainable_variables_shapes[4])
-
-        W_u = tf.reshape(flat_parameters[5], 
-        self.layer_self.trainable_variables_shapes[5])
-
-        b_layer = tf.reshape(flat_parameters[6], 
-        self.layer_self.trainable_variables_shapes[6])
-        
-        W_y = tf.reshape(flat_parameters[7], 
-        self.layer_self.trainable_variables_shapes[7])
-
-        return (W_z, W_zu, b_z, W_yu, b_y, W_u, b_layer, W_y)
+        return (W_accessory, b_accessory, 
+        householder_parameters_A_matrix, householder_parameters_B_matrix)
     
     # Defines a function to apply the weights and biases to the first 
     # layer
 
-    def apply_parameters_to_first_layer(self, flat_parameters):
+    def apply_parameters_layer(self, flat_parameters):
 
         # Gets the weights and biases from the flat vector
 
-        (W_tilde, b_tilde, W_yu, b_y, W_u, b_layer, W_y
-        ) = self.update_layer_parameters(flat_parameters)
+        (W_accessory, b_accessory, householder_parameters_A_matrix, 
+        householder_parameters_B_matrix) = self.update_layer_parameters(
+        flat_parameters)
 
         # Updates the weights and biases matrices
 
-        self.layer_self.dense_W_accessory.kernel.assign(W_u)
+        self.layer_self.dense_W_accessory.kernel.assign(W_accessory)
 
-        self.layer_self.dense_W_accessory.bias.assign(b_layer)
+        self.layer_self.dense_W_accessory.bias.assign(b_accessory)
 
-        self.layer_self.dense_accessory_layer.kernel.assign(W_tilde)
+        self.layer_self.householder_parameters_A_matrix.assign(
+        householder_parameters_A_matrix)
 
-        self.layer_self.dense_accessory_layer.bias.assign(b_tilde)
-
-        self.layer_self.dense_Wy.kernel.assign(W_y)
-
-        self.layer_self.dense_Wyu.kernel.assign(W_yu)
-
-        self.layer_self.dense_Wyu.bias.assign(b_y)
-    
-    # Defines a function to apply the weights and biases to a middle 
-    # layer
-
-    def apply_parameters_to_middle_layer(self, flat_parameters):
-
-        # Gets the weights and biases from the flat vector
-
-        (W_z, W_tilde, b_tilde, W_zu, b_z, W_yu, b_y, W_u, b_layer, W_y
-        ) = self.update_layer_parameters(flat_parameters)
-
-        # Updates the weights and biases matrices
-
-        self.layer_self.dense.kernel.assign(W_z)
-
-        self.layer_self.dense_Wzu.kernel.assign(W_zu)
-
-        self.layer_self.dense_Wzu.bias.assign(b_z)
-
-        self.layer_self.dense_W_accessory.kernel.assign(W_u)
-
-        self.layer_self.dense_W_accessory.bias.assign(b_layer)
-
-        self.layer_self.dense_accessory_layer.kernel.assign(W_tilde)
-
-        self.layer_self.dense_accessory_layer.bias.assign(b_tilde)
-
-        self.layer_self.dense_Wy.kernel.assign(W_y)
-
-        self.layer_self.dense_Wyu.kernel.assign(W_yu)
-
-        self.layer_self.dense_Wyu.bias.assign(b_y)
-    
-    # Defines a function to apply the weights and biases to a middle 
-    # layer
-
-    def apply_parameters_to_output_layer(self, flat_parameters):
-
-        # Gets the weights and biases from the flat vector
-
-        (W_z, W_zu, b_z, W_yu, b_y, W_u, b_layer, W_y
-        ) = self.update_layer_parameters(flat_parameters)
-
-        # Updates the weights and biases matrices
-
-        self.layer_self.dense.kernel.assign(W_z)
-
-        self.layer_self.dense_Wzu.kernel.assign(W_zu)
-
-        self.layer_self.dense_Wzu.bias.assign(b_z)
-
-        self.layer_self.dense_W_accessory.kernel.assign(W_u)
-
-        self.layer_self.dense_W_accessory.bias.assign(b_layer)
-
-        self.layer_self.dense_Wy.kernel.assign(W_y)
-
-        self.layer_self.dense_Wyu.kernel.assign(W_yu)
-
-        self.layer_self.dense_Wyu.bias.assign(b_y)
+        self.layer_self.householder_parameters_B_matrix.assign(
+        householder_parameters_B_matrix)
 
     ####################################################################
     #                      Householder reflectors                      #
@@ -806,6 +653,37 @@ class SVDQuotientSpace:
         self.weights_rank = min(self.n_neurons_last_main_layer, 
         self.n_neurons_current_main_layer)
 
+        # Verifies if the rank of the weights matrix is equal to the 
+        # number of neurons of the accessory layer (since the accessory
+        # layer spits the singular values of the SVD of the weights ma-
+        # trix of the main layer)
+
+        if self.number_of_neurons_accessory_layer!=self.weights_rank:
+
+            raise ValueError("The "+str(self.layer_number)+"-th main l"+
+            "ayer has a rank of "+str(self.weights_rank)+", since the "+
+            "previous main layer has "+str(
+            self.n_neurons_last_main_layer)+" neurons and the current "+
+            "layer has "+str(self.n_neurons_current_main_layer)+" neur"+
+            "ons. The corresponding accessory layer has "+str(
+            self.number_of_neurons_accessory_layer)+" neurons, but it "+
+            "must have the same number of neurons as the rank of the c"+
+            "orresponding main layer")
+
+        # In case the modulating function is not the identity, creates
+        # the initial weight matrix as the identity
+
+        if self.modulation_option!="identity":
+
+            self.initial_weight_matrix = tf.eye(self.weights_rank, 
+            self.n_neurons_last_main_layer, dtype=
+            self.layer_self.code_given_info_class.float_dtype)
+
+        # Initializes the tensor with the indices of the Householder re-
+        # flectors of the Householder chain
+
+        self.householder_reflectors_indices = tf.range(self.weights_rank)
+
         # Sets the initializer of the Householder parameters using Glo-
         # rot initialization with the scaling of the corresponding 
         # weights matrix and zero mean
@@ -830,13 +708,13 @@ class SVDQuotientSpace:
         # gonal matrices of the SVD of the weights matrix W, W=A*diag(
         # sigma)*transpose(B)
 
-        self.householder_parameters_B_matrix = self.layer_self.add_weight(
+        self.layer_self.householder_parameters_B_matrix = self.layer_self.add_weight(
         name="householder_parameters_B_matrix", shape=(n_parameters_B,), 
         initializer=initializer, dtype=
         self.layer_self.code_given_info_class.float_dtype, trainable=
         True)
 
-        self.householder_parameters_A_matrix = self.layer_self.add_weight(
+        self.layer_self.householder_parameters_A_matrix = self.layer_self.add_weight(
         name="householder_parameters_A_matrix", shape=(n_parameters_A,), 
         initializer=initializer, dtype=
         self.layer_self.code_given_info_class.float_dtype, trainable=
@@ -958,14 +836,16 @@ class SVDQuotientSpace:
         number_of_trailing_zeros, 0]])
     
     # Defines a function to evaluate the multiplication of one Househol-
-    # der reflector of the Householder chain of the transposed B matrix 
-    # of the SVD decomposition (A*diag(sigma)*transpose(B)) by the input 
-    # vector of the corresponding layer. The input vector is a tensor
-    # [n_samples, p_i] where p_i is the number of neurons of the i-th
-    # layer
+    # der reflector of the Householder chain of one of the two orthogo-
+    # nal matrices of the SVD decomposition (A*diag(sigma)*transpose(B))
+    # by the input vector of the corresponding layer. The input vector 
+    # is a tensor [n_samples, p_i] where p_i is the number of neurons of
+    # the i-th layer
 
-    def multiply_B_matrix_householder_reflector(self, input_vector, 
-    householder_reflector_index):
+    def multiply_input_vector_by_householder_reflector(self, 
+    input_vector, householder_reflector_index, 
+    householder_indices_orthogonal_matrix, 
+    householder_parameters_orthogonal_matrix):
         
         # Gets the Householder vector from the Householder parameters of
         # the B matrix. Keep in mind that the order of the Householder 
@@ -973,8 +853,9 @@ class SVDQuotientSpace:
         # since B is transposed in the SVD
 
         householder_vector = self.get_householder_vector_from_parameters(
-        self.householder_indices_B_matrix, 
-        self.householder_parameters_B_matrix, householder_reflector_index)
+        householder_indices_orthogonal_matrix, 
+        householder_parameters_orthogonal_matrix, 
+        householder_reflector_index)
 
         # Multiplies the input vector by the Householder reflector (the
         # operation is already broken down into the rank-1 calculation)
@@ -982,75 +863,109 @@ class SVDQuotientSpace:
         return input_vector-(self.two*tf.reduce_sum(input_vector*
         householder_vector, axis=-1, keepdims=True)*householder_vector)
     
-    # Defines a function to evaluate the multiplication of one Househol-
-    # der reflector of the Householder chain of the A matrix of the SVD 
-    # decomposition (A*diag(sigma)*transpose(B)) by the input vector of 
-    # the corresponding layer. The input vector is a tensor [n_samples,
-    # m_rank] where m_rank is the rank of the weights matrix correspon-
-    # ding to this SVD
+    # Defines a function to create a wrapper for the method that multi-
+    # plies the input vector by an orthogonal matrix and, then, calls
+    # foldl to evaluate the chain of Householder reflectors operating on
+    # the input vector
 
-    def multiply_A_matrix_householder_reflector(self, input_vector, 
-    householder_reflector_index):
+    def multiply_input_vector_by_householder_chain(self, input_vector, 
+    householder_reflector_indices, householder_indices_orthogonal_matrix, 
+    householder_parameters_orthogonal_matrix):
         
-        # Gets the Householder vector from the Householder parameters of
-        # the A matrix
+        # Creates a wrapper for the method that multiplies the input 
+        # vector by the orthogonal matrix using the recursive multipli-
+        # cation of the former by the corresponding chain of Householder
+        # reflectors
 
-        householder_vector = self.get_householder_vector_from_parameters(
-        self.householder_indices_A_matrix, 
-        self.householder_parameters_A_matrix, householder_reflector_index)
+        def wrapper(input_tensor, householder_reflector_index):
 
-        # Multiplies the input vector by the Householder reflector (the
-        # operation is already broken down into the rank-1 calculation)
+            return self.multiply_input_vector_by_householder_reflector(
+            input_tensor, householder_reflector_index, 
+            householder_indices_orthogonal_matrix, 
+            householder_parameters_orthogonal_matrix)
 
-        return input_vector-(self.two*tf.reduce_sum(input_vector*
-        householder_vector, axis=-1, keepdims=True)*householder_vector)
+        # Calls the foldl function to compute the input vector multiplied
+        # by the chain of Householder reflectors
+
+        return tf.foldl(wrapper, householder_reflector_indices, 
+        initializer=input_vector)
     
-    # Defines a function to evaluate the multiplication of one Househol-
-    # der reflector of the Householder chain of the transposed B matrix 
-    # of the SVD decomposition (A*diag(sigma)*transpose(B)) by the re-
-    # constructed B matrix so far. The partial_B_matrix is a tensor
-    # [p_i, rank] where p_i is the number of neurons of the i-th layer 
-    # and rank is the rank of the weight matrix
-
-    def update_B_matrix_with_householder_reflector(self, 
-    partial_B_matrix, householder_reflector_index):
-        
-        # Gets the Householder vector from the Householder parameters of
-        # the B matrix. Keep in mind that the order of the Householder 
-        # chain of the B matrix is reversed with respect to the A matrix,
-        # since B is transposed in the SVD
-
-        householder_vector = self.get_householder_vector_from_parameters(
-        self.householder_indices_B_matrix, 
-        self.householder_parameters_B_matrix, householder_reflector_index)
-
-        # Multiplies the partially reconstructed B matrix by the House-
-        # holder reflector to the left. However, the structure of the 
-        # rank-1 projection is taken advantage of
-
-        return partial_B_matrix-(self.two*householder_vector[:,None]*
-        tf.matmul(householder_vector[None, :], partial_B_matrix))
-    
-    # Defines a function to evaluate the multiplication of one Househol-
-    # der reflector of the Householder chain of the A matrix of the SVD 
-    # decomposition (A*diag(sigma)*transpose(B)) by the reconstructed A
-    # matrix so far. The partial_A_matrix is a tensor [p_(i+1), rank] 
-    # where p_(i+1) is the number of neurons of the (i+1)-th layer and
+    # Defines a function to evaluate the multiplication of the Househol-
+    # der chain of the transposed B matrix of the SVD decomposition (A*
+    # diag(sigma)*transpose(B)). The partial_B_matrix is a tensor [p_i, 
+    # rank] where p_i is the number of neurons of the i-th layer and 
     # rank is the rank of the weight matrix
 
-    def update_A_matrix_with_householder_reflector(self, 
-    partial_A_matrix, householder_reflector_index):
+    def update_B_matrix_with_householder_chain(self, initial_B_matrix, 
+    householder_reflector_indices, householder_indices_B_matrix,
+    householder_parameters_B_matrix):
         
-        # Gets the Householder vector from the Householder parameters of
-        # the A matrix
+        # Defines a wrapper to multiply the partial reconstruction of 
+        # the transposed B matrix by the current Housholder reflector
 
-        householder_vector = self.get_householder_vector_from_parameters(
-        self.householder_indices_A_matrix, 
-        self.householder_parameters_A_matrix, householder_reflector_index)
+        def wrapper(partial_B_matrix, householder_reflector_index):
+        
+            # Gets the Householder vector from the Householder param-
+            # eters of the B matrix. Keep in mind that the order of the 
+            # Householder chain of the B matrix is reversed with respect 
+            # to the A matrix, since B is transposed in the SVD
 
-        # Multiplies the partially reconstructed A matrix by the House-
-        # holder reflector to the left. However, the structure of the 
-        # rank-1 projection is taken advantage of
+            householder_vector = self.get_householder_vector_from_parameters(
+            householder_indices_B_matrix, 
+            householder_parameters_B_matrix, 
+            householder_reflector_index)
 
-        return partial_A_matrix-(self.two*householder_vector[:,None]*
-        tf.matmul(householder_vector[None, :], partial_A_matrix))
+            # Multiplies the partially reconstructed B matrix by the House-
+            # holder reflector to the left. However, the structure of the 
+            # rank-1 projection is taken advantage of
+
+            return partial_B_matrix-(self.two*tf.matmul(partial_B_matrix, 
+            householder_vector[:, None])*householder_vector[None,:])
+        
+        # Uses the wrapper to multiply the initial matrix recursively to
+        # the reflectors of the Householder chain
+
+        return tf.foldl(wrapper, householder_reflector_indices, 
+        initializer=initial_B_matrix)
+    
+    # Defines a function to evaluate the multiplication of the Househol-
+    # der chain of the A matrix of the SVD decomposition (A*diag(sigma)*
+    # transpose(B)). The partial_A_matrix is a tensor [n_samples, p_(i+1
+    # ), rank] where p_(i+1) is the number of neurons of the (i+1)-th 
+    # layer and rank is the rank of the weight matrix
+
+    def update_A_matrix_with_householder_chain(self, initial_A_matrix, 
+    householder_reflector_indices, householder_indices_A_matrix,
+    householder_parameters_A_matrix):
+        
+        # Defines a wrapper to multiply the partial reconstruction of 
+        # the A matrix by the current Housholder reflector
+
+        def wrapper(partial_A_matrix, householder_reflector_index):
+        
+            # Gets the Householder vector from the Householder parameters 
+            # of the A matrix
+
+            householder_vector = self.get_householder_vector_from_parameters(
+            householder_indices_A_matrix, 
+            householder_parameters_A_matrix, 
+            householder_reflector_index)
+
+            # Multiplies the partially reconstructed A matrix by the 
+            # Householder reflector to the left. However, the structure 
+            # of the rank-1 projection is taken advantage of. The multi-
+            # plication of the Householder vector by the partial update 
+            # of the A matrix is different, because A matrix has the di-
+            # mension with the number of samples. The dimension of sam-
+            # ples was gained due to the multiplication by the singular 
+            # values coming from the accessory layer
+
+            return partial_A_matrix-(self.two*householder_vector[None, :, 
+            None]*tf.einsum("p,spr->sr", householder_vector, 
+            partial_A_matrix)[:, None, :])
+        
+        # Uses the wrapper to multiply the initial matrix recursively to
+        # the reflectors of the Householder chain
+
+        return tf.foldl(wrapper, householder_reflector_indices, 
+        initializer=initial_A_matrix)
