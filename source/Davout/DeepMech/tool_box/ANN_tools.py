@@ -218,10 +218,48 @@ class MultiLayerModel:
         # Initializes the input layer
 
         input_layer = tf.keras.Input(shape=(self.input_dimension,))
-
+        
         # Initializes a list with the number of neurons in each layer
 
-        number_neurons_per_main_layer = [self.input_dimension]
+        number_neurons_per_main_layer = []
+
+        # If there is a main layer, saves the main layer input size only
+
+        if self.input_size_main_network is not None:
+
+            number_neurons_per_main_layer.append(
+            self.input_size_main_network)
+
+        # Otherwise, saves the whole input size of the NN
+
+        else:
+
+            number_neurons_per_main_layer.append(self.input_dimension)
+
+        # Adds the number of neurons of the first hidden layer of the
+        # main network
+
+        input_size_main_layer = 0
+
+        for value in self.layers_info[0].values():
+
+            if isinstance(value, int):
+
+                input_size_main_layer += value 
+
+            elif "number of neurons" in value:
+
+                input_size_main_layer += value["number of neurons"]
+
+            else:
+
+                raise KeyError("The bit '"+str(value)+"' of the dictio"+
+                "nary of layer info does not have the key 'number of n"+
+                "eurons'")
+
+        # Updates the list of numbers of neurons per layer
+
+        number_neurons_per_main_layer.append(input_size_main_layer)
 
         # Gets the first layer. Here the class is used as a function di-
         # rectly due to the call function. It goes directly there. Takes
@@ -242,11 +280,11 @@ class MultiLayerModel:
 
         for i in range(1,len(self.layers_info)):
 
-            # Sums up the neurons of the previous main layer
+            # Sums up the neurons of the main layer
 
             input_size_main_layer = 0
 
-            for value in self.layers_info[i-1].values():
+            for value in self.layers_info[i].values():
 
                 if isinstance(value, int):
 
@@ -274,33 +312,6 @@ class MultiLayerModel:
             if layer_number==len(self.layers_info)-1:
 
                 layer_number = -1
-
-                # If this is the last layer, adds the number of neurons
-                # in the output main layer as well
-
-                output_size_main_layer = 0
-
-                for value in self.layers_info[i].values():
-
-                    if isinstance(value, int):
-
-                        output_size_main_layer += value 
-
-                    elif "number of neurons" in value:
-
-                        output_size_main_layer += value["number of neu"+
-                        "rons"]
-
-                    else:
-
-                        raise KeyError("The bit '"+str(value)+"' of th"+
-                        "e dictionary of layer info does not have the "+
-                        "key 'number of neurons'")
-                    
-                # Updates the list of numbers of neurons per layer
-
-                number_neurons_per_main_layer.append(
-                output_size_main_layer)
 
             # Gets the output of this layer
 

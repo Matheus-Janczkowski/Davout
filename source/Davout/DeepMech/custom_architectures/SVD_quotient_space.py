@@ -23,17 +23,19 @@ class SVDQuotientSpace:
         # vided by the user has been actually supplied
 
         architecture_info_dict = verify_obligatory_and_optional_keys(
-        architecture_info_dict, {"name": {}, "quotient space dimension": 
-        {"type": int, "description": "Integer with the number of neuro"+
-        "ns attached to inputs from the quotient space. The quotient s"+
-        "pace has the input vector which makes the whole neural networ"+
-        "k output the null vector when the former is also null."}}, 
+        architecture_info_dict, {"name": {}, "activations accessory la"+
+        "yer list": {"type": list, "description": "List with dictionar"+
+        "ies with names of activation functions as keys and number of "+
+        "the corresponding neurons as values. These activations functi"+
+        "ons are for the accessory layer. Each dictionary corresponds "+
+        "to a layer"}}, 
         {"weights modulating function": {"type": str, "description": 
         "String with the name of the function that modulates the weigh"+
         "ts matrix", "default": "identity"}, "Householder epsilon": {
         "type": float, "description": "Float number with the tolerance"+
         " to the calculation of the non-free component of each Househo"+
-        "lder vector"}}, "custom_architecture", "SVDQuotientSpace")
+        "lder vector", "default": 1.0}}, "custom_architecture", "SVDQu"+
+        "otientSpace")
         
         # Stores variables that will be used in the get_config for seri-
         # alization and class rebuilding
@@ -64,8 +66,25 @@ class SVDQuotientSpace:
         # Gets the dictionary of activation functions for the accessory
         # layer
 
-        self.activations_accessory_layer_dict = architecture_info_dict[
-        "activations accessory layer list"][self.layer_number]
+        if self.layer_number<len(architecture_info_dict["activations a"+
+        "ccessory layer list"]):
+
+            self.activations_accessory_layer_dict = architecture_info_dict[
+            "activations accessory layer list"][self.layer_number]
+
+        # If the number of the layer is not a index of the list of acti-
+        # vations of the accessory network, returns an error
+
+        else:
+
+            raise IndexError("The "+str(self.layer_number)+"-th layer "+
+            "of the main network does not have a corresponding layer i"+
+            "n the accessory network. The provided list of dictionarie"+
+            "s of activations for the accessory network within the var"+
+            "iable 'activations accessory layer list' is:\n"+str(
+            architecture_info_dict["activations accessory layer list"])+
+            "\nwhich has a length of "+str(len(architecture_info_dict[
+            "activations accessory layer list"])))
         
         # Verifies if there are activations in the dictionary of activa-
         # tions for the accessory layer
@@ -297,6 +316,10 @@ class SVDQuotientSpace:
         # Multiplies the incoming batched input vector by the transposed
         # B matrix of the SVD. Then multiplies it by the identity [rank,
         # number of neurons of the last layer]
+
+        print("static shape:", input[0].shape)
+        print("dynamic shape:", tf.shape(input[0]))
+        print(input[0])
 
         output_B = self.multiply_input_vector_by_householder_chain(input[
         0], self.householder_reflectors_indices, 
@@ -640,13 +663,21 @@ class SVDQuotientSpace:
     def initialize_householder_parameters(self):
 
         # Gets the number of neurons of the incoming layer and the num-
-        # ber of neurons of this layer
+        # ber of neurons of this layer. Sums 1 to the layer number since
+        # the list of numbers of neurons in each layer include the input
+        # layer
 
         self.n_neurons_last_main_layer = self.layer_self.code_given_info_class.number_neurons_per_main_layer[
-        self.layer_number-1]
+        self.layer_number]
 
         self.n_neurons_current_main_layer = self.layer_self.code_given_info_class.number_neurons_per_main_layer[
-        self.layer_number]
+        self.layer_number+1]
+
+        print("\nThe number of neurons of the previous main layer is: "+str(
+        self.n_neurons_last_main_layer))
+
+        print("\nThe number of neurons of the current main layer is: "+str(
+        self.n_neurons_current_main_layer))
 
         # Computes the rank of the weights matrix
 
@@ -668,7 +699,9 @@ class SVDQuotientSpace:
             "ons. The corresponding accessory layer has "+str(
             self.number_of_neurons_accessory_layer)+" neurons, but it "+
             "must have the same number of neurons as the rank of the c"+
-            "orresponding main layer")
+            "orresponding main layer.\nThe main network has the follow"+
+            "ing list of numbers of neurons per layer:\n"+str(
+            self.layer_self.code_given_info_class.number_neurons_per_main_layer))
 
         # In case the modulating function is not the identity, creates
         # the initial weight matrix as the identity
@@ -679,10 +712,10 @@ class SVDQuotientSpace:
             self.n_neurons_last_main_layer, dtype=
             self.layer_self.code_given_info_class.float_dtype)
 
-        # Initializes the tensor with the indices of the Householder re-
+        # Initializes the tuple with the indices of the Householder re-
         # flectors of the Householder chain
 
-        self.householder_reflectors_indices = tf.range(self.weights_rank)
+        self.householder_reflectors_indices = tuple(range(self.weights_rank))#tf.range(self.weights_rank)
 
         # Sets the initializer of the Householder parameters using Glo-
         # rot initialization with the scaling of the corresponding 
@@ -872,7 +905,23 @@ class SVDQuotientSpace:
     householder_reflector_indices, householder_indices_orthogonal_matrix, 
     householder_parameters_orthogonal_matrix):
         
-        # Creates a wrapper for the method that multiplies the input 
+        # Iterates through the indices of Householder reflectors
+
+        for householder_reflector_index in householder_reflector_indices:
+
+            # Updates the input vector by recursive multiplication of
+            # reflectors of the Householder chain
+
+            input_vector = self.multiply_input_vector_by_householder_reflector(
+            input_vector, householder_reflector_index, 
+            householder_indices_orthogonal_matrix, 
+            householder_parameters_orthogonal_matrix)
+
+        # Returns the updated input vector
+
+        return input_vector
+        
+        """# Creates a wrapper for the method that multiplies the input 
         # vector by the orthogonal matrix using the recursive multipli-
         # cation of the former by the corresponding chain of Householder
         # reflectors
@@ -888,7 +937,7 @@ class SVDQuotientSpace:
         # by the chain of Householder reflectors
 
         return tf.foldl(wrapper, householder_reflector_indices, 
-        initializer=input_vector)
+        initializer=input_vector)"""
     
     # Defines a function to evaluate the multiplication of the Househol-
     # der chain of the transposed B matrix of the SVD decomposition (A*
