@@ -600,18 +600,16 @@ class MixedActivationLayer(tf.keras.layers.Layer):
 
         config = super().get_config()
 
-        # Updates the instructions dictionary
+        # Updates the instructions dictionary. Saves all the information
+        # stored in the code given info class
 
         config.update({"activation_functionDict": self.functions_dict,
         "custom_activations_config": 
         self.custom_activations_class.get_config(), "custom_activation"+
         "s_class": None, "custom_architecture": 
-        self.custom_architecture_dict, "code_given_info_class": {"inpu"+
-        "t_size_main_network": 
-        self.code_given_info_class.input_size_main_network, "input_siz"+
-        "e_main_layer": self.code_given_info_class.input_size_main_layer, 
-        "layer": self.code_given_info_class.layer, "float_dtype": 
-        self.code_given_info_class.float_dtype}})
+        self.custom_architecture_dict, "code_given_info_class": {
+        attribute_name: attribute_value for attribute_name, (
+        attribute_value) in vars(self.code_given_info_class).items()}})
 
         return config
     
