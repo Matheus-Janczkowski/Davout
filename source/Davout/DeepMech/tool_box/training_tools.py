@@ -189,7 +189,7 @@ class ModelCustomTraining:
         
         """
         Class for training a model whose trainable parameters (weights
-        and biases are) used as a flatten vector to be trained using a
+        and biases) are used as a flatten vector to be trained using a
         scipy framework. Tensorflow is used to evaluate derivatives and
         the loss function only"""
 

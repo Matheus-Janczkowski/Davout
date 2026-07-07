@@ -344,9 +344,6 @@ class SVDQuotientSpace:
         # B matrix of the SVD. Then multiplies it by the identity [rank,
         # number of neurons of the last layer]
 
-        print("Shape of the main network input:", input[0].shape)
-        print(input[0])
-
         output_B = self.multiply_input_vector_by_householder_chain(input[
         0], self.householder_reflectors_indices_B, 
         self.householder_indices_B_matrix, 
@@ -359,10 +356,6 @@ class SVDQuotientSpace:
 
         singular_values_output = self.singular_values_multiplier(
         output_activations_accessory_layer, output_B)
-
-        print("The shape of the multiplication of the output of the B "+
-        "matrix by the singular values is: "+str(
-        singular_values_output.shape)+"\n")
 
         output_A = self.multiply_input_vector_by_householder_chain(
         singular_values_output, self.householder_reflectors_indices_A, 
@@ -397,8 +390,6 @@ class SVDQuotientSpace:
     # the SVD decomposition
 
     def first_layer_call_from_input(self, input):
-
-        print("Shape of the NN input: "+str(input.shape))
 
         # The first element in the input tuple is the main layer. The 
         # second element is due to the accessory layer
@@ -518,12 +509,6 @@ class SVDQuotientSpace:
         (W_accessory, b_accessory, householder_parameters_A_matrix, 
         householder_parameters_B_matrix) = self.layer_update_parameters(
         parameters)
-
-        print("W accessory shape: "+str(W_accessory.shape)+"\nb access"+
-        "ory shape: "+str(b_accessory.shape)+"\nhouseholder_parameters"+
-        "_A_matrix shape: "+str(householder_parameters_A_matrix.shape)+
-        "\nhouseholder_parameters_B_matrix shape: "+str(
-        householder_parameters_B_matrix.shape)+"\n")
 
         # Gets the multiplication of the parcel of the accessory layer
         # by its corresponding matrix. Then, splits the result into the
@@ -787,19 +772,10 @@ class SVDQuotientSpace:
             self.n_neurons_current_main_layer = self.layer_self.code_given_info_class.number_neurons_per_main_layer[
             self.layer_number+1]
 
-        print("\nInitializes the "+str(self.layer_number)+"-th layer."+
-        "\nThe number of neurons of the previous main layer is: "+str(
-        self.n_neurons_last_main_layer))
-
-        print("\nThe number of neurons of the current main layer is: "+str(
-        self.n_neurons_current_main_layer))
-
         # Computes the rank of the weights matrix
 
         self.weights_rank = min(self.n_neurons_last_main_layer, 
         self.n_neurons_current_main_layer)
-
-        print("The rank of the weight matrix is: "+str(self.weights_rank)+"\n")
 
         # Verifies if the rank of the weights matrix is equal to the 
         # number of neurons of the accessory layer (since the accessory
@@ -1104,15 +1080,8 @@ class SVDQuotientSpace:
         # Gets the first and last indices of the Householder vector, 
         # then the vector that will become the Householder vector
 
-        print("For the "+str(householder_reflector_index)+"-th Househo"+
-        "lder reflector:")
-
         initial_index, length, number_of_trailing_zeros = (
         householder_indices[householder_reflector_index])
-
-        print("initial index is "+str(initial_index)+"\nlen"+
-        "gth is "+str(length)+"\nnumber of trailing zeros is "+str(
-        number_of_trailing_zeros)+"\n")
 
         raw_vector = tf.slice(householder_parameters, [initial_index], [
         length])
@@ -1156,10 +1125,6 @@ class SVDQuotientSpace:
         householder_parameters_orthogonal_matrix, 
         householder_reflector_index)
 
-        print("Householder vector B shape: "+str(householder_vector.shape
-        )+"\nand the shape of the input tensor is: "+str(
-        input_vector.shape)+"\n")
-
         # Multiplies the input vector by the Householder reflector (the
         # operation is already broken down into the rank-1 calculation)
 
@@ -1186,10 +1151,6 @@ class SVDQuotientSpace:
             input_vector, householder_reflector_index, 
             householder_indices_orthogonal_matrix, 
             householder_parameters_orthogonal_matrix)
-
-        print("Returns the multiplication of the input vector by the c"+
-        "hain of Householder reflectors with shape: "+str(
-        input_vector.shape)+"\n")
 
         # Returns the updated input vector
 

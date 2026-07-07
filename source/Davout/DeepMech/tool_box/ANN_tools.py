@@ -36,6 +36,10 @@ class MultiLayerModel:
     enforce_customLayers=False, evaluate_parameters_gradient=False,
     flat_trainable_parameters=False, verbose=False, parameters_dtype=
     "float32", input_size_main_network=None, custom_architecture=None):
+
+        # Sets the type of the parameters
+
+        self.parameters_dtype = parameters_dtype
         
         # Instantiates the class of custom activation functions
 
@@ -103,10 +107,6 @@ class MultiLayerModel:
             else:
 
                 self.output_dimension += n_neurons
-
-        # Sets the type of the parameters
-
-        self.parameters_dtype = parameters_dtype
 
         # Saves the flag for input-convex models
 
