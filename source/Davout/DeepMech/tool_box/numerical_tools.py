@@ -6,6 +6,8 @@ import tensorflow as tf
 
 from ...PythonicUtilities import dictionary_tools
 
+from ...PythonicUtilities import programming_tools
+
 ########################################################################
 #                            Linear Algebra                            #
 ########################################################################
@@ -222,49 +224,104 @@ reorder_indices=True, block_multiplication=True, n_samples=None):
 #                        Regularizing functions                        #
 ########################################################################
 
-# Defines a function to get a string with the name of the regularizing 
-# function to be used and return the live function. If a dictionary is
-# given, optional parameters may be taken
+# Defines a class to get a string with the name of the regularizing 
+# function to be used and return the live function in its call method. 
+# If a dictionary is given, optional parameters may be taken
 
-def build_tensorflow_math_expressions(expression_name, dtype=tf.float32
-):
+class BuildTensorflowMathExpressions:
 
-    """Builds a mathematical expression with tensorflow operations to
-    facilitate differentiation. The argument is:
-    
-    expression_name: a string with one of the expressions are to be
-    built with their default parameters; otherwise, a dictionary with
-    key 'name' for the name of the function and other string keys for 
-    the respective parameters """
+    def __init__(self, dtype=tf.float32):
+        
+        # Saves the float type
 
-    # Verifies if the expression name is just a string
+        self.dtype = dtype
 
-    if isinstance(expression_name, str):
+        # Automatically gets a dictionary of the methods defined in this
+        # class
 
-        # Turns it into a dictionary with the expression name as the va-
-        # lue for the key 'name'
+        self.available_methods = programming_tools.get_attribute(self,
+        None, None, dictionary_of_methods=True, delete_init_key=True,
+        reserved_methods=["__call__"])
 
-        expression_name = {"name": expression_name}
+    # Defines the method that selects the expression name and converts 
+    # it to a live expression
 
-    # Verifies if it is not a dictionary
+    def __call__(self, expression_name):
 
-    elif not isinstance(expression_name, dict):
+        """Builds a mathematical expression with tensorflow operations to
+        facilitate differentiation. The argument is:
+        
+        expression_name: a string with one of the expressions are to be
+        built with their default parameters; otherwise, a dictionary with
+        key 'name' for the name of the function and other string keys for 
+        the respective parameters """
 
-        raise TypeError("The argument 'expression_name' for function '"+
-        "build_tensorflow_math_expressions' must be a string or a dict"+
-        "ionary. Currently, it is: "+str(expression_name))
+        # Verifies if the expression name is just a string
 
-    # Verifies if the expression to be used is the smooth absolute value
+        if isinstance(expression_name, str):
 
-    if expression_name["name"]=="smooth absolute value":
+            # Turns it into a dictionary with the expression name as the 
+            # value for the key 'name'
+
+            expression_name = {"name": expression_name}
+
+        # Verifies if it is not a dictionary
+
+        elif not isinstance(expression_name, dict):
+
+            raise TypeError("The argument 'expression_name' the method"+
+            " __call__ in class 'BuildTensorflowMathExpressions' must "+
+            "be a string or a dictionary. Currently, it is: "+str(
+            expression_name))
+        
+        # Verifies is expression name has the key 'name'
+
+        if not ("name" in expression_name):
+
+            raise ValueError("The dictionary 'expression_name' in 'Bui"+
+            "ldTensorflowMathExpressions' does not have the key 'name'"+
+            ", which is obligatory. The given dictionary is:\n"+str(
+            expression_name))
+
+        # Verifies if the expression to be used is in the dictionary of
+        # available methods
+
+        if expression_name["name"] in self.available_methods:
+
+            # Calls the method and returns it
+
+            return self.available_methods[expression_name["name"]](
+            expression_name)
+
+        else:
+
+            available_methods_names = ""
+
+            for name in self.available_methods.keys():
+
+                available_methods_names += "\n'"+str(name)+"'"
+
+            raise ValueError("The name of the expression for the class"+
+            " 'BuildTensorflowMathExpressions' must be one of the avai"+
+            "lable options:"+available_methods_names+"\n\nThe given na"+
+            "me was: '"+str(expression_name["name"])+"'")
+        
+    ####################################################################
+    #                              Methods                             #
+    ####################################################################
+
+    # Defines a function to create a tensorflow expression for a smooth
+    # absolute value
+
+    def smooth_absolute_value(self, expression_name):
 
         # Verifies if the dictionary has keys that are not for this ex-
         # pression
 
         expression_name = dictionary_tools.verify_dictionary_keys(
         expression_name, {"name": "", "eps": tf.constant(1E-6, dtype=
-        dtype)}, dictionary_location="at the builder of tensorflow mat"+
-        "h expressions", fill_in_keys=True)
+        self.dtype)}, dictionary_location="at the builder of tensorflo"+
+        "w math expressions", fill_in_keys=True)
 
         # Returns the smooth absolute value
 
@@ -278,11 +335,3 @@ def build_tensorflow_math_expressions(expression_name, dtype=tf.float32
             return tf.sqrt(tf.square(x)+eps_squared)-eps
 
         return smooth_abs
-
-        #return lambda x: tf.sqrt(tf.square(x)+eps_squared)-eps
-
-    else:
-
-        raise KeyError("The name of the expression for the function 'b"+
-        "uild_tensorflow_math_expressions' must be one of the availabl"+
-        "e options: 'smooth absolute value'")

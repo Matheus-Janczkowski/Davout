@@ -223,11 +223,22 @@ class MultiLayerModel:
 
         number_neurons_per_main_layer = []
 
+        # Initializes the input size of a possible accessory network
+
+        input_size_acessory_network = None
+
         # If there is a main layer, saves the main layer input size only
 
         if self.input_size_main_network is not None:
 
             number_neurons_per_main_layer.append(
+            self.input_size_main_network)
+
+            # Calculates the size of the input of the accessory network
+            # as the difference of the whole input by the input size of
+            # the main network
+
+            input_size_acessory_network = (self.input_dimension-
             self.input_size_main_network)
 
         # Otherwise, saves the whole input size of the NN
@@ -269,7 +280,8 @@ class MultiLayerModel:
 
         code_given_info_class = CodeGivenLayerInfo(
         self.input_size_main_network, self.input_size_main_network, 0,
-        self.parameters_dtype, tuple(number_neurons_per_main_layer))
+        self.parameters_dtype, tuple(number_neurons_per_main_layer),
+        input_size_acessory_network)
 
         output_eachLayer = MixedActivationLayer(self.layers_info[0], 
         self.custom_activations_class, code_given_info_class,
@@ -318,7 +330,7 @@ class MultiLayerModel:
             code_given_info_class = CodeGivenLayerInfo(
             self.input_size_main_network, input_size_main_layer, 
             layer_number, self.parameters_dtype, tuple(
-            number_neurons_per_main_layer))
+            number_neurons_per_main_layer), input_size_acessory_network)
 
             output_eachLayer = MixedActivationLayer(self.layers_info[i],
             self.custom_activations_class, code_given_info_class, 
@@ -461,7 +473,8 @@ def insert_call_with_parameters_to_keras(model):
 class CodeGivenLayerInfo:
 
     def __init__(self, input_size_main_network, input_size_main_layer,
-    layer, float_dtype, number_neurons_per_main_layer):
+    layer, float_dtype, number_neurons_per_main_layer, 
+    input_size_acessory_network):
         
         self.input_size_main_network = input_size_main_network
 
@@ -472,6 +485,8 @@ class CodeGivenLayerInfo:
         self.float_dtype = float_dtype
 
         self.number_neurons_per_main_layer = number_neurons_per_main_layer
+
+        self.input_size_acessory_network = input_size_acessory_network
 
 # Defines a class to construct a layer with different activation 
 # functions. Receives a dictionary of activation functions, the activa-

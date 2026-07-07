@@ -5,7 +5,7 @@ import tensorflow as tf
 
 from ..tool_box.activation_function_utilities import verify_activationDict
 
-from ..tool_box.numerical_tools import build_tensorflow_math_expressions
+from ..tool_box.numerical_tools import BuildTensorflowMathExpressions
 
 from ...PythonicUtilities.dictionary_tools import verify_obligatory_and_optional_keys
 
@@ -27,7 +27,7 @@ class FullyConvexNNs:
         architecture_info_dict, ["name"], {"regularization function": {
         "type": str, "description": "String with the name of the regul"+
         "arization function to make the weights matrix strictly positi"+
-        "ve", "default": "smooth absolute value"}}, "custom_architectu"+
+        "ve", "default": "smooth_absolute_value"}}, "custom_architectu"+
         "re", "FullyConvexNNs")
 
         # Saves the objects saved into the MixedActivationLayer class 
@@ -70,11 +70,14 @@ class FullyConvexNNs:
 
         self.layer_self.apply_parameters_to_layer = self.apply_parameters_to_layer
 
-        # Gets the regularization function
+        # Instantiates the class of tensorflow expressions, then gets 
+        # the regularization function
+
+        build_tensorflow_math_expressions = BuildTensorflowMathExpressions(
+        dtype=self.layer_self.code_given_info_class.float_dtype)
 
         self.regularization_function = build_tensorflow_math_expressions(
-        architecture_info_dict["regularization function"], 
-        self.layer_self.code_given_info_class.float_dtype)
+        architecture_info_dict["regularization function"])
     
     # Defines a method for getting the layer value given the input when
     # an accessory layer is NOT necessary
@@ -226,8 +229,8 @@ class PartiallyConvexNNs:
         " a layer"}}, 
         {"regularization function": {"type": str, "description": "Stri"+
         "ng with the name of the regularization function to make the w"+
-        "eights matrix strictly positive", "default": "smooth absolute"+
-        " value"}}, "custom_architecture", "PartiallyConvexNNs")
+        "eights matrix strictly positive", "default": "smooth_absolute"+
+        "_value"}}, "custom_architecture", "PartiallyConvexNNs")
         
         # Stores variables that will be used in the get_config for seri-
         # alization and class rebuilding
@@ -360,11 +363,14 @@ class PartiallyConvexNNs:
 
             self.layer_self.apply_parameters_to_layer = self.apply_parameters_to_middle_layer
 
-        # Gets the regularization function
+        # Instantiates the class that builds tensorflow expressions, 
+        # then gets the regularization function
+
+        build_tensorflow_math_expressions = BuildTensorflowMathExpressions(
+        dtype=self.layer_self.code_given_info_class.float_dtype)
 
         self.regularization_function = build_tensorflow_math_expressions(
-        architecture_info_dict["regularization function"], 
-        self.layer_self.code_given_info_class.float_dtype)
+        architecture_info_dict["regularization function"])
     
     # Defines a method for getting the layer value given the input when
     # an accessory layer is necessary. In this case, the input must be a

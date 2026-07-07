@@ -117,9 +117,9 @@ class TestANNTools(unittest.TestCase):
         self.whole_input_dimension, 
         self.activation_list_main_network, enforce_customLayers=True, 
         verbose=True, parameters_dtype="float64", custom_architecture={
-        "name": "SVDQuotientSpace", "weights modulating function": "id"+
-        "entity", "Householder epsilon": 1.0, "activations accessory l"+
-        "ayer list": self.accessory_activation_list_tests}, 
+        "name": "SVDQuotientSpace", "weights modulating function": 
+        "identity", "Householder epsilon": 1.0, 
+        "activations accessory layer list": self.accessory_activation_list_tests}, 
         input_size_main_network=self.quotient_space_dimension)
 
         custom_model = ANN_class()

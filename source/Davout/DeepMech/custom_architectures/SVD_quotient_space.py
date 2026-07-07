@@ -4,7 +4,7 @@ import tensorflow as tf
 
 from ..tool_box.activation_function_utilities import verify_activationDict
 
-from ..tool_box.numerical_tools import build_tensorflow_math_expressions
+from ..tool_box.numerical_tools import BuildTensorflowMathExpressions
 
 from ...PythonicUtilities.dictionary_tools import verify_obligatory_and_optional_keys
 
@@ -47,6 +47,9 @@ class SVDQuotientSpace:
         self.input_size_main_network = (
         self.layer_self.code_given_info_class.input_size_main_network)
 
+        self.input_size_accessory_network = (
+        self.layer_self.code_given_info_class.input_size_acessory_network)
+
         self.input_size_main_layer = (
         self.layer_self.code_given_info_class.input_size_main_layer)
 
@@ -71,6 +74,25 @@ class SVDQuotientSpace:
 
             self.activations_accessory_layer_dict = architecture_info_dict[
             "activations accessory layer list"][self.layer_number]
+
+            # If this is the first layer, the input size of the accessory
+            # layer is the input size of the accessory network. Multi-
+            # plies by one to create a copy
+
+            if self.layer_number==0:
+
+                self.input_size_accessory_layer = (
+                self.input_size_accessory_network*1)
+
+            # Otherwise, gets the input size of the accessory layer by
+            # subtracting one
+
+            else:
+
+                self.input_size_accessory_layer = sum([value["number o"+
+                "f neurons"] if isinstance(value, dict) else value for (
+                value) in architecture_info_dict["activations accessor"+
+                "y layer list"][self.layer_number-1].values()])
 
         # If the number of the layer is not a index of the list of acti-
         # vations of the accessory network, returns an error
@@ -138,9 +160,13 @@ class SVDQuotientSpace:
 
             self.modulation_option = "not identity"
 
+            # Initializes the class to build tensorflow expressions
+
+            build_tensorflow_math_expressions = BuildTensorflowMathExpressions(
+            dtype=self.layer_self.code_given_info_class.float_dtype)
+
             self.modulating_function = build_tensorflow_math_expressions(
-            architecture_info_dict["weights modulating function"], 
-            self.layer_self.code_given_info_class.float_dtype)
+            architecture_info_dict["weights modulating function"])
 
             # Sets the evaluator of the generic layer from input to the
             # method that assembles the SVD first and, then, applies the
@@ -244,24 +270,25 @@ class SVDQuotientSpace:
         # matrix since the B matrix is transposed
 
         weight_matrix = self.update_B_matrix_with_householder_chain(
-        self.initial_weight_matrix, self.householder_reflectors_indices, 
+        self.initial_weight_matrix, 
+        self.householder_reflectors_indices_B, 
         self.householder_indices_B_matrix, 
         self.layer_self.householder_parameters_B_matrix)
 
         # Multiplies this result by the singular values coming from the
         # accessory layer. The singular values are a tensor [n_samples,
         # rank]; the reconstructed weight matrix so far is a tensor [
-        # rank, p_i]. The final result must be [n_samples, rank, p_i]
+        # rank, p_i]. The final result must be [n_samples, p_i+1, p_i]
 
-        weight_matrix = (output_activations_accessory_layer[:,:,None]*
-        weight_matrix[None,:,:])
+        weight_matrix = self.singular_values_by_matrix(
+        output_activations_accessory_layer, weight_matrix)
         
         # Multiplies by the A matrix of the SVD to reconstruct the SVD.
         # Then, uses the modulating function to get the weights matrix
 
         weight_matrix = self.modulating_function(
         self.update_A_matrix_with_householder_chain(weight_matrix, 
-        self.householder_reflectors_indices, 
+        self.householder_reflectors_indices_A, 
         self.householder_indices_A_matrix,
         self.layer_self.householder_parameters_A_matrix))
 
@@ -317,12 +344,11 @@ class SVDQuotientSpace:
         # B matrix of the SVD. Then multiplies it by the identity [rank,
         # number of neurons of the last layer]
 
-        print("static shape:", input[0].shape)
-        print("dynamic shape:", tf.shape(input[0]))
+        print("Shape of the main network input:", input[0].shape)
         print(input[0])
 
         output_B = self.multiply_input_vector_by_householder_chain(input[
-        0], self.householder_reflectors_indices, 
+        0], self.householder_reflectors_indices_B, 
         self.householder_indices_B_matrix, 
         self.layer_self.householder_parameters_B_matrix)
 
@@ -331,9 +357,15 @@ class SVDQuotientSpace:
         # SVD. Note that only the components of the output of B linked
         # to the rank of the layer are used
 
+        singular_values_output = self.singular_values_multiplier(
+        output_activations_accessory_layer, output_B)
+
+        print("The shape of the multiplication of the output of the B "+
+        "matrix by the singular values is: "+str(
+        singular_values_output.shape)+"\n")
+
         output_A = self.multiply_input_vector_by_householder_chain(
-        output_activations_accessory_layer*output_B[:,:self.weights_rank
-        ], self.householder_reflectors_indices, 
+        singular_values_output, self.householder_reflectors_indices_A, 
         self.householder_indices_A_matrix, 
         self.layer_self.householder_parameters_A_matrix)
 
@@ -365,6 +397,8 @@ class SVDQuotientSpace:
     # the SVD decomposition
 
     def first_layer_call_from_input(self, input):
+
+        print("Shape of the NN input: "+str(input.shape))
 
         # The first element in the input tuple is the main layer. The 
         # second element is due to the accessory layer
@@ -427,24 +461,25 @@ class SVDQuotientSpace:
         # matrix since the B matrix is transposed
 
         weight_matrix = self.update_B_matrix_with_householder_chain(
-        self.initial_weight_matrix, self.householder_reflectors_indices, 
+        self.initial_weight_matrix, 
+        self.householder_reflectors_indices_B, 
         self.householder_indices_B_matrix, 
         householder_parameters_B_matrix)
 
         # Multiplies this result by the singular values coming from the
         # accessory layer. The singular values are a tensor [n_samples,
         # rank]; the reconstructed weight matrix so far is a tensor [
-        # rank, p_i]. The final result must be [n_samples, rank, p_i]
+        # rank, p_i]. The final result must be [n_samples, p_i+1, p_i]
 
-        weight_matrix = (output_activations_accessory_layer[:,:,None]*
-        weight_matrix[None,:,:])
+        weight_matrix = self.singular_values_by_matrix(
+        output_activations_accessory_layer, weight_matrix)
         
         # Multiplies by the A matrix of the SVD to reconstruct the SVD.
         # Then, uses the modulating function to get the weights matrix
 
         weight_matrix = self.modulating_function(
         self.update_A_matrix_with_householder_chain(weight_matrix, 
-        self.householder_reflectors_indices, 
+        self.householder_reflectors_indices_A, 
         self.householder_indices_A_matrix, 
         householder_parameters_A_matrix))
 
@@ -484,6 +519,12 @@ class SVDQuotientSpace:
         householder_parameters_B_matrix) = self.layer_update_parameters(
         parameters)
 
+        print("W accessory shape: "+str(W_accessory.shape)+"\nb access"+
+        "ory shape: "+str(b_accessory.shape)+"\nhouseholder_parameters"+
+        "_A_matrix shape: "+str(householder_parameters_A_matrix.shape)+
+        "\nhouseholder_parameters_B_matrix shape: "+str(
+        householder_parameters_B_matrix.shape)+"\n")
+
         # Gets the multiplication of the parcel of the accessory layer
         # by its corresponding matrix. Then, splits the result into the
         # different families of activation functions and evaluates the
@@ -506,7 +547,7 @@ class SVDQuotientSpace:
         # number of neurons of the last layer]
 
         output_B = self.multiply_input_vector_by_householder_chain(
-        layer_input[0], self.householder_reflectors_indices, 
+        layer_input[0], self.householder_reflectors_indices_B, 
         self.householder_indices_B_matrix, 
         householder_parameters_B_matrix)
 
@@ -515,9 +556,11 @@ class SVDQuotientSpace:
         # SVD. Note that only the components of the output of B linked
         # to the rank of the layer are used
 
+        singular_values_output = self.singular_values_multiplier(
+        output_activations_accessory_layer, output_B)
+
         output_A = self.multiply_input_vector_by_householder_chain(
-        output_activations_accessory_layer*output_B[:,:self.weights_rank
-        ], self.householder_reflectors_indices, 
+        singular_values_output, self.householder_reflectors_indices_A, 
         self.householder_indices_A_matrix, 
         householder_parameters_A_matrix)
 
@@ -596,6 +639,11 @@ class SVDQuotientSpace:
         self.number_of_neurons_accessory_layer, name="W_accessory", 
         use_bias=True)
 
+        # Effectively builds the accessory layer
+
+        self.layer_self.dense_W_accessory.build((None, 
+        self.input_size_accessory_layer))
+
         # Initializes all trainable parameters and indices for the
         # Householder chains
 
@@ -604,6 +652,50 @@ class SVDQuotientSpace:
         # Constructs the layer
 
         super(type(self.layer_self), self.layer_self).build(input_shape)
+
+        # Recovers the indices of the trainables variables
+
+        self.index_W_accessory = self.search_trainable_variable_index(
+        self.layer_self.dense_W_accessory.kernel)
+
+        self.index_bias_accessory = self.search_trainable_variable_index(
+        self.layer_self.dense_W_accessory.bias)
+
+        self.index_householder_A = self.search_trainable_variable_index(
+        self.layer_self.householder_parameters_A_matrix)
+
+        self.index_householder_B = self.search_trainable_variable_index(
+        self.layer_self.householder_parameters_B_matrix)
+
+    # Defines a function to search for the index of a trainable variable
+    # in the flat tensor
+
+    def search_trainable_variable_index(self, trainable_variable):
+
+        # Iterates through the trainable variables
+
+        for index, variable in enumerate(
+        self.layer_self.trainable_variables):
+            
+            # Verifies if the trainable variable is equal to this varia-
+            # ble. In positive case, returns the index
+
+            if trainable_variable is variable:
+
+                return index
+            
+        # If no index has been returned, throw an error
+
+        variables_names = ""
+
+        for name in self.layer_self.trainable_variables:
+
+            variables_names += "\n"+str(name)
+
+        raise ValueError("The trainable variable '"+str(
+        trainable_variable)+"' was not found in the list of trainable "+
+        "variables of architecture '"+str(self.__class__.__name__)+"':"+
+        variables_names)
 
     # Defines a function to get the flat and sliced parameters, then, 
     # converts it to tensors given the shapes of the trainables varia-
@@ -614,17 +706,24 @@ class SVDQuotientSpace:
         # If it's the first layer, the input tensor must be sliced: one
         # bit for the main network, the rest for the accessory network
 
-        W_accessory = tf.reshape(flat_parameters[0], 
-        self.layer_self.trainable_variables_shapes[0])
+        W_accessory = tf.reshape(flat_parameters[self.index_W_accessory], 
+        self.layer_self.trainable_variables_shapes[
+        self.index_W_accessory])
         
-        b_accessory = tf.reshape(flat_parameters[1], 
-        self.layer_self.trainable_variables_shapes[1])
+        b_accessory = tf.reshape(flat_parameters[
+        self.index_bias_accessory], 
+        self.layer_self.trainable_variables_shapes[
+        self.index_bias_accessory])
         
-        householder_parameters_A_matrix = tf.reshape(flat_parameters[2], 
-        self.layer_self.trainable_variables_shapes[2])
+        householder_parameters_A_matrix = tf.reshape(flat_parameters[
+        self.index_householder_A], 
+        self.layer_self.trainable_variables_shapes[
+        self.index_householder_A])
         
-        householder_parameters_B_matrix = tf.reshape(flat_parameters[3], 
-        self.layer_self.trainable_variables_shapes[3])
+        householder_parameters_B_matrix = tf.reshape(flat_parameters[
+        self.index_householder_B], 
+        self.layer_self.trainable_variables_shapes[
+        self.index_householder_B])
 
         return (W_accessory, b_accessory, 
         householder_parameters_A_matrix, householder_parameters_B_matrix)
@@ -667,13 +766,29 @@ class SVDQuotientSpace:
         # the list of numbers of neurons in each layer include the input
         # layer
 
-        self.n_neurons_last_main_layer = self.layer_self.code_given_info_class.number_neurons_per_main_layer[
-        self.layer_number]
+        # Verifies if this is the output layer, then corrects for the 
+        # given layer number
 
-        self.n_neurons_current_main_layer = self.layer_self.code_given_info_class.number_neurons_per_main_layer[
-        self.layer_number+1]
+        if self.layer_number==-1:
 
-        print("\nThe number of neurons of the previous main layer is: "+str(
+            self.n_neurons_last_main_layer = self.layer_self.code_given_info_class.number_neurons_per_main_layer[
+            self.layer_number-1]
+
+            self.n_neurons_current_main_layer = self.layer_self.code_given_info_class.number_neurons_per_main_layer[
+            self.layer_number]
+
+        # Otherwise, just add the number 1 to correct for the input layer
+
+        else:
+
+            self.n_neurons_last_main_layer = self.layer_self.code_given_info_class.number_neurons_per_main_layer[
+            self.layer_number]
+
+            self.n_neurons_current_main_layer = self.layer_self.code_given_info_class.number_neurons_per_main_layer[
+            self.layer_number+1]
+
+        print("\nInitializes the "+str(self.layer_number)+"-th layer."+
+        "\nThe number of neurons of the previous main layer is: "+str(
         self.n_neurons_last_main_layer))
 
         print("\nThe number of neurons of the current main layer is: "+str(
@@ -683,6 +798,8 @@ class SVDQuotientSpace:
 
         self.weights_rank = min(self.n_neurons_last_main_layer, 
         self.n_neurons_current_main_layer)
+
+        print("The rank of the weight matrix is: "+str(self.weights_rank)+"\n")
 
         # Verifies if the rank of the weights matrix is equal to the 
         # number of neurons of the accessory layer (since the accessory
@@ -713,9 +830,76 @@ class SVDQuotientSpace:
             self.layer_self.code_given_info_class.float_dtype)
 
         # Initializes the tuple with the indices of the Householder re-
-        # flectors of the Householder chain
+        # flectors of the Householder chain for each orthogonal matrix
+        # individually. This happens because, for full-rank orthogonal
+        # matrices, the last Householder reflector is empty of DOFs
 
-        self.householder_reflectors_indices = tuple(range(self.weights_rank))#tf.range(self.weights_rank)
+        if self.n_neurons_last_main_layer<self.n_neurons_current_main_layer:
+
+            # In case the last layer has less neurons than the current
+            # layer, the rank is dominated by the last layer
+
+            self.householder_reflectors_indices_A = tuple(range(
+            self.weights_rank))#tf.range(self.weights_rank)
+
+            self.householder_reflectors_indices_B = tuple(range(
+            self.weights_rank-1))
+
+            # Sets the function to multiply the output of the operation
+            # B.T*input by the tensor of singular values
+
+            self.singular_values_multiplier = self.multiply_input_vector_by_singular_values_expanding_layer
+
+            # Sets the function to multiply the B matrix by the tensor 
+            # of singular values
+
+            self.singular_values_by_matrix = self.multiply_B_matrix_by_singular_values_expanding_layer
+
+        # If the current layer has less neurons than the last layer, the
+        # rank of the weight matrix is dominated by the current layer 
+        # and the orthogonal matrix A will be full-rank
+
+        elif self.n_neurons_current_main_layer<self.n_neurons_last_main_layer:
+
+            # In case the last layer has less neurons than the current
+            # layer, the rank is dominated by the last layer
+
+            self.householder_reflectors_indices_A = tuple(range(
+            self.weights_rank-1))
+
+            self.householder_reflectors_indices_B = tuple(range(
+            self.weights_rank))
+
+            # Sets the function to multiply the output of the operation
+            # B.T*input by the tensor of singular values
+
+            self.singular_values_multiplier = self.multiply_input_vector_by_singular_values_shirinking_layer
+
+            # Sets the function to multiply the B matrix by the tensor 
+            # of singular values
+
+            self.singular_values_by_matrix = self.multiply_B_matrix_by_singular_values_shrinking_layer
+
+        # If the current and the last layers have the same number of 
+        # neurons, both orthogonal matrices A and B have full rank
+
+        else:
+
+            self.householder_reflectors_indices_A = tuple(range(
+            self.weights_rank-1))
+
+            self.householder_reflectors_indices_B = tuple(range(
+            self.weights_rank-1))
+
+            # Sets the function to multiply the output of the operation
+            # B.T*input by the tensor of singular values
+
+            self.singular_values_multiplier = self.multiply_input_vector_by_singular_values_shirinking_layer
+
+            # Sets the function to multiply the B matrix by the tensor 
+            # of singular values
+
+            self.singular_values_by_matrix = self.multiply_B_matrix_by_singular_values_shrinking_layer
 
         # Sets the initializer of the Householder parameters using Glo-
         # rot initialization with the scaling of the corresponding 
@@ -741,14 +925,14 @@ class SVDQuotientSpace:
         # gonal matrices of the SVD of the weights matrix W, W=A*diag(
         # sigma)*transpose(B)
 
-        self.layer_self.householder_parameters_B_matrix = self.layer_self.add_weight(
-        name="householder_parameters_B_matrix", shape=(n_parameters_B,), 
+        self.layer_self.householder_parameters_A_matrix = self.layer_self.add_weight(
+        name="householder_parameters_A_matrix", shape=(n_parameters_A,), 
         initializer=initializer, dtype=
         self.layer_self.code_given_info_class.float_dtype, trainable=
         True)
 
-        self.layer_self.householder_parameters_A_matrix = self.layer_self.add_weight(
-        name="householder_parameters_A_matrix", shape=(n_parameters_A,), 
+        self.layer_self.householder_parameters_B_matrix = self.layer_self.add_weight(
+        name="householder_parameters_B_matrix", shape=(n_parameters_B,), 
         initializer=initializer, dtype=
         self.layer_self.code_given_info_class.float_dtype, trainable=
         True)
@@ -785,7 +969,7 @@ class SVDQuotientSpace:
                 self.householder_indices_A_matrix.append(tuple([
                 counter_parameters_A, n_dofs_householder_vector, 
                 self.n_neurons_current_main_layer-
-                n_dofs_householder_vector]))
+                n_dofs_householder_vector-1]))
 
                 # Updates the counter of parameters for the A matrix 
                 # that have already been mapped
@@ -815,7 +999,7 @@ class SVDQuotientSpace:
                 self.householder_indices_B_matrix.append(tuple([
                 counter_parameters_B, n_dofs_householder_vector, 
                 self.n_neurons_last_main_layer-n_dofs_householder_vector
-                ]))
+                -1]))
 
                 # Updates the counter of parameters for the B matrix 
                 # that have already been mapped
@@ -830,6 +1014,81 @@ class SVDQuotientSpace:
 
         self.householder_indices_B_matrix = tuple(
         self.householder_indices_B_matrix)
+
+    # Defines a function to multiply the result of the multiplication of
+    # the input vector by the B matrix then by the tensor of singular 
+    # values. This function is for the case of identity modulation func-
+    # tion alongside the setting of more neurons in the current layer
+    # than in the previous layer
+
+    def multiply_input_vector_by_singular_values_expanding_layer(self,
+    singular_values, output_B):
+        
+        # Gets the multiplication of the output of the multiplication of
+        # the input tensor by B matrix. Recovers only the columns associ-
+        # ated with the rank of the weights matrix
+
+        output_rank = singular_values*output_B[:, :self.weights_rank]
+
+        # If there are more neurons in the current layer than in the 
+        # previous layer, columns of zeros must be added to the right to
+        # compensate for the difference in number of columns in the up-
+        # coming operations with the Householder reflectors of matrix A
+
+        return tf.pad(output_rank, [[0, 0], [0, 
+        self.n_neurons_current_main_layer-self.weights_rank]])
+    
+    # Defines a function to multiply the result of the multiplication of
+    # the input vector by the B matrix then by the tensor of singular 
+    # values. This function is for the case of identity modulation func-
+    # tion alongside the setting of less neurons in the current layer
+    # than in the previous layer
+
+    def multiply_input_vector_by_singular_values_shirinking_layer(self,
+    singular_values, output_B):
+        
+        # Gets the multiplication of the output of the multiplication of
+        # the input tensor by B matrix. Recovers only the columns associ-
+        # ated with the rank of the weights matrix
+
+        return singular_values*output_B[:, :self.weights_rank]
+    
+    # Defines a function to multiply the reconstructed B matrix by the
+    # singular values in case of an expanding layer. This function is u-
+    # sed to pad the multiplication of the B matrix by the singular va-
+    # lues with extra null columns, since the current layer has more 
+    # neurons than the previous layer
+
+    def multiply_B_matrix_by_singular_values_expanding_layer(self,
+    singular_values, B_matrix):
+        
+        # Multiplies the B matrix by the singular values coming from the
+        # accessory layer. The singular values are a tensor [n_samples,
+        # rank]; the reconstructed weight matrix so far is a tensor [
+        # rank, p_i]. The final result must be [n_samples, rank, p_i]
+
+        weight_matrix = (singular_values[:,:,None]*B_matrix[None,:,:])
+
+        # Pads the late result with zero rows below to make the partial 
+        # weight matrix [n_samples, p_(i+1), p_i]
+
+        return tf.pad(weight_matrix, paddings=[[0, 0], [0, 
+        self.n_neurons_current_main_layer-self.weights_rank], [0, 0]])
+    
+    # Defines a function to multiply the reconstructed B matrix by the
+    # singular values in case of a shrinking layer. This function is u-
+    # sed when the current layer has less or an equal number of neurons 
+    # than the previous layer
+
+    def multiply_B_matrix_by_singular_values_shrinking_layer(self,
+    singular_values, B_matrix):
+        
+        # Multiplies the B matrix by the singular values coming from the
+        # accessory layer. The singular values are a tensor [n_samples,
+        # rank]; the reconstructed weight matrix so far is a tensor [
+        # rank, p_i]. The final result must be [n_samples, rank, p_i]
+
+        return (singular_values[:,:,None]*B_matrix[None,:,:])
     
     # Defines a function to parse a single Householder vector from a
     # vector of all Householder vectors to construct an orthogonal ma-
@@ -845,8 +1104,15 @@ class SVDQuotientSpace:
         # Gets the first and last indices of the Householder vector, 
         # then the vector that will become the Householder vector
 
+        print("For the "+str(householder_reflector_index)+"-th Househo"+
+        "lder reflector:")
+
         initial_index, length, number_of_trailing_zeros = (
         householder_indices[householder_reflector_index])
+
+        print("initial index is "+str(initial_index)+"\nlen"+
+        "gth is "+str(length)+"\nnumber of trailing zeros is "+str(
+        number_of_trailing_zeros)+"\n")
 
         raw_vector = tf.slice(householder_parameters, [initial_index], [
         length])
@@ -890,6 +1156,10 @@ class SVDQuotientSpace:
         householder_parameters_orthogonal_matrix, 
         householder_reflector_index)
 
+        print("Householder vector B shape: "+str(householder_vector.shape
+        )+"\nand the shape of the input tensor is: "+str(
+        input_vector.shape)+"\n")
+
         # Multiplies the input vector by the Householder reflector (the
         # operation is already broken down into the rank-1 calculation)
 
@@ -917,27 +1187,13 @@ class SVDQuotientSpace:
             householder_indices_orthogonal_matrix, 
             householder_parameters_orthogonal_matrix)
 
+        print("Returns the multiplication of the input vector by the c"+
+        "hain of Householder reflectors with shape: "+str(
+        input_vector.shape)+"\n")
+
         # Returns the updated input vector
 
         return input_vector
-        
-        """# Creates a wrapper for the method that multiplies the input 
-        # vector by the orthogonal matrix using the recursive multipli-
-        # cation of the former by the corresponding chain of Householder
-        # reflectors
-
-        def wrapper(input_tensor, householder_reflector_index):
-
-            return self.multiply_input_vector_by_householder_reflector(
-            input_tensor, householder_reflector_index, 
-            householder_indices_orthogonal_matrix, 
-            householder_parameters_orthogonal_matrix)
-
-        # Calls the foldl function to compute the input vector multiplied
-        # by the chain of Householder reflectors
-
-        return tf.foldl(wrapper, householder_reflector_indices, 
-        initializer=input_vector)"""
     
     # Defines a function to evaluate the multiplication of the Househol-
     # der chain of the transposed B matrix of the SVD decomposition (A*
@@ -945,14 +1201,13 @@ class SVDQuotientSpace:
     # rank] where p_i is the number of neurons of the i-th layer and 
     # rank is the rank of the weight matrix
 
-    def update_B_matrix_with_householder_chain(self, initial_B_matrix, 
+    def update_B_matrix_with_householder_chain(self, partial_B_matrix, 
     householder_reflector_indices, householder_indices_B_matrix,
     householder_parameters_B_matrix):
         
-        # Defines a wrapper to multiply the partial reconstruction of 
-        # the transposed B matrix by the current Housholder reflector
+        # Iterates through the indices of Householder reflectors
 
-        def wrapper(partial_B_matrix, householder_reflector_index):
+        for householder_reflector_index in householder_reflector_indices:
         
             # Gets the Householder vector from the Householder param-
             # eters of the B matrix. Keep in mind that the order of the 
@@ -968,14 +1223,13 @@ class SVDQuotientSpace:
             # holder reflector to the left. However, the structure of the 
             # rank-1 projection is taken advantage of
 
-            return partial_B_matrix-(self.two*tf.matmul(partial_B_matrix, 
-            householder_vector[:, None])*householder_vector[None,:])
-        
-        # Uses the wrapper to multiply the initial matrix recursively to
-        # the reflectors of the Householder chain
+            partial_B_matrix = partial_B_matrix-(self.two*tf.matmul(
+            partial_B_matrix, householder_vector[:, None])*
+            householder_vector[None,:])
 
-        return tf.foldl(wrapper, householder_reflector_indices, 
-        initializer=initial_B_matrix)
+        # Returns the recursively updated matrix
+
+        return partial_B_matrix
     
     # Defines a function to evaluate the multiplication of the Househol-
     # der chain of the A matrix of the SVD decomposition (A*diag(sigma)*
@@ -983,14 +1237,13 @@ class SVDQuotientSpace:
     # ), rank] where p_(i+1) is the number of neurons of the (i+1)-th 
     # layer and rank is the rank of the weight matrix
 
-    def update_A_matrix_with_householder_chain(self, initial_A_matrix, 
+    def update_A_matrix_with_householder_chain(self, partial_A_matrix, 
     householder_reflector_indices, householder_indices_A_matrix,
     householder_parameters_A_matrix):
         
-        # Defines a wrapper to multiply the partial reconstruction of 
-        # the A matrix by the current Housholder reflector
+        # Iterates through the indices of Householder reflectors
 
-        def wrapper(partial_A_matrix, householder_reflector_index):
+        for householder_reflector_index in householder_reflector_indices:
         
             # Gets the Householder vector from the Householder parameters 
             # of the A matrix
@@ -1009,12 +1262,10 @@ class SVDQuotientSpace:
             # ples was gained due to the multiplication by the singular 
             # values coming from the accessory layer
 
-            return partial_A_matrix-(self.two*householder_vector[None, :, 
-            None]*tf.einsum("p,spr->sr", householder_vector, 
-            partial_A_matrix)[:, None, :])
-        
-        # Uses the wrapper to multiply the initial matrix recursively to
-        # the reflectors of the Householder chain
+            partial_A_matrix = partial_A_matrix-(self.two*
+            householder_vector[None, :, None]*tf.einsum("p,spr->sr", 
+            householder_vector, partial_A_matrix)[:, None, :])
 
-        return tf.foldl(wrapper, householder_reflector_indices, 
-        initializer=initial_A_matrix)
+        # Returns the recursively updated matrix
+
+        return partial_A_matrix
