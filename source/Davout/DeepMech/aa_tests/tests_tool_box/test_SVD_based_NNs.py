@@ -2,11 +2,15 @@
 
 import time
 
+import os
+
 import tensorflow as tf
 
 from ...tool_box import ANN_tools, training_tools, parameters_tools, differentiation_tools
 
 from ....PythonicUtilities.testing_tools import run_class_of_tests
+
+from ....PythonicUtilities.path_tools import get_parent_path_of_file
 
 # Defines a function to test the SVD-based architecture
 
@@ -20,7 +24,7 @@ class TestSVDArchitecture:
 
         self.quotient_space_dimension = 3
 
-        self.number_of_neurons_hidden_layer_main_network = 4
+        self.number_of_neurons_hidden_layer_main_network = 100
 
         self.output_dimension = 2
 
@@ -69,9 +73,9 @@ class TestSVDArchitecture:
 
         # Creates the new test data
 
-        self.x_min = -10.0
+        self.x_min = -1.0
 
-        self.x_max = 10.0
+        self.x_max = 1.0
 
         data_matrix = []
 
@@ -101,7 +105,8 @@ class TestSVDArchitecture:
 
         # Defines the loss function metric
 
-        self.loss_metric = tf.keras.losses.MeanAbsoluteError()
+        self.loss_metric = tf.keras.losses.MeanSquaredError(
+        dtype=tf.as_dtype(self.parameters_dtype))
 
         # Sets the optimizer
 
@@ -134,6 +139,47 @@ class TestSVDArchitecture:
 
         self.custom_model = ANN_class()
 
+    # Defines a function to test saving and reloading the model
+
+    def test_saving_and_loading(self):
+
+        print("\n#####################################################"+
+        "###################\n#                       Tests saving and"+
+        " loading                       #\n###########################"+
+        "#############################################\n")
+        
+        # Sets the path to save the model
+
+        model_path = os.path.join(get_parent_path_of_file(), "SVD_model.keras")
+
+        print("\nSaves the model at: "+str(model_path)+"\n")
+
+        # Saves the model
+
+        self.custom_model.save(model_path)
+
+        # Loads it back
+
+        loaded_model = tf.keras.models.load_model(model_path)
+
+        # Gets the training data as a tensorflow array
+
+        self.training_input_constant = tf.constant(self.training_data, 
+        dtype=tf.as_dtype(self.parameters_dtype))
+
+        # Tests the loaded model
+
+        output_original = self.custom_model(self.training_input_constant)
+
+        output_loaded = loaded_model(self.training_input_constant)
+
+        print("Output from saved model:\n"+str(output_original))
+
+        print("\nOutput from loaded model:\n"+str(output_loaded)+"\n\n"+
+        "The maximum absolute difference between components of the ori"+
+        "ginal and loaded models is: "+str(tf.reduce_max(tf.abs(
+        output_original-output_loaded)).numpy())+"\n")
+
     # Defines a function to test evaluating the model from input and 
     # with trainable parameters to assert if the result is the same in
     # both cases
@@ -150,11 +196,6 @@ class TestSVDArchitecture:
 
         self.model_output_given_parameters = parameters_tools.ModelOutputGivenTrainableParameters(
         self.custom_model, self.parameters_shapes)
-
-        # Gets the training data as a tensorflow array
-
-        self.training_input_constant = tf.constant(self.training_data, 
-        dtype=tf.as_dtype(self.parameters_dtype))
 
         # Gets the response of the model using the trainable parameters
         # as an argument
@@ -225,6 +266,48 @@ class TestSVDArchitecture:
         print("\nThe gradient evaluated from the input directly is: "+
         gradient_input_string+"\n")
 
+        # Evaluates the gradient using central finite differences
+
+        cfd_gradient = []
+
+        cfd_step_length = tf.constant(1E-6, dtype=tf.as_dtype(
+        self.parameters_dtype))
+
+        for parameter_index in range(
+        self.initial_model_parameters.shape[0]):
+            
+            # Evaluates the loss function one step forward
+
+            initial_parameters_forward = tf.tensor_scatter_nd_add(
+            self.initial_model_parameters, indices=[[parameter_index]],
+            updates=[cfd_step_length])
+
+            loss_forward = self.loss_metric(
+            self.training_true_values_constant,
+            self.model_output_given_parameters(
+            self.training_input_constant, initial_parameters_forward))
+
+            # Evaluates the loss function one step backward
+
+            initial_parameters_backward = tf.tensor_scatter_nd_add(
+            self.initial_model_parameters, indices=[[parameter_index]],
+            updates=[-cfd_step_length])
+
+            loss_backward = self.loss_metric(
+            self.training_true_values_constant,
+            self.model_output_given_parameters(
+            self.training_input_constant, initial_parameters_backward)) 
+
+            # Appends the derivative to the gradient
+
+            cfd_gradient.append((loss_forward-loss_backward)/(2.0*
+            cfd_step_length))
+
+        # Converts the gradient evaluated using central finite differen-
+        # ces to a tensor
+
+        cfd_gradient = tf.stack(cfd_gradient)
+
         # Flattens the gradient to compare with the one calculated from
         # given parameters
 
@@ -234,15 +317,22 @@ class TestSVDArchitecture:
         # Stacks the two gradients into a single matrix for comparison
 
         gradient_matrix = tf.stack([flat_gradient_input, 
-        gradient_wrt_params], axis=0)
+        gradient_wrt_params, cfd_gradient], axis=0)
 
-        print("The two methods of evaluating the gradient are presente"+
-        "d below. The first\nrow show the gradient evaluated when the "+
-        "model is called from input; the\nsecond row shows the gradien"+
-        "t when the model is called with the given\ntrainable paramete"+
-        "rs as well\n\n"+str(gradient_matrix)+"\n\nThe maximum absolut"+
-        "e difference between components is: "+str(tf.reduce_max(tf.abs(
-        flat_gradient_input-gradient_wrt_params)).numpy())+"\n")
+        print("The three methods of evaluating the gradient are presen"+
+        "ted below. The first\nrow shows the gradient evaluated when t"+
+        "he model is called from input; the\nsecond row shows the grad"+
+        "ient when the model is called with the given\ntrainable param"+
+        "eters as well using tensorflow AD. the third row shows\nthe g"+
+        "radient evaluated from parameters using central finite differ"+
+        "ences\n\n"+str(gradient_matrix)+"\n\nThe maximum absolute dif"+
+        "ference between components of the gradient from\ninput to tho"+
+        "se of the gradient from parameters is: "+str(tf.reduce_max(
+        tf.abs(flat_gradient_input-gradient_wrt_params)).numpy())+"\nT"+
+        "he difference between components of the gradient from paramet"+
+        "ers using\ntensorflow AD to the gradient using central finite"+
+        " differences is: "+str(tf.reduce_max(tf.abs(gradient_wrt_params
+        -cfd_gradient)).numpy())+"\n")
 
     # Defines a function to test training a model with this architecture
 
@@ -328,13 +418,61 @@ class TestSVDArchitecture:
 
         model_output = self.training_class.model(x)
 
-        print("\nTests the SVD model against the following input:")
+        print("\nTests the SVD model against the following input:\n"+
+        str(x.numpy())+"\n\nThere follows the SVD model output:\n"+str(
+        model_output)+"\n")
 
-        print(x.numpy())
+    # Defines a function to test if the SVD model is convex to variables
+    # of the quotient space
 
-        print("\nThere follows the SVD model output:")
+    def test_convexity_in_quotient_space(self):
 
-        print(model_output)
+        # Sets a flag to evaluate the eigenvalues of the hessian matrix
+
+        return_eigenvalues = True
+
+        # Checks the hessian matrices
+
+        hessian_info = self.training_class.get_hessian_outputs_model(
+        eigenvalues=False)
+
+        # Converts the hessian info to a string
+
+        hessian_matrices = ""
+
+        # Iterates over the output neurons
+    
+        for output_index in range(self.output_dimension):
+
+            hessian_matrices += ("\n\n"+str(output_index+1)+"-th outpu"+
+            "t neuron:\n\n")
+
+            # Gets the hessian matrix, and separates only the rows and
+            # columns linked to variables in the quotient space
+
+            hessian_matrix = hessian_info[output_index][:,
+            :self.quotient_space_dimension,
+            :self.quotient_space_dimension]
+
+            hessian_matrices += ("Hessian matrix with respect to varia"+
+            "bles in the quotient space:\n"+str(hessian_matrix.numpy()))
+
+            # Verifies if the eigenvalues were evaluated
+
+            if return_eigenvalues:
+
+                # Gets the eigenvalues
+
+                eigenvalues = tf.linalg.eigvalsh(hessian_matrix)
+
+                hessian_matrices += "\n\nEigenvalues:\n"+str(
+                eigenvalues.numpy())
+
+        print("\nThere follow the hessian matrices with respect to the"+
+        " variables in the quotient space:\n"+str(hessian_matrices)+
+        "\n\nRemember that the model should be convex when the modulat"+
+        "ing function is\nnon-zero. The given modulating function is:"+
+        "\n'"+str(self.modulating_function)+"'\n")
 
 # Runs all tests
 
@@ -347,8 +485,7 @@ if __name__=="__main__":
     # Creates a list of methods (using their names) that are not to be
     # tested
 
-    reserved_methods = ["test_monte_carlo_training_model", 
-    "test_quotient_space_invariance_model"]
+    reserved_methods = []
 
     # Calls the function to run all the necessary tests
 
