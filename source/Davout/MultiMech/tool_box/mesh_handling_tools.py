@@ -1410,182 +1410,11 @@ physical_group_name=None, region_function=None, field_name=None):
         "inates of a point and spits out True or False, according to i"+
         "f the point is in a volumetric region or not")
     
-# Defines a class to find all DOFs (including those related to higher 
-# order shape functions)
+# Defines a function to return all DOFs of a field, this includes DOFs
+# associated to higher order finite elements
 
-class DOFsNode:
-
-    def __init__(self, dof_coordinates, dofs_indices, tolerance=1E-6, 
-    return_coordinates=False, do_not_throw_error=False, n_closest_nodes=
-    None):
-        
-        self.dof_coordinates = dof_coordinates
-
-        self.dofs_indices = dofs_indices
-
-        self.n_dofs = self.dof_coordinates.shape[0]
-
-        self.tolerance = tolerance
-
-        self.return_coordinates_per_dof_found = return_coordinates
-
-        self.do_not_throw_error = do_not_throw_error
-
-        self.n_closest_nodes = n_closest_nodes
-
-        # Verifies if the number of closest DOFs were provided if an er-
-        # ror is not be raised in case of a violated tolerance
-
-        if self.do_not_throw_error:
-
-            if self.n_closest_nodes is None:
-
-                raise ValueError("'do_not_throw_error' is True, but 'n"+
-                "_closest_nodes' was not provided. Give a number of cl"+
-                "osest nodes to the given coordinate to be returned")
-            
-    # Defines a method to get the coordinates of a given DOF
-
-    def get_coordinates_from_dof(self, dof_index):
-
-        # Verifies if the index is valid
-
-        if not (dof_index in self.dofs_indices):
-
-            raise IndexError("The DOF index "+str(dof_index)+" is not "+
-            "valid. A DOF index to be valid must be between 0 and "+str(
-            self.n_dofs-1)+". Besides it must be in the list of querie"+
-            "d DOFs. If the asked DOF is in the proper range, it means"+
-            " you asked for a higher order DOF while requiring the pro"+
-            "gram to compile vertices DOFs only")
-        
-        # Returns the DOF coordinates. But find first the corresponding 
-        # DOF in the list of DOF indices
-
-        return self.dof_coordinates[np.where(self.dofs_indices==dof_index
-        )[0],:]
-
-    # Defines a call method to get the node numebr
-
-    def __call__(self, x, y, z):
-
-        # Constructs a point array and calculate the distances from this
-        # point to the DOFs coordinates
-
-        distances = np.linalg.norm(self.dof_coordinates-np.array([x, y, 
-        z]), axis=1)
-
-        dofs_indices = None
-
-        # If the tolerance is not to be used, but simply the closest DOFs
-        # are to be found
-
-        if self.do_not_throw_error:
-
-            # Gets the closest DOFs to the given coordinate
-
-            dofs_indices = np.argsort(distances)
-            
-            # Initializes a counter of found nodes
-
-            verified_nodes = 1
-
-            # Iterates over the DOFs coordinates using the sorted DOF 
-            # indices to look for all DOFs that map to the closest node
-
-            for sorted_index, dof_index in enumerate(dofs_indices):
-
-                # Verifies if the current node is different than the last
-                # one
-
-                if not np.allclose(self.dof_coordinates[dof_index],
-                self.dof_coordinates[dofs_indices[max(0,sorted_index-1)]
-                ]):
-                    
-                    verified_nodes += 1
-
-                    # Verifies if the number of nodes found is higher 
-                    # than the number of selected nodes
-
-                    if verified_nodes>self.n_closest_nodes:
-
-                        # Cuts the list of DOF indices
-
-                        dofs_indices = dofs_indices[0:sorted_index]
-
-                        break
-
-        else:
-
-            # Selects the DOFs indices that are close to the point given
-            # the tolerance
-
-            dofs_indices = np.where(distances<self.tolerance)[0]
-
-            # Verifies if the found DOFs are close enough to consider it
-            # a valid node
-
-            if len(dofs_indices)==0:
-
-                closest_node = self.dof_coordinates[np.argmin(distances)]
-
-                raise ValueError("Point ("+str(x)+", "+str(y)+", "+str(z
-                )+") is not a valid node to look for DOFs. The closest"+
-                " node is x="+str(closest_node[0])+", y="+str(
-                closest_node[1])+", z="+str(closest_node[2]))
-            
-        # Reassembles the DOFs to match the list of DOFs indices. Pairs 
-        # DOF indices and 
-
-        pairs = list(zip([self.dofs_indices[dof_index] for (dof_index
-        ) in dofs_indices], [self.dof_coordinates[i,:] for i in (
-        dofs_indices)]))
-
-        # Sorts the pairs by ascending order of DOF indices
-
-        pairs.sort(key=lambda x: x[0])
-
-        correct_dofs_indices = [p[0] for p in pairs]
-        
-        # If the coordinates of the found nodes are to be returned as 
-        # well
-
-        if self.return_coordinates_per_dof_found:
-        
-            # If there are multiple DOFs in a single location, returns a
-            # a list of them
-
-            DOFs_coordinates = [p[1] for p in pairs]
-
-            return correct_dofs_indices, DOFs_coordinates
-        
-        # Otherwise, returns the dof indices only
-
-        else:
-        
-            # If there are multiple DOFs in a single location, returns a 
-            # list of them
-
-            return correct_dofs_indices
-    
-# Defines a function to create a class that returns the DOFs in a node
-# closest to a point 
-
-def dofs_per_node_finder_class(functional_data_class, field_name=None, 
-node_proximity_tolerance=1E-6, return_coordinates_per_dof_found=False,
-do_not_throw_error=False, n_closest_nodes=None, get_higher_order_dofs_too=
-True):
-    
-    """
-    Function to construct a class that stores a tree query object that,
-    when called, returns the closest degrees of freedom to a point in
-    space
-
-    functional_data_class: instance of the FunctionalData class with
-    information on function space
-
-    field_name: name of the field whose DOFs are to be searched
-    """
+def get_dofs_in_field_and_coordinates(functional_data_class, field_name, 
+get_higher_order_dofs_too=True, return_as_list=False):
 
     # Gets the of coordinates for each DOF and a list of DOFs indices
 
@@ -1711,9 +1540,202 @@ True):
 
         dof_coordinates = dof_coordinates[dofs_indices,:]
 
+    # Returns the list of DOFs and the DOFs coordinates
+
+    if return_as_list:
+
+        return dofs_indices.tolist(), dof_coordinates.tolist()
+    
+    else:
+
+        return dofs_indices, dof_coordinates
+    
+# Defines a class to find all DOFs (including those related to higher 
+# order shape functions)
+
+class DOFsNode:
+
+    def __init__(self, dof_coordinates, dofs_indices, tolerance=1E-6, 
+    return_coordinates=False, do_not_throw_error=False, n_closest_nodes=
+    None):
+        
+        self.dof_coordinates = dof_coordinates
+
+        self.dofs_indices = dofs_indices
+
+        self.n_dofs = self.dof_coordinates.shape[0]
+
+        self.tolerance = tolerance
+
+        self.return_coordinates_per_dof_found = return_coordinates
+
+        self.do_not_throw_error = do_not_throw_error
+
+        self.n_closest_nodes = n_closest_nodes
+
+        # Verifies if the number of closest DOFs were provided if an er-
+        # ror is not be raised in case of a violated tolerance
+
+        if self.do_not_throw_error:
+
+            if self.n_closest_nodes is None:
+
+                raise ValueError("'do_not_throw_error' is True, but 'n"+
+                "_closest_nodes' was not provided. Give a number of cl"+
+                "osest nodes to the given coordinate to be returned")
+            
+    # Defines a method to get the coordinates of a given DOF
+
+    def get_coordinates_from_dof(self, dof_index):
+
+        # Verifies if the index is valid
+
+        if not (dof_index in self.dofs_indices):
+
+            raise IndexError("The DOF index "+str(dof_index)+" is not "+
+            "valid. A DOF index to be valid must be between 0 and "+str(
+            self.n_dofs-1)+". Besides it must be in the list of querie"+
+            "d DOFs. If the asked DOF is in the proper range, it means"+
+            " you asked for a higher order DOF while requiring the pro"+
+            "gram to compile vertices DOFs only")
+        
+        # Returns the DOF coordinates. But find first the corresponding 
+        # DOF in the list of DOF indices
+
+        return self.dof_coordinates[np.where(self.dofs_indices==dof_index
+        )[0],:]
+
+    # Defines a call method to get the node number
+
+    def __call__(self, x, y, z):
+
+        # Constructs a point array and calculate the distances from this
+        # point to the DOFs coordinates
+
+        distances = np.linalg.norm(self.dof_coordinates-np.array([x, y, 
+        z]), axis=1)
+
+        dofs_indices = None
+
+        # If the tolerance is not to be used, but simply the closest DOFs
+        # are to be found
+
+        if self.do_not_throw_error:
+
+            # Gets the closest DOFs to the given coordinate
+
+            dofs_indices = np.argsort(distances)
+            
+            # Initializes a counter of found nodes
+
+            verified_nodes = 1
+
+            # Iterates over the DOFs coordinates using the sorted DOF 
+            # indices to look for all DOFs that map to the closest node
+
+            for sorted_index, dof_index in enumerate(dofs_indices):
+
+                # Verifies if the current node is different than the last
+                # one
+
+                if not np.allclose(self.dof_coordinates[dof_index],
+                self.dof_coordinates[dofs_indices[max(0,sorted_index-1)]
+                ]):
+                    
+                    verified_nodes += 1
+
+                    # Verifies if the number of nodes found is higher 
+                    # than the number of selected nodes
+
+                    if verified_nodes>self.n_closest_nodes:
+
+                        # Cuts the list of DOF indices
+
+                        dofs_indices = dofs_indices[0:sorted_index]
+
+                        break
+
+        else:
+
+            # Selects the DOFs indices that are close to the point given
+            # the tolerance
+
+            dofs_indices = np.where(distances<self.tolerance)[0]
+
+            # Verifies if the found DOFs are close enough to consider it
+            # a valid node
+
+            if len(dofs_indices)==0:
+
+                closest_node = self.dof_coordinates[np.argmin(distances)]
+
+                raise ValueError("Point ("+str(x)+", "+str(y)+", "+str(z
+                )+") is not a valid node to look for DOFs. The closest"+
+                " node is x="+str(closest_node[0])+", y="+str(
+                closest_node[1])+", z="+str(closest_node[2]))
+            
+        # Reassembles the DOFs to match the list of DOFs indices. Pairs 
+        # DOF indices and 
+
+        pairs = list(zip([self.dofs_indices[dof_index] for (dof_index
+        ) in dofs_indices], [self.dof_coordinates[i,:] for i in (
+        dofs_indices)]))
+
+        # Sorts the pairs by ascending order of DOF indices
+
+        pairs.sort(key=lambda x: x[0])
+
+        correct_dofs_indices = [p[0] for p in pairs]
+        
+        # If the coordinates of the found nodes are to be returned as 
+        # well
+
+        if self.return_coordinates_per_dof_found:
+        
+            # If there are multiple DOFs in a single location, returns a
+            # a list of them
+
+            DOFs_coordinates = [p[1] for p in pairs]
+
+            return correct_dofs_indices, DOFs_coordinates
+        
+        # Otherwise, returns the dof indices only
+
+        else:
+        
+            # If there are multiple DOFs in a single location, returns a 
+            # list of them
+
+            return correct_dofs_indices
+    
+# Defines a function to create a class that returns the DOFs in a node
+# closest to a point 
+
+def dofs_per_node_finder_class(functional_data_class, field_name=None, 
+node_proximity_tolerance=1E-6, return_coordinates_per_dof_found=False,
+do_not_throw_error=False, n_closest_nodes=None, get_higher_order_dofs_too=
+True):
+    
+    """
+    Function to construct a class that stores a tree query object that,
+    when called, returns the closest degrees of freedom to a point in
+    space
+
+    functional_data_class: instance of the FunctionalData class with
+    information on function space
+
+    field_name: name of the field whose DOFs are to be searched
+    """
+
+    # List the DOFs' indices and coordinates
+
+    dofs_indices, dofs_coordinates = get_dofs_in_field_and_coordinates(
+    functional_data_class, field_name, get_higher_order_dofs_too=
+    get_higher_order_dofs_too)
+
     # Instantiates the class and returns it
 
-    return DOFsNode(dof_coordinates, dofs_indices, tolerance=
+    return DOFsNode(dofs_coordinates, dofs_indices, tolerance=
     node_proximity_tolerance, return_coordinates=
     return_coordinates_per_dof_found, do_not_throw_error=
     do_not_throw_error, n_closest_nodes=n_closest_nodes)
