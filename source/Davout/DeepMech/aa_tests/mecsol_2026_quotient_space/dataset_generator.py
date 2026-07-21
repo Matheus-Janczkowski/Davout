@@ -6,9 +6,9 @@ from .....Davout.MultiMech.tool_box.numerical_tools import rotation_tensorEulerR
 
 from .....Davout.PythonicUtilities.path_tools import get_parent_path_of_file
 
-from .....Davout.PythonicUtilities.stochastic_tools import get_random_point_on_elipsoid_surface
-
 from .....Davout.PythonicUtilities.file_handling_tools import list_toTxt
+
+from .....Davout.StochasticUtilities.tool_box.sampling_tools import get_random_point_on_elipsoid_surface
 
 from .....Davout.DeepMech.aa_tests.mecsol_2026_quotient_space.box_with_imposed_displacement_gradient import solve_BVP
 

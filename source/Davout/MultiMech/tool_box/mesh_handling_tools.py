@@ -14,6 +14,8 @@ from ...PythonicUtilities import programming_tools
 
 from ...PythonicUtilities.dictionary_tools import sort_dictionary_by_values, get_first_key_from_value
 
+from ...PythonicUtilities.path_tools import take_outFileNameTermination
+
 from ...CuboidGmsh.tool_box import meshing_tools as tools_gmsh
 
 from ...CuboidGmsh.solids import cuboid_prisms as prism_gmsh
@@ -165,7 +167,7 @@ def read_mshMesh(given_file_name, desired_elements=None, data_sets=None,
 quadrature_degree=2, verbose=False, comm=None, automatic_comm_generation=
 False):
     
-    # Copies the file name
+    # Copies the file name, but removes the file termination first
 
     file_name = deepcopy(given_file_name)
     
@@ -184,6 +186,10 @@ False):
     gmsh_mesh_reading_engine, file_name, desired_elements=
     desired_elements, data_sets=data_sets, verbose=verbose, 
     comm_object=comm)
+
+    # Takes out the file termination of the mesh file
+
+    file_name = take_outFileNameTermination(file_name)
 
     # Creates a barrier for all processors to synchronize here
 
@@ -362,9 +368,11 @@ None, verbose=False, comm_object=None):
 
         file_name = mesh_directory+"//"+file_name
 
-    # Reads the saved gmsh mesh using meshio
+    # Reads the saved gmsh mesh using meshio. But first takes out the 
+    # file termination if given
 
-    mesh_reading = meshio.read(file_name+".msh")
+    mesh_reading = meshio.read(take_outFileNameTermination(file_name)+
+    ".msh")
 
     # Initializes the dictionary of cells and the list of cell data
 
