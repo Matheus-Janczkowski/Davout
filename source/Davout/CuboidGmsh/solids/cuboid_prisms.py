@@ -48,7 +48,12 @@ def hexahedron_from_corners(corner_points, parametric_curves=None,
 edges_points=None, transfinite_directions=[], bias_directions=dict(), 
 geometric_data=[0, [[],[],[],[]], [[],[],[],[]], [[],[],[]], dict(), [], 
 dict(), [], [], [], 0.5, False], explicit_volume_physical_group_name=
-None, explicit_surface_physical_group_name=None):
+None, explicit_surface_physical_group_name=None, same_point_tolerance=
+1E-8):
+    
+    # Instantiates the class of gmsh orientation information
+
+    gmsh_orientation_class = cuboid.GmshOrientationInfo()
 
     ####################################################################
     #                       Arguments consistency                      #
@@ -220,6 +225,10 @@ None, explicit_surface_physical_group_name=None):
             lines_numbers = ["1", "2", "3", "4", "5", "6", "7", "8", "9",
             "10", "11", "12"]
 
+            # Gets the corner coordinates back into a numpy array (8,3)
+
+            corner_points_array = np.asarray(corner_points)
+
             # Iterates through the edges
 
             for edge_number, edge_coordinates in edges_points.items():
@@ -253,6 +262,57 @@ None, explicit_surface_physical_group_name=None):
                     if rows_are_points:
 
                         edge_coordinates = edge_coordinates.T
+
+                    # Gets the coordinate points of this line in the 
+                    # correct gmsh orientation
+
+                    start_corner_coordinates = corner_points_array[:,
+                    gmsh_orientation_class.lines_corner_points[int(str(
+                    edge_number))-1][0]]
+
+                    final_corner_coordinates = corner_points_array[:,
+                    gmsh_orientation_class.lines_corner_points[int(str(
+                    edge_number))-1][1]]
+
+                    # If the last given point of the edge coordinates is
+                    # numerically the same as the start point and the 
+                    # first edge coordinates are numerically the same as
+                    # the final point, the array of edge coordinates 
+                    # must be reversed for the line to be rightly orien-
+                    # ted in gmsh
+
+                    if np.linalg.norm(start_corner_coordinates-
+                    edge_coordinates[:,-1])<same_point_tolerance and (
+                    np.linalg.norm(final_corner_coordinates- 
+                    edge_coordinates[:,0])<same_point_tolerance):
+                        
+                        # Reverses the order of the columns (i.e. the
+                        # order of the points)
+
+                        edge_coordinates = edge_coordinates[:, ::-1]
+
+                        # Then takes out the first and last points for
+                        # the spline not to feature weird turns next to
+                        # the vertices
+
+                        edge_coordinates = edge_coordinates[:,1:-1]
+
+                    # If the start point is equal to the first given 
+                    # edge coordinate and so is the end point and the 
+                    # last edge coordinate, the first and last edge co-
+                    # ordinates must be erased to avoid weird spline 
+                    # loops next to the vertices
+
+                    elif np.linalg.norm(start_corner_coordinates-
+                    edge_coordinates[:,0])<same_point_tolerance and (
+                    np.linalg.norm(final_corner_coordinates- 
+                    edge_coordinates[:,-1])<same_point_tolerance):
+
+                        # Then takes out the first and last points for
+                        # the spline not to feature weird turns next to
+                        # the vertices
+
+                        edge_coordinates = edge_coordinates[:,1:-1]
                     
                     # Transforms it to a list
 

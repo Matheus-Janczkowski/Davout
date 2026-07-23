@@ -9,6 +9,57 @@ import copy
 
 from ..tool_box import geometric_tools as geo
 
+# Defines a class that stores information to order points and lines in
+# gmsh to generate well-oriented meshes
+
+class GmshOrientationInfo:
+
+    def __init__(self):
+        
+        # Creates the list that tells the local numbering of corner 
+        # points for each line
+
+        self.lines_corner_points = [[0, 1], [2, 1], [3, 2], [3, 0], 
+        [4, 5], [6, 5], [7, 6], [7, 4], [0, 4], [1, 5], [2, 6], [3, 7]]
+
+        # Creates a list that tells the index of the transfinite infor-
+        # mation for each line
+
+        self.lines_transfinite_indices = [1, 0, 1, 0, 1, 0, 1, 0, 2, 2, 
+        2, 2]
+
+        # Creates a list that tells the key for the bias of each line
+
+        self.lines_bias_keys = ["y", "x", "y", "x", "y", "x", "y", "x",
+        "z", "z", "z", "z"]
+
+    # Defines a function that creates a list of line points and transfi-
+    # nite information given the transfinite directions
+
+    def get_lines_points(self, transfinite_directions):
+
+        # Creates a list of lists, such that each sublist corresponds to
+        # a line of the cuboid. The first element of each sublist is the
+        # local number of the first corner point of the line, whereas 
+        # the second element is the final corner point of the line. The
+        # third element of each sublist is the number of transfinite di-
+        # visions, and the fourth element is the bias key
+
+        lines_points = []
+
+        # Iterates over the lines
+
+        for line_index in range(12):
+
+            # Appends the information accordingly
+
+            lines_points.append([self.lines_corner_points[line_index][0
+            ], self.lines_corner_points[line_index][1], 
+            transfinite_directions[self.lines_transfinite_indices[
+            line_index]], self.lines_bias_keys[line_index]])
+
+        return lines_points
+
 ########################################################################
 #                      Whole cuboid manufacturing                      #
 ########################################################################
@@ -880,17 +931,14 @@ bias_directions=dict(), verbose=False):
 
     opposite_lines[12] = [9, 10, 11]
 
+    # Instantiates the class of orientation information
+
+    gmsh_orientation_class = GmshOrientationInfo()
+
     # Makes the list of points for each line
 
-    lines_points = [[0, 1, transfinite_directions[1], "y"], [2, 1, 
-    transfinite_directions[0], "x"], [3, 2, transfinite_directions[1
-    ], "y"], [3, 0, transfinite_directions[0], "x"], [4, 5, 
-    transfinite_directions[1], "y"], [6, 5, transfinite_directions[0], 
-    "x"], [7, 6, transfinite_directions[1], "y"], [7, 4, 
-    transfinite_directions[0], "x"], [0, 4, transfinite_directions[2],
-    "z"], [1, 5, transfinite_directions[2], "z"], [2, 6, 
-    transfinite_directions[2], "z"], [3, 7, transfinite_directions[2], 
-    "z"]]
+    lines_points = gmsh_orientation_class.get_lines_points(
+    transfinite_directions)
 
     # Initializes a list of lines that have already been created
 

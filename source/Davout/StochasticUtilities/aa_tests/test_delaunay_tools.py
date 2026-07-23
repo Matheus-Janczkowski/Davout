@@ -63,9 +63,40 @@ class TestDelaunayPartition:
         self.int_type, float_type=self.float_type)
 
     # Defines a function to test the methodology for convex boundary 
+    # section on a cube mesh
+
+    def test_delaunay_on_cube_mesh_with_missing_dofs(self):
+
+        print("\n#####################################################"+
+        "###################\n#   Tests partitioning a brick-like mesh"+
+        " using Delaunay's tetrahedra   #\n# but Delaunay's dominion i"+
+        "s rotated such that there are missing DOFs  #\n##############"+
+        "##########################################################\n")
+
+        # Sets the coordinates of the target points of the cube mesh
+
+        target_points_coordinates = [[0.0, 0.0, 0.0], [self.L_x, 0.0, 
+        0.0], [self.L_x, self.L_y, 0.0], [0.0, self.L_y, 0.0], [0.0, 
+        0.0, self.L_z], [self.L_x, 0.0, self.L_z], [self.L_x, self.L_y, 
+        self.L_z], [0.0, self.L_y, self.L_z]]
+
+        # Gets the list of DOFs per tetrahedron
+
+        dofs_per_tetrahedron = delaunay_tools.triangulate_domain_and_separate_dofs(
+        self.cube_mesh, target_points_coordinates, "Displacement", {"D"+
+        "isplacement": {"field type": "vector", "interpolation function":
+        "CG", "polynomial degree": 2}}, verbose=True, int_dtype=
+        self.int_type, float_type=self.float_type)
+
+    # Defines a function to test the methodology for convex boundary 
     # section on the intervertebral disc mesh
 
     def test_delaunay_on_intervertebral_disc(self):
+
+        print("\n#####################################################"+
+        "###################\n#    Tests partitioning a the IVD mesh u"+
+        "sing Delaunay's tetrahedra     #\n###########################"+
+        "#############################################\n")
 
         flag_whole_disc_mesh = False
 
@@ -173,7 +204,7 @@ if __name__=="__main__":
     # Creates a list of methods (using their names) that are not to be
     # tested
 
-    reserved_methods = []
+    reserved_methods = ["test_delaunay_on_intervertebral_disc"]
 
     # Calls the function to run all the necessary tests
 

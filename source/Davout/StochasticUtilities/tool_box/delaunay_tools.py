@@ -2,7 +2,7 @@
 # Delaunay's triangulation. The DOFs of the mesh are divided in the cor-
 # responding envolving tetrahedra.
 #
-# Code written solely by Rafael Prado in July 2026
+# Code written in collaboration with Rafael Prado in July 2026
 
 import tensorflow as tf
 
@@ -69,6 +69,8 @@ area_tolerance_of_degenerate_triangles=1E-14):
     # Gets the numpy float type
 
     numpy_float_type = np.dtype(float_type)
+
+    numpy_int_type = np.dtype(int_dtype)
 
     # Converts the array of coordinates to a numpy float array of shape 
     # (n_target_points, 3)
@@ -185,7 +187,7 @@ area_tolerance_of_degenerate_triangles=1E-14):
 
         dofs_per_tetrahedron = get_dofs_outside_delaunay_triangulation(
         dofs_per_tetrahedron, target_points, delaunay_class, 
-        tetrahedra_list, numpy_float_type, 
+        tetrahedra_list, numpy_float_type, numpy_int_type,
         area_tolerance_of_degenerate_triangles, outsite_domain_dofs, 
         outside_domain_coords)
     
@@ -209,8 +211,8 @@ area_tolerance_of_degenerate_triangles=1E-14):
 
 def get_dofs_outside_delaunay_triangulation(dofs_per_tetrahedron, 
 target_points, delaunay_class, tetrahedra_list, numpy_float_type,
-area_tolerance_of_degenerate_triangles, outsite_domain_dofs, 
-outside_domain_coords):
+numpy_int_type, area_tolerance_of_degenerate_triangles, 
+outsite_domain_dofs, outside_domain_coords):
 
     # Each facet must have a particular order of origin points to ensure
     # that the normal vector of the facet point outwards. For each or-
@@ -230,23 +232,30 @@ outside_domain_coords):
     # in the list of boundary tetrahedra
 
     boundary_tetrahedra_indices = []
-
-    # Initializes a list for each one of the vectors of each boundary
-    # facets
-
-    vector_x_1_boundary_facets = []
-
-    vector_x_2_boundary_facets = []
     
     # Initializes a list that stores the indices of the boundary facets
-    # that connects to each target point
+    # that connects to each target point. Then, it will be used to store
+    # the average normal vectors at each target point
 
-    boundary_facets_per_target_point = [[] for _ in range(
+    boundary_normal_per_target_point = [[] for _ in range(
     target_points.shape[0])]
 
-    # Initializes a list that stores the origin point of each facet
+    # Initializes three lists that store each vertex of each facet
 
-    origin_point_boundary_facets = []
+    vertex_1_coordinates = []
+
+    vertex_2_coordinates = []
+
+    vertex_3_coordinates = []
+
+    # Initializes a list for each vertex that tells the target point in-
+    # dex for each vertex
+
+    vertex_1_target_point_index = []
+
+    vertex_2_target_point_index = []
+
+    vertex_3_target_point_index = []
 
     # Initializes a counter of boundary facets
 
@@ -287,7 +296,7 @@ outside_domain_coords):
                     # Appends the index of this boundary facet to the 
                     # list of connectivities of this target point
 
-                    boundary_facets_per_target_point[vertex_index
+                    boundary_normal_per_target_point[vertex_index
                     ].append(n_boundary_facets)
 
                 # Stores the index of the tetrahedron that owns this fa-
@@ -304,23 +313,29 @@ outside_domain_coords):
                 (origin_local_index, edge_1_local_index, 
                 edge_2_local_index) = vertex_orders[facet_index]
 
-                # Gets the origin point of the local coordinate system 
-                # centered in the first vertix of this facet and copla-
-                # nar to it
+                # Appends the indices of the target points corresponding
+                # to each vertex
 
-                origin_point_boundary_facets.append(target_points[
+                vertex_1_target_point_index.append(local_vertices[
+                origin_local_index])
+
+                vertex_2_target_point_index.append(local_vertices[
+                edge_1_local_index])
+
+                vertex_3_target_point_index.append(local_vertices[
+                edge_2_local_index])
+
+                # Appends the coordinates of each vertex following the 
+                # positive orientation of the outward normal vector
+
+                vertex_1_coordinates.append(target_points[
                 local_vertices[origin_local_index]])
 
-                # Gets the two vectors that lie in two sides of this 
-                # triangular facet
+                vertex_2_coordinates.append(target_points[
+                local_vertices[edge_1_local_index]])
 
-                vector_x_1_boundary_facets.append(target_points[
-                local_vertices[edge_1_local_index]]-target_points[
-                local_vertices[origin_local_index]])
-
-                vector_x_2_boundary_facets.append(target_points[
-                local_vertices[edge_2_local_index]]-target_points[
-                local_vertices[origin_local_index]])
+                vertex_3_coordinates.append(target_points[
+                local_vertices[edge_2_local_index]])
 
                 # Updates the counter of boundary facets
 
@@ -329,19 +344,28 @@ outside_domain_coords):
     # Converts the lists of vectors of the boundary facets to pure numpy
     # arrays
 
-    vector_x_1_boundary_facets = np.asarray(vector_x_1_boundary_facets,
-    dtype=numpy_float_type)
+    vertex_1_coordinates = np.asarray(vertex_1_coordinates, dtype=
+    numpy_float_type)
 
-    vector_x_2_boundary_facets = np.asarray(vector_x_2_boundary_facets,
-    dtype=numpy_float_type)
+    vertex_2_coordinates = np.asarray(vertex_2_coordinates, dtype=
+    numpy_float_type)
 
-    vector_x_3_boundary_facets = np.cross(vector_x_1_boundary_facets, 
-    vector_x_2_boundary_facets)
+    vertex_3_coordinates = np.asarray(vertex_3_coordinates, dtype=
+    numpy_float_type)
 
-    origin_point_boundary_facets = np.asarray(
-    origin_point_boundary_facets, dtype=numpy_float_type)
+    # Evaluates the edge vectors by subtracting the vertices of each fa-
+    # cet
+
+    vector_x_1_boundary_facets = (vertex_2_coordinates-
+    vertex_1_coordinates)
+
+    vector_x_2_boundary_facets = (vertex_3_coordinates-
+    vertex_1_coordinates)
 
     # Normalizes the outward normal vector
+
+    vector_x_3_boundary_facets = np.cross(vector_x_1_boundary_facets,
+    vector_x_2_boundary_facets)
 
     vector_x_3_boundary_facets = (vector_x_3_boundary_facets/
     np.linalg.norm(vector_x_3_boundary_facets, axis=1, keepdims=True))
@@ -350,7 +374,7 @@ outside_domain_coords):
     # boundary
 
     for i, boundary_facets_list in enumerate(
-    boundary_facets_per_target_point):
+    boundary_normal_per_target_point):
 
         # If this target point is in the boundary, the list of boundary 
         # facets indices attached to it is not empty
@@ -377,29 +401,141 @@ outside_domain_coords):
             # Gets the average normal vector from this target point and 
             # modifies it in place, but makes it unitary first
 
-            boundary_facets_per_target_point[i] = (average_normal/
+            boundary_normal_per_target_point[i] = (average_normal/
             np.linalg.norm(average_normal))
 
-    # Evaluates the batched dot product between the vectors of the boundary
-    # facets
+    # Converts the list of boundary normal vector per target point to a 
+    # numpy array
 
-    w_11 = np.einsum('ij,ij->i', vector_x_1_boundary_facets, 
+    boundary_normal_per_target_point = np.asarray(
+    boundary_normal_per_target_point, dtype=numpy_float_type)
+
+    # Converts the list of target point indices for each vertex of each
+    # boundary facet to a (n_boundary_facets, 1) integer numpy array
+
+    vertex_1_target_point_index = np.asarray(vertex_1_target_point_index,
+    dtype=numpy_int_type)
+
+    vertex_2_target_point_index = np.asarray(vertex_2_target_point_index,
+    dtype=numpy_int_type)
+
+    vertex_3_target_point_index = np.asarray(vertex_3_target_point_index,
+    dtype=numpy_int_type)
+
+    # From the target point indices, captures the average normal vector 
+    # at each vertex of each facet to generate a numpy array (
+    # n_boundary_facets,3)
+
+    vertex_1_average_normal = boundary_normal_per_target_point[
+    vertex_1_target_point_index,:]
+
+    vertex_2_average_normal = boundary_normal_per_target_point[
+    vertex_2_target_point_index,:]
+
+    vertex_3_average_normal = boundary_normal_per_target_point[
+    vertex_3_target_point_index,:]
+
+    # Evaluates the batched dot product between the vectors of the boun-
+    # dary facets for the first vertix of each triangular facet
+
+    w_111 = np.einsum('ij,ij->i', vector_x_1_boundary_facets, 
     vector_x_1_boundary_facets)
 
-    w_22 = np.einsum('ij,ij->i', vector_x_2_boundary_facets, 
+    w_112 = np.einsum('ij,ij->i', vector_x_1_boundary_facets, 
     vector_x_2_boundary_facets)
 
-    w_12 = np.einsum('ij,ij->i', vector_x_1_boundary_facets, 
+    w_113 = np.einsum('ij,ij->i', vector_x_1_boundary_facets, 
+    vertex_1_average_normal)
+
+    w_122 = np.einsum('ij,ij->i', vector_x_2_boundary_facets, 
     vector_x_2_boundary_facets)
 
-    # Computes the denominator common to both coefficient matrices v_1
-    # and v_2. The resulting tensor is [n_boundary_facets]
+    w_123 = np.einsum('ij,ij->i', vector_x_2_boundary_facets, 
+    vertex_1_average_normal)
 
-    denominator = (w_11*w_22)-(w_12*w_12)
+    w_133 = np.einsum('ij,ij->i', vertex_1_average_normal, 
+    vertex_1_average_normal)
 
-    # Verifies if there are degenerate triangles
+    print("w_111:\n"+str(w_111)+"\n\nw_112:\n"+str(w_112)+"\n\nw_113:\n"+str(w_113)+"\n")
 
-    degenerate_facets = np.where(np.abs(denominator)<(
+    print("w_122:\n"+str(w_122)+"\n\nw_123:\n"+str(w_123)+"\n\nw_133:\n"+str(w_133)+"\n")
+
+    # Does the same for the second vertix. However, the x_1 vector of
+    # this edge is x_2-x_1 and x_2 is -x_1, where x_1 and x_2 are the 
+    # edge vectors parting from the first vertix
+
+    w_211 = np.einsum('ij,ij->i', vector_x_2_boundary_facets-
+    vector_x_1_boundary_facets, vector_x_2_boundary_facets-
+    vector_x_1_boundary_facets)
+
+    w_212 = np.einsum('ij,ij->i', vector_x_2_boundary_facets-
+    vector_x_1_boundary_facets, -vector_x_1_boundary_facets)
+
+    w_213 = np.einsum('ij,ij->i', vector_x_2_boundary_facets-
+    vector_x_1_boundary_facets, vertex_2_average_normal)
+
+    w_222 = np.einsum('ij,ij->i', -vector_x_1_boundary_facets, 
+    -vector_x_1_boundary_facets)
+
+    w_223 = np.einsum('ij,ij->i', -vector_x_1_boundary_facets, 
+    vertex_2_average_normal)
+
+    w_233 = np.einsum('ij,ij->i', vertex_2_average_normal, 
+    vertex_2_average_normal)
+
+    # Does the same for the third vertix. However, the x_1 vector of
+    # this edge is -x_2 and x_2 is x_1-x_2, where x_1 and x_2 are the 
+    # edge vectors parting from the first vertix
+
+    w_311 = np.einsum('ij,ij->i', -vector_x_2_boundary_facets, 
+    -vector_x_2_boundary_facets)
+
+    w_312 = np.einsum('ij,ij->i', -vector_x_2_boundary_facets, 
+    vector_x_1_boundary_facets-vector_x_2_boundary_facets)
+
+    w_313 = np.einsum('ij,ij->i', -vector_x_2_boundary_facets, 
+    vertex_3_average_normal)
+
+    w_322 = np.einsum('ij,ij->i', vector_x_1_boundary_facets-
+    vector_x_2_boundary_facets, vector_x_1_boundary_facets-
+    vector_x_2_boundary_facets)
+
+    w_323 = np.einsum('ij,ij->i', vector_x_1_boundary_facets-
+    vector_x_2_boundary_facets, vertex_3_average_normal)
+
+    w_333 = np.einsum('ij,ij->i', vertex_3_average_normal, 
+    vertex_3_average_normal)
+
+    # Computes the denominators common to both coefficient matrices v_1,
+    # v_2, and v_3. The resulting tensor is [n_boundary_facets]. Compu-
+    # tes the denominators for each vertex of each boundary facet
+
+    d_13 = ((w_111*((w_122*w_133)-(w_123*w_123)))+(w_112*((2.0*w_113*
+    w_123)-(w_112*w_133)))-(w_122*w_113*w_113))
+
+    d_12 = (w_111*w_122)-(w_112*w_112)
+
+    print("d_13:\n"+str(d_13)+"\n\nd_12:\n"+str(d_12)+"\n")
+
+    # Now for the second vertex
+
+    d_23 = ((((w_211*w_233)-(w_213*w_213))*((w_211*w_222)-(w_212*w_212))
+    )-np.power((w_211*w_223)-(w_212*w_213), 2))
+
+    d_22 = (w_211*w_222)-(w_212*w_212)
+
+    # Now for the third vertex
+
+    d_33 = ((((w_311*w_333)-(w_313*w_313))*((w_311*w_322)-(w_312*w_312))
+    )-np.power((w_311*w_323)-(w_312*w_313), 2))
+
+    d_32 = (w_311*w_322)-(w_312*w_312)
+
+    # Verifies if there are degenerate triangles. But uses only the se-
+    # cond denominator of the first index, since it is sufficient to 
+    # test for degeneracy
+
+    degenerate_facets = np.where(np.abs(d_12)<(
     area_tolerance_of_degenerate_triangles))[0]
 
     if len(degenerate_facets)>0:
@@ -419,8 +555,13 @@ outside_domain_coords):
         "ordinates.\nThe vertices of the tetrahedron that own the "+
         "first degenerate facets are:\n"+str(
         ill_placed_target_points))
+    
+    # Since the degeneracy test was passed, invert the denominators to
+    # get actual denominators
 
-    # Computes the coefficient matrices v_1 and v_2
+    d_13 = 1.0/d_13
+
+    """# Computes the coefficient matrices v_1 and v_2
 
     v_1 = np.column_stack([w_22/denominator, -w_12/denominator])
 
@@ -494,7 +635,7 @@ outside_domain_coords):
 
         # Allocates the orphan DOF into the correct stochastic support
 
-        dofs_per_tetrahedron[index_tetrahedron].append(leftover_dof)
+        dofs_per_tetrahedron[index_tetrahedron].append(leftover_dof)"""
 
     # Returns the updated list of DOFs per tetrahedron
 
