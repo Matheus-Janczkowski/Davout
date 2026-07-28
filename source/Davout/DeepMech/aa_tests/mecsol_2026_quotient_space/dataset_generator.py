@@ -278,7 +278,7 @@ if __name__=="__main__":
     # Sets the number of samples, stress limits, and the limits of the
     # modulus
 
-    n_samples = 10000
+    n_samples = 1000
 
     limits_stretch_1 = [0.85, 2.5]
 
@@ -292,11 +292,11 @@ if __name__=="__main__":
 
     limits_rotation_stretch_3 = [-180.0, 180.0]
 
-    limits_polar_rotation_1 = [-180.0, 180.0]
+    limits_polar_rotation_1 = [0.0, 0.0]
 
-    limits_polar_rotation_2 = [-180.0, 180.0]
+    limits_polar_rotation_2 = [0.0, 0.0]
 
-    limits_polar_rotation_3 = [-180.0, 180.0]
+    limits_polar_rotation_3 = [0.0, 0.0]
 
     limits_base_E = [12E6, 15E6]
 
