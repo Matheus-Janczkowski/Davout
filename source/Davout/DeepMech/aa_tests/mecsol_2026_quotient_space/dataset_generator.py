@@ -278,7 +278,7 @@ if __name__=="__main__":
     # Sets the number of samples, stress limits, and the limits of the
     # modulus
 
-    n_samples = 1000
+    n_samples = 2500
 
     limits_stretch_1 = [0.85, 2.5]
 
