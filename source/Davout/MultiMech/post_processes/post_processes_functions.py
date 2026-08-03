@@ -3,6 +3,8 @@
 
 from dolfin import *
 
+import numpy as np
+
 from ..tool_box import variational_tools
 
 from ..tool_box import homogenization_tools
@@ -1430,6 +1432,16 @@ def initialize_strain_energy(data, direct_codeData, submesh_flag):
 
     file_name = data[1]
 
+    saving_method = data[2]
+
+    # Verifies the saving method
+
+    if saving_method!="binary" and saving_method!="txt":
+
+        raise ValueError("The option 'saving method' in 'SaveStrainEne"+
+        "rgy' must be either 'binary' or 'txt'. Currently it is: '"+str(
+        saving_method)+"'")
+
     # Gets the mesh data class and the constitutive model
 
     mesh_data_class = direct_codeData[0]
@@ -1454,7 +1466,7 @@ def initialize_strain_energy(data, direct_codeData, submesh_flag):
     class OutputObject:
 
         def __init__(self, file_name, mesh_data_class, 
-        constitutive_model, strain_energy_list):
+        constitutive_model, strain_energy_list, saving_method):
 
             # Saves the comm object
 
@@ -1468,8 +1480,10 @@ def initialize_strain_energy(data, direct_codeData, submesh_flag):
 
             self.constitutive_model = constitutive_model
 
+            self.saving_method = saving_method
+
     output_object = OutputObject(file_name, mesh_data_class, 
-    constitutive_model, strain_energy_list)
+    constitutive_model, strain_energy_list, saving_method)
 
     return output_object
 
@@ -1602,11 +1616,18 @@ fields_namesDict):
 
     output_object.result.append([time, strain_energy_value])
 
-    # Saves the list of volume ratios in a txt file
+    # Saves the list of volume ratios in a txt file or a numpy binary 
+    # file
 
-    mpi_execute_function(output_object.comm_object, 
-    file_tools.list_toTxt, output_object.result, output_object.file_name, 
-    add_extension=True)
+    if output_object.saving_method=="txt":
+
+        mpi_execute_function(output_object.comm_object, 
+        file_tools.list_toTxt, output_object.result, 
+        output_object.file_name, add_extension=True)
+
+    else:
+
+        np.save(output_object.file_name+".npy", output_object.result)
     
     return output_object
 

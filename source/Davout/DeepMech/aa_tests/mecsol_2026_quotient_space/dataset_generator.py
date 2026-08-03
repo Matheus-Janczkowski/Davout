@@ -25,7 +25,8 @@ from time import time
 def generate_dataset(n_samples, limits_list, p_norm_list, results_path,
 displacement_file_name, young_modulus_file, mesh_file_name, cube_size,
 influence_radius, damping_factor, radius_power, mesh_data_class, 
-lagrange_multiplier_file_name, save_snapshot_displacement=False):
+lagrange_multiplier_file_name, strain_energy_file_name,
+save_snapshot_displacement=False):
     
     # Initializes the list of samples
 
@@ -75,6 +76,8 @@ lagrange_multiplier_file_name, save_snapshot_displacement=False):
     succesful_data = []
 
     succesful_displacement = []
+
+    succesful_strain_energy = []
 
     # Initializes a counter for failed simulations
 
@@ -141,14 +144,23 @@ lagrange_multiplier_file_name, save_snapshot_displacement=False):
             young_modulus_file, get_parent_path_of_file()+"//"+
             mesh_file_name, displacement_gradient, 
             lagrange_multiplier_file_name+"_"+simulation_number, 
-            save_snapshot=save_snapshot_displacement)
+            save_snapshot=save_snapshot_displacement, 
+            strain_energy_file_name=strain_energy_file_name+"_"+
+            simulation_number)
 
             # If the simulation was succesful, reads the displacement 
             # field and updates it to the succesful data. Discards the
             # first column because it contains the time values
 
             succesful_displacement.extend(np.load(results_path+"//"+
-            displacement_file_name+"_"+simulation_number+".npy")[:,1:].tolist())
+            displacement_file_name+"_"+simulation_number+".npy")[:,1:
+            ].tolist())
+
+            # Does the same for the strain energy
+
+            succesful_strain_energy.extend(np.load(results_path+"//"+
+            strain_energy_file_name+"_"+simulation_number+".npy")[:,1:
+            ].tolist())
 
             # Adds the Young modulus data and the displacement gradient
 
@@ -172,10 +184,16 @@ lagrange_multiplier_file_name, save_snapshot_displacement=False):
             "f the input data is: "+str(np.array(succesful_data).shape)+
             "\n")
 
+            print("The shape of the strain energy data is: "+str(
+            np.array(succesful_strain_energy).shape)+"\n")
+
             # Saves the lists into binary and txt files
 
-            np.save(results_path+"//00_succesful_displacement_matrix.n"+
+            np.save(results_path+"//00_successful_displacement_matrix.n"+
             "py", np.array(succesful_displacement))
+
+            np.save(results_path+"//00_successful_strain_energy_matrix"+
+            ".npy", np.array(succesful_strain_energy))
 
             np.save(results_path+"//00_successful_data_matrix.npy", 
             np.array(succesful_data))
@@ -343,6 +361,8 @@ if __name__=="__main__":
 
     lagrange_multiplier_file_name = "lagrange_multiplier_young_modulus"
 
+    strain_energy_file_name = "strain_energy"
+
     young_modulus_file = "young_modulus_field"
 
     mesh_file_name = "box_mesh_mecsol"
@@ -362,4 +382,5 @@ if __name__=="__main__":
     generate_dataset(n_samples, limits_list, p_norm_list, results_path,
     displacement_file_name, young_modulus_file, mesh_file_name, cube_size,
     influence_radius, damping_factor, radius_power, mesh_data_class,
-    lagrange_multiplier_file_name, save_snapshot_displacement=False)
+    lagrange_multiplier_file_name, strain_energy_file_name, 
+    save_snapshot_displacement=False)

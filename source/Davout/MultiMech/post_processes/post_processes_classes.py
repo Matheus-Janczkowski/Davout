@@ -250,7 +250,7 @@ class SaveStrainEnergy(PostProcessMethod):
 
         super().__init__(post_functions.initialize_strain_energy, 
         post_functions.update_strain_energy, ["directory path", 
-        "file name"], [context.mesh_data_class, 
+        "file name", ["saving method", "txt"]], [context.mesh_data_class, 
         context.constitutive_model])
 
 # Sets a class for the method to save forces and moments on a surface

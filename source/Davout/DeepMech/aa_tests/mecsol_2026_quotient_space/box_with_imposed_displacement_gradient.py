@@ -11,7 +11,8 @@ from .....Davout.GraphUtilities.paraview_tools import frozen_snapshots
 def solve_BVP(results_path, displacement_file_name, young_modulus_file,
 mesh_file_name, displacement_gradient_components, 
 lagrange_multiplier_file_name, save_snapshot=False, snapshot_file_name=
-"RVE_displacement_imposed_gradient.png"):
+"RVE_displacement_imposed_gradient.png", strain_energy_file_name=
+"strain_energy.npy"):
 
     ####################################################################
     ####################################################################
@@ -35,6 +36,10 @@ lagrange_multiplier_file_name, save_snapshot=False, snapshot_file_name=
     post_processes[0][1]["SaveField"] = {"directory path": results_path, 
     "file name": displacement_file_name, "saving method": "binary", 
     "visualization copy for readable xdmf": True}
+
+    post_processes[0][1]["SaveStrainEnergy"] = {"directory path": 
+    results_path, "file name": strain_energy_file_name, "saving method": 
+    "binary"}
 
     post_processes[1][1]["SaveField"] = {"directory path": results_path, 
     "file name": lagrange_multiplier_file_name, "saving method": "bina"+
