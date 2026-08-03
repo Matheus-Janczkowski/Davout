@@ -206,12 +206,12 @@ top=3cm, bottom=2cm}}\onehalfspacing\setlength{\parindent}{1.25cm}%
 % Command for creating an implication arrow with text above and under-
 % neath it
 
-\newcommand{\CommentedArrow}[2]{\xRightarrow[#2]{#1}}
+\newcommand*{\CommentedArrow}[2]{\xRightarrow[#2]{#1}}
 
 % Command for creating an implication arrow with text ONLY above and un-
 % derneath it
 
-\newcommand{\TextCommentedArrow}[2]{\xRightarrow[\text{#2}]{\text{#1}}}
+\newcommand*{\TextCommentedArrow}[2]{\xRightarrow[\text{#2}]{\text{#1}}}
 
 % Command to set the inner product of two arguments
 
@@ -357,12 +357,12 @@ top=3cm, bottom=2cm}}\onehalfspacing\setlength{\parindent}{1.25cm}%
 % Macro to put a dot over an expresion, important when there is a dot 
 % over another dot
 
-\newcommand{\DotWithLine}[1]{\accentset{\mbox{\large .}}{#1}}
+\newcommand*{\DotWithLine}[1]{\accentset{\mbox{\large .}}{#1}}
 
 % Macro to make integral differentials prettier
 % Example: \IntegralDif t
 
-\newcommand\IntegralDif{\mathop{}\!\mathrm{d}}
+\newcommand*\IntegralDif{\mathop{}\!\mathrm{d}}
 
 % Macro to make an integral. The first argument is the integration do-
 % main; the second is the integrand; the third, the integration diffe-
@@ -621,17 +621,17 @@ top=3cm, bottom=2cm}}\onehalfspacing\setlength{\parindent}{1.25cm}%
 % Command for typing the vec operator, which transforms something into a
 % vector
 
-\newcommand{\VecOperator}[1]{\operatorname{vec}\!\left(#1\right)}
+\newcommand*{\VecOperator}[1]{\operatorname{vec}\!\left(#1\right)}
 
 % Command for typing the sym operator, which gives the symmetric part of
 % a tensor
 
-\newcommand{\SymOperator}[1]{\operatorname{sym}\!\left(#1\right)}
+\newcommand*{\SymOperator}[1]{\operatorname{sym}\!\left(#1\right)}
 
 % Command for typing the skew operator, which gives the skew-symmetric 
 % part of a tensor
 
-\newcommand{\SkewOperator}[1]{\operatorname{skew}\!\left(#1\right)}
+\newcommand*{\SkewOperator}[1]{\operatorname{skew}\!\left(#1\right)}
 
 % Command for typing the span operator
 
