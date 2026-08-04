@@ -128,9 +128,7 @@ final_time):
                 new_filtered_input_list.append([
                 new_stretch_tensor[0,0]-1.0, new_stretch_tensor[0,1], 
                 new_stretch_tensor[0,2], 
-                new_stretch_tensor[1,0], new_stretch_tensor[1,1]-1.0, 
-                new_stretch_tensor[1,2], 
-                new_stretch_tensor[2,0], new_stretch_tensor[2,1], 
+                new_stretch_tensor[1,1]-1.0, new_stretch_tensor[1,2], 
                 new_stretch_tensor[2,2]-1.0, 
                 sample_data[0], sample_data[1]])
 
