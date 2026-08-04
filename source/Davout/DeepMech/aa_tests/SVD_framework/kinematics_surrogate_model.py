@@ -76,14 +76,14 @@ class RVEKinematicsSurrogateModel:
 
         # Checks whether there is sufficient samples in the dataset
 
-        if self.n_training_samples<=input_data.shape[0]:
+        if self.n_training_samples>=input_data.shape[0]:
 
             raise IndexError(str(self.n_training_samples)+" samples we"+
             "re asked for training, but there are only "+str(
             input_data.shape[0])+" samples in the input data matrix at"+
             ":\n"+str(self.results_path+"//"+self.input_data_file))
 
-        if self.n_training_samples<=output_data.shape[0]:
+        if self.n_training_samples>=output_data.shape[0]:
 
             raise IndexError(str(self.n_training_samples)+" samples we"+
             "re asked for training, but there are only "+str(
@@ -327,9 +327,9 @@ if __name__=="__main__":
 
     results_path = get_parent_path_of_file()+"//results"
    
-    displacement_data_file = "00_succesful_displacement_matrix.npy"
+    displacement_data_file = "00_successful_displacement_matrix.npy"
 
-    input_data_file = "00_successful_complete_data_matrix.npy"
+    input_data_file = "00_successful_complete_and_filtered_data_matrix.npy"
 
     # Instantiates the class that owns all information about training 
     # and testing models

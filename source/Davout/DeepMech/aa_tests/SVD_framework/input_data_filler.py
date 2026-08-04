@@ -168,12 +168,17 @@ if __name__=="__main__":
 
     input_data_file = "00_successful_data_matrix.npy" 
     
-    displacement_data_file = "00_succesful_displacement_matrix.npy"
+    displacement_data_file = "00_successful_displacement_matrix.npy"
 
     new_input_file = "00_successful_complete_data_matrix.npy"
 
     new_filtered_input_file = ("00_successful_complete_and_filtered_da"+
     "ta_matrix.npy")
 
+    initial_time = 0.2
+
+    final_time = 1.0
+
     fill_load_steps(input_data_file, displacement_data_file, 
-    new_input_file, new_filtered_input_file, results_path, 0.2, 1.0)
+    new_input_file, new_filtered_input_file, results_path, initial_time,
+    final_time)

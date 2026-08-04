@@ -20,13 +20,13 @@ class TestSVDArchitecture:
 
         # Defines the test data for the gradient tests
 
-        self.whole_input_dimension = 7
+        self.whole_input_dimension = 8
 
-        self.quotient_space_dimension = 3
+        self.quotient_space_dimension = 6
 
         self.number_of_neurons_hidden_layer_main_network = 100
 
-        self.output_dimension = 2
+        self.output_dimension = 500
 
         self.activation_list_main_network = [{"quadratic": {"number of"+
         " neurons": self.number_of_neurons_hidden_layer_main_network, 
@@ -47,13 +47,13 @@ class TestSVDArchitecture:
         self.modulating_function, "Householder epsilon": 1.0, 
         "activations accessory layer list": self.accessory_activation_list_tests}
 
-        self.n_samples_tests = 1000
+        self.n_samples_tests = 2000
 
         self.n_samples_quotient_test = 10
 
         self.maximum_iterations = 5000
 
-        n_samples_training = 6
+        n_samples_training = 1000
 
         # Defines a function to get the true values
 
@@ -101,7 +101,7 @@ class TestSVDArchitecture:
 
         # Converts thet data to tensors
 
-        self.parameters_dtype = "float64"
+        self.parameters_dtype = "float32"
 
         # Defines the loss function metric
 

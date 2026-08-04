@@ -17,7 +17,7 @@ from copy import deepcopy
 def sphere_geometry_RVE(sphere_radius, inner_cube_half_edge_ratio, 
 mesh_file_name, n_points_per_edge=100, transfinite_x=5, transfinite_y=5, 
 transfinite_z=5, transfinite_radial=5, bias_radial=1.0, bias_x=1.0, 
-bias_y=1.0, bias_z=1.0, p_exponent=2.0): 
+bias_y=1.0, bias_z=1.0, p_exponent=2.0, mapping_matrix=np.eye(3)): 
 
     # Verifies if the inner cube is contained within the sphere. To as-
     # sert this, checks for the length of the outermost corner of the
@@ -124,7 +124,7 @@ bias_y=1.0, bias_z=1.0, p_exponent=2.0):
     # Converts the matrix of points to cartesian coordinates
 
     vertices_cartesian_coordinates = spherical_to_retangular_coordinates(
-    vertices_spherical_coordinates, p_exponent)
+    vertices_spherical_coordinates, p_exponent, mapping_matrix)
 
     # Sets the names of the physical regions
 
@@ -158,21 +158,24 @@ bias_y=1.0, bias_z=1.0, p_exponent=2.0):
     # Creates the points for the lines of this cuboid
 
     line_points_09_08 = linear_interpolation_in_spherical_coordinates(
-    9, 8, vertices_spherical_coordinates, n_points_per_edge, p_exponent)
+    9, 8, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
+    mapping_matrix)
 
     line_points_08_11 = linear_interpolation_in_spherical_coordinates(
-    8, 11, vertices_spherical_coordinates, n_points_per_edge, p_exponent)
+    8, 11, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
+    mapping_matrix)
 
     line_points_09_12 = linear_interpolation_in_spherical_coordinates(
-    9, 12, vertices_spherical_coordinates, n_points_per_edge, p_exponent)
+    9, 12, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
+    mapping_matrix)
 
     # For these lines, calculates phi as a function of theta to get the
     # intersection of the plane -x+z=0 with the sphere
 
     line_points_12_11 = linear_interpolation_in_spherical_coordinates(
     12, 11, vertices_spherical_coordinates, n_points_per_edge, 
-    p_exponent, function_to_get_phi_from_theta=lambda theta: np.arctan(
-    np.cos(theta)))
+    p_exponent, mapping_matrix, function_to_get_phi_from_theta=
+    lambda theta: np.arctan(np.cos(theta)))
 
     # Generates this cuboid
 
@@ -193,18 +196,20 @@ bias_y=1.0, bias_z=1.0, p_exponent=2.0):
     # Creates the points for the lines of this cuboid
 
     line_points_10_09 = linear_interpolation_in_spherical_coordinates(
-    10, 9, vertices_spherical_coordinates, n_points_per_edge, p_exponent)
+    10, 9, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
+    mapping_matrix)
 
     line_points_10_13 = linear_interpolation_in_spherical_coordinates(
-    10, 13, vertices_spherical_coordinates, n_points_per_edge, p_exponent)
+    10, 13, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
+    mapping_matrix)
 
     # For these lines, calculates phi as a function of theta to get the
     # intersection of the plane -y+z=0 with the sphere
 
     line_points_13_12 = linear_interpolation_in_spherical_coordinates(
     13, 12, vertices_spherical_coordinates, n_points_per_edge, 
-    p_exponent, function_to_get_phi_from_theta=lambda theta: np.arctan(
-    np.sin(theta)))
+    p_exponent, mapping_matrix, function_to_get_phi_from_theta=
+    lambda theta: np.arctan(np.sin(theta)))
 
     # Generates this cuboid
 
@@ -225,11 +230,12 @@ bias_y=1.0, bias_z=1.0, p_exponent=2.0):
     # Creates the points for the lines of this cuboid
 
     line_points_14_11 = linear_interpolation_in_spherical_coordinates(
-    14, 11, vertices_spherical_coordinates, n_points_per_edge, p_exponent)
+    14, 11, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
+    mapping_matrix)
 
     line_points_13_14 = linear_interpolation_in_spherical_coordinates(
-    13, 14, vertices_spherical_coordinates, n_points_per_edge, p_exponent, 
-    fix_theta=half_pi)
+    13, 14, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
+    mapping_matrix, fix_theta=half_pi)
 
     # Generates this cuboid
 
@@ -262,21 +268,24 @@ bias_y=1.0, bias_z=1.0, p_exponent=2.0):
     # Creates the points for the lines of this cuboid
 
     line_points_19_10 = linear_interpolation_in_spherical_coordinates(
-    19, 10, vertices_spherical_coordinates, n_points_per_edge, p_exponent)
+    19, 10, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
+    mapping_matrix)
 
     line_points_10_13 = linear_interpolation_in_spherical_coordinates(
-    10, 13, vertices_spherical_coordinates, n_points_per_edge, p_exponent)
+    10, 13, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
+    mapping_matrix)
 
     line_points_19_21 = linear_interpolation_in_spherical_coordinates(
-    19, 21, vertices_spherical_coordinates, n_points_per_edge, p_exponent)
+    19, 21, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
+    mapping_matrix)
 
     # For these lines, calculates phi as a function of theta to get the
     # intersection of the plane -x+z=0 with the sphere
 
     line_points_21_13 = linear_interpolation_in_spherical_coordinates(
     13, 21, vertices_spherical_coordinates, n_points_per_edge, 
-    p_exponent, function_to_get_phi_from_theta=lambda theta: np.arctan(
-    np.sin(theta)))
+    p_exponent, mapping_matrix, function_to_get_phi_from_theta=
+    lambda theta: np.arctan(np.sin(theta)))
 
     # Generates this cuboid
 
@@ -297,18 +306,20 @@ bias_y=1.0, bias_z=1.0, p_exponent=2.0):
     # Creates the points for the lines of this cuboid
 
     line_points_20_19 = linear_interpolation_in_spherical_coordinates(
-    20, 19, vertices_spherical_coordinates, n_points_per_edge, p_exponent)
+    20, 19, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
+    mapping_matrix)
 
     line_points_20_22 = linear_interpolation_in_spherical_coordinates(
-    20, 22, vertices_spherical_coordinates, n_points_per_edge, p_exponent)
+    20, 22, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
+    mapping_matrix)
 
     # For these lines, calculates phi as a function of theta to get the
     # intersection of the plane -y+z=0 with the sphere
 
     line_points_22_21 = linear_interpolation_in_spherical_coordinates(
     22, 21, vertices_spherical_coordinates, n_points_per_edge, 
-    p_exponent, function_to_get_phi_from_theta=lambda theta: np.arctan(
-    -np.cos(theta)))
+    p_exponent, mapping_matrix, function_to_get_phi_from_theta=
+    lambda theta: np.arctan(-np.cos(theta)))
 
     # Generates this cuboid
 
@@ -329,8 +340,8 @@ bias_y=1.0, bias_z=1.0, p_exponent=2.0):
     # Creates the points for the lines of this cuboid
 
     line_points_22_14 = linear_interpolation_in_spherical_coordinates(
-    22,14, vertices_spherical_coordinates, n_points_per_edge, p_exponent, 
-    fix_theta=np.pi)
+    22,14, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
+    mapping_matrix, fix_theta=np.pi)
 
     # Generates this cuboid
 
@@ -363,21 +374,24 @@ bias_y=1.0, bias_z=1.0, p_exponent=2.0):
     # Creates the points for the lines of this cuboid
 
     line_points_27_23 = linear_interpolation_in_spherical_coordinates(
-    27, 23, vertices_spherical_coordinates, n_points_per_edge, p_exponent)
+    27, 23, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
+    mapping_matrix)
 
     line_points_29_27 = linear_interpolation_in_spherical_coordinates(
-    29, 27, vertices_spherical_coordinates, n_points_per_edge, p_exponent)
+    29, 27, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
+    mapping_matrix)
 
     line_points_27_20 = linear_interpolation_in_spherical_coordinates(
-    27, 20, vertices_spherical_coordinates, n_points_per_edge, p_exponent)
+    27, 20, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
+    mapping_matrix)
 
     # For these lines, calculates phi as a function of theta to get the
     # intersection of the plane -x+z=0 with the sphere
 
     line_points_29_22 = linear_interpolation_in_spherical_coordinates(
     29, 22, vertices_spherical_coordinates, n_points_per_edge, 
-    p_exponent, function_to_get_phi_from_theta=lambda theta: np.arctan(
-    -np.cos(theta)))
+    p_exponent, mapping_matrix, function_to_get_phi_from_theta=
+    lambda theta: np.arctan(-np.cos(theta)))
 
     # Generates this cuboid
 
@@ -398,24 +412,28 @@ bias_y=1.0, bias_z=1.0, p_exponent=2.0):
     # Creates the points for the lines of this cuboid
 
     line_points_30_26 = linear_interpolation_in_spherical_coordinates(
-    30, 26, vertices_spherical_coordinates, n_points_per_edge, p_exponent)
+    30, 26, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
+    mapping_matrix)
 
     line_points_28_30 = linear_interpolation_in_spherical_coordinates(
-    28, 30, vertices_spherical_coordinates, n_points_per_edge, p_exponent)
+    28, 30, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
+    mapping_matrix)
 
     line_points_27_28 = linear_interpolation_in_spherical_coordinates(
-    27, 28, vertices_spherical_coordinates, n_points_per_edge, p_exponent)
+    27, 28, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
+    mapping_matrix)
 
     line_points_28_24 = linear_interpolation_in_spherical_coordinates(
-    28, 24, vertices_spherical_coordinates, n_points_per_edge, p_exponent)
+    28, 24, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
+    mapping_matrix)
 
     # For these lines, calculates phi as a function of theta to get the
     # intersection of the plane -x+z=0 with the sphere
 
     line_points_30_29 = linear_interpolation_in_spherical_coordinates(
     30, 29, vertices_spherical_coordinates, n_points_per_edge, 
-    p_exponent, function_to_get_phi_from_theta=lambda theta: np.arctan(
-    -np.sin(theta)))
+    p_exponent, mapping_matrix, function_to_get_phi_from_theta=
+    lambda theta: np.arctan(-np.sin(theta)))
 
     # Generates this cuboid
 
@@ -437,7 +455,7 @@ bias_y=1.0, bias_z=1.0, p_exponent=2.0):
 
     line_points_30_14 = linear_interpolation_in_spherical_coordinates(
     30, 14, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
-    fix_theta=three_half_pi)
+    mapping_matrix, fix_theta=three_half_pi)
 
     # Generates this cuboid
 
@@ -470,24 +488,28 @@ bias_y=1.0, bias_z=1.0, p_exponent=2.0):
     # Creates the points for the lines of this cuboid
 
     line_points_33_28 = linear_interpolation_in_spherical_coordinates(
-    33, 28, vertices_spherical_coordinates, n_points_per_edge, p_exponent)
+    33, 28, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
+    mapping_matrix)
 
     line_points_33_31 = linear_interpolation_in_spherical_coordinates(
-    33, 31, vertices_spherical_coordinates, n_points_per_edge, p_exponent)
+    33, 31, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
+    mapping_matrix)
 
     line_points_33_34 = linear_interpolation_in_spherical_coordinates(
-    33, 34, vertices_spherical_coordinates, n_points_per_edge, p_exponent)
+    33, 34, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
+    mapping_matrix)
 
     line_points_32_34 = linear_interpolation_in_spherical_coordinates(
-    32, 34, vertices_spherical_coordinates, n_points_per_edge, p_exponent)
+    32, 34, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
+    mapping_matrix)
 
     # For these lines, calculates phi as a function of theta to get the
     # intersection of the plane -x+z=0 with the sphere
 
     line_points_34_30 = linear_interpolation_in_spherical_coordinates(
     34, 30, vertices_spherical_coordinates, n_points_per_edge, 
-    p_exponent, function_to_get_phi_from_theta=lambda theta: np.arctan(
-    -np.sin(theta)))
+    p_exponent, mapping_matrix, function_to_get_phi_from_theta=
+    lambda theta: np.arctan(-np.sin(theta)))
 
     # Generates this Cuboid
 
@@ -509,15 +531,16 @@ bias_y=1.0, bias_z=1.0, p_exponent=2.0):
 
     line_points_33_8 = linear_interpolation_in_spherical_coordinates(
     33, 8, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
-    fix_theta=[seven_fourths, 2*np.pi])
+    mapping_matrix, fix_theta=[seven_fourths, 2*np.pi])
 
     # For these lines, calculates phi as a function of theta to get the
     # intersection of the plane -x+z=0 with the sphere
 
     line_points_34_11 = linear_interpolation_in_spherical_coordinates(
     34, 11, vertices_spherical_coordinates, n_points_per_edge, 
-    p_exponent, function_to_get_phi_from_theta=lambda theta: np.arctan(
-    np.cos(theta)), fix_theta=[seven_fourths, 2*np.pi])
+    p_exponent, mapping_matrix, function_to_get_phi_from_theta=
+    lambda theta: np.arctan(np.cos(theta)), fix_theta=[seven_fourths, 
+    2*np.pi])
 
     # Generates this Cuboid
 
@@ -564,24 +587,28 @@ bias_y=1.0, bias_z=1.0, p_exponent=2.0):
     # Creates the points for the lines of this cuboid
 
     line_points_36_39 = linear_interpolation_in_spherical_coordinates(
-    36, 39, vertices_spherical_coordinates, n_points_per_edge, p_exponent)
+    36, 39, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
+    mapping_matrix)
 
     line_points_37_40 = linear_interpolation_in_spherical_coordinates(
-    37, 40, vertices_spherical_coordinates, n_points_per_edge, p_exponent)
+    37, 40, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
+    mapping_matrix)
 
     line_points_8_39 = linear_interpolation_in_spherical_coordinates(
-    8, 39, vertices_spherical_coordinates, n_points_per_edge, p_exponent)
+    8, 39, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
+    mapping_matrix)
 
     line_points_9_40 = linear_interpolation_in_spherical_coordinates(
-    9, 40, vertices_spherical_coordinates, n_points_per_edge, p_exponent)
+    9, 40, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
+    mapping_matrix)
 
     # For these lines, calculates phi as a function of theta to get the
     # intersection of the plane -x+z=0 with the sphere
 
     line_points_39_40 = linear_interpolation_in_spherical_coordinates(
     39, 40, vertices_spherical_coordinates, n_points_per_edge, 
-    p_exponent, function_to_get_phi_from_theta=lambda theta: np.arctan(
-    -np.cos(theta)))
+    p_exponent, mapping_matrix, function_to_get_phi_from_theta=
+    lambda theta: np.arctan(-np.cos(theta)))
 
     # Generates this Cuboid
 
@@ -602,24 +629,28 @@ bias_y=1.0, bias_z=1.0, p_exponent=2.0):
     # Creates the points for the lines of this cuboid
 
     line_points_41_38 = linear_interpolation_in_spherical_coordinates(
-    41, 38, vertices_spherical_coordinates, n_points_per_edge, p_exponent)
+    41, 38, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
+    mapping_matrix)
 
     line_points_9_10 = linear_interpolation_in_spherical_coordinates(
-    9, 10, vertices_spherical_coordinates, n_points_per_edge, p_exponent)
+    9, 10, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
+    mapping_matrix)
 
     line_points_10_41 = linear_interpolation_in_spherical_coordinates(
-    10, 41, vertices_spherical_coordinates, n_points_per_edge, p_exponent)
+    10, 41, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
+    mapping_matrix)
 
     line_points_10_3 = linear_interpolation_in_spherical_coordinates(
-    10, 3, vertices_spherical_coordinates, n_points_per_edge, p_exponent)
+    10, 3, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
+    mapping_matrix)
 
     # For these lines, calculates phi as a function of theta to get the
     # intersection of the plane -x+z=0 with the sphere
 
     line_points_40_41 = linear_interpolation_in_spherical_coordinates(
     40, 41, vertices_spherical_coordinates, n_points_per_edge, 
-    p_exponent, function_to_get_phi_from_theta=lambda theta: np.arctan(
-    -np.sin(theta)))
+    p_exponent, mapping_matrix, function_to_get_phi_from_theta=
+    lambda theta: np.arctan(-np.sin(theta)))
 
     # Generates this Cuboid
 
@@ -640,14 +671,16 @@ bias_y=1.0, bias_z=1.0, p_exponent=2.0):
     # Creates the points for the lines of this cuboid
 
     line_points_35_42 = linear_interpolation_in_spherical_coordinates(
-    35, 42, vertices_spherical_coordinates, n_points_per_edge, p_exponent)
+    35, 42, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
+    mapping_matrix)
 
     line_points_42_39 = linear_interpolation_in_spherical_coordinates(
-    42, 39, vertices_spherical_coordinates, n_points_per_edge, p_exponent)
+    42, 39, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
+    mapping_matrix)
 
     line_points_41_42 = linear_interpolation_in_spherical_coordinates(
     41, 42, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
-    fix_theta=half_pi)
+    mapping_matrix, fix_theta=half_pi)
 
     # Generates this Cuboid
 
@@ -681,18 +714,20 @@ bias_y=1.0, bias_z=1.0, p_exponent=2.0):
     # Creates the points for the lines of this cuboid
 
     line_points_45_43 = linear_interpolation_in_spherical_coordinates(
-    45, 43, vertices_spherical_coordinates, n_points_per_edge, p_exponent)
+    45, 43, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
+    mapping_matrix)
 
     line_points_45_19 = linear_interpolation_in_spherical_coordinates(
-    45, 19, vertices_spherical_coordinates, n_points_per_edge, p_exponent)
+    45, 19, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
+    mapping_matrix)
 
     # For these lines, calculates phi as a function of theta to get the
     # intersection of the plane y+z=0 with the sphere
 
     line_points_41_45 = linear_interpolation_in_spherical_coordinates(
     41, 45, vertices_spherical_coordinates, n_points_per_edge, 
-    p_exponent, function_to_get_phi_from_theta=lambda theta: np.arctan(
-    -np.sin(theta)))
+    p_exponent, mapping_matrix, function_to_get_phi_from_theta=
+    lambda theta: np.arctan(-np.sin(theta)))
 
     # Generates this Cuboid
 
@@ -713,21 +748,24 @@ bias_y=1.0, bias_z=1.0, p_exponent=2.0):
     # Creates the points for the lines of this cuboid
 
     line_points_46_44 = linear_interpolation_in_spherical_coordinates(
-    46, 44, vertices_spherical_coordinates, n_points_per_edge, p_exponent)
+    46, 44, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
+    mapping_matrix)
 
     line_points_20_16 = linear_interpolation_in_spherical_coordinates(
-    20, 16, vertices_spherical_coordinates, n_points_per_edge, p_exponent)
+    20, 16, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
+    mapping_matrix)
 
     line_points_20_46 = linear_interpolation_in_spherical_coordinates(
-    20, 46, vertices_spherical_coordinates, n_points_per_edge, p_exponent)
+    20, 46, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
+    mapping_matrix)
 
     # For these lines, calculates phi as a function of theta to get the
     # intersection of the plane -x+z=0 with the sphere
 
     line_points_45_46 = linear_interpolation_in_spherical_coordinates(
     45, 46, vertices_spherical_coordinates, n_points_per_edge, 
-    p_exponent, function_to_get_phi_from_theta=lambda theta: np.arctan(
-    np.cos(theta)))
+    p_exponent, mapping_matrix, function_to_get_phi_from_theta=
+    lambda theta: np.arctan(np.cos(theta)))
 
     # Generates this Cuboid
 
@@ -749,7 +787,7 @@ bias_y=1.0, bias_z=1.0, p_exponent=2.0):
 
     line_points_42_46 = linear_interpolation_in_spherical_coordinates(
     42, 46, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
-    fix_theta=np.pi)
+    mapping_matrix, fix_theta=np.pi)
 
     # Generates this Cuboid
 
@@ -782,18 +820,20 @@ bias_y=1.0, bias_z=1.0, p_exponent=2.0):
     # Creates the points for the lines of this cuboid
 
     line_points_49_47 = linear_interpolation_in_spherical_coordinates(
-    49, 47, vertices_spherical_coordinates, n_points_per_edge, p_exponent)
+    49, 47, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
+    mapping_matrix)
 
     line_points_49_27 = linear_interpolation_in_spherical_coordinates(
-    49, 27, vertices_spherical_coordinates, n_points_per_edge, p_exponent)
+    49, 27, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
+    mapping_matrix)
 
     # For these lines, calculates phi as a function of theta to get the
     # intersection of the plane -x+z=0 with the sphere
 
     line_points_49_46 = linear_interpolation_in_spherical_coordinates(
     49, 46, vertices_spherical_coordinates, n_points_per_edge, 
-    p_exponent, function_to_get_phi_from_theta=lambda theta: np.arctan(
-    np.cos(theta)))
+    p_exponent, mapping_matrix, function_to_get_phi_from_theta=
+    lambda theta: np.arctan(np.cos(theta)))
 
     # Generates this Cuboid
 
@@ -814,18 +854,20 @@ bias_y=1.0, bias_z=1.0, p_exponent=2.0):
     # Creates the points for the lines of this cuboid
 
     line_points_48_50 = linear_interpolation_in_spherical_coordinates(
-    48, 50, vertices_spherical_coordinates, n_points_per_edge, p_exponent)
+    48, 50, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
+    mapping_matrix)
 
     line_points_50_28 = linear_interpolation_in_spherical_coordinates(
-    50, 28, vertices_spherical_coordinates, n_points_per_edge, p_exponent)
+    50, 28, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
+    mapping_matrix)
 
     # For these lines, calculates phi as a function of theta to get the
     # intersection of the plane -y+z=0 with the sphere
 
     line_points_49_50 = linear_interpolation_in_spherical_coordinates(
     49, 50, vertices_spherical_coordinates, n_points_per_edge, 
-    p_exponent, function_to_get_phi_from_theta=lambda theta: np.arctan(
-    np.sin(theta)))
+    p_exponent, mapping_matrix, function_to_get_phi_from_theta=
+    lambda theta: np.arctan(np.sin(theta)))
 
     # Generates this Cuboid
 
@@ -847,7 +889,7 @@ bias_y=1.0, bias_z=1.0, p_exponent=2.0):
 
     line_points_42_50 = linear_interpolation_in_spherical_coordinates(
     42, 50, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
-    fix_theta=three_half_pi)
+    mapping_matrix, fix_theta=three_half_pi)
 
     # Generates this Cuboid
 
@@ -880,18 +922,20 @@ bias_y=1.0, bias_z=1.0, p_exponent=2.0):
     # Creates the points for the lines of this cuboid
 
     line_points_52_33 = linear_interpolation_in_spherical_coordinates(
-    52, 33, vertices_spherical_coordinates, n_points_per_edge, p_exponent)
+    52, 33, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
+    mapping_matrix)
 
     line_points_52_51 = linear_interpolation_in_spherical_coordinates(
-    52, 51, vertices_spherical_coordinates, n_points_per_edge, p_exponent)
+    52, 51, vertices_spherical_coordinates, n_points_per_edge, p_exponent,
+    mapping_matrix)
 
     # For these lines, calculates phi as a function of theta to get the
     # intersection of the plane -y+z=0 with the sphere
 
     line_points_52_50 = linear_interpolation_in_spherical_coordinates(
     52, 50, vertices_spherical_coordinates, n_points_per_edge, 
-    p_exponent, function_to_get_phi_from_theta=lambda theta: np.arctan(
-    np.sin(theta)))
+    p_exponent, mapping_matrix, function_to_get_phi_from_theta=
+    lambda theta: np.arctan(np.sin(theta)))
 
     # Generates this Cuboid
 
@@ -914,8 +958,9 @@ bias_y=1.0, bias_z=1.0, p_exponent=2.0):
 
     line_points_52_39 = linear_interpolation_in_spherical_coordinates(
     52, 39, vertices_spherical_coordinates, n_points_per_edge, 
-    p_exponent, function_to_get_phi_from_theta=lambda theta: np.arctan(
-    -np.cos(theta)), fix_theta=[seven_fourths, 2*np.pi])
+    p_exponent, mapping_matrix, function_to_get_phi_from_theta=
+    lambda theta: np.arctan(-np.cos(theta)), fix_theta=[seven_fourths, 
+    2*np.pi])
 
     # Generates this Cuboid
 
@@ -957,11 +1002,15 @@ bias_y=1.0, bias_z=1.0, p_exponent=2.0):
 
 class ScaleVectorToLpBall:
     
-    def __init__(self, p_exponent):
+    def __init__(self, p_exponent, mapping_matrix):
 
         # Saves the exponent of the Lp norm
 
         self.p_exponent = p_exponent
+
+        # And the matrix that deforms the vectors
+
+        self.mapping_matrix = mapping_matrix
 
     # Defines a method to scale the vector
 
@@ -976,16 +1025,18 @@ class ScaleVectorToLpBall:
         
         scaling_factors = (radial_component/Lp_norm)[:,np.newaxis]
 
-        return scaling_factors*position_cartesian_coordinates 
+        return np.einsum('ij,kj->ki', self.mapping_matrix, 
+        scaling_factors*position_cartesian_coordinates)
 
 # Defines a function that transform the spherical coordinates in 
 # retangular coordinates
 
-def spherical_to_retangular_coordinates(spherical_coordinates, p_exponent):
+def spherical_to_retangular_coordinates(spherical_coordinates, 
+p_exponent, mapping_matrix):
 
     # Instantiates the class to scale the position vector by the Lp norm
 
-    Lp_scaling_class = ScaleVectorToLpBall(p_exponent)
+    Lp_scaling_class = ScaleVectorToLpBall(p_exponent, mapping_matrix)
 
     # "r" is the radius, "theta" is the azimuth angle and "phi" is the 
     # polar or zenith angle. All angles in radians
@@ -1013,8 +1064,8 @@ def spherical_to_retangular_coordinates(spherical_coordinates, p_exponent):
 # and automatically interpolate them
 
 def linear_interpolation_in_spherical_coordinates(start_index, end_index,
-points_matrix, n_points, p_exponent, fix_r=None, fix_theta=None, fix_phi=
-None, function_to_get_phi_from_theta=None):
+points_matrix, n_points, p_exponent, mapping_matrix, fix_r=None, 
+fix_theta=None, fix_phi=None, function_to_get_phi_from_theta=None):
 
     # Recovers the start and end points
 
@@ -1100,7 +1151,7 @@ None, function_to_get_phi_from_theta=None):
     spherical_matrix = np.column_stack((r, theta, phi))
 
     return spherical_to_retangular_coordinates(spherical_matrix,
-    p_exponent)
+    p_exponent, mapping_matrix)
 
 # Defines a function to get the corner points from the points matrix
 
@@ -1144,7 +1195,32 @@ if __name__=="__main__":
 
     mesh_file_name = get_parent_path_of_file()+"//spheric_RVE"
 
+    # Defines the principal directions of the RVE's ellipsoid
+
+    d_1 = np.array([1.0, 1.0, 0.0])
+
+    d_1 = (1.0/np.linalg.norm(d_1))*d_1
+
+    d_2 = np.array([-1.0, 1.0, 0.0])
+
+    d_2 = (1.0/np.linalg.norm(d_2))*d_2
+
+    d_3 = np.cross(d_1, d_2)
+
+    # Defines the axis semi-length of each principal direction
+
+    axis_semi_length_1 = 1.0
+
+    axis_semi_length_2 = 1.5
+
+    axis_semi_length_3 = 1.0
+
+    mapping_matrix = (axis_semi_length_1*np.outer(d_1, d_1))+(
+    axis_semi_length_2*np.outer(d_2, d_2))+(axis_semi_length_3*np.outer(
+    d_3, d_3))
+
     sphere_geometry_RVE(sphere_radius, inner_cube_half_edge_ratio, 
     mesh_file_name, n_points_per_edge=100, transfinite_radial=4, 
     transfinite_x=5, transfinite_y=6, transfinite_z=7, bias_radial=3.0,
-    bias_x=2.0, bias_y=1.5, bias_z=1.25, p_exponent=124.0)
+    bias_x=1.0, bias_y=1.7, bias_z=1.0, p_exponent=2.0, mapping_matrix=
+    mapping_matrix)
