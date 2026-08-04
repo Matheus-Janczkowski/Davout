@@ -1,0 +1,228 @@
+# Routine to train a neural network model as surrogate for the RVE kine-
+# matics
+
+import numpy as np
+
+import tensorflow as tf
+
+from time import time
+
+from Davout.DeepMech.tool_box import ANN_tools, training_tools
+
+from Davout.DeepMech.tool_box.loss_assembler_classes import MaximumAbsoluteError
+
+from Davout.PythonicUtilities.path_tools import get_parent_path_of_file
+
+# Defines a function to train the neural network model
+
+def train_surrogate_model(displacement_data_file, input_data_file,
+saved_model_file, results_path, n_training_samples,
+quotient_space_dimension, n_monte_carlo_realizations, n_best_models):
+
+    # Reads the two files
+
+    output_data = np.load(results_path+"//"+displacement_data_file)
+
+    input_data = np.load(results_path+"//"+input_data_file)
+
+    # Reshufles data to put the displacement gradient as the first
+    # columns. This is a requirement of the implementation of the
+    # GatedQuotientSpace architecture
+
+    input_data = np.hstack((input_data[:,(input_data.shape[1]-
+    quotient_space_dimension):], input_data[:,:(input_data.shape[1]-
+    quotient_space_dimension)]))
+
+    # Sets the type for the data and for the parameters
+
+    parameters_dtype = "float64"
+
+    # Sets the training data
+
+    training_data = input_data[0:n_training_samples,:]
+
+    training_true_values = output_data[0:n_training_samples,:]
+
+    # Gets the number of input and output neurons
+
+    n_input_neurons = input_data.shape[1]
+
+    n_output_neurons = output_data.shape[1]
+
+    # Defines the number of neurons of the different hidden layers and of
+    # the output layer
+
+    n_neurons_per_layer = [100, 1000, n_output_neurons]
+
+    # Sets a list of layers and the activation functions
+
+    activations_list_main_network = [{"elu": {"number of neurons":
+    n_neurons_per_layer[0]}}, {"elu": {"number of neurons":
+    n_neurons_per_layer[1]}}, {"linear": n_neurons_per_layer[2]}]
+
+    accessory_activation_list_tests = [{"quadratic": {"number"+
+    " of neurons": min(quotient_space_dimension, n_neurons_per_layer[0]),
+    "a2": 1.0}}, {"quadratic":  {"number of neurons": min(
+    n_neurons_per_layer[0], n_neurons_per_layer[1]), "a2": 1.0}}, {"qu"+
+    "adratic": {"number of neurons": min(n_neurons_per_layer[1],
+    n_neurons_per_layer[2])}}]
+
+    # Sets the modulating function
+
+    modulating_function = "identity"
+
+    # Sets the architecture dictionary
+   
+    custom_architecture = {"name": "SVDQuotientSpace", "weights modula"+
+    "ting function": modulating_function, "Householder epsilon": 1.0,
+    "activations accessory layer list": accessory_activation_list_tests}
+
+    # Creates the class of neural network information
+
+    ANN_class = ANN_tools.MultiLayerModel(n_input_neurons,
+    activations_list_main_network, enforce_customLayers=True, verbose=
+    True, parameters_dtype=parameters_dtype, custom_architecture=
+    custom_architecture, input_size_main_network=quotient_space_dimension)
+
+    custom_model = ANN_class()
+
+    # Sets the number of training iterations and the number of iterations
+    # to plot results in the terminal
+
+    maximum_iterations = 1000
+   
+    verbose_delta_iterations = 50
+
+    # Defines the loss metric
+
+    loss_metric = tf.keras.losses.MeanSquaredError( dtype=tf.as_dtype(
+    parameters_dtype))
+
+    # Sets the optimization class for training
+
+    training_class = training_tools.ModelCustomTraining(custom_model,
+    training_data, training_true_values, loss_metric, verbose=True,
+    n_iterations=maximum_iterations, verbose_deltaIterations=
+    verbose_delta_iterations, save_model_file=saved_model_file,
+    match_data_float_type_to_trainables=True, parent_path=results_path)
+
+    t_initial = time()
+
+    training_class()
+
+    elapsed_time = time()-t_initial
+
+    print("\nTrains at "+str(elapsed_time)+" seconds")
+
+    # Tests Monte Carlo training
+
+    training_class.monte_carlo_training(n_realizations=
+    n_monte_carlo_realizations, best_models_rank_size=n_best_models,
+    show_reinitialization_distance=True)
+
+    # Checks the loss again with the best model of the Monte Carlo
+    # training
+
+    print("\nThe loss function evaluated again over the set of trainin"+
+    "g data for the best model is "+str(training_class.loss_unseen_data(
+    training_true_values, training_data, output_as_numpy=True)))
+
+# Defines a function to test the model
+
+def test_surrogate_model(displacement_data_file, input_data_file,
+results_path, n_training_samples, quotient_space_dimension,
+n_best_models):
+
+    # Reads the two files
+
+    output_data = np.load(results_path+"//"+displacement_data_file)
+
+    input_data = np.load(results_path+"//"+input_data_file)
+
+    # Reshufles data to put the displacement gradient as the first
+    # columns. This is a requirement of the implementation of the
+    # GatedQuotientSpace architecture
+
+    input_data = np.hstack((input_data[:,(input_data.shape[1]-
+    quotient_space_dimension):], input_data[:,:(input_data.shape[1]-
+    quotient_space_dimension)]))
+
+    # Sets the test data
+
+    test_data = input_data[n_training_samples:,:]
+
+    test_true_values = output_data[n_training_samples:,:]
+
+    # Defines the loss function metric
+
+    loss_metric = tf.keras.losses.MeanAbsoluteError()
+
+    # Iterates through the best models
+
+    for i in range(n_best_models):
+
+        # Loads the i-th best model back
+
+        loaded_model = tf.keras.models.load_model(results_path+"//"+str(
+        i+1)+"_best_model.keras")
+
+        # Gets the output of the loaded model
+
+        output_model = loaded_model(test_data)
+
+        # Gets the loss of the test data
+
+        test_loss = loss_metric(test_true_values, output_model)
+
+        print("Loads the "+str(i+1)+"-th best model")
+
+        print("Loss function on test set:", format(test_loss.numpy(),
+        '.5e')+"\n")
+
+        # Verifies with the maximum absolute error
+
+        maximum_absolute_error = MaximumAbsoluteError()
+
+        maximum_absolute_value = maximum_absolute_error(test_true_values,
+        output_model)
+
+        print("Maximum absolute error on test set:"+str(format(
+        maximum_absolute_value.numpy(),'.5e'))+"\nwhereas the minimum abso"+
+        "lute error is "+str(format(
+        maximum_absolute_error.minimum_absolute_error(test_true_values,
+        output_model).numpy(), '.5e'))+"\n")
+
+# Testing block
+
+if __name__=="__main__":
+
+    results_path = get_parent_path_of_file()+"//results"
+   
+    displacement_data_file = "00_succesful_displacement_matrix.npy"
+
+    input_data_file = "00_successful_complete_data_matrix.npy"
+
+    saved_model_file = "saved_model.keras"
+
+    n_training_samples = 10000
+
+    quotient_space_dimension = 9
+
+    # Trains a new model
+
+    n_monte_carlo_realizations = 10
+
+    n_best_models = 5
+
+    training_flag = False
+
+    if training_flag:
+
+        train_surrogate_model(displacement_data_file, input_data_file,
+        saved_model_file, results_path, n_training_samples,
+        quotient_space_dimension, n_monte_carlo_realizations,
+        n_best_models)
+
+    test_surrogate_model(displacement_data_file, input_data_file,
+    results_path, n_training_samples, quotient_space_dimension,
+    n_best_models)
