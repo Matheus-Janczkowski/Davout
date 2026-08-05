@@ -24,9 +24,9 @@ class TestSVDArchitecture:
 
         self.quotient_space_dimension = 6
 
-        self.number_of_neurons_hidden_layer_main_network = 100
+        self.number_of_neurons_hidden_layer_main_network = 10
 
-        self.output_dimension = 500
+        self.output_dimension = 2
 
         self.activation_list_main_network = [{"quadratic": {"number of"+
         " neurons": self.number_of_neurons_hidden_layer_main_network, 
@@ -436,6 +436,8 @@ class TestSVDArchitecture:
         hessian_info = self.training_class.get_hessian_outputs_model(
         eigenvalues=False)
 
+        print("Finishes calculating the hessian matrix\n")
+
         # Converts the hessian info to a string
 
         hessian_matrices = ""
@@ -465,8 +467,8 @@ class TestSVDArchitecture:
 
                 eigenvalues = tf.linalg.eigvalsh(hessian_matrix)
 
-                hessian_matrices += "\n\nEigenvalues:\n"+str(
-                eigenvalues.numpy())
+                hessian_matrices += "\n\nEigenvalues (shape: "+str(
+                eigenvalues.shape)+"):\n"+str(eigenvalues.numpy())
 
         print("\nThere follow the hessian matrices with respect to the"+
         " variables in the quotient space:\n"+str(hessian_matrices)+
