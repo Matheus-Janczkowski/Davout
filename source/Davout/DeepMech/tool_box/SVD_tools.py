@@ -35,15 +35,20 @@ householder_epsilon_squared):
     # Concatenates the non-free component of the Householder vector to
     # the first position
 
-    raw_vector = tf.concat([tf.sqrt((average_raw_vector*
-    average_raw_vector)+householder_epsilon_squared)[None], raw_vector], 
-    axis=0)
+    unnormalized_first_component = tf.sqrt((average_raw_vector*
+    average_raw_vector)+householder_epsilon_squared)
+
+    appended_raw_vector = tf.concat([unnormalized_first_component[None], 
+    raw_vector], axis=0)
 
     # Rescales the raw vector to have unit norm, then adds the leading
     # zeros and returns it
 
-    return tf.pad(tf.math.l2_normalize(raw_vector), [[
-    number_of_leading_zeros, 0]])
+    alpha = tf.math.rsqrt(tf.reduce_sum(tf.square(appended_raw_vector)))
+
+    return (tf.pad(alpha*appended_raw_vector, [[number_of_leading_zeros, 
+    0]]), average_raw_vector, alpha, raw_vector, 
+    unnormalized_first_component)
 
 # Defines a function to evaluate the multiplication of one Householder
 # reflector of the Householder chain of one of the two orthogonal matri-
@@ -107,7 +112,20 @@ householder_epsilon_squared):
 # respect to the vector of degrees of freedom of the Householder vector.
 # This derivative will be a tensor [n_dofs]. This function also evaluates
 # the derivative of the normalization factor alpha with respect to the 
-# vector of DOFs
+# vector of DOFs.
+#
+# householder_index is the index of the corresponding Householder re-
+# flector
+#
+# v_bar is a tensor of shape (), i.e. a scalar
+#
+# alpha is also a scalar
+#
+# vector_of_dofs is a tensor [n_dofs], i.e. [dimensionality-
+# householder_index-1]
+#
+# unnormalized_first_component_householder_vector is a scalar equal to
+# sqrt((v_bar^2)+(householder_epsilon^2))
 
 def evaluate_derivative_of_v_bar_and_alpha(v_bar, alpha, n_dofs, 
 vector_of_dofs, unnormalized_first_component_householder_vector, dtype):
