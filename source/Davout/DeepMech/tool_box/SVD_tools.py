@@ -108,7 +108,7 @@ householder_epsilon_squared):
 ########################################################################
 
 # Defines a function to evaluate the derivative of the component of a
-# Householder vector that is not a degree of freedom (\bar{v}^{i}) with
+# Householder vector that is not a degree of freedom (\tilde{v}^{i}) with
 # respect to the vector of degrees of freedom of the Householder vector.
 # This derivative will be a tensor [n_dofs]. This function also evaluates
 # the derivative of the normalization factor alpha with respect to the 
@@ -127,7 +127,7 @@ householder_epsilon_squared):
 # unnormalized_first_component_householder_vector is a scalar equal to
 # sqrt((v_bar^2)+(householder_epsilon^2))
 
-def evaluate_derivative_of_v_bar_and_alpha(v_bar, alpha, n_dofs, 
+def evaluate_derivative_of_v_tilde_and_alpha(v_bar, alpha, n_dofs, 
 vector_of_dofs, unnormalized_first_component_householder_vector, dtype):
 
     # Calculates the bit of the derivative of the component of the
@@ -182,7 +182,7 @@ constant_two, dtype):
     # holder vector and of the normalizing factor with respect to the
     # vector of degrees of freedom
 
-    first_component_derivative, alpha_derivative = evaluate_derivative_of_v_bar_and_alpha(
+    first_component_derivative, alpha_derivative = evaluate_derivative_of_v_tilde_and_alpha(
     v_bar, alpha, n_dofs, vector_of_dofs, 
     unnormalized_first_component_householder_vector, dtype)
 

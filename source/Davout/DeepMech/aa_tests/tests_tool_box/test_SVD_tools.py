@@ -4,9 +4,11 @@ import tensorflow as tf
 
 import numpy as np
 
-from ....PythonicUtilities.testing_tools import run_class_of_tests
+from .....Davout.PythonicUtilities.testing_tools import run_class_of_tests
 
 from .....Davout.DeepMech.tool_box import SVD_tools 
+
+from .....Davout.MultiMech.tool_box.numerical_tools import derivative_scalar_valued_function_of_vector_argument
 
 # Defines a function to test the inclusion of custom gradients into 
 # tensorflow functions
@@ -17,7 +19,7 @@ class TestCustomGradients:
 
         self.verbose = True
 
-        self.parameters_dtype = "float32"
+        self.parameters_dtype = "float64"
 
         # Creates three variables
 
@@ -34,9 +36,9 @@ class TestCustomGradients:
         # matrix to be created using a chain of Householder reflectors
         # (CHR)
 
-        self.dimensionality = 50
+        self.dimensionality = 10
 
-        self.rank = 10
+        self.rank = 5
 
         # Counts the number of degrees of freedom (DOFs) of the left-or-
         # thogonal matrix to be created using CHR
@@ -72,6 +74,18 @@ class TestCustomGradients:
         # first non-zero component of each Householder vector
 
         self.householder_epsilon_squared = 1.0
+
+        # Defines the tensor of batched input vectors X [dimensionality,
+        # n_samples] for the operation 
+        # y = I(rank,dimensionality)*H_1*H_2*...*H_rank*X 
+        #
+        # such that y is a tensor [rank, n_samples]
+
+        self.n_samples = 5
+
+        self.X_input_vectors = tf.constant(np.random.randn((
+        self.dimensionality, self.n_samples)), dtype=tf.as_dtype(
+        self.parameters_dtype))
 
     # Defines a function to test the evalaution of a function with two
     # variables with custom gradient defined only for one
@@ -129,15 +143,16 @@ class TestCustomGradients:
         "s:\ndf/dx = "+str(gradient_x.numpy())+"\ndf/dy = "+str(
         gradient_y.numpy())+"\ndf/dz = "+str(gradient_z)+"\n")
 
-    # Defines a function to test the evalaution of a function with two
-    # variables with custom gradient defined only for one
+    # Defines a function to test the analytical derivatives of the nor-
+    # malization factor and of the first non-zero component of the 
+    # Householder vector
 
     def test_derivative_of_normalization_factor(self):
 
         print("\n#####################################################"+
         "###################\n# Tests derivative of normalization fact"+
-        "or and first component, v_bar  #\n###########################"+
-        "#############################################\n")
+        "or and first component, v_tilde  #\n#########################"+
+        "###############################################\n")
 
         # Defines the number of Householder vectors to check the deriva-
         # tives
@@ -158,12 +173,128 @@ class TestCustomGradients:
             self.householder_indices, self.householder_parameters, i,
             self.householder_epsilon_squared)
 
-            # Gets the derivative of v_bar and of alpha
+            # Gets the derivative of v_tilde and of alpha
 
-            derivative_v_bar, derivative_alpha = SVD_tools.evaluate_derivative_of_v_bar_and_alpha(
+            derivative_v_tilde, derivative_alpha = SVD_tools.evaluate_derivative_of_v_tilde_and_alpha(
             v_bar, alpha, self.householder_indices[i][1], vector_of_dofs, 
             unnormalized_first_component, tf.as_dtype(
             self.parameters_dtype)) 
+
+            # Gets the first and last indices of the Householder vector, 
+            # then the vector that will become the Householder vector
+
+            initial_index, length, number_of_leading_zeros = (
+            self.householder_indices[i])
+
+            slice_of_vector_of_dofs = tf.slice(
+            self.householder_parameters, [initial_index], [length]
+            ).numpy()
+
+            # Evaluates the derivatives of v_tilde using central finite
+            # differences
+
+            def get_v_tilde(slice_of_vector_of_dofs):
+
+                slice_of_dofs_tensor = tf.constant(
+                slice_of_vector_of_dofs, dtype=tf.as_dtype(
+                self.parameters_dtype))
+
+                # Computes the average of the raw vector
+                
+                average_raw_vector = tf.reduce_mean(
+                slice_of_dofs_tensor)
+            
+                # Calculates the non-free component of the Householder 
+                # vector to the first position
+            
+                unnormalized_first_component = tf.sqrt((
+                average_raw_vector*average_raw_vector)+
+                self.householder_epsilon_squared)
+            
+                appended_raw_vector = tf.concat([
+                unnormalized_first_component[None], 
+                slice_of_dofs_tensor], axis=0)
+            
+                # Rescales the raw vector to have unit norm
+            
+                alpha = tf.math.rsqrt(tf.reduce_sum(tf.square(
+                appended_raw_vector)))
+            
+                return alpha*unnormalized_first_component
+            
+            CFD_v_tilde = derivative_scalar_valued_function_of_vector_argument(
+            get_v_tilde, slice_of_vector_of_dofs, epsilon=1E-5)
+
+            # Evaluates the derivatives of alpha using central finite
+            # differences
+
+            def get_alpha(slice_of_vector_of_dofs):
+
+                slice_of_dofs_tensor = tf.constant(
+                slice_of_vector_of_dofs, dtype=tf.as_dtype(
+                self.parameters_dtype))
+
+                # Computes the average of the raw vector
+                
+                average_raw_vector = tf.reduce_mean(
+                slice_of_dofs_tensor)
+            
+                # Concatenates the non-free component of the Householder 
+                # vector to the first position
+            
+                unnormalized_first_component = tf.sqrt((
+                average_raw_vector*average_raw_vector)+
+                self.householder_epsilon_squared)
+            
+                appended_raw_vector = tf.concat([
+                unnormalized_first_component[None], 
+                slice_of_dofs_tensor], axis=0)
+            
+                # Rescales the raw vector to have unit norm
+            
+                return tf.math.rsqrt(tf.reduce_sum(tf.square(
+                appended_raw_vector)))
+            
+            CFD_alpha = derivative_scalar_valued_function_of_vector_argument(
+            get_alpha, slice_of_vector_of_dofs, epsilon=1E-5)
+
+            # Compacts the analytical and the numerical gradients for 
+            # each derivative
+
+            comparison_derivative_v_tilde = np.vstack([
+            derivative_v_tilde.numpy(), CFD_v_tilde])
+
+            comparison_derivative_alpha = np.vstack([
+            derivative_alpha.numpy(), CFD_alpha])
+
+            print("\nThe derivative of v_tilde with respect to the DOF"+
+            "s of the "+str(i+1)+"-th Householder vector is:\n"+str(
+            comparison_derivative_v_tilde)+"\nThe maximum difference b"+
+            "etween components is: "+str(tf.reduce_max(tf.abs(
+            derivative_v_tilde-tf.constant(CFD_v_tilde, dtype=
+            tf.as_dtype(self.parameters_dtype)))).numpy())+"\n")
+
+            print("\nThe derivative of alpha with respect to the DOFs "+
+            "of the "+str(i+1)+"-th Householder vector is:\n"+str(
+            comparison_derivative_alpha)+"\nThe maximum difference bet"+
+            "ween components is: "+str(tf.reduce_max(tf.abs(
+            derivative_alpha-tf.constant(CFD_alpha, dtype=tf.as_dtype(
+            self.parameters_dtype)))).numpy())+"\n")
+
+    # Defines a function to test the evaluation of the analytical deri-
+    # vative of the following operation
+    # 
+    # y = QX, such that (Q^T)*Q = I and Q = H1*H*...*H_rank
+    #
+    # with respect to the Householder vector v^i of the i-th Householder
+    # reflector H_i
+
+    def test_derivative_of_application_of_CHR(self):
+
+        print("\n#####################################################"+
+        "###################\n#  Tests derivative of application of ch"+
+        "ain of Householder reflectors  #\n###########################"+
+        "#############################################\n")
 
 # Runs all tests
 
