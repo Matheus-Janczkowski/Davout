@@ -1,5 +1,8 @@
 # Routine to store methods to work with the singular value decomposition
 # (SVD)
+#
+# TODO: change the loops to tf.range and the indexing and slicing to
+# tensorflow indices and gathering
 
 import tensorflow as tf
 
@@ -48,7 +51,7 @@ householder_epsilon_squared):
 
     return (tf.pad(alpha*appended_raw_vector, [[number_of_leading_zeros, 
     0]]), average_raw_vector, alpha, raw_vector, 
-    unnormalized_first_component)
+    unnormalized_first_component, length)
 
 # Defines a function to evaluate the multiplication of one Householder
 # reflector of the Householder chain of one of the two orthogonal matri-
@@ -146,7 +149,7 @@ vector_of_dofs, unnormalized_first_component_householder_vector, dtype):
     # Calculates the derivative of the component of the Householder vec-
     # tor that is not a DOF
 
-    first_component_derivative = ((kappa*tf.ones((n_dofs), dtype=dtype))
+    v_tilde = ((kappa*tf.ones((n_dofs), dtype=dtype))
     -alpha_cubed*unnormalized_first_component_householder_vector*
     vector_of_dofs)
 
@@ -156,7 +159,7 @@ vector_of_dofs, unnormalized_first_component_householder_vector, dtype):
     alpha_derivative = -alpha_cubed*(vector_of_dofs+(
     renormalized_first_component*tf.ones((n_dofs), dtype=dtype)))
 
-    return first_component_derivative, alpha_derivative
+    return v_tilde, alpha_derivative
 
 # Defines a function to assemble the derivative of a Householder reflec-
 # tor and multiply it by the tensor [dimensionality, n_samples] that is
@@ -172,57 +175,163 @@ vector_of_dofs, unnormalized_first_component_householder_vector, dtype):
 # 
 # term_1: Q_ik*(dv_hat_k/dv_n)*v_hat_m*X_mj
 # term_2: Q_ik*v_hat_k*(dv_hat_m/v_n)*X_mj
+#
+# The output is a tensor of third-order [dimensionality, n_samples, 
+# n_dofs]
 
-def evaluate_derivative_of_householder_reflector_and_multiply(v_bar, 
+def evaluate_derivative_of_householder_reflector_application(v_bar, 
 householder_vector, alpha, n_dofs, vector_of_dofs, reflector_index,
-tensor_to_be_multiplied, unnormalized_first_component_householder_vector, 
-constant_two, dtype):
+right_tensor_to_be_multiplied, left_tensor_to_be_multiplied,
+unnormalized_first_component_householder_vector, constant_two, dtype):
 
     # Gets the derivatives of the first non-zero component of the House-
-    # holder vector and of the normalizing factor with respect to the
-    # vector of degrees of freedom
+    # holder vector (v_tilde, and of the normalizing factor with respect 
+    # to the vector of degrees of freedom
 
-    first_component_derivative, alpha_derivative = evaluate_derivative_of_v_tilde_and_alpha(
+    derivative_v_tilde, alpha_derivative = evaluate_derivative_of_v_tilde_and_alpha(
     v_bar, alpha, n_dofs, vector_of_dofs, 
     unnormalized_first_component_householder_vector, dtype)
 
     # The derivative of the Householder reflector is composed of two 
     # terms. Each must be computed individually. The first term multi-
     # plies the Householder vector by the tensor to be multiplied. First
-    # result is a tensor [dimensionality, n_samples]
+    # result is a tensor [n_samples]
 
     term_1 = tf.einsum('i,ij->j', householder_vector, 
-    tensor_to_be_multiplied)
+    right_tensor_to_be_multiplied)
 
     # The second term begins with the multiplication of the transposed
     # derivative of the Householder vector by the tensor to be multiplied
-    # to the right. The first result is a tensor [n_dofs, n_samples]
+    # to the right. The first result is a tensor [n_samples, n_dofs].
+    # Remember that the last index must represent the DOFs with respect
+    # to we are differentiating
 
-    term_2 = (tf.einsum('i,ij->j', vector_of_dofs, 
-    tensor_to_be_multiplied[(tensor_to_be_multiplied.shape[0]-n_dofs):,:
-    ])*alpha_derivative)+(
+    term_2 = tf.einsum('i,ij,k->jk', vector_of_dofs, 
+    right_tensor_to_be_multiplied[(-n_dofs):,:], alpha_derivative)+(
     #
-    alpha*tensor_to_be_multiplied[(
-    tensor_to_be_multiplied.shape[0]-n_dofs):,:])+(
-    #
-    first_component_derivative*tensor_to_be_multiplied[
-    tensor_to_be_multiplied.shape[0]-n_dofs,:])
+    alpha*right_tensor_to_be_multiplied[(-n_dofs):,:])
+
+    # Adds the bit related to the derivative of v_tilde with respect to 
+    # the vector of DOFs
+
+    term_2 += tf.einsum('i,j->ji', derivative_v_tilde, 
+    right_tensor_to_be_multiplied[reflector_index,:])
 
     # Multiplies the first term by the derivative of the Householder
-    # vector with respect to the vector of DOFs to the right
+    # vector with respect to the vector of DOFs to the right. The order
+    # of the indices is due to the fact that the last index accounts for
+    # the DOFs to which the Householder reflector is differentiated 
 
-    term_1 = (tf.einsum('i,ij->j', alpha_derivative, term_1)*
-    vector_of_dofs)+(
-    #
-    alpha*term_1)+(
-    #
-    tf.one_hot(reflector_index, depth=tensor_to_be_multiplied.shape[0], 
-    dtype=dtype)*tf.einsum('i,ij->j', first_component_derivative, term_1))
+    final_term_1 = tf.einsum('i,j,k->ijk', vector_of_dofs, term_1,
+    alpha_derivative)
 
-    # Multiplies the second term by the Householder vector
+    # Adds the contribution of the identity times the normalization fac-
+    # tor, which came from the derivative of the components of v_bar
 
-    term_2 = householder_vector*term_2
+    final_term_1 += (alpha*tf.eye(n_dofs, dtype=dtype)[:, None, :]*
+    term_1[None, :, None])
+
+    # Adds the bit of the derivative of v_tilde with respect to the vec-
+    # tor of DOFs. Inverts the order because the index of the DOFs is 
+    # the last one
+
+    final_term_1[reflector_index,:,:] += tf.einsum('i,j->ji', 
+    derivative_v_tilde, term_1)
+
+    # Performs the contraction of the first term with the tensor to the 
+    # left
+
+    final_term_1 = tf.einsum('ik,kjn->ijn', left_tensor_to_be_multiplied,
+    final_term_1)
+
+    # Multiplies the second term by the Householder vector to yield a 
+    # third-order tensor. Note that the tensor to be multiplied to the
+    # left is already added here
+
+    term_2 = tf.einsum('ik,k,jn->ijn', left_tensor_to_be_multiplied, 
+    householder_vector, term_2)
 
     # Returns the sum of the two
 
-    return -constant_two*(term_1+term_2)
+    return -constant_two*(final_term_1+term_2)
+
+# Defines a function to evaluate the derivative of the application of a
+# chain of Householder reflectors (CHR) with respect to the DOFs of each
+# Householder reflector. The operation that is being differentiated is
+#
+# y = H_1*H_2*...*H_m*X = H_1*H_2*...*H_{i-1}*H_{i}*H_{i+1}*...*H_m*X
+#   = Q_{i}*H_{i}*X_{i}
+#
+# such that Q_{i+1} = Q_{i}*H_{i} and X_{i} = H_{i+1}*X_{i+1} 
+
+def evaluate_derivative_of_chain_of_householder_reflectors_application(
+right_tensor_to_be_multiplied, householder_indices, 
+householder_parameters, householder_epsilon_squared, dimensionality, 
+rank, n_samples, dtype, constant_two):
+
+    # Initializes the matrix Q as the product of all Householder reflec-
+    # tors
+
+    Q = tf.eye(rank, dimensionality, dtype=dtype)
+
+    for i in range(len(householder_indices)):
+
+        # Get the Householder vector of the i-th reflector
+
+        householder_vector, _ = get_householder_vector_from_parameters(
+        householder_indices, householder_parameters, i, 
+        householder_epsilon_squared)
+
+        # Multiplies this Householder reflector to the right of Q using
+        # the corresponding rank-1 update
+
+        Q -= constant_two*tf.einsum('ik,j->ij', Q, householder_vector,
+        householder_vector)
+
+    # Initializes the right tensor to be multiplied
+
+    X = right_tensor_to_be_multiplied
+
+    # Calculates the number of DOFs of the whole Householder chain
+
+    n_DOFS_chain = 0.5*rank*(rank-1)
+
+    chain_application_derivative = tf.zeros((rank, n_samples, 
+    n_DOFS_chain), dtype=dtype)
+
+    # Iterates over the Householder reflectors in reverse order to eval-
+    # uate the derivative of the output y with respect to the DOFs of 
+    # each Householder reflector
+
+    for i in range(rank-1,-1,-1):
+
+        # Gets the Householder vector from the flat tensor of Householder
+        # DOFs
+
+        (householder_vector, v_bar, alpha, vector_of_dofs,
+        unnormalized_first_component, local_n_dofs) = get_householder_vector_from_parameters(
+        householder_indices, householder_parameters, i,
+        householder_epsilon_squared)
+
+        # Updates the left matrix by canceling the right-most House-
+        # holder reflector
+
+        Q -= constant_two*tf.einsum('ij,j,k->ik', Q, householder_vector,
+        householder_vector)
+
+        # Evaluates the derivative of y with respect to the DOFs of this
+        # Householder reflector
+
+        dy_dDOFs = evaluate_derivative_of_householder_reflector_application(
+        v_bar, householder_vector, alpha, local_n_dofs, vector_of_dofs, 
+        i, X, Q, unnormalized_first_component, constant_two, dtype)
+
+        # Updates the derivative tensor
+
+        chain_application_derivative[:,:,]
+
+        # Updates the right matrix by multiplying by the right-most 
+        # Householder reflector
+
+        X -= constant_two*tf.einsum('ij,i,k->ki', X, householder_vector,
+        householder_vector)

@@ -75,6 +75,14 @@ class TestCustomGradients:
 
         self.householder_epsilon_squared = 1.0
 
+        # Defines the number of Householder vectors to check the deriva-
+        # tives
+
+        self.number_of_householder_vectors_to_check = 5
+
+        self.number_of_householder_vectors_to_check = min(self.rank, 
+        self.number_of_householder_vectors_to_check)
+
         # Defines the tensor of batched input vectors X [dimensionality,
         # n_samples] for the operation 
         # y = I(rank,dimensionality)*H_1*H_2*...*H_rank*X 
@@ -83,8 +91,8 @@ class TestCustomGradients:
 
         self.n_samples = 5
 
-        self.X_input_vectors = tf.constant(np.random.randn((
-        self.dimensionality, self.n_samples)), dtype=tf.as_dtype(
+        self.X_input_vectors = tf.constant(np.random.randn(
+        self.dimensionality, self.n_samples), dtype=tf.as_dtype(
         self.parameters_dtype))
 
     # Defines a function to test the evalaution of a function with two
@@ -154,22 +162,14 @@ class TestCustomGradients:
         "or and first component, v_tilde  #\n#########################"+
         "###############################################\n")
 
-        # Defines the number of Householder vectors to check the deriva-
-        # tives
-
-        number_of_householder_vectors_to_check = 5
-
-        number_of_householder_vectors_to_check = min(self.rank, 
-        number_of_householder_vectors_to_check)
-
         # Iterates over the Householder vectors to check
 
-        for i in range(number_of_householder_vectors_to_check):
+        for i in range(self.number_of_householder_vectors_to_check):
 
             # Gets the Householder vector
 
             (householder_vector, v_bar, alpha, vector_of_dofs,
-            unnormalized_first_component) = SVD_tools.get_householder_vector_from_parameters(
+            unnormalized_first_component, local_n_dofs) = SVD_tools.get_householder_vector_from_parameters(
             self.householder_indices, self.householder_parameters, i,
             self.householder_epsilon_squared)
 
@@ -295,6 +295,13 @@ class TestCustomGradients:
         "###################\n#  Tests derivative of application of ch"+
         "ain of Householder reflectors  #\n###########################"+
         "#############################################\n")
+
+        # Iterates over the Householder reflectors whose derivative is 
+        # to be tested
+
+        for i in range(self.number_of_householder_vectors_to_check):
+
+            pass
 
 # Runs all tests
 
