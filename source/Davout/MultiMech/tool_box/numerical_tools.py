@@ -317,3 +317,50 @@ epsilon=1E-5):
         gradient_vector.append((f_ahead-f_astern)/(2*epsilon))
 
     return np.asarray(gradient_vector)
+
+# Defines a function to evaluate the numerical derivative of a tensor-
+# valued function of a vector argument using central finite differences
+
+def derivative_tensor_valued_function_of_vector_argument(f, argument,
+epsilon=1E-5):
+
+    # Tries the function to get the output tensor's order
+
+    output_tensor_order = len(np.asarray(f(argument)).shape)
+
+    # Initializes the gradient vector
+
+    gradient_vector = []
+
+    # Iterates over the variables of the argument
+
+    for i in range(len(argument)):
+
+        # Copies the argument and perturbs it ahead
+
+        ahead_argument = deepcopy(argument)
+
+        ahead_argument[i] += epsilon
+
+        f_ahead = f(ahead_argument)
+
+        # Copies the argument and perturbs it astern
+
+        astern_argument = deepcopy(argument)
+
+        astern_argument[i] -= epsilon
+
+        f_astern = f(astern_argument)
+
+        # Computes the derivative approximation
+
+        gradient_vector.append((f_ahead-f_astern)/(2*epsilon))
+
+    # transforms the derivative into a numpy array and moves the gradient
+    # index to the last axis
+
+    new_indexes = [(i+1) for i in range(output_tensor_order)]
+
+    new_indexes.append(0)
+
+    return np.transpose(np.asarray(gradient_vector), new_indexes)
