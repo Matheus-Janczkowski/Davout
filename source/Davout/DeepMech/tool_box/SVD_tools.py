@@ -3,8 +3,85 @@
 
 import tensorflow as tf
 
+import numpy as np
+
 ########################################################################
 #             Assembly of chains of Householder reflectors             #
+########################################################################
+
+# Defines a function to create the tensors of Householder parameters 
+# (degrees of freedom) and of indices
+
+def create_householder_tensors(input_dimension, output_dimension,
+float_type, integer_type, householder_epsilon_squared):
+
+    # Gets the rank of the corresponding orthogonal transformation
+
+    rank = min(input_dimension, output_dimension)
+
+    # Counts the number of degrees of freedom (DOFs) of the left-ortho-
+    # gonal matrix to be created using CHR
+
+    n_dofs = int(0.5*(rank*((2*input_dimension)-rank-1)))
+
+    # Creates a list of tuples of the indices to recreate the vectors of
+    # DOFs of the Householder vectors
+
+    householder_first_index = []
+
+    householder_length = []
+
+    householder_number_of_leading_zeros = []
+
+    parameters_counter = 0
+
+    for i in range(min(rank, input_dimension-1)):
+
+        # Appends the index of the first parameter for the corresponding
+        # Householder vector; the number of parameters necessary for 
+        # this vector (length), and the number of leading zeros.
+        # Starts with the last Householder reflector since it will be
+        # the first to multiply any vector to the right of the corres-
+        # ponding orthogonal matrix. Appends to the simple flat tensors
+
+        householder_first_index.append(parameters_counter)
+
+        householder_length.append(input_dimension-i-1)
+
+        householder_number_of_leading_zeros.append(i)
+
+        # Updates the parameter counter
+
+        parameters_counter += input_dimension-i-1
+
+    # Converts the flat vectors to flat tensors
+
+    householder_first_index = tf.constant(householder_first_index, dtype
+    =tf.as_dtype(integer_type))
+
+    householder_length = tf.constant(householder_length, dtype=
+    tf.as_dtype(integer_type))
+
+    householder_number_of_leading_zeros = tf.constant(
+    householder_number_of_leading_zeros, dtype=tf.as_dtype(integer_type))
+
+    # Creates a variable with the Householder DOFs
+
+    householder_parameters = tf.Variable(np.random.randn((
+    n_dofs)), dtype=tf.as_dtype(float_type))
+
+    # Defines the Householder epsilon for the regularization of the
+    # first non-zero component of each Householder vector
+
+    householder_epsilon_squared = tf.constant(
+    householder_epsilon_squared, dtype=tf.as_dtype(float_type))
+
+    return (householder_parameters, householder_first_index, 
+    householder_length, householder_number_of_leading_zeros,
+    householder_epsilon_squared, n_dofs, rank)
+
+########################################################################
+#           Application of chains of Householder reflectors            #
 ########################################################################
 
 # Defines a function to parse a single Householder vector from a vector
@@ -98,13 +175,15 @@ def multiply_input_vector_by_householder_chain(input_vector,
 householder_first_index, householder_length, 
 householder_number_of_leading_zeros,
 householder_parameters_orthogonal_matrix, constant_two,
-householder_epsilon_squared):
+householder_epsilon_squared, output_dimension):
 
     # Gets the number of reflectors
 
     number_of_reflectors = tf.shape(householder_first_index)[0]
     
-    # Iterates through the indices of Householder reflectors
+    # Iterates through the indices of Householder reflectors in reverse
+    # order since the orthogonal matrix is given by the QR decomposition
+    # as Q = H_1*H_2*...*H_m
 
     for householder_reflector_index in tf.range(number_of_reflectors-1,
     -1,-1):
@@ -119,9 +198,168 @@ householder_epsilon_squared):
         householder_parameters_orthogonal_matrix, constant_two,
         householder_epsilon_squared)
 
-    # Returns the updated input vector
+    # Returns the updated input vector. Returns only the indices corres-
+    # ponding to the output dimension
 
-    return input_vector
+    return input_vector[:,:output_dimension]
+
+# Defines a function to create a wrapper for the method that multiplies
+# the input vector [n_samples, input_dimensionality] by an orthogonal 
+# matrix recursively using the Householder chain. This function, however, 
+# already possesses its custom gradient. The output is a tensor [
+# n_samples, input_dimensionality]
+
+@tf.custom_gradient
+def multiply_input_vector_by_householder_chain_with_custom_gradient(
+input_vector, householder_first_index, householder_length, 
+householder_number_of_leading_zeros,
+householder_parameters_orthogonal_matrix, constant_two,
+householder_epsilon_squared, output_dimension):
+
+    # Gets a tensor to keep a memory pointer to the original input tensor
+
+    X_input = input_vector
+
+    # Evaluates the gradient with respect to the Householder parameters
+    # (DOFs)
+    
+    def gradient(upstream_gradient):
+
+        # Gets the dimensionality and rank information
+
+        rank = tf.shape(householder_first_index)[0]
+
+        dimensionality = tf.shape(X_input)[1]
+
+        # Initializes the matrix Q as the product of all Householder re-
+        # flectors
+
+        Q = tf.eye(rank, dimensionality, dtype=
+        householder_parameters_orthogonal_matrix.dtype)
+
+        """for i in tf.range(rank):
+
+            # Get the Householder vector of the i-th reflector
+
+            householder_vector, _, _, _, _, _ = get_householder_vector_from_parameters(
+            householder_first_index, householder_length, 
+            householder_number_of_leading_zeros, 
+            householder_parameters_orthogonal_matrix, i, 
+            householder_epsilon_squared)
+
+            # Multiplies this Householder reflector to the right of Q u-
+            # sing the corresponding rank-1 update
+
+            Q -= constant_two*tf.einsum('ik,k,j->ij', Q, 
+            householder_vector, householder_vector)"""
+
+        def while_function(i, Q_tensor):
+
+            # Get the Householder vector of the i-th reflector
+            
+            householder_vector, _, _, _, _, _ = get_householder_vector_from_parameters(
+            householder_first_index, householder_length, 
+            householder_number_of_leading_zeros, 
+            householder_parameters_orthogonal_matrix, i, 
+            householder_epsilon_squared)
+
+            # Multiplies this Householder reflector to the right of Q u-
+            # sing the corresponding rank-1 update
+
+            Q_updated = Q_tensor-constant_two*tf.einsum('ik,k,j->ij', Q_tensor, 
+            householder_vector, householder_vector)
+
+            return i+1, Q_updated
+
+        def while_condition(i, vec):
+        
+                return i<rank
+
+        _, Q = tf.while_loop(while_condition, while_function, loop_vars=(
+        tf.constant(0, dtype=tf.int32), Q))
+
+        # Calculates the gradient of the application of the Householder
+        # chain with respect to the input tensor. The double contraction
+        # with the upstream gradient due to the chain rule is also per-
+        # formed
+
+        gradient_wrt_input_tensor = tf.einsum('ki,im->km', 
+        upstream_gradient, Q)
+
+        # Calculates the gradient of the application of the Householder 
+        # chain with respect to the DOFs of the Householder chain
+
+        gradient_wrt_householder_parameters = tf.einsum('ki,kim->m',
+        upstream_gradient, 
+        evaluate_derivative_of_chain_of_householder_reflectors_application(
+        X_input, householder_first_index, householder_length,
+        householder_number_of_leading_zeros, 
+        householder_parameters_orthogonal_matrix, 
+        householder_epsilon_squared, tf.shape(X_input)[0], 
+        householder_parameters_orthogonal_matrix.dtype, constant_two, 
+        Q))
+
+        return (gradient_wrt_input_tensor, None, None, None, 
+        gradient_wrt_householder_parameters, None, None, None)
+
+    """# Performs the forward pass
+
+    forward_pass_output = multiply_input_vector_by_householder_chain(
+    input_vector, householder_first_index, householder_length, 
+    householder_number_of_leading_zeros,
+    householder_parameters_orthogonal_matrix, constant_two,
+    householder_epsilon_squared, output_dimension)
+
+    return forward_pass_output, gradient"""
+
+    # Gets the number of reflectors
+
+    number_of_reflectors = tf.shape(householder_first_index)[0]
+    
+    # Iterates through the indices of Householder reflectors in reverse
+    # order since the orthogonal matrix is given by the QR decomposition
+    # as Q = H_1*H_2*...*H_m
+
+    """for householder_reflector_index in tf.range(number_of_reflectors-1,
+    -1,-1):
+
+        # Updates the input vector by recursive multiplication of re-
+        # flectors of the Householder chain
+
+        input_vector = multiply_input_vector_by_householder_reflector(
+        input_vector, householder_reflector_index, 
+        householder_first_index, householder_length, 
+        householder_number_of_leading_zeros, 
+        householder_parameters_orthogonal_matrix, constant_two,
+        householder_epsilon_squared)"""
+
+    householder_reflector_index = number_of_reflectors-1
+
+    def forward_function(householder_reflector_index, input_vector):
+    
+        # Updates the input vector by recursive multiplication of re-
+        # flectors of the Householder chain
+
+        updated_input_vector = multiply_input_vector_by_householder_reflector(
+        input_vector, householder_reflector_index, 
+        householder_first_index, householder_length, 
+        householder_number_of_leading_zeros, 
+        householder_parameters_orthogonal_matrix, constant_two,
+        householder_epsilon_squared)
+
+        return householder_reflector_index-1, updated_input_vector
+
+    def fwd_cond(idx, vec):
+
+        return idx >= 0
+
+    _, input_vector = tf.while_loop(fwd_cond, forward_function, loop_vars=(
+    householder_reflector_index, input_vector))
+
+    # Returns the updated input vector and the gradient. Returns only
+    # the dimensionality corresponding to the output
+
+    return input_vector[:,:output_dimension], gradient
 
 ########################################################################
 #                        Analytical derivatives                        #
@@ -254,6 +492,23 @@ unnormalized_first_component_householder_vector, constant_two, dtype):
     contribution_of_v_tilde_derivative = tf.einsum('i,j->ji', 
     derivative_v_tilde, term_1)
 
+    dimensionality = tf.shape(left_tensor_to_be_multiplied)[1]
+
+    n_samples = tf.shape(right_tensor_to_be_multiplied)[0]
+
+    # Gets the indices of the DOFs to be updated
+
+    number_of_indices = tf.shape(vector_of_dofs)[0]
+
+    scatter_indices = (reflector_index+1+tf.range(number_of_indices))[:, 
+    None]
+
+    # Defines all indices as the concatenation of the index of the re-
+    # flector with the indices of the scatter update
+
+    all_indices = tf.concat([[[reflector_index]], scatter_indices], 
+    axis=0)
+
     # To optimize scattered update, transposes the tensor final_term_1
     # to the shape [dimensionality, n_samples, n_dofs]. Scattered upda-
     # tes work best when the indexed dimension is the first one; on the
@@ -261,32 +516,17 @@ unnormalized_first_component_householder_vector, constant_two, dtype):
     # transposed version with the right dimensionality, instead of just
     # the number of DOFs
 
-    dimensionality = tf.shape(left_tensor_to_be_multiplied)[1]
+    # Concatenates the update of the derivative of v_tilde and the al-
+    # ready calculated first term
 
-    n_samples = tf.shape(right_tensor_to_be_multiplied)[0]
+    transposed_updates = tf.concat([contribution_of_v_tilde_derivative[
+    None,:,:], tf.transpose(final_term_1, [1, 0, 2])], axis=0)
 
-    transposed_first_term = tf.zeros([dimensionality, n_samples, n_dofs], 
-    dtype=dtype)
+    # Creates the transposed first term in a single operation using 
+    # scatter operations
 
-    # Gets the indices of the DOFs
-
-    number_of_indices = tf.shape(vector_of_dofs)[0]
-
-    scatter_indices = (reflector_index+1+tf.range(number_of_indices))[:, 
-    None]
-
-    # Adds what is already inside the first term
-
-    transposed_first_term = tf.tensor_scatter_nd_update(
-    transposed_first_term, scatter_indices, tf.transpose(final_term_1, 
-    [1, 0, 2]))
-
-    # Adds the contribution of the derivative of v_tilde only at the in-
-    # dex of this reflector
-
-    transposed_first_term = tf.tensor_scatter_nd_add(
-    transposed_first_term, [[reflector_index]], 
-    contribution_of_v_tilde_derivative[None,:,:])
+    transposed_first_term = tf.scatter_nd(all_indices, 
+    transposed_updates, shape=[dimensionality, n_samples, n_dofs])
 
     # Tranposes the final term back to the original shape of [n_samples,
     # dimensionality, n_dofs]
@@ -322,33 +562,13 @@ unnormalized_first_component_householder_vector, constant_two, dtype):
 def evaluate_derivative_of_chain_of_householder_reflectors_application(
 right_tensor_to_be_multiplied, householder_first_index,
 householder_length, householder_number_of_leading_zeros, 
-householder_parameters, householder_epsilon_squared, dimensionality, 
-n_samples, dtype, constant_two):
+householder_parameters, householder_epsilon_squared, n_samples, dtype, 
+constant_two, Q):
 
     # Gets the number of reflectors (which is equivalent to the rank of
     # the resulting left-orthogonal matrix)
 
     rank = tf.shape(householder_first_index)[0]
-
-    # Initializes the matrix Q as the product of all Householder reflec-
-    # tors
-
-    Q = tf.eye(rank, dimensionality, dtype=dtype)
-
-    for i in tf.range(rank):
-
-        # Get the Householder vector of the i-th reflector
-
-        householder_vector, _, _, _, _, _ = get_householder_vector_from_parameters(
-        householder_first_index, householder_length, 
-        householder_number_of_leading_zeros, householder_parameters, 
-        i, householder_epsilon_squared)
-
-        # Multiplies this Householder reflector to the right of Q using
-        # the corresponding rank-1 update
-
-        Q -= constant_two*tf.einsum('ik,k,j->ij', Q, householder_vector,
-        householder_vector)
 
     # Initializes the right tensor to be multiplied
 
@@ -356,21 +576,23 @@ n_samples, dtype, constant_two):
 
     # Calculates the number of DOFs of the whole Householder chain
 
-    n_DOFS_chain = householder_parameters.shape[0]
+    n_DOFS_chain = tf.shape(householder_parameters)[0]
 
     # Initializes the derivative tensor with shape [n_dofs_chain, 
     # n_samples, rank] to force the DOFs dimension to be the first index.
     # This choice takes advantage of computational efficiency to scatter
     # update in the first axis
 
-    chain_application_derivative_tranposed = tf.zeros((n_DOFS_chain,
+    chain_application_derivative_transposed = tf.zeros((n_DOFS_chain,
     n_samples, rank), dtype=dtype)
 
     # Iterates over the Householder reflectors in reverse order to eval-
     # uate the derivative of the output y with respect to the DOFs of 
-    # each Householder reflector
+    # each Householder reflector. Uses the reverse order since the or-
+    # thogonal matrix is given by the QR decomposition as Q = H_1*H_2*
+    # ...*H_m
 
-    for i in tf.range(rank-1,-1,-1):
+    """for i in tf.range(rank-1,-1,-1):
 
         # Gets the Householder vector from the flat tensor of Householder
         # DOFs
@@ -409,8 +631,57 @@ n_samples, dtype, constant_two):
         # Updates the derivative tensor using the scattering update me-
         # thod
 
-        chain_application_derivative_tranposed = tf.tensor_scatter_nd_update(
-        chain_application_derivative_tranposed, reflector_dofs_indices, 
+        chain_application_derivative_transposed = tf.tensor_scatter_nd_update(
+        chain_application_derivative_transposed, reflector_dofs_indices, 
+        dy_dDOFs_transposed)
+
+        # Updates the right matrix by multiplying by the right-most 
+        # Householder reflector
+
+        X -= constant_two*tf.einsum('ij,j,k->ik', X, householder_vector,
+        householder_vector)"""
+
+    def while_function(i, Q, X, chain_application_derivative_transposed):
+
+        # Gets the Householder vector from the flat tensor of Householder
+        # DOFs
+
+        (householder_vector, v_bar, alpha, vector_of_dofs,
+        unnormalized_first_component, local_n_dofs) = get_householder_vector_from_parameters(
+        householder_first_index, householder_length, 
+        householder_number_of_leading_zeros, householder_parameters, 
+        i, householder_epsilon_squared)
+
+        # Updates the left matrix by canceling the right-most House-
+        # holder reflector
+
+        Q -= constant_two*tf.einsum('ik,k,j->ij', Q, householder_vector,
+        householder_vector)
+
+        # Evaluates the derivative of y with respect to the DOFs of this
+        # Householder reflector. Transposes the result to [n_dofs, 
+        # n_samples, dimensionality] to take advantage of the computa-
+        # tional performance of scatter update in the first axis
+
+        dy_dDOFs_transposed = tf.transpose(
+        evaluate_derivative_of_householder_reflector_application(
+        v_bar, householder_vector, alpha, local_n_dofs, vector_of_dofs, 
+        i, X, Q, unnormalized_first_component, constant_two, dtype), [2,
+        0, 1])
+
+        # Determines the range of DOFs of this Householder vector in the
+        # flat tensor of DOFs of the Householder chain
+
+        dof_start_index = householder_first_index[i]
+
+        reflector_dofs_indices = tf.range(dof_start_index, 
+        dof_start_index+local_n_dofs)[:,None]
+
+        # Updates the derivative tensor using the scattering update me-
+        # thod
+
+        chain_application_derivative_transposed = tf.tensor_scatter_nd_update(
+        chain_application_derivative_transposed, reflector_dofs_indices, 
         dy_dDOFs_transposed)
 
         # Updates the right matrix by multiplying by the right-most 
@@ -419,7 +690,17 @@ n_samples, dtype, constant_two):
         X -= constant_two*tf.einsum('ij,j,k->ik', X, householder_vector,
         householder_vector)
 
+        return i-1, Q, X, chain_application_derivative_transposed
+
+    def fwd_cond(idx, Q, X, chain):
+    
+        return idx >= 0
+
+    _, Q, X, chain_application_derivative_transposed = tf.while_loop(
+    fwd_cond, while_function, loop_vars=(rank-1, Q, X, 
+                                         chain_application_derivative_transposed))
+
     # Transposes the result back to the shape [n_samples, rank, 
     # n_dofs_chain]
 
-    return tf.transpose(chain_application_derivative_tranposed, [1,2,0])
+    return tf.transpose(chain_application_derivative_transposed, [1,2,0])

@@ -4,6 +4,12 @@ import tensorflow as tf
 
 import numpy as np
 
+import time 
+
+import gc
+
+import tracemalloc
+
 from .....Davout.PythonicUtilities.testing_tools import run_class_of_tests
 
 from .....Davout.DeepMech.tool_box import SVD_tools 
@@ -34,80 +40,28 @@ class TestCustomGradients:
         self.z_variable = tf.Variable(3.0, dtype=tf.as_dtype(
         self.parameters_dtype))
 
-        # Sets the dimensionality and the rank of the left-orthogonal
-        # matrix to be created using a chain of Householder reflectors
-        # (CHR)
+        # Sets the input and the output dimensionality of the left-or-
+        # thogonal matrix to be created using a chain of Householder re-
+        # flectors (CHR)
 
-        self.dimensionality = 10
+        self.input_dimension = 10
 
-        self.rank = 5
+        self.output_dimension = 5
 
-        # Counts the number of degrees of freedom (DOFs) of the left-or-
-        # thogonal matrix to be created using CHR
+        # Sets the epsilon to be used to calculate the first non-zero
+        # component of each Householder vector
 
-        self.n_dofs = int(0.5*(self.rank*((2*self.dimensionality)-
-        self.rank-1)))
+        householder_epsilon_squared = 1.0
 
-        # Creates a list of tuples of the indices to recreate the vectors
-        # of DOFs of the Householder vectors
+        # Creates all tensors used to recreate the chain of Householder
+        # reflectors and the underlying necessary information
 
-        self.householder_indices = []
-
-        self.householder_first_index = []
-
-        self.householder_length = []
-
-        self.householder_number_of_leading_zeros = []
-
-        parameters_counter = 0
-
-        for i in range(min(self.rank, self.dimensionality-1)):
-
-            # Appends the index of the first parameter for the corres-
-            # ponding Householder vector; the number of parameters ne-
-            # cessary for this vector, and the number of leading zeros.
-            # Starts with the last Householder reflector since it will
-            # be the first to multiply any vector to the right of the 
-            # corresponding orthogonal matrix
-
-            self.householder_indices.append(tuple([parameters_counter,
-            self.dimensionality-i-1, i]))
-
-            # Appends to the simple flat tensors
-
-            self.householder_first_index.append(parameters_counter)
-
-            self.householder_length.append(self.dimensionality-i-1)
-
-            self.householder_number_of_leading_zeros.append(i)
-
-            # Updates the parameter counter
-
-            parameters_counter += self.dimensionality-i-1
-
-        # Converts the flat vectors to flat tensors
-
-        self.householder_first_index = tf.constant(
-        self.householder_first_index, dtype=tf.as_dtype(
-        self.integer_type))
-
-        self.householder_length = tf.constant(self.householder_length, 
-        dtype=tf.as_dtype(self.integer_type))
-
-        self.householder_number_of_leading_zeros = tf.constant(
-        self.householder_number_of_leading_zeros, dtype=tf.as_dtype(
-        self.integer_type))
-
-        # Creates a variable with the Householder DOFs
-
-        self.householder_parameters = tf.Variable(np.random.randn((
-        self.n_dofs)), dtype=tf.as_dtype(self.parameters_dtype))
-
-        # Defines the Householder epsilon for the regularization of the
-        # first non-zero component of each Householder vector
-
-        self.householder_epsilon_squared = tf.constant(1.0, dtype=
-        tf.as_dtype(self.parameters_dtype))
+        (self.householder_parameters, self.householder_first_index, 
+        self.householder_length, self.householder_number_of_leading_zeros,
+        self.householder_epsilon_squared, self.n_dofs, self.rank
+        ) = SVD_tools.create_householder_tensors(self.input_dimension, 
+        self.output_dimension, self.parameters_dtype, self.integer_type,
+        householder_epsilon_squared)
 
         # Defines the number of Householder vectors to check the deriva-
         # tives
@@ -115,7 +69,7 @@ class TestCustomGradients:
         self.number_of_householder_vectors_to_check = 5
 
         self.number_of_householder_vectors_to_check = min(self.rank, 
-        self.number_of_householder_vectors_to_check, self.dimensionality
+        self.number_of_householder_vectors_to_check, self.input_dimension
         -1)
 
         # Defines the tensor of batched input vectors X [dimensionality,
@@ -127,7 +81,7 @@ class TestCustomGradients:
         self.n_samples = 5
 
         self.X_input_vectors = tf.constant(np.random.randn(
-        self.n_samples, self.dimensionality), dtype=tf.as_dtype(
+        self.n_samples, self.input_dimension), dtype=tf.as_dtype(
         self.parameters_dtype))
 
         # Saves the constant two
@@ -232,12 +186,18 @@ class TestCustomGradients:
         "chain to an input tensor       #\n###########################"+
         "#############################################\n")
 
+        # Sets the output dimension as the same as the input dimension
+        # to be able to test the inversion of the orthogonal transforma-
+        # tion
+
+        output_dimension = self.input_dimension
+
         y_tensor = SVD_tools.multiply_input_vector_by_householder_chain(
         self.X_input_vectors, self.householder_first_index,
         self.householder_length, 
         self.householder_number_of_leading_zeros, 
         self.householder_parameters, self.constant_two, 
-        self.householder_epsilon_squared)
+        self.householder_epsilon_squared, output_dimension)
 
         print("The result of the input tensor multiplied by the Househ"+
         "older chain has shape "+str(y_tensor.shape)+" and is:\n"+str(
@@ -252,13 +212,17 @@ class TestCustomGradients:
         tf.reverse(self.householder_length, axis=[0]), 
         tf.reverse(self.householder_number_of_leading_zeros, axis=[0]), 
         self.householder_parameters, self.constant_two, 
-        self.householder_epsilon_squared)
+        self.householder_epsilon_squared, output_dimension)
+
+        print("Reverse tensor has shape: "+str(reverse_tensor.shape)+
+        "\n")
 
         print("Applies the Householder chain in reverse order to the f"+
         "ormer result to verify if it gets back to the original input "+
         "tensor. The maximum difference component-wise between the ori"+
         "ginal input tensor and the reconstructed one is: "+str(
-        tf.reduce_max(tf.abs(reverse_tensor-self.X_input_vectors)))+"\n")
+        tf.reduce_max(tf.abs(reverse_tensor-self.X_input_vectors)).numpy(
+        ))+"\n")
 
     # Defines a function to test the analytical derivatives of the nor-
     # malization factor and of the first non-zero component of the 
@@ -426,7 +390,7 @@ class TestCustomGradients:
         # Sets the left tensor to be multiplied as the identity
 
         left_tensor_to_be_multiplied = tf.eye(self.rank,
-        self.dimensionality, dtype=tf.as_dtype(self.parameters_dtype))
+        self.input_dimension, dtype=tf.as_dtype(self.parameters_dtype))
 
         # Iterates over the Householder vectors to check
         
@@ -529,8 +493,30 @@ class TestCustomGradients:
 
         # Defines the left orthogonal matrix 
 
-        left_orthogonal_matrix = tf.eye(self.rank, self.dimensionality, 
+        left_orthogonal_matrix = tf.eye(self.rank, self.rank, 
         dtype=tf.as_dtype(self.parameters_dtype))
+
+        # Initializes the matrix Q as the product of all Householder re-
+        # flectors
+
+        Q = tf.eye(self.rank, self.input_dimension, dtype=tf.as_dtype(
+        self.parameters_dtype))
+
+        for i in tf.range(self.rank):
+
+            # Get the Householder vector of the i-th reflector
+
+            householder_vector, _, _, _, _, _ = SVD_tools.get_householder_vector_from_parameters(
+            self.householder_first_index, self.householder_length, 
+            self.householder_number_of_leading_zeros, 
+            self.householder_parameters, i, 
+            self.householder_epsilon_squared)
+
+            # Multiplies this Householder reflector to the right of Q u-
+            # sing the corresponding rank-1 update
+
+            Q -= self.constant_two*tf.einsum('ik,k,j->ij', Q, 
+            householder_vector, householder_vector)
 
         # Evaluates the derivative of the operation y = QX analytically
 
@@ -538,8 +524,8 @@ class TestCustomGradients:
         self.X_input_vectors, self.householder_first_index, 
         self.householder_length, self.householder_number_of_leading_zeros,
         self.householder_parameters, self.householder_epsilon_squared,
-        self.dimensionality, self.n_samples, tf.as_dtype(
-        self.parameters_dtype), self.constant_two)
+        self.n_samples, tf.as_dtype(self.parameters_dtype), 
+        self.constant_two, Q)
 
         # Defines a function to get the output as a function of a numpy
         # flat tensor of DOFs of the Householder chain
@@ -559,7 +545,7 @@ class TestCustomGradients:
             self.householder_length, 
             self.householder_number_of_leading_zeros,
             updated_householder_parameters, self.constant_two,
-            self.householder_epsilon_squared))
+            self.householder_epsilon_squared, self.rank))
 
         # Evaluates the derivative using central finite differences
 
@@ -574,6 +560,358 @@ class TestCustomGradients:
         "rence between components is: "+str(tf.reduce_max(tf.abs(
         dy_dDofs-tf.constant(CFD_y, dtype=tf.as_dtype(
         self.parameters_dtype)))).numpy())+"\n")
+
+    # Defines a function to test the evaluation of the analytical deri-
+    # vative of the following operation
+    # 
+    # y = QX, such that (Q^T)*Q = I and Q = H1*H*...*H_rank
+    #
+    # with respect to the Householder vector v^i of the i-th Householder
+    # reflector H_i and with respect to the input tensor using the ap-
+    # propriate method that was decorated with tf.custom_gradient
+
+    def test_derivative_of_application_of_CHR_using_custom_grad(self):
+
+        print("\n#####################################################"+
+        "###################\n#      Tests chain of Householder reflec"+
+        "tors with custom gradient      #\n###########################"+
+        "#############################################\n")
+
+        # Sets the input tensor for performance test
+
+        n_samples_performance_test = 100
+
+        self.X_input_performance_test = tf.constant(np.random.randn(
+        n_samples_performance_test, self.input_dimension), dtype=
+        tf.as_dtype(self.parameters_dtype))
+
+        # Sets the output dimension as the rank
+
+        output_dimension = self.rank
+
+        # Tests the derivative of a toy loss function with the custom 
+        # gradient. GradientTape from tensorflow will automatically the
+        # derived custom gradient
+
+        with tf.GradientTape() as custom_tape:
+
+            # Sets the tape to watch the input tensor
+
+            custom_tape.watch(self.X_input_performance_test)
+
+            y_custom = SVD_tools.multiply_input_vector_by_householder_chain_with_custom_gradient(
+            self.X_input_performance_test, self.householder_first_index, 
+            self.householder_length, 
+            self.householder_number_of_leading_zeros,
+            self.householder_parameters, self.constant_two,
+            self.householder_epsilon_squared, output_dimension)
+
+            # Defines a scalar loss L = 0.5 * sum(y^2)
+
+            custom_loss = 0.5*tf.reduce_sum(tf.square(y_custom))
+
+        # Evaluates the custom gradient
+
+        custom_gradient_parameters, custom_gradient_input_tensor = custom_tape.gradient(
+        custom_loss, [self.householder_parameters, 
+        self.X_input_performance_test])
+
+        # Tests the gradient with pure automatic differentiation (AD)
+
+        with tf.GradientTape() as AD_tape:
+
+            # Sets the tape to watch both the Householder parameters and
+            # the input tensor
+
+            AD_tape.watch(self.X_input_performance_test)
+
+            AD_tape.watch(self.householder_parameters)
+
+            y_AD = SVD_tools.multiply_input_vector_by_householder_chain(
+            self.X_input_performance_test, self.householder_first_index, 
+            self.householder_length, 
+            self.householder_number_of_leading_zeros,
+            self.householder_parameters, self.constant_two,
+            self.householder_epsilon_squared, output_dimension)
+
+            AD_loss = 0.5*tf.reduce_sum(tf.square(y_AD))
+
+        # Evaluates the gradient with AD
+
+        AD_gradient_parameters, AD_gradient_input = AD_tape.gradient(
+        AD_loss, [self.householder_parameters, 
+        self.X_input_performance_test])
+
+        print("\nCompares the derivative of the Householder chain, y=Q"+
+        "*X with respect to\nthe DOFs of the Householder vector chain "+
+        "with automatic differentiation (AD).\nThe shape of the AD der"+
+        "ivative is "+str(AD_gradient_parameters.shape)+"; while the s"+
+        "hape of the\nanalytical derivative is "+str(
+        custom_gradient_parameters.shape)+".\nThe maximum difference b"+
+        "etween components is: "+str(
+        tf.reduce_max(tf.abs(custom_gradient_parameters-
+        AD_gradient_parameters)).numpy())+"\n")
+
+        print("Compares the derivative of the Householder chain, y=Q*X"+
+        " with respect to\nthe input tensor with automatic differentia"+
+        "tion (AD).\nThe shape of the AD derivative is "+str(
+        AD_gradient_input.shape)+"; while the shape of the\nanalytical"+
+        " derivative is "+str(custom_gradient_input_tensor.shape)+".\n"+
+        "The maximum difference between components is: "+str(
+        tf.reduce_max(tf.abs(custom_gradient_input_tensor-
+        AD_gradient_input)).numpy())+"\n")
+
+    # Defines a function to compare runtime and memory cost using the a-
+    # nalytical derivative against automatic differentiation
+
+    def test_runtime_and_memory_cost(self):
+        
+        print("\n#####################################################"+
+        "###################\n#  Tests runtime and memory cost of anal"+
+        "ytical derivatives against AD  #\n###########################"+
+        "#############################################\n")
+
+        # Sets the number of runs to warm-up both functions to force 
+        # graph compilation. Also sets the number of runs to evaluate
+        # computation time
+
+        n_warm_up_runs = 10
+
+        n_execution_runs = 1000
+
+        # Sets the input and the output dimensionality of the left-or-
+        # thogonal matrix to be created using a chain of Householder re-
+        # flectors (CHR)
+
+        input_dimension_performance = 600
+
+        output_dimension_performance = 10000
+
+        # Sets the type of the parameters
+
+        parameters_type_performance = "float32"
+
+        # Sets the epsilon to be used to calculate the first non-zero
+        # component of each Householder vector
+
+        householder_epsilon_squared = 1.0
+
+        # Creates all tensors used to recreate the chain of Householder
+        # reflectors and the underlying necessary information
+
+        (householder_parameters_performance, 
+        householder_first_index_performance, 
+        householder_length_performance,
+        householder_number_of_leading_zeros_performance,
+        householder_epsilon_squared_performance, n_dofs_performance, 
+        rank_performance) = SVD_tools.create_householder_tensors(
+        input_dimension_performance, output_dimension_performance, 
+        parameters_type_performance, self.integer_type,
+        householder_epsilon_squared)
+
+        # Defines the tensor of batched input vectors X [dimensionality,
+        # n_samples] for the operation 
+        # y = I(rank,dimensionality)*H_1*H_2*...*H_rank*X 
+        #
+        # such that y is a tensor [n_samples, rank]
+
+        n_samples_performance = 1000
+
+        X_input_vectors_performance = tf.constant(np.random.randn(
+        n_samples_performance, input_dimension_performance), dtype=
+        tf.as_dtype(parameters_type_performance))
+
+        # Saves the constant two
+
+        constant_two_performance = tf.constant(2.0, dtype=tf.as_dtype(
+        parameters_type_performance))
+
+        @tf.function(jit_compile=True)
+        def optimized_AD_chain_multiplication(
+            X, first_index, length, leading_zeros, params, constant_two, epsilon_sq, output_dim
+        ):
+            return SVD_tools.multiply_input_vector_by_householder_chain(
+                X, first_index, length, leading_zeros, params, constant_two, epsilon_sq, output_dim
+            )
+
+        """@tf.function(jit_compile=True)
+        def optimized_custom_chain_multiplication(
+            X, first_index, length, leading_zeros, params, constant_two, epsilon_sq, output_dim
+        ):
+            return SVD_tools.multiply_input_vector_by_householder_chain_with_custom_gradient(
+                X, first_index, length, leading_zeros, params, constant_two, epsilon_sq, output_dim
+            )"""
+
+        """# Defines a function to compute the gradient of the toy loss 
+        # function using the custom gradient
+
+        def run_custom_implementation():
+
+            with tf.GradientTape() as custom_tape:
+            
+                # Sets the tape to watch the input tensor
+    
+                custom_tape.watch(X_input_vectors_performance)
+    
+                y_custom = optimized_custom_chain_multiplication(
+                X_input_vectors_performance, householder_first_index_performance, 
+                householder_length_performance, 
+                householder_number_of_leading_zeros_performance,
+                householder_parameters_performance, 
+                constant_two_performance,
+                householder_epsilon_squared_performance, 
+                output_dimension_performance)
+    
+                # Defines a scalar loss L = 0.5 * sum(y^2)
+    
+                custom_loss = 0.5*tf.reduce_sum(tf.square(y_custom))
+    
+            # Evaluates the custom gradient
+    
+            return custom_tape.gradient(custom_loss, [
+            householder_parameters_performance, 
+            X_input_vectors_performance])"""
+
+        # Defines a function to compute the gradient of the toy loss 
+        # function using automatic differentiation
+
+        def run_AD_implementation():
+
+            with tf.GradientTape() as AD_tape:
+            
+                # Sets the tape to watch both the Householder parameters 
+                # and the input tensor
+    
+                AD_tape.watch(X_input_vectors_performance)
+    
+                AD_tape.watch(householder_parameters_performance)
+    
+                y_AD = SVD_tools.multiply_input_vector_by_householder_chain(
+                X_input_vectors_performance, 
+                householder_first_index_performance, 
+                householder_length_performance, 
+                householder_number_of_leading_zeros_performance,
+                householder_parameters_performance, 
+                constant_two_performance,
+                householder_epsilon_squared_performance, 
+                output_dimension_performance)
+    
+                AD_loss = 0.5*tf.reduce_sum(tf.square(y_AD))
+    
+            # Evaluates the gradient with AD
+    
+            return AD_tape.gradient(AD_loss, [
+            self.householder_parameters, X_input_vectors_performance])
+
+        # Warms up to force graph compilation
+
+        for _ in range(n_warm_up_runs):
+
+            # Runs both functions
+
+            #_ = run_custom_implementation()
+
+            _ = run_AD_implementation()
+
+        # Collects all garbage to avoid AD sneaking through left-over 
+        # data
+
+        gc.collect()
+
+        # Evaluates the AD running time
+
+        start_time = time.perf_counter()
+
+        for _ in range(n_execution_runs):
+
+            _ = run_AD_implementation()
+
+        # Gets the average time. Multiply by 1000 to get in miliseconds
+
+        whole_time = time.perf_counter()-start_time
+
+        AD_average_time = ((whole_time/n_execution_runs)*1000.0)
+
+        print("Finalizes executing the AD implementation in a total of"+
+        " "+str(whole_time)+" seconds\n")
+
+        # Collects all garbage to avoid AD sneaking through left-over 
+        # data
+
+        gc.collect()
+
+        """# Evaluates the custom gradient running time
+
+        start_time = time.perf_counter()
+
+        for _ in range(n_execution_runs):
+
+            _ = run_custom_implementation()
+
+        # Gets the average time. Multiply by 1000 to get in miliseconds
+
+        whole_time = time.perf_counter()-start_time
+
+        custom_average_time = ((whole_time/n_execution_runs)*1000.0)
+
+        print("Finalizes executing the custom implementation in a tota"+
+        "l of "+str(whole_time)+" seconds\n")"""
+
+        custom_average_time = 0.0
+
+        # Defines a function to measure peak memory
+
+        def measure_peak_memory(target_function):
+
+            # Collects all garbage
+
+            gc.collect()
+
+            # Starts tracing memory footprint
+
+            tracemalloc.start()
+
+            # Executes the function
+
+            _ = target_function()
+
+            # Retrieves current and peak memory allocations in bytes
+
+            current_bytes, peak_bytes = tracemalloc.get_traced_memory()
+
+            # Stops tracing to reset counters
+
+            tracemalloc.stop()
+            
+            # Returns memory delta in Megabytes (MB)
+
+            return peak_bytes/(1024**2)
+
+        # Measures the memory peak for both implementations
+
+        custom_memory_peak = 0.0
+
+        #custom_memory_peak = measure_peak_memory(
+        #run_custom_implementation)
+
+        AD_memory_peak = measure_peak_memory(run_AD_implementation)
+
+        # Prints the results
+
+        print("The testing set-up is:\n1. input dimension ---------- "+
+        str(input_dimension_performance)+"\n2. output dimension ------"+
+        "--- "+str(output_dimension_performance)+"\n3. number of sampl"+
+        "es -------- "+str(n_samples_performance)+"\n4. number of exec"+
+        "ution runs - "+str(n_execution_runs)+"\n")
+
+        print("The average time per execution for the AD implementatio"+
+        "n in miliseconds is: "+str(AD_average_time)+"\nThe average ti"+
+        "me per execution for the custom implementation in miliseconds"+
+        " is: "+str(custom_average_time)+"\n")
+
+        print("The memory peak of the AD implementation in MB is: "+str(
+        AD_memory_peak)+"\nThe memory peak of the custom implementatio"+
+        "n in MB is: "+str(custom_memory_peak))
 
 # Runs all tests
 
