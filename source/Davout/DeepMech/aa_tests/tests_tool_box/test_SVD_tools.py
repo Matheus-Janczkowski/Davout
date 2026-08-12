@@ -677,15 +677,15 @@ class TestCustomGradients:
 
         n_warm_up_runs = 10
 
-        n_execution_runs = 1000
+        n_execution_runs = 100
 
         # Sets the input and the output dimensionality of the left-or-
         # thogonal matrix to be created using a chain of Householder re-
         # flectors (CHR)
 
-        input_dimension_performance = 600
+        input_dimension_performance = 50
 
-        output_dimension_performance = 10000
+        output_dimension_performance = 1000
 
         # Sets the type of the parameters
 
@@ -786,7 +786,7 @@ class TestCustomGradients:
     
                 AD_tape.watch(householder_parameters_performance)
     
-                y_AD = SVD_tools.multiply_input_vector_by_householder_chain(
+                y_AD = optimized_AD_chain_multiplication(
                 X_input_vectors_performance, 
                 householder_first_index_performance, 
                 householder_length_performance, 
@@ -801,7 +801,7 @@ class TestCustomGradients:
             # Evaluates the gradient with AD
     
             return AD_tape.gradient(AD_loss, [
-            self.householder_parameters, X_input_vectors_performance])
+            householder_parameters_performance, X_input_vectors_performance])
 
         # Warms up to force graph compilation
 

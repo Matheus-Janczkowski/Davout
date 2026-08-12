@@ -107,7 +107,7 @@ householder_epsilon_squared):
     number_of_leading_zeros = householder_number_of_leading_zeros[
     householder_reflector_index]
 
-    raw_vector = tf.slice(householder_parameters, begin=tf.expand_dims(
+    """raw_vector = tf.slice(householder_parameters, begin=tf.expand_dims(
     initial_index, axis=0), size=tf.expand_dims(length, axis=0))
 
     # Computes the average of the raw vector
@@ -133,7 +133,46 @@ householder_epsilon_squared):
 
     paddings = tf.stack([tf.stack([number_of_leading_zeros, 0])])
     
-    householder_vector = tf.pad(alpha*appended_raw_vector, paddings)
+    householder_vector = tf.pad(alpha*appended_raw_vector, paddings)"""
+
+    # Gets the indices to slice DOFs of this Householder vector from the
+    # whole flat tensor of Householder DOFs
+
+    slicing_indices = tf.range(initial_index, initial_index+length)
+
+    # Gets the raw vector from the Householder DOFs using the slicing 
+    # mask
+
+    raw_vector = tf.gather(slicing_mask, householder_parameters, 0.0)
+
+    # Computes the average of the DOFs of this Householder vector
+
+    average_raw_vector = tf.reduce_sum(raw_vector)/tf.cast(length,
+    householder_parameters.dtype)
+
+    # Calculates the first non-zero component of the Householder vector
+
+    unnormalized_first_component = tf.sqrt(tf.square(average_raw_vector
+    )+householder_epsilon_squared)
+
+    # Calculates the normalizing factor to make the Householder vector
+    # unitary
+
+    alpha = tf.math.rsqrt(tf.reduce_sum(tf.square(raw_vector))+tf.square(
+    unnormalized_first_component))
+
+    # Creates a mask for the first non-zero component of the Householder
+    # vector
+
+    first_non_zero_component_mask = (tf.range(length, dtype=
+    initial_index.dtype)==(
+    number_of_leading_zeros))
+
+    # Substitutes the first non-zero component into place and scales by
+    # alpha
+
+    householder_vector = alpha*tf.where(first_non_zero_component_mask,
+    unnormalized_first_component, raw_vector)
 
     return (householder_vector, average_raw_vector, alpha, raw_vector, 
     unnormalized_first_component, length)
@@ -237,7 +276,7 @@ householder_epsilon_squared, output_dimension):
         Q = tf.eye(rank, dimensionality, dtype=
         householder_parameters_orthogonal_matrix.dtype)
 
-        """for i in tf.range(rank):
+        for i in tf.range(rank):
 
             # Get the Householder vector of the i-th reflector
 
@@ -251,9 +290,9 @@ householder_epsilon_squared, output_dimension):
             # sing the corresponding rank-1 update
 
             Q -= constant_two*tf.einsum('ik,k,j->ij', Q, 
-            householder_vector, householder_vector)"""
+            householder_vector, householder_vector)
 
-        def while_function(i, Q_tensor):
+        """def while_function(i, Q_tensor):
 
             # Get the Householder vector of the i-th reflector
             
@@ -276,7 +315,7 @@ householder_epsilon_squared, output_dimension):
                 return i<rank
 
         _, Q = tf.while_loop(while_condition, while_function, loop_vars=(
-        tf.constant(0, dtype=tf.int32), Q))
+        tf.constant(0, dtype=tf.int32), Q))"""
 
         # Calculates the gradient of the application of the Householder
         # chain with respect to the input tensor. The double contraction
@@ -320,7 +359,7 @@ householder_epsilon_squared, output_dimension):
     # order since the orthogonal matrix is given by the QR decomposition
     # as Q = H_1*H_2*...*H_m
 
-    """for householder_reflector_index in tf.range(number_of_reflectors-1,
+    for householder_reflector_index in tf.range(number_of_reflectors-1,
     -1,-1):
 
         # Updates the input vector by recursive multiplication of re-
@@ -331,9 +370,9 @@ householder_epsilon_squared, output_dimension):
         householder_first_index, householder_length, 
         householder_number_of_leading_zeros, 
         householder_parameters_orthogonal_matrix, constant_two,
-        householder_epsilon_squared)"""
+        householder_epsilon_squared)
 
-    householder_reflector_index = number_of_reflectors-1
+    """householder_reflector_index = number_of_reflectors-1
 
     def forward_function(householder_reflector_index, input_vector):
     
@@ -354,7 +393,7 @@ householder_epsilon_squared, output_dimension):
         return idx >= 0
 
     _, input_vector = tf.while_loop(fwd_cond, forward_function, loop_vars=(
-    householder_reflector_index, input_vector))
+    householder_reflector_index, input_vector))"""
 
     # Returns the updated input vector and the gradient. Returns only
     # the dimensionality corresponding to the output
@@ -592,7 +631,7 @@ constant_two, Q):
     # thogonal matrix is given by the QR decomposition as Q = H_1*H_2*
     # ...*H_m
 
-    """for i in tf.range(rank-1,-1,-1):
+    for i in tf.range(rank-1,-1,-1):
 
         # Gets the Householder vector from the flat tensor of Householder
         # DOFs
@@ -639,9 +678,9 @@ constant_two, Q):
         # Householder reflector
 
         X -= constant_two*tf.einsum('ij,j,k->ik', X, householder_vector,
-        householder_vector)"""
+        householder_vector)
 
-    def while_function(i, Q, X, chain_application_derivative_transposed):
+    """def while_function(i, Q, X, chain_application_derivative_transposed):
 
         # Gets the Householder vector from the flat tensor of Householder
         # DOFs
@@ -698,7 +737,7 @@ constant_two, Q):
 
     _, Q, X, chain_application_derivative_transposed = tf.while_loop(
     fwd_cond, while_function, loop_vars=(rank-1, Q, X, 
-                                         chain_application_derivative_transposed))
+                                         chain_application_derivative_transposed))"""
 
     # Transposes the result back to the shape [n_samples, rank, 
     # n_dofs_chain]
