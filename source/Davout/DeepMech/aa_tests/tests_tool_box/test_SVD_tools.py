@@ -171,7 +171,7 @@ class TestCustomGradients:
             self.householder_first_index, self.householder_length,
             self.householder_number_of_leading_zeros, 
             self.householder_parameters, householder_index, 
-            self.householder_epsilon_squared)
+            self.householder_epsilon_squared, self.input_dimension)
 
             print("The assembled "+str(i)+"-th Householder vector is:"+
             "\n"+str(householder_vector.numpy())+"\n")
@@ -197,7 +197,8 @@ class TestCustomGradients:
         self.householder_length, 
         self.householder_number_of_leading_zeros, 
         self.householder_parameters, self.constant_two, 
-        self.householder_epsilon_squared, output_dimension)
+        self.householder_epsilon_squared, output_dimension, 
+        self.input_dimension)
 
         print("The result of the input tensor multiplied by the Househ"+
         "older chain has shape "+str(y_tensor.shape)+" and is:\n"+str(
@@ -212,15 +213,16 @@ class TestCustomGradients:
         tf.reverse(self.householder_length, axis=[0]), 
         tf.reverse(self.householder_number_of_leading_zeros, axis=[0]), 
         self.householder_parameters, self.constant_two, 
-        self.householder_epsilon_squared, output_dimension)
+        self.householder_epsilon_squared, output_dimension,
+        self.input_dimension)
 
         print("Reverse tensor has shape: "+str(reverse_tensor.shape)+
         "\n")
 
         print("Applies the Householder chain in reverse order to the f"+
-        "ormer result to verify if it gets back to the original input "+
-        "tensor. The maximum difference component-wise between the ori"+
-        "ginal input tensor and the reconstructed one is: "+str(
+        "ormer result to\nverify if it gets back to the original input"+
+        "tensor. The maximum diffe-\nrence component-wise between the "+
+        "original input tensor and the recons-\ntructed one is: "+str(
         tf.reduce_max(tf.abs(reverse_tensor-self.X_input_vectors)).numpy(
         ))+"\n")
 
@@ -257,7 +259,7 @@ class TestCustomGradients:
             self.householder_first_index, self.householder_length,
             self.householder_number_of_leading_zeros, 
             self.householder_parameters, householder_index,
-            self.householder_epsilon_squared)
+            self.householder_epsilon_squared, self.input_dimension)
 
             # Gets the derivative of v_tilde and of alpha
 
@@ -414,7 +416,7 @@ class TestCustomGradients:
             self.householder_first_index, self.householder_length,
             self.householder_number_of_leading_zeros, 
             self.householder_parameters, householder_index,
-            self.householder_epsilon_squared)
+            self.householder_epsilon_squared, self.input_dimension)
 
             # Gets the derivative of the operation using the analytical
             # derivative implemented in SVD tools
@@ -462,7 +464,7 @@ class TestCustomGradients:
                 self.householder_first_index, self.householder_length, 
                 self.householder_number_of_leading_zeros, 
                 updated_householder_parameters, self.constant_two, 
-                self.householder_epsilon_squared))
+                self.householder_epsilon_squared, self.input_dimension))
             
             CFD_y = derivative_tensor_valued_function_of_vector_argument(
             get_y, slice_of_vector_of_dofs, epsilon=1E-5)
@@ -510,7 +512,7 @@ class TestCustomGradients:
             self.householder_first_index, self.householder_length, 
             self.householder_number_of_leading_zeros, 
             self.householder_parameters, i, 
-            self.householder_epsilon_squared)
+            self.householder_epsilon_squared, self.input_dimension)
 
             # Multiplies this Householder reflector to the right of Q u-
             # sing the corresponding rank-1 update
@@ -545,7 +547,8 @@ class TestCustomGradients:
             self.householder_length, 
             self.householder_number_of_leading_zeros,
             updated_householder_parameters, self.constant_two,
-            self.householder_epsilon_squared, self.rank))
+            self.householder_epsilon_squared, self.rank, 
+            self.input_dimension))
 
         # Evaluates the derivative using central finite differences
 
@@ -604,7 +607,8 @@ class TestCustomGradients:
             self.householder_length, 
             self.householder_number_of_leading_zeros,
             self.householder_parameters, self.constant_two,
-            self.householder_epsilon_squared, output_dimension)
+            self.householder_epsilon_squared, output_dimension,
+            self.input_dimension)
 
             # Defines a scalar loss L = 0.5 * sum(y^2)
 
@@ -632,7 +636,8 @@ class TestCustomGradients:
             self.householder_length, 
             self.householder_number_of_leading_zeros,
             self.householder_parameters, self.constant_two,
-            self.householder_epsilon_squared, output_dimension)
+            self.householder_epsilon_squared, output_dimension,
+            self.input_dimension)
 
             AD_loss = 0.5*tf.reduce_sum(tf.square(y_AD))
 
@@ -726,21 +731,23 @@ class TestCustomGradients:
         constant_two_performance = tf.constant(2.0, dtype=tf.as_dtype(
         parameters_type_performance))
 
-        @tf.function(jit_compile=True)
-        def optimized_AD_chain_multiplication(
-            X, first_index, length, leading_zeros, params, constant_two, epsilon_sq, output_dim
-        ):
+        @tf.function#(jit_compile=True)
+        def optimized_AD_chain_multiplication(X, first_index, length, 
+        leading_zeros, params, constant_two, epsilon_sq, output_dim, 
+        input_dimension):
+            
             return SVD_tools.multiply_input_vector_by_householder_chain(
-                X, first_index, length, leading_zeros, params, constant_two, epsilon_sq, output_dim
-            )
+            X, first_index, length, leading_zeros, params, constant_two, 
+            epsilon_sq, output_dim, input_dimension)
 
         """@tf.function(jit_compile=True)
-        def optimized_custom_chain_multiplication(
-            X, first_index, length, leading_zeros, params, constant_two, epsilon_sq, output_dim
-        ):
+        def optimized_custom_chain_multiplication(X, first_index, 
+        length, leading_zeros, params, constant_two, epsilon_sq, 
+        output_dim, input_dimension):
+
             return SVD_tools.multiply_input_vector_by_householder_chain_with_custom_gradient(
-                X, first_index, length, leading_zeros, params, constant_two, epsilon_sq, output_dim
-            )"""
+            X, first_index, length, leading_zeros, params, constant_two, 
+            epsilon_sq, output_dim, input_dimension)"""
 
         """# Defines a function to compute the gradient of the toy loss 
         # function using the custom gradient
@@ -794,7 +801,8 @@ class TestCustomGradients:
                 householder_parameters_performance, 
                 constant_two_performance,
                 householder_epsilon_squared_performance, 
-                output_dimension_performance)
+                output_dimension_performance, 
+                input_dimension_performance)
     
                 AD_loss = 0.5*tf.reduce_sum(tf.square(y_AD))
     

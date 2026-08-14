@@ -95,7 +95,7 @@ float_type, integer_type, householder_epsilon_squared):
 def get_householder_vector_from_parameters(householder_first_index,
 householder_length, householder_number_of_leading_zeros,
 householder_parameters, householder_reflector_index, 
-householder_epsilon_squared):
+householder_epsilon_squared, dimensionality):
     
     # Gets the first and last indices of the Householder vector, then
     # the vector that will become the Householder vector
@@ -107,7 +107,7 @@ householder_epsilon_squared):
     number_of_leading_zeros = householder_number_of_leading_zeros[
     householder_reflector_index]
 
-    """raw_vector = tf.slice(householder_parameters, begin=tf.expand_dims(
+    raw_vector = tf.slice(householder_parameters, begin=tf.expand_dims(
     initial_index, axis=0), size=tf.expand_dims(length, axis=0))
 
     # Computes the average of the raw vector
@@ -133,17 +133,53 @@ householder_epsilon_squared):
 
     paddings = tf.stack([tf.stack([number_of_leading_zeros, 0])])
     
-    householder_vector = tf.pad(alpha*appended_raw_vector, paddings)"""
+    householder_vector = tf.pad(alpha*appended_raw_vector, paddings)
 
-    # Gets the indices to slice DOFs of this Householder vector from the
-    # whole flat tensor of Householder DOFs
+    return (householder_vector, average_raw_vector, alpha, raw_vector, 
+    unnormalized_first_component, length)
 
-    slicing_indices = tf.range(initial_index, initial_index+length)
+# Defines a function to parse a single Householder vector from a vector
+# of all Householder vectors to construct an orthogonal matrix. The in-
+# coming vector is a tensor [0.5*(m_rank*((2*n_rows)-m_rank-1))], where 
+# m_rank is the number of columns of the final orthogonal matrix, and 
+# n_rows is the number of rows. Receives the index of the Householder 
+# reflector in the Householder chain to collect the corresponding House-
+# holder vector. THE DISTINCTION IS: this function is properly defined
+# for XLA compilation
 
-    # Gets the raw vector from the Householder DOFs using the slicing 
-    # mask
+def get_householder_vector_from_parameters_XLA(householder_first_index,
+householder_length, householder_number_of_leading_zeros,
+householder_parameters, householder_reflector_index, 
+householder_epsilon_squared, dimensionality):
+    
+    # Gets the first and last indices of the Householder vector
 
-    raw_vector = tf.gather(slicing_mask, householder_parameters, 0.0)
+    initial_index = householder_first_index[householder_reflector_index] 
+
+    length = householder_length[householder_reflector_index]
+
+    number_of_leading_zeros = householder_number_of_leading_zeros[
+    householder_reflector_index]
+
+    # Gets the number of DOFs of the whole chain of Householder reflec-
+    # tors, then creates a vector of the indices of those DOFs
+
+    n_dofs_of_chain = tf.shape(householder_parameters)[0]
+
+    chain_dofs_indices = tf.range(n_dofs_of_chain, dtype=
+    initial_index.dtype)
+
+    # Creates a mask to take out the DOFs of this Householder vector
+
+    current_householder_mask = (chain_dofs_indices>=initial_index) & (
+    chain_dofs_indices<(initial_index+length))
+
+    # Gets the vector of DOFs of this Householder vector but in a tensor
+    # [n_dofs_of_chain], such that all components that are not related 
+    # to this Householder vector are zero
+
+    raw_vector = tf.where(current_householder_mask, 
+    householder_parameters, 0.0)
 
     # Computes the average of the DOFs of this Householder vector
 
@@ -161,18 +197,42 @@ householder_epsilon_squared):
     alpha = tf.math.rsqrt(tf.reduce_sum(tf.square(raw_vector))+tf.square(
     unnormalized_first_component))
 
+    # Creates a range with all indices of the Householder vector
+
+    all_indices_householder_vector = tf.range(dimensionality, dtype=
+    initial_index.dtype)
+
     # Creates a mask for the first non-zero component of the Householder
     # vector
 
-    first_non_zero_component_mask = (tf.range(length, dtype=
-    initial_index.dtype)==(
+    first_non_zero_component_mask = (all_indices_householder_vector==(
     number_of_leading_zeros))
 
-    # Substitutes the first non-zero component into place and scales by
-    # alpha
+    # Creates a mask for the indexing of the raw vector
+
+    raw_vector_mask = (all_indices_householder_vector>(
+    number_of_leading_zeros)) & (all_indices_householder_vector<=(
+    number_of_leading_zeros+length))
+
+    # Creates a range of indices for the Householder parameters
+
+    householder_indices = tf.clip_by_value(initial_index+(
+    all_indices_householder_vector-(number_of_leading_zeros+1)), 0, 
+    n_dofs_of_chain-1)
+
+    # Gets the Householder DOFs mapped to the right position in the fi-
+    # nal Householder vector, i.e. considering the leading zeros and the
+    # first non-zero component
+
+    raw_vector_DOFs = tf.gather(householder_parameters, 
+    householder_indices)
+
+    # Assembles the Householder vector and multiplies by the normaliza-
+    # tion factor
 
     householder_vector = alpha*tf.where(first_non_zero_component_mask,
-    unnormalized_first_component, raw_vector)
+    unnormalized_first_component, tf.where(raw_vector_mask, 
+    raw_vector_DOFs, 0.0))
 
     return (householder_vector, average_raw_vector, alpha, raw_vector, 
     unnormalized_first_component, length)
@@ -187,18 +247,19 @@ def multiply_input_vector_by_householder_reflector(input_vector,
 householder_reflector_index, householder_first_index,
 householder_length, householder_number_of_leading_zeros, 
 householder_parameters_orthogonal_matrix, constant_two, 
-householder_epsilon_squared):
+householder_epsilon_squared, dimensionality):
     
     # Gets the Householder vector from the Householder parameters of the
     # B matrix. Keep in mind that the order of the Householder chain of 
     # the B matrix is reversed with respect to the A matrix (in the SVD-
     # based architecture), since B is transposed in the SVD
 
-    householder_vector, _, _, _, _, _ = get_householder_vector_from_parameters(
+    householder_vector, _, _, _, _, _ = get_householder_vector_from_parameters_XLA(
     householder_first_index, householder_length, 
     householder_number_of_leading_zeros, 
     householder_parameters_orthogonal_matrix, 
-    householder_reflector_index, householder_epsilon_squared)
+    householder_reflector_index, householder_epsilon_squared, 
+    dimensionality)
 
     # Multiplies the input vector by the Householder reflector (the ope-
     # ration is already broken down into the rank-1 calculation)
@@ -214,7 +275,7 @@ def multiply_input_vector_by_householder_chain(input_vector,
 householder_first_index, householder_length, 
 householder_number_of_leading_zeros,
 householder_parameters_orthogonal_matrix, constant_two,
-householder_epsilon_squared, output_dimension):
+householder_epsilon_squared, output_dimension, input_dimension):
 
     # Gets the number of reflectors
 
@@ -227,6 +288,9 @@ householder_epsilon_squared, output_dimension):
     for householder_reflector_index in tf.range(number_of_reflectors-1,
     -1,-1):
 
+    #for householder_reflector_index in range(int(householder_first_index.shape[0])-1,
+    #-1,-1):
+
         # Updates the input vector by recursive multiplication of re-
         # flectors of the Householder chain
 
@@ -235,7 +299,7 @@ householder_epsilon_squared, output_dimension):
         householder_first_index, householder_length, 
         householder_number_of_leading_zeros, 
         householder_parameters_orthogonal_matrix, constant_two,
-        householder_epsilon_squared)
+        householder_epsilon_squared, input_dimension)
 
     # Returns the updated input vector. Returns only the indices corres-
     # ponding to the output dimension
@@ -253,7 +317,7 @@ def multiply_input_vector_by_householder_chain_with_custom_gradient(
 input_vector, householder_first_index, householder_length, 
 householder_number_of_leading_zeros,
 householder_parameters_orthogonal_matrix, constant_two,
-householder_epsilon_squared, output_dimension):
+householder_epsilon_squared, output_dimension, input_dimension):
 
     # Gets a tensor to keep a memory pointer to the original input tensor
 
@@ -284,7 +348,7 @@ householder_epsilon_squared, output_dimension):
             householder_first_index, householder_length, 
             householder_number_of_leading_zeros, 
             householder_parameters_orthogonal_matrix, i, 
-            householder_epsilon_squared)
+            householder_epsilon_squared, dimensionality)
 
             # Multiplies this Householder reflector to the right of Q u-
             # sing the corresponding rank-1 update
@@ -300,7 +364,7 @@ householder_epsilon_squared, output_dimension):
             householder_first_index, householder_length, 
             householder_number_of_leading_zeros, 
             householder_parameters_orthogonal_matrix, i, 
-            householder_epsilon_squared)
+            householder_epsilon_squared, dimensionality)
 
             # Multiplies this Householder reflector to the right of Q u-
             # sing the corresponding rank-1 update
@@ -339,7 +403,7 @@ householder_epsilon_squared, output_dimension):
         Q))
 
         return (gradient_wrt_input_tensor, None, None, None, 
-        gradient_wrt_householder_parameters, None, None, None)
+        gradient_wrt_householder_parameters, None, None, None, None)
 
     """# Performs the forward pass
 
@@ -347,7 +411,7 @@ householder_epsilon_squared, output_dimension):
     input_vector, householder_first_index, householder_length, 
     householder_number_of_leading_zeros,
     householder_parameters_orthogonal_matrix, constant_two,
-    householder_epsilon_squared, output_dimension)
+    householder_epsilon_squared, output_dimension, input_dimension)
 
     return forward_pass_output, gradient"""
 
@@ -370,7 +434,7 @@ householder_epsilon_squared, output_dimension):
         householder_first_index, householder_length, 
         householder_number_of_leading_zeros, 
         householder_parameters_orthogonal_matrix, constant_two,
-        householder_epsilon_squared)
+        householder_epsilon_squared, input_dimension)
 
     """householder_reflector_index = number_of_reflectors-1
 
@@ -384,7 +448,7 @@ householder_epsilon_squared, output_dimension):
         householder_first_index, householder_length, 
         householder_number_of_leading_zeros, 
         householder_parameters_orthogonal_matrix, constant_two,
-        householder_epsilon_squared)
+        householder_epsilon_squared, input_dimension)
 
         return householder_reflector_index-1, updated_input_vector
 
@@ -609,6 +673,10 @@ constant_two, Q):
 
     rank = tf.shape(householder_first_index)[0]
 
+    # Gets the input dimensionality
+
+    dimensionality = tf.shape(right_tensor_to_be_multiplied)[1]
+
     # Initializes the right tensor to be multiplied
 
     X = right_tensor_to_be_multiplied
@@ -640,7 +708,7 @@ constant_two, Q):
         unnormalized_first_component, local_n_dofs) = get_householder_vector_from_parameters(
         householder_first_index, householder_length, 
         householder_number_of_leading_zeros, householder_parameters, 
-        i, householder_epsilon_squared)
+        i, householder_epsilon_squared, dimensionality)
 
         # Updates the left matrix by canceling the right-most House-
         # holder reflector
@@ -689,7 +757,7 @@ constant_two, Q):
         unnormalized_first_component, local_n_dofs) = get_householder_vector_from_parameters(
         householder_first_index, householder_length, 
         householder_number_of_leading_zeros, householder_parameters, 
-        i, householder_epsilon_squared)
+        i, householder_epsilon_squared, dimensionality)
 
         # Updates the left matrix by canceling the right-most House-
         # holder reflector
