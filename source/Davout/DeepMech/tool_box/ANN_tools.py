@@ -35,11 +35,14 @@ class MultiLayerModel:
     def __init__(self, input_dimension, layers_activationInfo, 
     enforce_customLayers=False, evaluate_parameters_gradient=False,
     flat_trainable_parameters=False, verbose=False, parameters_dtype=
-    "float32", input_size_main_network=None, custom_architecture=None):
+    "float32", integer_dtype="int32", input_size_main_network=None, 
+    custom_architecture=None):
 
         # Sets the type of the parameters
 
         self.parameters_dtype = parameters_dtype
+
+        self.integer_dtype = integer_dtype
         
         # Instantiates the class of custom activation functions
 
@@ -281,7 +284,7 @@ class MultiLayerModel:
         code_given_info_class = CodeGivenLayerInfo(
         self.input_size_main_network, self.input_size_main_network, 0,
         self.parameters_dtype, tuple(number_neurons_per_main_layer),
-        input_size_acessory_network)
+        input_size_acessory_network, self.integer_dtype)
 
         output_eachLayer = MixedActivationLayer(self.layers_info[0], 
         self.custom_activations_class, code_given_info_class,
@@ -330,7 +333,8 @@ class MultiLayerModel:
             code_given_info_class = CodeGivenLayerInfo(
             self.input_size_main_network, input_size_main_layer, 
             layer_number, self.parameters_dtype, tuple(
-            number_neurons_per_main_layer), input_size_acessory_network)
+            number_neurons_per_main_layer), input_size_acessory_network,
+            self.integer_dtype)
 
             output_eachLayer = MixedActivationLayer(self.layers_info[i],
             self.custom_activations_class, code_given_info_class, 
@@ -474,7 +478,7 @@ class CodeGivenLayerInfo:
 
     def __init__(self, input_size_main_network, input_size_main_layer,
     layer, float_dtype, number_neurons_per_main_layer, 
-    input_size_acessory_network):
+    input_size_acessory_network, int_dtype):
         
         self.input_size_main_network = input_size_main_network
 
@@ -483,6 +487,8 @@ class CodeGivenLayerInfo:
         self.layer = layer
 
         self.float_dtype = float_dtype
+
+        self.int_dtype = int_dtype
 
         self.number_neurons_per_main_layer = number_neurons_per_main_layer
 

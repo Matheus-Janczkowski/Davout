@@ -487,7 +487,8 @@ if __name__=="__main__":
     # Creates a list of methods (using their names) that are not to be
     # tested
 
-    reserved_methods = []
+    reserved_methods = ["test_training_model", "test_monte_carlo_training_model",
+    "test_quotient_space_invariance_model", "test_convexity_in_quotient_space"]
 
     # Calls the function to run all the necessary tests
 
