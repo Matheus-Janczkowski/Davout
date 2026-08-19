@@ -353,8 +353,8 @@ class TestSVDArchitecture:
 
         # Sets sets of architectures
 
-        number_of_neurons_hidden_layer_main_network_performance = [[100],
-        [200], [300]]
+        number_of_neurons_hidden_layer_main_network_performance = [[500],
+        [850], [1200]]
 
         output_dimension_performance = 2000
 
