@@ -604,7 +604,8 @@ def float_toString(number):
 # Defines a function to convert a float to a string in scientific nota-
 # tion
 
-def float_to_scientific_notation(number, decimal_places=5):
+def float_to_scientific_notation(number, decimal_places=5, ten_notation=
+"e", n_digits_for_power_of_ten=None):
 
     # Gets the logarithm
 
@@ -618,13 +619,29 @@ def float_to_scientific_notation(number, decimal_places=5):
 
     rest = log_number-floor_log
 
+    # Gets the number that is the power of 10
+
+    power_of_ten = str(int(floor_log)) 
+
+    # Verifies if a number of digits for the power of 10 is given
+
+    if n_digits_for_power_of_ten is not None:
+
+        if len(power_of_ten)<n_digits_for_power_of_ten:
+
+            # Adds the leading zeros
+
+            for _ in range(len(power_of_ten)<n_digits_for_power_of_ten):
+
+                power_of_ten = "0"+power_of_ten
+
     # Evaluates the corresponding part to the rest
 
     front_number = str(10.0**rest)[0:(decimal_places+2)]
 
     # Returns the whole string
     
-    return front_number+"e"+str(int(floor_log)) 
+    return front_number+str(ten_notation)+power_of_ten
 
 ########################################################################
 #                               Testing                                #

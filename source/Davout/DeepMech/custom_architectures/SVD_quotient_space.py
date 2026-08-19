@@ -36,6 +36,12 @@ class SVDQuotientSpace:
         " to the calculation of the non-free component of each Househo"+
         "lder vector", "default": 1.0}}, "custom_architecture", "SVDQu"+
         "otientSpace")
+
+        # Selects the method for computing the Householder vectors from
+        # the flat tensor of parameters
+
+        self.method_for_householder_vector_from_parameters = (
+        self.get_householder_vector_from_parameters)
         
         # Stores variables that will be used in the get_config for seri-
         # alization and class rebuilding
@@ -289,7 +295,8 @@ class SVDQuotientSpace:
         self.householder_reflectors_indices_B, 
         self.householder_first_index_B, self.householder_length_B,
         self.householder_number_of_leading_zeros_B, 
-        self.layer_self.householder_parameters_B_matrix)
+        self.layer_self.householder_parameters_B_matrix,
+        self.n_neurons_last_main_layer)
 
         # Multiplies this result by the singular values coming from the
         # accessory layer. The singular values are a tensor [n_samples,
@@ -307,7 +314,8 @@ class SVDQuotientSpace:
         self.householder_reflectors_indices_A, 
         self.householder_first_index_A, self.householder_length_A,
         self.householder_number_of_leading_zeros_A,
-        self.layer_self.householder_parameters_A_matrix))
+        self.layer_self.householder_parameters_A_matrix,
+        self.n_neurons_current_main_layer))
 
         # Gets the output of the main network and splits it into the 
         # different families of activation functions for the main layer. 
@@ -365,7 +373,8 @@ class SVDQuotientSpace:
         0], self.householder_reflectors_indices_B, 
         self.householder_first_index_B, self.householder_length_B,
         self.householder_number_of_leading_zeros_B, 
-        self.layer_self.householder_parameters_B_matrix)
+        self.layer_self.householder_parameters_B_matrix,
+        self.n_neurons_last_main_layer)
 
         # Multiplies this result by the singular values coming from the
         # accessory layer and, then, multiplies by the A matrix of the 
@@ -379,7 +388,8 @@ class SVDQuotientSpace:
         singular_values_output, self.householder_reflectors_indices_A, 
         self.householder_first_index_A, self.householder_length_A,
         self.householder_number_of_leading_zeros_A, 
-        self.layer_self.householder_parameters_A_matrix)
+        self.layer_self.householder_parameters_A_matrix,
+        self.n_neurons_current_main_layer)
 
         # Gets the output of the main network and splits it into the 
         # different families of activation functions for the main layer. 
@@ -475,7 +485,7 @@ class SVDQuotientSpace:
         self.householder_reflectors_indices_B, 
         self.householder_first_index_B, self.householder_length_B,
         self.householder_number_of_leading_zeros_B, 
-        householder_parameters_B_matrix)
+        householder_parameters_B_matrix, self.n_neurons_last_main_layer)
 
         # Multiplies this result by the singular values coming from the
         # accessory layer. The singular values are a tensor [n_samples,
@@ -493,7 +503,8 @@ class SVDQuotientSpace:
         self.householder_reflectors_indices_A, 
         self.householder_first_index_A, self.householder_length_A,
         self.householder_number_of_leading_zeros_A, 
-        householder_parameters_A_matrix))
+        householder_parameters_A_matrix, 
+        self.n_neurons_current_main_layer))
 
         # Gets the output of the main network and splits it into the 
         # different families of activation functions for the main layer. 
@@ -556,7 +567,7 @@ class SVDQuotientSpace:
         layer_input[0], self.householder_reflectors_indices_B, 
         self.householder_first_index_B, self.householder_length_B,
         self.householder_number_of_leading_zeros_B, 
-        householder_parameters_B_matrix)
+        householder_parameters_B_matrix, self.n_neurons_last_main_layer)
 
         # Multiplies this result by the singular values coming from the
         # accessory layer and, then, multiplies by the A matrix of the 
@@ -570,7 +581,8 @@ class SVDQuotientSpace:
         singular_values_output, self.householder_reflectors_indices_A, 
         self.householder_first_index_A, self.householder_length_A,
         self.householder_number_of_leading_zeros_A, 
-        householder_parameters_A_matrix)
+        householder_parameters_A_matrix, 
+        self.n_neurons_current_main_layer)
 
         # Gets the output of the main network and splits it into the 
         # different families of activation functions for the main layer. 
@@ -885,12 +897,6 @@ class SVDQuotientSpace:
             # In case the last layer has less neurons than the current
             # layer, the rank is dominated by the last layer
 
-            self.householder_reflectors_indices_A = tuple(range(
-            self.weights_rank))#tf.range(self.weights_rank)
-
-            self.householder_reflectors_indices_B = tuple(range(
-            self.weights_rank-1))
-
             self.householder_reflectors_indices_A = tf.range(
             self.weights_rank, dtype=
             self.layer_self.code_given_info_class.int_dtype)
@@ -918,12 +924,6 @@ class SVDQuotientSpace:
             # In case the last layer has less neurons than the current
             # layer, the rank is dominated by the last layer
 
-            self.householder_reflectors_indices_A = tuple(range(
-            self.weights_rank-1))
-
-            self.householder_reflectors_indices_B = tuple(range(
-            self.weights_rank))
-
             self.householder_reflectors_indices_A = tf.range(
             self.weights_rank-1, dtype=
             self.layer_self.code_given_info_class.int_dtype)
@@ -946,12 +946,6 @@ class SVDQuotientSpace:
         # neurons, both orthogonal matrices A and B have full rank
 
         else:
-
-            self.householder_reflectors_indices_A = tuple(range(
-            self.weights_rank-1))
-
-            self.householder_reflectors_indices_B = tuple(range(
-            self.weights_rank-1))
 
             self.householder_reflectors_indices_A = tf.range(
             self.weights_rank-1, dtype=
@@ -1097,22 +1091,6 @@ class SVDQuotientSpace:
         # Transforms the lists of indices for slicing into tuples to en-
         # sure performance
 
-        """self.householder_first_index_A = tuple(
-        self.householder_first_index_A)
-        
-        self.householder_first_index_B = tuple(
-        self.householder_first_index_B)
-
-        self.householder_length_A = tuple(self.householder_length_A)
-
-        self.householder_length_B = tuple(self.householder_length_B)
-
-        self.householder_number_of_leading_zeros_A = tuple(
-        self.householder_number_of_leading_zeros_A)
-
-        self.householder_number_of_leading_zeros_B = tuple(
-        self.householder_number_of_leading_zeros_B)"""
-
         self.householder_first_index_A = tf.constant(
         self.householder_first_index_A, dtype=
         self.layer_self.code_given_info_class.int_dtype)
@@ -1223,7 +1201,7 @@ class SVDQuotientSpace:
     def get_householder_vector_from_parameters(self, 
     householder_first_index, householder_length, 
     householder_number_of_leading_zeros, householder_parameters, 
-    householder_reflector_index):
+    householder_reflector_index, input_dimensionality):
         
         # Gets the first and last indices of the Householder vector, 
         # then the vector that will become the Householder vector
@@ -1255,6 +1233,99 @@ class SVDQuotientSpace:
 
         return tf.pad(tf.math.l2_normalize(raw_vector), [[
         number_of_leading_zeros, 0]])
+
+    # Defines the same function but XLA-compliant
+
+    def get_householder_vector_from_parameters_XLA_compliant(self, 
+    householder_first_index, householder_length,
+    householder_number_of_leading_zeros, householder_parameters, 
+    householder_reflector_index, input_dimensionality):
+
+        # Gets the first and last indices of the Householder vector
+        
+        initial_index = householder_first_index[
+        householder_reflector_index] 
+    
+        length = householder_length[householder_reflector_index]
+    
+        number_of_leading_zeros = householder_number_of_leading_zeros[
+        householder_reflector_index]
+    
+        # Gets the number of DOFs of the whole chain of Householder re-
+        # flectors, then creates a vector of the indices of those DOFs
+    
+        n_dofs_of_chain = tf.shape(householder_parameters)[0]
+    
+        chain_dofs_indices = tf.range(n_dofs_of_chain, dtype=
+        initial_index.dtype)
+    
+        # Creates a mask to take out the DOFs of this Householder vector
+    
+        current_householder_mask = (chain_dofs_indices>=initial_index
+        ) & (chain_dofs_indices<(initial_index+length))
+    
+        # Gets the vector of DOFs of this Householder vector but in a 
+        # tensor [n_dofs_of_chain], such that all components that are 
+        # not related to this Householder vector are zero
+    
+        raw_vector = tf.where(current_householder_mask, 
+        householder_parameters, 0.0)
+    
+        # Computes the average of the DOFs of this Householder vector
+    
+        average_raw_vector = tf.reduce_sum(raw_vector)/tf.cast(length,
+        householder_parameters.dtype)
+    
+        # Calculates the first non-zero component of the Householder 
+        # vector
+    
+        unnormalized_first_component = tf.sqrt(tf.square(
+        average_raw_vector)+self.householder_epsilon_squared)
+    
+        # Calculates the normalizing factor to make the Householder vec-
+        # tor unitary
+    
+        alpha = tf.math.rsqrt(tf.reduce_sum(tf.square(raw_vector))+
+        tf.square(unnormalized_first_component))
+    
+        # Creates a range with all indices of the Householder vector
+    
+        all_indices_householder_vector = tf.range(input_dimensionality, 
+        dtype=initial_index.dtype)
+    
+        # Creates a mask for the first non-zero component of the House-
+        # holder vector
+    
+        first_non_zero_component_mask = ((all_indices_householder_vector
+        )==number_of_leading_zeros)
+    
+        # Creates a mask for the indexing of the raw vector
+    
+        raw_vector_mask = (all_indices_householder_vector>(
+        number_of_leading_zeros)) & (all_indices_householder_vector<=(
+        number_of_leading_zeros+length))
+    
+        # Creates a range of indices for the Householder parameters
+    
+        householder_indices = tf.clip_by_value(initial_index+(
+        all_indices_householder_vector-(number_of_leading_zeros+1)), 0, 
+        n_dofs_of_chain-1)
+    
+        # Gets the Householder DOFs mapped to the right position in the 
+        # final Householder vector, i.e. considering the leading zeros 
+        # and the first non-zero component
+    
+        raw_vector_DOFs = tf.gather(householder_parameters, 
+        householder_indices)
+    
+        # Assembles the Householder vector and multiplies by the norma-
+        # lization factor
+    
+        householder_vector = alpha*tf.where(
+        first_non_zero_component_mask, unnormalized_first_component, 
+        tf.where(raw_vector_mask, raw_vector_DOFs, 0.0))
+
+        return householder_vector
     
     # Defines a function to evaluate the multiplication of one Househol-
     # der reflector of the Householder chain of one of the two orthogo-
@@ -1266,18 +1337,18 @@ class SVDQuotientSpace:
     def multiply_input_vector_by_householder_reflector(self, 
     input_vector, householder_reflector_index, householder_first_index, 
     householder_length, householder_number_of_leading_zeros, 
-    householder_parameters_orthogonal_matrix):
+    householder_parameters_orthogonal_matrix, input_dimensionality):
         
         # Gets the Householder vector from the Householder parameters of
         # the B matrix. Keep in mind that the order of the Householder 
         # chain of the B matrix is versed with respect to the A matrix,
         # since B is transposed in the SVD
 
-        householder_vector = self.get_householder_vector_from_parameters(
+        householder_vector = self.method_for_householder_vector_from_parameters(
         householder_first_index, householder_length, 
         householder_number_of_leading_zeros, 
         householder_parameters_orthogonal_matrix, 
-        householder_reflector_index)
+        householder_reflector_index, input_dimensionality)
 
         # Multiplies the input vector by the Householder reflector (the
         # operation is already broken down into the rank-1 calculation)
@@ -1293,7 +1364,7 @@ class SVDQuotientSpace:
     def multiply_input_vector_by_householder_chain(self, input_vector, 
     householder_reflector_indices, householder_first_index, 
     householder_length, householder_number_of_leading_zeros, 
-    householder_parameters_orthogonal_matrix):
+    householder_parameters_orthogonal_matrix, input_dimensionality):
         
         # Iterates through the indices of Householder reflectors
 
@@ -1306,7 +1377,8 @@ class SVDQuotientSpace:
             input_vector, householder_reflector_index, 
             householder_first_index, householder_length, 
             householder_number_of_leading_zeros, 
-            householder_parameters_orthogonal_matrix)
+            householder_parameters_orthogonal_matrix, 
+            input_dimensionality)
 
         # Returns the updated input vector
 
@@ -1322,7 +1394,7 @@ class SVDQuotientSpace:
     def update_B_matrix_with_householder_chain(self, partial_B_matrix, 
     householder_reflector_indices, householder_first_index_B, 
     householder_length_B, householder_number_of_leading_zeros_B,
-    householder_parameters_B_matrix):
+    householder_parameters_B_matrix, input_dimensionality):
         
         # Iterates through the indices of Householder reflectors
 
@@ -1333,10 +1405,11 @@ class SVDQuotientSpace:
             # Householder chain of the B matrix is reversed with respect 
             # to the A matrix, since B is transposed in the SVD
 
-            householder_vector = self.get_householder_vector_from_parameters(
+            householder_vector = self.method_for_householder_vector_from_parameters(
             householder_first_index_B, householder_length_B, 
             householder_number_of_leading_zeros_B, 
-            householder_parameters_B_matrix, householder_reflector_index)
+            householder_parameters_B_matrix, householder_reflector_index,
+            input_dimensionality)
 
             # Multiplies the partially reconstructed B matrix by the 
             # Householder reflector to the left. However, the structure 
@@ -1359,7 +1432,7 @@ class SVDQuotientSpace:
     def update_A_matrix_with_householder_chain(self, partial_A_matrix, 
     householder_reflector_indices, householder_first_index_A, 
     householder_length_A, householder_number_of_leading_zeros_A,
-    householder_parameters_A_matrix):
+    householder_parameters_A_matrix, input_dimensionality):
         
         # Iterates through the indices of Householder reflectors
 
@@ -1368,10 +1441,11 @@ class SVDQuotientSpace:
             # Gets the Householder vector from the Householder parameters 
             # of the A matrix
 
-            householder_vector = self.get_householder_vector_from_parameters(
+            householder_vector = self.method_for_householder_vector_from_parameters(
             householder_first_index_A, householder_length_A, 
             householder_number_of_leading_zeros_A, 
-            householder_parameters_A_matrix, householder_reflector_index)
+            householder_parameters_A_matrix, householder_reflector_index,
+            input_dimensionality)
 
             # Multiplies the partially reconstructed A matrix by the 
             # Householder reflector to the left. However, the structure 

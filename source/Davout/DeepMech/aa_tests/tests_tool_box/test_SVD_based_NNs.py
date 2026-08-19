@@ -8,7 +8,7 @@ import tensorflow as tf
 
 from ...tool_box import ANN_tools, training_tools, parameters_tools, differentiation_tools
 
-from ....PythonicUtilities.testing_tools import run_class_of_tests
+from ....PythonicUtilities.testing_tools import run_class_of_tests, evaluate_function_performance
 
 from ....PythonicUtilities.path_tools import get_parent_path_of_file
 
@@ -53,7 +53,7 @@ class TestSVDArchitecture:
 
         self.maximum_iterations = 5000
 
-        n_samples_training = 1000
+        self.n_samples_training = 1000
 
         # Defines a function to get the true values
 
@@ -77,27 +77,27 @@ class TestSVDArchitecture:
 
         self.x_max = 1.0
 
-        data_matrix = []
+        self.data_matrix = []
 
         true_values = []
 
         for i in range(self.n_samples_tests):
 
-            data_matrix.append([ANN_tools.random_inRange(self.x_min, 
+            self.data_matrix.append([ANN_tools.random_inRange(self.x_min, 
             self.x_max) for j in range(self.whole_input_dimension
             )])
 
             # Evaluaets the true function
 
-            true_values.append(self.true_function(data_matrix[-1]))
+            true_values.append(self.true_function(self.data_matrix[-1]))
 
-        self.training_data = data_matrix[:n_samples_training]
+        self.training_data = self.data_matrix[:self.n_samples_training]
 
-        self.training_true_values = true_values[:n_samples_training]
+        self.training_true_values = true_values[:self.n_samples_training]
 
-        self.test_data = data_matrix[n_samples_training:]
+        self.test_data = self.data_matrix[self.n_samples_training:]
 
-        self.test_true_values = true_values[n_samples_training:]
+        self.test_true_values = true_values[self.n_samples_training:]
 
         # Converts thet data to tensors
 
@@ -270,7 +270,7 @@ class TestSVDArchitecture:
 
         cfd_gradient = []
 
-        cfd_step_length = tf.constant(1E-6, dtype=tf.as_dtype(
+        cfd_step_length = tf.constant(1E-4, dtype=tf.as_dtype(
         self.parameters_dtype))
 
         for parameter_index in range(
@@ -317,7 +317,7 @@ class TestSVDArchitecture:
         # Stacks the two gradients into a single matrix for comparison
 
         gradient_matrix = tf.stack([flat_gradient_input, 
-        gradient_wrt_params, cfd_gradient], axis=0)
+        gradient_wrt_params, cfd_gradient], axis=1)
 
         print("The three methods of evaluating the gradient are presen"+
         "ted below. The first\nrow shows the gradient evaluated when t"+
@@ -325,7 +325,7 @@ class TestSVDArchitecture:
         "ient when the model is called with the given\ntrainable param"+
         "eters as well using tensorflow AD. the third row shows\nthe g"+
         "radient evaluated from parameters using central finite differ"+
-        "ences\n\n"+str(gradient_matrix)+"\n\nThe maximum absolute dif"+
+        "ences\n\n"+str(gradient_matrix.numpy())+"\n\nThe maximum absolute dif"+
         "ference between components of the gradient from\ninput to tho"+
         "se of the gradient from parameters is: "+str(tf.reduce_max(
         tf.abs(flat_gradient_input-gradient_wrt_params)).numpy())+"\nT"+
@@ -333,6 +333,235 @@ class TestSVDArchitecture:
         "ers using\ntensorflow AD to the gradient using central finite"+
         " differences is: "+str(tf.reduce_max(tf.abs(gradient_wrt_params
         -cfd_gradient)).numpy())+"\n")
+
+    # Defines a function to test the performance of the calculation of 
+    # the derivative of the loss function
+
+    def test_derivative_performance(self):
+
+        print("#######################################################"+
+        "#################\n#            Tests performance of the deri"+
+        "vative calculation           #\n#############################"+
+        "###########################################\n")
+
+        # Sets the number of warm-up iterations and the number of actual
+        # time assessment iterations
+
+        n_warm_up_runs = 10
+
+        n_evaluation_runs = 100
+
+        # Sets sets of architectures
+
+        number_of_neurons_hidden_layer_main_network_performance = [[100],
+        [200], [300]]
+
+        output_dimension_performance = 2000
+
+        modulating_function_performance = "identity"
+
+        # Defines a function to get the true values for the performance
+        # test
+        
+        def true_function_performance(x):
+
+            value = 0.0
+
+            for x_i in x:
+
+                value += x_i**2
+
+            return [value for j in range(output_dimension_performance)]
+
+        # Creates the true values
+
+        true_values = []
+        
+        for i in range(self.n_samples_training):
+
+            # Evaluaets the true function
+
+            true_values.append(true_function_performance(
+            self.data_matrix[i]))
+
+        # Converts the training true values to a tensorflow constant
+
+        training_true_values_performance = tf.constant(true_values, 
+        dtype=tf.as_dtype(self.parameters_dtype))
+
+        # Iterates over the architectures for performance evaluation
+
+        for i in range(len(
+        number_of_neurons_hidden_layer_main_network_performance)):
+
+            print("\n#################################################"+
+            "#######################\n#                   Evaluates th"+
+            "e "+str(i+1)+"-th architecture                   #\n#####"+
+            "#########################################################"+
+            "##########\n")
+
+            # Shows the architecture as the number of neurons in each 
+            # layer of each network
+
+            string_of_neurons_auxiliar_network = "\nAuxiliar:  "+str(
+            self.whole_input_dimension-self.quotient_space_dimension)
+
+            string_of_neurons_main_network = "\nMain:      "+str(
+            self.quotient_space_dimension)+"   "
+
+            # Sets the activation functions of the main network
+
+            number_of_neurons_per_hidden_layer_main_network = (
+            number_of_neurons_hidden_layer_main_network_performance[i])
+
+            # Iterates over the hidden layer of the architecture to build
+            # the dictionary of activation functions for the main and for
+            # the auxiliar networks
+
+            activation_list_main_network_performance = []
+
+            accessory_activation_list_performance = []
+
+            for hidden_layer_number in range(len(
+            number_of_neurons_per_hidden_layer_main_network)):
+
+                # Adds the hidden layer of the main network
+
+                activation_list_main_network_performance.append({"quad"+
+                "ratic": {"number of neurons": 
+                number_of_neurons_per_hidden_layer_main_network[
+                hidden_layer_number], "a2": 1.0}})
+
+                # Updates the string of neurons of the main network
+
+                string_of_neurons_main_network += "  |  "+str(
+                number_of_neurons_per_hidden_layer_main_network[
+                hidden_layer_number])
+
+                # If this is the first hidden layer
+
+                if hidden_layer_number==0:
+
+                    # Adds the hidden layer of the auxiliar network con-
+                    # sidering the quotient space dimension into the rank
+
+                    accessory_activation_list_performance.append({"qua"+
+                    "dratic": {"number of neurons": min(
+                    self.quotient_space_dimension,
+                    number_of_neurons_per_hidden_layer_main_network[
+                    hidden_layer_number]), "a2": 1.0}}) 
+
+                    # Updates the string of neurons of the auxiliar net-
+                    # work
+
+                    string_of_neurons_auxiliar_network += "  |  "+str(
+                    min(self.quotient_space_dimension,
+                    number_of_neurons_per_hidden_layer_main_network[
+                    hidden_layer_number]))
+
+                # Otherwise, considers the last layer into the rank
+
+                else:
+
+                    # Adds the hidden layer of the auxiliar network con-
+                    # sidering the number of neurons of the last hidden
+                    # layer of the main network
+
+                    accessory_activation_list_performance.append({"qua"+
+                    "dratic": {"number of neurons": min(
+                    number_of_neurons_per_hidden_layer_main_network[
+                    hidden_layer_number-1],
+                    number_of_neurons_per_hidden_layer_main_network[
+                    hidden_layer_number]), "a2": 1.0}})
+
+                    # Updates the string of neurons of the auxiliar net-
+                    # work
+
+                    string_of_neurons_auxiliar_network += "  |  "+str(
+                    min(number_of_neurons_per_hidden_layer_main_network[
+                    hidden_layer_number-1],
+                    number_of_neurons_per_hidden_layer_main_network[
+                    hidden_layer_number]))
+
+            # Adds the output layer to both networks
+
+            activation_list_main_network_performance.append({
+            "linear": output_dimension_performance})
+
+            accessory_activation_list_performance.append({"linear": min(
+            output_dimension_performance, 
+            number_of_neurons_per_hidden_layer_main_network[-1])})
+
+            # Updates the string of neurons of the main network
+
+            string_of_neurons_main_network += "  |  "+str(
+            output_dimension_performance)
+
+            # Updates the string of neurons of the auxiliar network
+
+            string_of_neurons_auxiliar_network += "  |  "+str(
+            min(output_dimension_performance, 
+            number_of_neurons_per_hidden_layer_main_network[-1]))
+
+            # Sets the parameters of the custom SVD-based architecture
+
+            custom_architecture_performance = {"name": "SVDQuotientSpa"+
+            "ce", "weights modulating function": 
+            modulating_function_performance, "Householder epsilon": 1.0, 
+            "activations accessory layer list": 
+            accessory_activation_list_performance}  
+
+            # Assembles the model
+
+            ANN_class_performance = ANN_tools.MultiLayerModel(
+            self.whole_input_dimension, 
+            activation_list_main_network_performance, 
+            enforce_customLayers=True, verbose=True, parameters_dtype=
+            self.parameters_dtype, custom_architecture=
+            custom_architecture_performance, input_size_main_network=
+            self.quotient_space_dimension)
+    
+            custom_model_performance = ANN_class_performance()
+
+            # Gets the model trainable parameters and their shapes
+
+            (initial_model_parameters_performance, 
+            parameters_shapes_performance) = parameters_tools.model_parameters_to_flat_tensor_and_shapes(
+            custom_model_performance)
+
+            # Gets an instance of the class that evaluates the loss 
+            # function and its derivative from the trainable parameters
+
+            gradient_class = differentiation_tools.ScalarGradientWrtTrainableParamsGivenParameters(
+            self.loss_metric, custom_model_performance, 
+            self.training_input_constant, parameters_shapes_performance, 
+            initial_model_parameters_performance, model_true_values=
+            training_true_values_performance, parameters_type=
+            initial_model_parameters_performance.dtype)
+
+            # Evaluates the loss function and the derivative with res-
+            # pect to the trainable parameters. Creates an argument-less 
+            # function to
+
+            def evaluation_function():
+            
+                loss_value, gradient_wrt_params = gradient_class(
+                initial_model_parameters_performance)
+
+                # Always return something that is a tensor to force syn-
+                # chronization
+
+                return gradient_wrt_params 
+
+            # Tests performance of the derivative
+
+            evaluate_function_performance(evaluation_function, 
+            n_warm_up_runs=n_warm_up_runs, n_evaluation_runs=
+            n_evaluation_runs, n_evaluations_to_show_memory_data=10)
+
+            print("\nThe architecture of the whole network of the last"+
+            " experiment is:\n"+string_of_neurons_auxiliar_network+
+            string_of_neurons_main_network+"\n")
 
     # Defines a function to test training a model with this architecture
 
