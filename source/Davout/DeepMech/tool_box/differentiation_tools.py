@@ -172,8 +172,8 @@ class ScalarGradientWrtTrainableParamsGivenParameters:
 
         self.parameters_type = parameters_type
 
-        self.model_trainable_parameters = tf.Variable(tf.constant(
-        model_initial_parameters, dtype=self.parameters_type))
+        #self.model_trainable_parameters = tf.Variable(tf.constant(
+        #model_initial_parameters, dtype=self.parameters_type))
 
     # Defines a helper function to enable the true values of y argument
     # even though the original scalar function does not use it
@@ -224,16 +224,11 @@ class ScalarGradientWrtTrainableParamsGivenParameters:
 
     def evaluate_scalar_function(self, trainable_parameters):
 
-        # Sets the trainable variables to the variable tensor for ease 
-        # of differentiation
-
-        self.model_trainable_parameters.assign(tf.cast(
-        trainable_parameters, self.parameters_type))
-
         # Gets the response of the model
         
         y = self.model_output_given_parameters(self.input_tensor, 
-        self.model_trainable_parameters)
+        tf.convert_to_tensor(trainable_parameters, dtype=
+        self.parameters_type))
 
         # Gets the scalar function value and returns it
 
@@ -289,17 +284,12 @@ class ScalarGradientWrtTrainableParamsGivenParameters:
 
     def __call__(self, trainable_parameters):
 
-        # Sets the trainable variables to the variable tensor for ease 
-        # of differentiation
-
-        self.model_trainable_parameters.assign(tf.cast(
-        trainable_parameters, self.parameters_type))
-
         # Calls the loss function and the gradient using the same func-
-        # tion to spare computational effort
+        # tion to spare computational effort. But converts the input to
+        # a tensorflow tensor first
 
-        return self.joint_loss_gradient_method(
-        self.model_trainable_parameters)
+        return self.joint_loss_gradient_method(tf.convert_to_tensor(
+        trainable_parameters, dtype=self.parameters_type))
     
     # Defines a function to update the scalar function if it is parame-
     # terizable by externally-given quantities

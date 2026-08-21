@@ -6,11 +6,11 @@ import os
 
 import tensorflow as tf
 
-from ...tool_box import ANN_tools, training_tools, parameters_tools, differentiation_tools
+from .....Davout.DeepMech.tool_box import ANN_tools, training_tools, parameters_tools, differentiation_tools
 
-from ....PythonicUtilities.testing_tools import run_class_of_tests, evaluate_function_performance
+from .....Davout.PythonicUtilities.testing_tools import run_class_of_tests, evaluate_function_performance
 
-from ....PythonicUtilities.path_tools import get_parent_path_of_file
+from .....Davout.PythonicUtilities.path_tools import get_parent_path_of_file
 
 # Defines a function to test the SVD-based architecture
 
@@ -351,6 +351,12 @@ class TestSVDArchitecture:
 
         n_evaluation_runs = 100
 
+        # Selects the method for building each Householder vector from 
+        # the flat tensor of DOFs of each Householder chain
+
+        householder_vector_builder_method = ("get_householder_vector_f"+
+        "rom_parameters")
+
         # Sets sets of architectures
 
         number_of_neurons_hidden_layer_main_network_performance = [[500],
@@ -359,6 +365,11 @@ class TestSVDArchitecture:
         output_dimension_performance = 2000
 
         modulating_function_performance = "identity"
+
+        # Gets the training data as a tensorflow array
+
+        self.training_input_constant = tf.constant(self.training_data, 
+        dtype=tf.as_dtype(self.parameters_dtype))
 
         # Defines a function to get the true values for the performance
         # test
@@ -509,7 +520,8 @@ class TestSVDArchitecture:
             "ce", "weights modulating function": 
             modulating_function_performance, "Householder epsilon": 1.0, 
             "activations accessory layer list": 
-            accessory_activation_list_performance}  
+            accessory_activation_list_performance, "householder vector"+
+            " builder method": householder_vector_builder_method}  
 
             # Assembles the model
 
@@ -716,8 +728,15 @@ if __name__=="__main__":
     # Creates a list of methods (using their names) that are not to be
     # tested
 
-    reserved_methods = ["test_training_model", "test_monte_carlo_training_model",
-    "test_quotient_space_invariance_model", "test_convexity_in_quotient_space"]
+    #"""
+    reserved_methods = ["test_assembling_model", "test_saving_and_load"+
+    "ing", "test_input_and_parameters", "test_derivative", "test_train"+
+    "ing_model", "test_monte_carlo_training_model", "test_quotient_spa"+
+    "ce_invariance_model", "test_convexity_in_quotient_space"]#"""
+
+    #reserved_methods = ["test_convexity_in_quotient_space"]
+
+    #reserved_methods = ["test_derivative_performance"]
 
     # Calls the function to run all the necessary tests
 

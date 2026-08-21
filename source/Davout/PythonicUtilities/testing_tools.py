@@ -155,6 +155,10 @@ def evaluate_function_performance(function_object, n_warm_up_runs=1,
 n_evaluation_runs=10, confidence_level=0.95, 
 n_evaluations_to_show_memory_data=None, ten_notation=" E"):
 
+    # Instantiates the class of colors in the terminal
+
+    terminal_color = TerminalColor()
+
     # Iterates over the warm-up runs to get all possible graphs compiled
 
     print("Starts the "+str(n_warm_up_runs)+" warm-up runs\n")
@@ -176,13 +180,14 @@ n_evaluations_to_show_memory_data=None, ten_notation=" E"):
     completion_time = current_computer_time+datetime.timedelta(seconds=
     estimated_time)
 
-    print("The "+str(n_warm_up_runs)+" warm-up runs took "+str(
-    warm_up_time)+" seconds. Thus, it is estimated\nthat the "+str(
-    n_evaluation_runs)+" will took "+str(estimated_time)+" seconds\nNo"+
-    "w, the computer strikes its clock at "+str(
-    current_computer_time.strftime('%H:%M:%S'))+";\nthe evaluations ar"+
-    "e estimated to be completed at "+str(completion_time.strftime('%H'+
-    ':%M:%S'))+"\n")
+    print("The "+str(n_warm_up_runs)+" warm-up runs took "+
+    terminal_color(warm_up_time, "green")+" seconds. Thus, it is estim"+
+    "ated\nthat the "+terminal_color(n_evaluation_runs, "yellow")+" ev"+
+    "aluation runs will took "+terminal_color(estimated_time, "bold red")
+    +" seconds\nNow, the computer strikes its clock at "+terminal_color(
+    current_computer_time.strftime('%H:%M:%S'), "bold light blue")+";"+
+    "\nthe evaluations are estimated to be completed at "+terminal_color(
+    completion_time.strftime('%H:%M:%S'), "bold red")+"\n")
 
     # Collects all memory garbage to avoid any information leakage that
     # might affect future computations
