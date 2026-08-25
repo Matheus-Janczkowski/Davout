@@ -153,7 +153,8 @@ sort_methods_alphabetically=True):
 
 def evaluate_function_performance(function_object, n_warm_up_runs=1,
 n_evaluation_runs=10, confidence_level=0.95, 
-n_evaluations_to_show_memory_data=None, ten_notation=" E"):
+n_evaluations_to_show_memory_data=None, ten_notation=" E", gpu_device=
+"GPU:0", evaluate_gpu_memory=False):
 
     # Instantiates the class of colors in the terminal
 
@@ -212,6 +213,14 @@ n_evaluations_to_show_memory_data=None, ten_notation=" E"):
 
     memory_peak_during_evaluation = []
 
+    # Initializes lists to measure GPU memory usage 
+
+    GPU_memory_usage_before_evaluation = []
+
+    GPU_memory_usage_after_evaluation = []
+
+    GPU_memory_peak_during_evaluation = []
+
     # Evaluates the running time
 
     start_general_time = time.perf_counter()
@@ -228,6 +237,21 @@ n_evaluations_to_show_memory_data=None, ten_notation=" E"):
 
         memory_usage_before_evaluation.append(process_data.memory_info(
         ).rss/(1024**2))
+
+        # If GPU memory is to be tracked
+
+        if evaluate_gpu_memory:
+
+            tf.config.experimental.reset_memory_stats(gpu_device)
+
+            gpu_memory_before = tf.config.experimental.get_memory_info(
+            gpu_device)
+
+            # Converts the GPU memory assessed before the function eval-
+            # uation to MB
+
+            GPU_memory_usage_before_evaluation.append(gpu_memory_before[
+            "current"]/(1024**2))
 
         # Starts to count this step's time interval
 
@@ -258,6 +282,22 @@ n_evaluations_to_show_memory_data=None, ten_notation=" E"):
         # Gets this time interval
 
         time_intervals_list.append(time.perf_counter()-start_interval)
+
+        # If GPU memory is to be tracked
+        
+        if evaluate_gpu_memory:
+
+            gpu_memory_after = tf.config.experimental.get_memory_info(
+            gpu_device)
+
+            # Converts the GPU memory assessed after the function eval-
+            # uation and the peak memory usage to MB
+
+            GPU_memory_usage_after_evaluation.append(gpu_memory_after[
+            "current"]/(1024**2))
+
+            GPU_memory_peak_during_evaluation.append(gpu_memory_after[
+            "peak"]/(1024**2))
 
     # Gets the final general time
 
@@ -356,6 +396,58 @@ n_evaluations_to_show_memory_data=None, ten_notation=" E"):
     float_to_scientific_notation(np.mean(np.asarray(
     memory_peak_during_evaluation)), decimal_places=5, ten_notation=
     ten_notation, n_digits_for_power_of_ten=2)+" MB")    
+
+    # If GPU memory data is to be shown
+
+    if evaluate_gpu_memory:
+
+        # Cleans the string that prints the result
+
+        string_result = ""
+
+        # Iterates over the evaluation runs
+        
+        for evaluation_number in range(
+        n_evaluations_to_show_memory_data):
+    
+            memory_before = GPU_memory_usage_before_evaluation[
+            evaluation_number]
+    
+            memory_after = GPU_memory_usage_after_evaluation[
+            evaluation_number]
+    
+            memory_peak = GPU_memory_peak_during_evaluation[
+            evaluation_number]
+    
+            string_result += ("\n         "+float_to_scientific_notation(
+            memory_before, decimal_places=5, ten_notation=ten_notation, 
+            n_digits_for_power_of_ten=2)+" MB        |          "+
+            float_to_scientific_notation(memory_after, decimal_places=5, 
+            ten_notation=ten_notation, n_digits_for_power_of_ten=2)+" MB  "+
+            "      |         "+float_to_scientific_notation(memory_peak, 
+            decimal_places=5, ten_notation=ten_notation, 
+            n_digits_for_power_of_ten=2)+" MB")
+    
+        print("\n########################### GPU Memory usage ########"+
+        "###################\n")   
+    
+        print("Function '"+function_name+"' was evaluated for "+str(
+        n_warm_up_runs)+" warm-up runs and\nfor "+str(n_evaluation_runs
+        )+" evaluation runs.\n\n  Memory before evaluation    |    Mem"+
+        "ory after evaluation    | Peak memory during evaluation"+
+        string_result+"\n\n    Average memory before     |      Averag"+
+        "e memory after     |    Average peak memory during\n         "+
+        float_to_scientific_notation(np.mean(np.asarray(
+        GPU_memory_usage_before_evaluation)), decimal_places=5, 
+        ten_notation=ten_notation, n_digits_for_power_of_ten=2)+" MB  "+
+        "      |          "+
+        float_to_scientific_notation(np.mean(np.asarray(
+        GPU_memory_usage_after_evaluation)), decimal_places=5, 
+        ten_notation=ten_notation, n_digits_for_power_of_ten=2)+" MB  "+
+        "      |         "+
+        float_to_scientific_notation(np.mean(np.asarray(
+        GPU_memory_peak_during_evaluation)), decimal_places=5, 
+        ten_notation=ten_notation, n_digits_for_power_of_ten=2)+" MB")    
 
     # Collects all memory garbage to avoid any information leakage that
     # might affect future computations

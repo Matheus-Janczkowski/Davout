@@ -569,7 +569,8 @@ class TestSVDArchitecture:
 
             evaluate_function_performance(evaluation_function, 
             n_warm_up_runs=n_warm_up_runs, n_evaluation_runs=
-            n_evaluation_runs, n_evaluations_to_show_memory_data=10)
+            n_evaluation_runs, n_evaluations_to_show_memory_data=10,
+            evaluate_gpu_memory=True)
 
             print("\nThe architecture of the whole network of the last"+
             " experiment is:\n"+string_of_neurons_auxiliar_network+
