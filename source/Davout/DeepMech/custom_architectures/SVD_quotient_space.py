@@ -38,15 +38,63 @@ class SVDQuotientSpace:
         "thod": {"type": str, "description": "String with the name of "+
         "the function that constructs each Householder vector from the"+
         " flat tensor of DOFs of the Householder chain for each orthog"+
-        "onal matrix", "default": "get_householder_vector_from_paramet"+
-        "ers"}}, "custom_architecture", "SVDQuotientSpace")
+        "onal matrix", "default": "hardware-based suggestion"}, "hardw"+
+        "are device": {"type": str, "description": "String with the na"+
+        "me of the device that runs the code. It can be either 'CPU' o"+
+        "r 'GPU'", "default": "CPU"}}, 
+        "custom_architecture", "SVDQuotientSpace")
 
-        # Selects the method for computing the Householder vectors from
-        # the flat tensor of parameters
+        # Checks whether the code is run in CPU or GPU
 
-        self.method_for_householder_vector_from_parameters = getattr(
-        self, architecture_info_dict["householder vector builder metho"+
-        "d"])
+        if architecture_info_dict["hardware device"]=="CPU":
+
+            # Uses the method that stores the Householder DOFs in a Ten-
+            # sorArray. This method was benchmarked to be the fastest 
+            # option in CPU
+
+            self.multiply_input_vector_by_householder_chain = (
+            self.multiply_input_vector_by_householder_chain_tensor_array)
+
+            # Selects, thus, the method that extracts and assembles the
+            # Householder vector
+
+            self.method_for_householder_vector_from_parameters = (
+            self.get_householder_vector_from_parameters_tensor_array)
+
+        elif architecture_info_dict["hardware device"]=="GPU":
+
+            # Uses the method that stores the Householder DOFs in a flat
+            # tensor, then each Householder vector is sliced from the 
+            # flat tensor. This method was benchmarked to be the fastest 
+            # option in GPU
+
+            self.multiply_input_vector_by_householder_chain = (
+            self.multiply_input_vector_by_householder_chain_slice)
+
+            # Selects, thus, the method that extracts and assembles the
+            # Householder vector
+
+            self.method_for_householder_vector_from_parameters = (
+            self.get_householder_vector_from_parameters_slice)
+
+        else:
+
+            raise ValueError("The value for the key 'hardware device' "+
+            "in 'SVDQuotientSpace' is '"+str(architecture_info_dict["h"+
+            "ardware device"])+"'. But it must be 'CPU' or 'GPU'")
+
+        # Checks if a specific method to get the Householder vector was
+        # prescribed by the used
+
+        if architecture_info_dict["householder vector builder method"
+        ]!="hardware-based suggestion":
+
+            # Selects the method for computing the Householder vectors 
+            # from the flat tensor of parameters
+
+            self.method_for_householder_vector_from_parameters = getattr(
+            self, architecture_info_dict["householder vector builder m"+
+            "ethod"])
         
         # Stores variables that will be used in the get_config for seri-
         # alization and class rebuilding
@@ -1328,14 +1376,13 @@ class SVDQuotientSpace:
     # m_rank-1))], where m_rank is the number of columns of the final 
     # orthogonal matrix, and n_rows is the number of rows. Receives the
     # index of the Householder reflector in the Householder chain to
-    # collect the corresponding Householder vector
+    # collect the corresponding Householder vector. This function slices
+    # the flat tensor of Householder parameters to recover the DOFs of 
+    # the current Householder vector
     
-    def get_householder_vector_from_parameters(self, 
+    def get_householder_vector_from_parameters_slice(self, 
     householder_first_index, householder_length, 
-    householder_number_of_leading_zeros, 
-    #split_householder_DOFs,
-    #householder_parameters, 
-    householder_dofs_tensor_array,
+    householder_number_of_leading_zeros, householder_parameters, 
     householder_reflector_index, input_dimensionality):
         
         # Gets the first and last indices of the Householder vector, 
@@ -1349,16 +1396,52 @@ class SVDQuotientSpace:
         number_of_leading_zeros = householder_number_of_leading_zeros[
         householder_reflector_index]
 
-        """
+        # Slices the DOFs of this Householder vector from the flat ten-
+        # sor of DOFs of the Householder chain
+
         raw_vector = tf.slice(householder_parameters, [initial_index], [
-        length])#"""
+        length])
 
-        #raw_vector = split_householder_DOFs[householder_reflector_index]
+        # Computes the average of the raw vector
 
-        # TensorArray
-        #"""
+        average_raw_vector = tf.reduce_mean(raw_vector)
+
+        # Concatenates the non-free component of the Householder vector
+        # to the first position
+
+        raw_vector = tf.math.l2_normalize(tf.concat([tf.sqrt(
+        tf.math.square(average_raw_vector)+
+        self.householder_epsilon_squared)[None], raw_vector], axis=0))
+
+        # Rescales the raw vector to have unit norm, then adds the trai-
+        # ling zeros and returns it
+
+        return raw_vector, number_of_leading_zeros
+
+    # Defines a function to parse a single Householder vector from a
+    # vector of all Householder vectors to construct an orthogonal ma-
+    # trix. The incoming vector is a tensor [0.5*(m_rank*((2*n_rows)-
+    # m_rank-1))], where m_rank is the number of columns of the final 
+    # orthogonal matrix, and n_rows is the number of rows. Receives the
+    # index of the Householder reflector in the Householder chain to
+    # collect the corresponding Householder vector. This function reco-
+    # vers the DOFs of the Householder parameters from a TensorArray
+    
+    def get_householder_vector_from_parameters_tensor_array(self, 
+    householder_first_index, householder_length, 
+    householder_number_of_leading_zeros, householder_dofs_tensor_array,
+    householder_reflector_index, input_dimensionality):
+        
+        # Gets the number of leading zeros of this Householder vector
+
+        number_of_leading_zeros = householder_number_of_leading_zeros[
+        householder_reflector_index]
+
+        # Recovers the DOFs of this Householder vector from the Tensor-
+        # Array
+
         raw_vector = householder_dofs_tensor_array.read(
-        householder_reflector_index) #"""
+        householder_reflector_index)
 
         # Computes the average of the raw vector
 
@@ -1386,10 +1469,7 @@ class SVDQuotientSpace:
     def multiply_input_vector_by_householder_reflector(self, 
     input_vector, householder_reflector_index, householder_first_index, 
     householder_length, householder_number_of_leading_zeros, 
-    #split_householder_DOFs,
-    #householder_parameters_orthogonal_matrix, 
-    householder_dofs_tensor_array,
-    input_dimensionality):
+    tensor_with_householder_parameters, input_dimensionality):
         
         # Gets the Householder vector from the Householder parameters of
         # the B matrix. Keep in mind that the order of the Householder 
@@ -1400,10 +1480,8 @@ class SVDQuotientSpace:
         ) = self.method_for_householder_vector_from_parameters(
         householder_first_index, householder_length, 
         householder_number_of_leading_zeros, 
-        #split_householder_DOFs,
-        #householder_parameters_orthogonal_matrix, 
-        householder_dofs_tensor_array,
-        householder_reflector_index, input_dimensionality)
+        tensor_with_householder_parameters, householder_reflector_index, 
+        input_dimensionality)
 
         # Multiplies the input vector by the Householder reflector (the
         # operation is already broken down into the rank-1 calculation).
@@ -1419,27 +1497,13 @@ class SVDQuotientSpace:
     # Defines a function to create a wrapper for the method that multi-
     # plies the input vector by an orthogonal matrix and, then, calls
     # foldl to evaluate the chain of Householder reflectors operating on
-    # the input vector
+    # the input vector. This function passes the flat tensor of Househol-
+    # der parameters and it is sliced to create the Householder vector
 
-    def multiply_input_vector_by_householder_chain(self, input_vector, 
-    householder_reflector_indices, householder_first_index, 
+    def multiply_input_vector_by_householder_chain_slice(self, 
+    input_vector, householder_reflector_indices, householder_first_index, 
     householder_length, householder_number_of_leading_zeros, 
     householder_parameters_orthogonal_matrix, input_dimensionality):
-
-        # Splits the Householder DOFs of each Householder vector from 
-        # the flat tensor of DOFs of the chain
-
-        #split_householder_DOFs = tf.split(
-        #householder_parameters_orthogonal_matrix, householder_length)
-
-        """
-        split_householder_DOFs = tf.RaggedTensor.from_row_lengths(
-        householder_parameters_orthogonal_matrix,
-        householder_length)#"""
-
-        #"""
-        householder_dofs_tensor_array = self.split_flat_tensor_into_householder_dofs(
-        householder_parameters_orthogonal_matrix, householder_length)#"""
 
         # Defines the step function that will perform each update of the
         # input tensor by means of the Householder reflector
@@ -1450,10 +1514,43 @@ class SVDQuotientSpace:
             accumulator_vector, householder_reflector_index, 
             householder_first_index, householder_length, 
             householder_number_of_leading_zeros, 
-            #split_householder_DOFs,
-            #householder_parameters_orthogonal_matrix,
-            householder_dofs_tensor_array,
+            householder_parameters_orthogonal_matrix,
             input_dimensionality)
+
+        # Uses foldl to perform the chain multiplication
+
+        return tf.foldl(update_step, householder_reflector_indices,
+        initializer=input_vector)
+
+    # Defines a function to create a wrapper for the method that multi-
+    # plies the input vector by an orthogonal matrix and, then, calls
+    # foldl to evaluate the chain of Householder reflectors operating on
+    # the input vector. This function splits the flat tensor of Househol-
+    # der parameters first and passes a TensorArray object to create the 
+    # Householder vector
+
+    def multiply_input_vector_by_householder_chain_tensor_array(
+    self, input_vector, householder_reflector_indices, 
+    householder_first_index, householder_length, 
+    householder_number_of_leading_zeros, 
+    householder_parameters_orthogonal_matrix, input_dimensionality):
+
+        # Splits the Householder DOFs of each Householder vector from 
+        # the flat tensor of DOFs of the chain
+
+        householder_dofs_tensor_array = self.split_flat_tensor_into_householder_dofs(
+        householder_parameters_orthogonal_matrix, householder_length)
+
+        # Defines the step function that will perform each update of the
+        # input tensor by means of the Householder reflector
+
+        def update_step(accumulator_vector, householder_reflector_index):
+
+            return self.multiply_input_vector_by_householder_reflector(
+            accumulator_vector, householder_reflector_index, 
+            householder_first_index, householder_length, 
+            householder_number_of_leading_zeros, 
+            householder_dofs_tensor_array, input_dimensionality)
 
         # Uses foldl to perform the chain multiplication
 

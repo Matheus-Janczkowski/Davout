@@ -3,6 +3,8 @@
 
 import matplotlib.pyplot as plt
 
+from sklearn.linear_model import LinearRegression
+
 import numpy as np
 
 # Defines a function to evaluate the rotation tensor as a function of 
@@ -108,7 +110,7 @@ if __name__=="__main__":
 
     differences = [difference_between_strain_tensors(t) for t in t_range]
 
-    plt.figure(figsize=(8, 5))
+    """plt.figure(figsize=(8, 5))
 
     plt.plot(t_range, differences, color="crimson", linewidth=2)
 
@@ -124,4 +126,18 @@ if __name__=="__main__":
 
     plt.tight_layout()
 
-    plt.show()
+    plt.show()"""
+
+    x = [500.0, 850.0, 1200.0]
+
+    y = [3.424, 5.711, 8.086]
+
+    x = np.array([[x_i] for x_i in x])
+
+    y = np.array(y)
+
+    model = LinearRegression()
+
+    model.fit(x, y)
+    
+    print("Slope: "+str(model.coef_[0]))

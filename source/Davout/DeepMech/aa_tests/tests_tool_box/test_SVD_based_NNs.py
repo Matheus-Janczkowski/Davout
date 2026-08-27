@@ -352,15 +352,20 @@ class TestSVDArchitecture:
         n_evaluation_runs = 100
 
         # Selects the method for building each Householder vector from 
-        # the flat tensor of DOFs of each Householder chain
+        # the flat tensor of DOFs of each Householder chain. The default
+        # value is 'hardware-based suggestion' which chooses the imple-
+        # mentation based on the hardware: CPU or GPU. The default is 
+        # CPU-oriented
 
-        householder_vector_builder_method = ("get_householder_vector_f"+
-        "rom_parameters")
+        householder_vector_builder_method = "hardware-based suggestion"
 
         # Sets sets of architectures
 
         number_of_neurons_hidden_layer_main_network_performance = [[500],
         [850], [1200]]
+
+        #number_of_neurons_hidden_layer_main_network_performance = [[1550],
+        #[1900], [2250]]
 
         output_dimension_performance = 2000
 
@@ -521,7 +526,8 @@ class TestSVDArchitecture:
             modulating_function_performance, "Householder epsilon": 1.0, 
             "activations accessory layer list": 
             accessory_activation_list_performance, "householder vector"+
-            " builder method": householder_vector_builder_method}  
+            " builder method": householder_vector_builder_method,
+            "hardware device": "CPU"}  
 
             # Assembles the model
 
@@ -570,7 +576,7 @@ class TestSVDArchitecture:
             evaluate_function_performance(evaluation_function, 
             n_warm_up_runs=n_warm_up_runs, n_evaluation_runs=
             n_evaluation_runs, n_evaluations_to_show_memory_data=10,
-            evaluate_gpu_memory=True)
+            evaluate_gpu_memory=False)
 
             print("\nThe architecture of the whole network of the last"+
             " experiment is:\n"+string_of_neurons_auxiliar_network+
