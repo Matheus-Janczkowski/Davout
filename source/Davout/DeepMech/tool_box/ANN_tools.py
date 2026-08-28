@@ -4,6 +4,8 @@ import tensorflow as tf
 
 import numpy as np
 
+import inspect
+
 from ...DeepMech import custom_architectures
 
 from ..tool_box import differentiation_tools as diff_tools
@@ -679,8 +681,23 @@ class MixedActivationLayer(tf.keras.layers.Layer):
 
         code_info_dictionary = config.pop("code_given_info_class")
 
+        # Gets all the necessary arguments of CodeGivenLayerInfo
+
+        arguments_of_layer_info = inspect.signature(CodeGivenLayerInfo
+        ).parameters.keys()
+
+        # Completes the dictionary of code-given information to allow
+        # for the inclusion of keys that were not incorporated in older
+        # models. Notice that, for missing keys, the default value will
+        # be None
+
+        complete_dictionary = {argument_name: code_info_dictionary.get(
+        argument_name, None) for argument_name in arguments_of_layer_info}
+
+        # Instantiates the class of code-given information
+
         config["code_given_info_class"] = CodeGivenLayerInfo(
-        **code_info_dictionary)
+        **complete_dictionary)
 
         return cls(**config)
 

@@ -11,9 +11,11 @@ import os
 
 import tensorflow as tf
 
-from ...tool_box import ANN_tools
+from .....Davout.DeepMech.tool_box import ANN_tools
 
-from ...tool_box import training_tools
+from .....Davout.DeepMech.tool_box import training_tools
+
+from .....Davout.PythonicUtilities.path_tools import get_parent_path_of_file
 
 # Defines a function to test the ANN tools methods
 
@@ -104,7 +106,60 @@ class TestANNTools(unittest.TestCase):
 
         self.save_model_file = "saved_model.keras"
 
-    # Defines a function to test the gated architecture
+        self.parameters_dtype = "float64"
+    
+    # Defines a function to test saving and reloading the model
+    
+    def test_saving_and_loading(self):
+
+        print("\n#####################################################"+
+        "###################\n#                       Tests saving and"+
+        " loading                       #\n###########################"+
+        "#############################################\n")
+        
+        # Sets the path to save the model
+
+        model_path = os.path.join(get_parent_path_of_file(), "gated_mo"+
+        "del.keras")
+
+        print("\nSaves the model at: "+str(model_path)+"\n")
+
+        # Saves the model
+
+        # Tests now with custom layers
+        
+        ANN_class = ANN_tools.MultiLayerModel(
+        self.input_dimension_gradient_tests, 
+        self.activation_list_gradient_tests, enforce_customLayers=True, 
+        verbose=True, parameters_dtype=self.parameters_dtype, 
+        custom_architecture={"name": "GatedQuotientSpace", 
+        "quotient space dimension": self.quotient_space_dimension})
+
+        custom_model = ANN_class()
+
+        custom_model.save(model_path)
+
+        # Loads it back
+
+        loaded_model = tf.keras.models.load_model(model_path)
+
+        # Gets the training data as a tensorflow array
+
+        self.training_input_constant = tf.constant(self.training_data, 
+        dtype=tf.as_dtype(self.parameters_dtype))
+
+        # Tests the loaded model
+
+        output_original = custom_model(self.training_input_constant)
+
+        output_loaded = loaded_model(self.training_input_constant)
+
+        print("Output from saved model:\n"+str(output_original))
+
+        print("\nOutput from loaded model:\n"+str(output_loaded)+"\n\n"+
+        "The maximum absolute difference between components of the ori"+
+        "ginal and loaded models is: "+str(tf.reduce_max(tf.abs(
+        output_original-output_loaded)).numpy())+"\n")
 
     def test_gated_nn(self):
 

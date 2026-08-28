@@ -534,7 +534,8 @@ def write_visualization_copy(functional_data_dictionary, file_name,
 mesh_file, code_given_field_name, time=0.0, time_step=0, 
 visualization_copy_file=None, close_file=True, 
 code_given_mesh_data_class=None, comm_object=None, original_function=
-None, verbose=True):
+None, verbose=True, reading_is_ready=False, function_space_info=None,
+return_visualization_file_name=False):
     
     if verbose:
     
@@ -551,7 +552,7 @@ None, verbose=True):
 
     time_points = time*1.0
 
-    if comm_object is None:
+    if (comm_object is None) and (not reading_is_ready):
 
         read_function, function_space_info, time_points = read_field_from_binary(
         file_name, mesh_file, functional_data_dictionary, time_step=
@@ -583,6 +584,10 @@ None, verbose=True):
 
     # Writes the individual time steps
 
+    if isinstance(time_points, float) or isinstance(time_points, int):
+
+        time_points = [time_points]
+
     for step, time_point in enumerate(time_points):
 
         visualization_copy_file.write(read_function[step], time_point)
@@ -592,6 +597,14 @@ None, verbose=True):
     if close_file:
 
         visualization_copy_file.close()
+
+    # Verifies if the name of the visualization file is to be returned
+
+    if return_visualization_file_name:
+
+        return visualization_copy_file, copy_file_name
+
+    # Otherwise, returns the visualization copy plainly
 
     return visualization_copy_file
 
@@ -607,7 +620,9 @@ None, verbose=True):
 def read_field_from_binary(field_file, mesh_file, function_space_info,
 directory_path=None, code_given_field_name=None, comm_object=None,
 code_given_mesh_data_class=None, time_step=0, rename_function=True,
-return_functional_data_class=False, verbose=True):
+return_functional_data_class=False, verbose=True, 
+data_matrix_has_time_point_per_row=True, save_to_xdmf=False,
+return_visualization_file_name=False):
     
     if comm_object is not None:
 
@@ -833,15 +848,34 @@ return_functional_data_class=False, verbose=True):
 
         data = np.load(field_file)
 
+        # Sets a variable that off-sets the measure of the number of 
+        # columns of the data matrix
+
+        columns_number_offset = 0
+
+        # If the data matrix contains the time point value for each row,
+        # the off-set of the number of columns must be 1 and, thus, the
+        # number of DOFs must be equal to the number of columns of the
+        # data matrix minus one
+
+        if data_matrix_has_time_point_per_row:
+
+            columns_number_offset = 1
+
         # Verifies if the data has the same number of DOFs
 
-        if (data.shape[1]-1)!=DOFs_number:
+        if (data.shape[1]-columns_number_offset)!=DOFs_number:
 
             raise IndexError("The read data from '"+str(field_file)+"'"+
             " has "+str(data.shape[1]-1)+" DOFs, whereas the request"+
             "ed function space has "+str(DOFs_number)+" DOFs. Thus, re"+
             "ading the former onto the latter is impossible using 'rea"+
-            "d_field_from_binary'")
+            "d_field_from_binary'.\nThe flag 'data_matrix_has_time_poi"+
+            "nt_per_row' is "+str(data_matrix_has_time_point_per_row)+
+            ". If this flag is True, the data matrix is supposed to ha"+
+            "ve a number of columns equal to the number of DOFs plus o"+
+            "ne. The shift by one is due to the addition of the time p"+
+            "oints values in the first column")
 
         # If the time step is a list with multiple time steps
 
@@ -854,7 +888,7 @@ return_functional_data_class=False, verbose=True):
                 # Gets the current time step (integer index)
 
                 function_space_info.monolithic_solution.vector(
-                ).set_local(data[step, 1:])
+                ).set_local(data[step, columns_number_offset:])
 
                 # Finalizes the vector with the method to insert a new 
                 # data point instead of accumulating it
@@ -880,7 +914,7 @@ return_functional_data_class=False, verbose=True):
         else:
 
             function_space_info.monolithic_solution.vector().set_local(
-            data[time_step,1:])
+            data[time_step,columns_number_offset:])
 
             # Finalizes the vector with the method to insert a new data
             # point instead of accumulating it
@@ -915,15 +949,71 @@ return_functional_data_class=False, verbose=True):
         # And the list of time points the proper time value
 
         time_points = time_points[0]
+
+    # Initializes the tuple that will be returned as a list
+
+    return_tuple = []
+
+    # If the solution is to be saved as a xdmf file as well (which can 
+    # be used later for taking snapshots, for example)
+
+    xdmf_field_file = None
+
+    if save_to_xdmf:
+
+        # Creates a name for the xdmf file by taking the .npy extension
+        # out and putting in the .xdmf extension
+
+        xdmf_field_file = take_outFileNameTermination(field_file)+".xdmf"
+
+        # Sets the time points for the xdmf copy file
+
+        time_points_copy = None
+
+        # If the time points are a list, gets the last one
+
+        if isinstance(time_step, list):
+
+            time_points_copy = time_points[-1]
+
+        # Otherwise, gets the same
+
+        else:
+
+            time_points_copy = time_step+0
+
+        print("time_points_copy: "+str(time_points_copy))
+
+        # Saves a visualization copy. Sets the flag 'reading_is_ready' 
+        # to True since the file has already been read and the function
+        # space is ready for plotting in a xdmf file
+
+        _, xdmf_field_file = write_visualization_copy(None, 
+        xdmf_field_file, mesh_file, code_given_field_name, time_step=
+        time_points_copy, comm_object=comm_object, original_function=
+        solutions_across_time_steps, verbose=verbose, reading_is_ready=
+        True, return_visualization_file_name=True, function_space_info=
+        function_space_info)
     
     # If the functional data class is to be spit out too
 
     if return_functional_data_class:
 
-        return solutions_across_time_steps, function_space_info, time_points
+        return_tuple.extend([solutions_across_time_steps, 
+        function_space_info, time_points])
 
     # Returns the function
 
     else:
 
-        return solutions_across_time_steps, time_points
+        return_tuple.extend([solutions_across_time_steps, time_points])
+
+    # If the visualization file name is to be returned
+
+    if return_visualization_file_name:
+
+        return_tuple.append(xdmf_field_file)
+
+    # Returns the tuple as a tuple
+
+    return tuple(return_tuple)
