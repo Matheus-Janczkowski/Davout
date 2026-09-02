@@ -4,6 +4,8 @@ import tensorflow as tf
 
 import sys
 
+import inspect
+
 import numpy as np
 
 from tqdm import tqdm
@@ -14,7 +16,7 @@ import time
 
 from copy import deepcopy
 
-from scipy.optimize import minimize
+from scipy.optimize import minimize, _minimize
 
 from scipy import stats
 
@@ -26,6 +28,8 @@ from ...PythonicUtilities import path_tools
 
 from ...PythonicUtilities import string_tools
 
+from ...PythonicUtilities.function_tools import verify_dictionary_as_function_argument
+
 # Defines a class to optimize the model's parameters
 
 class ModelTraining:
@@ -33,8 +37,8 @@ class ModelTraining:
     def __init__(self, model, training_inputArray, training_trueArray,
     loss_metric=tf.keras.losses.MeanAbsoluteError(), optimizer=
     tf.keras.optimizers.SGD(learning_rate=0.01, momentum=0.9, nesterov=
-    True), n_iterations=1000, gradient_tolerance=1E-3, 
-    float_type=tf.float32, verbose_deltaIterations=100, verbose=False,
+    True), n_iterations=1000, gradient_tolerance=1E-3, float_type=
+    tf.float32, verbose_deltaIterations=100, verbose=False,
     save_model_file="trained_model.keras", parent_path="get current pa"+
     "th"):
         
@@ -53,6 +57,10 @@ class ModelTraining:
         self.verbose_deltaIterations = verbose_deltaIterations
 
         self.verbose = verbose
+
+        # Gets the number of trainable parameters of the model
+
+        self.number_trainable_parameters = self.model.count_params()
 
         # Saves the parent path where to save the model
 
@@ -107,7 +115,7 @@ class ModelTraining:
         self.optimizer.apply_gradients(zip(gradients, 
         self.model.trainable_variables))
 
-        return loss, tf.linalg.global_norm(gradients)
+        return loss, gradients
     
     # Defines a method for the optimization loop. But names it call so
     # that it is called as soon as the class is created
@@ -126,7 +134,11 @@ class ModelTraining:
 
         for i in range(self.n_iterations):
 
-            loss_value, gradient_norm = self.train_step()
+            loss_value, gradient_vector = self.train_step()
+
+            # Evaluates the gradient's norm
+
+            gradient_norm = tf.linalg.global_norm(gradient_vector)
 
             if gradient_norm.numpy()<=self.gradient_tolerance:
 
@@ -144,9 +156,18 @@ class ModelTraining:
             
                 if i%self.verbose_deltaIterations==0:
 
+                    gradient_maximum_component = tf.reduce_max(tf.abs(
+                    gradient_vector)).numpy()
+
                     print("Iteration "+integer_toString(i, max_digits)+
                     ": loss="+format(loss_value.numpy(), '.5e')+", gra"+
-                    "dient norm: "+format(gradient_norm.numpy(), '.5e'))
+                    "dient norm: "+format(gradient_norm.numpy(), '.5e')+
+                    ", gradient norm divided by the square root of the"+
+                    " number of trainable parameters: "+format(
+                    gradient_norm.numpy()/
+                    self.number_trainable_parameters, '.5e')+"\nThe ma"+
+                    "ximum component of the gradient in absolute value"+
+                    " is: "+format(gradient_maximum_component, '.5e'))
 
         # Evaluates the elapsed time
 
@@ -212,6 +233,10 @@ class ModelCustomTraining:
         self.verbose = verbose
 
         self.loss_metric = loss_metric
+
+        # Gets the number of trainable parameters of the model
+
+        self.number_trainable_parameters = self.model.count_params()
 
         # Saves the parent path where to save the model
 
@@ -310,6 +335,144 @@ class ModelCustomTraining:
         
             self.n_outputs = self.model.trainable_variables[-1].shape[0]
 
+        # Verifies if the optimizer is a dictionary
+
+        optimizer_name = None
+
+        optimizer_additional_info = {}
+
+        if isinstance(self.optimizer, dict):
+
+            # Verifies if there is a key for the optimizer's name
+
+            if "name" in self.optimizer:
+
+                # Gets the name
+
+                optimizer_name = self.optimizer["name"]
+
+            # Otherwise, throws an error
+
+            else:
+
+                raise KeyError("There is no key 'name' in the dictiona"+
+                "ry 'optimizer' in 'ModelCustomTraining'. The name mus"+
+                "t be provided to tell the optimization method")
+
+            # Copies all additional information
+
+            for key, value in self.optimizer.items():
+
+                # Excludes the key 'name'
+
+                if key!="name":
+
+                    optimizer_additional_info[key] = value 
+
+        # Verifies if the optimizer variable is a string
+
+        elif isinstance(self.optimizer, str):
+
+            # Copies the optimizer name
+
+            optimizer_name = str(self.optimizer)
+
+        # If an optimizer name was recovered, tracks if it is an optimi-
+        # zer native to Keras or native to scipy
+
+        if optimizer_name is not None:
+
+            # Verifies if it is from Keras
+
+            if hasattr(tf.keras.optimizers, optimizer_name):
+
+                # Sets the optimizer from Keras as an instance of the
+                # corresponding class
+
+                optimizer_class = getattr(tf.keras.optimizers, 
+                optimizer_name)
+
+                # Verifies if the user-given parameters of the optimizer
+                # are consistent
+
+                verify_dictionary_as_function_argument(
+                optimizer_class.__init__, optimizer_additional_info)
+
+                # Sets the hyperparameters
+
+                self.optimizer = optimizer_class(
+                **optimizer_additional_info)
+
+                # Sets the training method as the wrapper for automatic
+                # differentiation and the keras optimizer
+
+                self.set_training = self.set_keras_training
+
+            # Verifies if it is a scipy method
+
+            else:
+
+                # Gets the optimization methods available at scipy
+
+                available_scipy_optimizers = getattr(_minimize,'MINIMI'+
+                'ZE_METHODS',{})
+
+                # Verifies if the given optimizer name is in the list of
+                # available methods
+
+                if not (optimizer_name in available_scipy_optimizers):
+
+                    # Gets the available methods in Keras
+
+                    native_keras_optimizers = ""
+
+                    for name, optimizer_object in inspect.getmembers(
+                    tf.keras.optimizers):
+
+                        if inspect.isclass(optimizer_object) and (
+                        issubclass(optimizer_object, 
+                        tf.keras.optimizers.Optimizer)):
+
+                            native_keras_optimizers += ("\n'"+str(name)+
+                            "'")
+
+                    # Gets the available methods in scipy
+
+                    native_scipy_methods = ""
+
+                    for name in available_scipy_optimizers:
+
+                        native_scipy_methods += "\n'"+str(name)+"'"
+
+                    raise NameError("'"+str(optimizer_name)+"' was not"+
+                    " found in the native Keras' optimizers nor in the"+
+                    " available optimizers at scipy. Check the availab"+
+                    "le methods in Keras:\n"+native_keras_optimizers+
+                    "\n\nand the methods available in scipy:\n"+
+                    native_scipy_methods)
+
+                # Sets the method and the dictionary of additional in-
+                # formation
+
+                self.optimizer = optimizer_name
+
+                self.optimizer_additional_info = (
+                optimizer_additional_info)
+
+                # Sets the training method as the wrapper for scipy
+
+                self.set_training = self.set_scipy_training
+
+        # Otherwise, treats the given optimizer as a keras-native opti-
+        # mizer
+
+        else:
+
+            # Sets the training method as the wrapper for automatic dif-
+            # ferentiation and the keras optimizer
+
+            self.set_training = self.set_keras_training
+
     # Defines a method to evaluate the hessian of each output neuron of
     # the model
 
@@ -370,7 +533,8 @@ class ModelCustomTraining:
 
         return hessian_matrices
 
-    # Defines a method to evaluate the loss function
+    # Defines a method to evaluate the loss function given the trainable
+    # parameters as input
 
     def loss_function(self):
 
@@ -440,19 +604,91 @@ class ModelCustomTraining:
     # Defines a method for training, it assembles the optimization pro-
     # blem and runs it
 
-    def set_training(self, n_max_iterations):
+    def set_scipy_training(self, n_max_iterations):
+
+        # Updates the dictionary of options
+
+        self.optimizer_additional_info["maxiter"] = n_max_iterations
 
         # Sets the minimization problem using the minimize class from 
         # scipy
 
         minimization_problem = minimize(self.loss_class, 
         self.model_parameters, method=self.optimizer, jac=True, tol=
-        self.gradient_tolerance, options={"maxiter": n_max_iterations}, 
+        self.gradient_tolerance, options=self.optimizer_additional_info, 
         callback=self.callback)
 
         # Updates the model parameters
 
         self.model_parameters = minimization_problem.x
+
+        return None, None
+
+    # Defines a method for the train step using native keras optimizers
+
+    def set_keras_training(self, n_max_iterations):
+
+        # Initializes the last evaluations of loss and gradient vectors
+
+        loss_evaluation = None
+
+        gradient_evaluation = None
+
+        # Iterates through the maximum number of iterations
+
+        for i in range(n_max_iterations):
+
+            loss_evaluation, gradient_evaluation = self.keras_training_step()
+
+            # Evaluates the gradient's norm
+
+            gradient_norm = tf.linalg.global_norm(gradient_evaluation)
+
+            if gradient_norm.numpy()<=self.gradient_tolerance:
+
+                print("The gradient's norm has reached the value of "+
+                str(gradient_norm.numpy())+", which is less than the t"+
+                "hreshold of "+str(self.gradient_tolerance)+". Thus, s"+
+                "tops the optimization procedure at iteration "+str(i)+
+                "\n")
+
+                break
+        
+            # Prints the callback
+
+            self.callback(None)
+
+        # Updates the flat tensor of trainable parameters from the upda-
+        # ted parameters of the model
+
+        self.model_parameters, _ = parameters_tools.model_parameters_to_flat_tensor_and_shapes(
+        self.model)
+
+        # Returns the last evaluations of the loss function and of the
+        # gradient vector
+
+        return loss_evaluation, gradient_evaluation
+
+    # Defines a function to compute a single training step using a nati-
+    # ve keras optimizer
+
+    @tf.function
+    def keras_training_step(self):
+
+        # Computes the gradient using automatic differentiation
+
+        with tf.GradientTape() as tape:
+
+            loss = self.loss_function()
+
+        gradients = tape.gradient(loss, self.model.trainable_variables)
+
+        # Applies the gradient vector to the optimizer
+
+        self.optimizer.apply_gradients(zip(gradients, 
+        self.model.trainable_variables))
+
+        return loss, gradients
     
     # Defines a method for the optimization loop. But names it call so
     # that it is called as soon as the class is created
@@ -504,18 +740,32 @@ class ModelCustomTraining:
                 # Calls the optimization procedure. Using the custom op-
                 # timizer
 
-                self.set_training(self.verbose_deltaIterations)
+                loss_value, evaluated_gradient = self.set_training(
+                self.verbose_deltaIterations)
 
-                # Gets the loss function value and the gradient
+                # If the loss value is None, it signifies that a custom
+                # optimizer was used and the loss function and gradient
+                # vector must be evaluated from the model parameters
 
-                loss_value = self.loss_class.evaluate_scalar_function(
-                self.model_parameters)
+                if loss_value is None:
 
-                # Gets the gradient from the second position of the call
-                # method
+                    # Gets the loss function value and the gradient
 
-                gradient_value = tf.norm(self.loss_class(
-                self.model_parameters)[1]).numpy()
+                    loss_value = self.loss_class.evaluate_scalar_function(
+                    self.model_parameters)
+
+                    # Gets the gradient from the second position of the 
+                    # call method
+
+                    evaluated_gradient = self.loss_class(
+                    self.model_parameters)[1]
+
+                # Gets the gradient norm
+
+                gradient_value = tf.norm(evaluated_gradient).numpy()
+
+                gradient_maximum_component = tf.reduce_max(
+                tf.abs(evaluated_gradient)).numpy()
 
                 if gradient_value<=self.gradient_tolerance:
 
@@ -529,7 +779,12 @@ class ModelCustomTraining:
 
                 print("Iteration group "+integer_toString(i, max_digits)
                 +": loss="+format(loss_value.numpy(), '.5e')+", gradie"+
-                "nt norm: "+format(gradient_value, '.5e')+"\nThis cycl"+
+                "nt norm: "+format(gradient_value, '.5e')+",\ngradient"+
+                " norm divided by the square root of the number of tra"+
+                "inable parameters: "+format(gradient_value/
+                self.number_trainable_parameters, '.5e')+"\nThe maximu"+
+                "m component of the gradient in absolute value is: "+
+                format(gradient_maximum_component, '.5e')+"\nThis cycl"+
                 "e took "+str(time.time()-self.initial_time)+" to comp"+
                 "lete\n")
 
@@ -581,7 +836,8 @@ class ModelCustomTraining:
     # ing multiple times and generating multiple models
 
     def monte_carlo_training(self, n_realizations=50, 
-    best_models_rank_size=None, show_reinitialization_distance=False):
+    best_models_rank_size=None, show_reinitialization_distance=False,
+    model_base_name="model"):
         
         print("\n#####################################################"+
         "###################\n#                   Initializes Monte Ca"+
@@ -693,9 +949,9 @@ class ModelCustomTraining:
                     # corresponding one to the last key
 
                     path_tools.delete_file(str(list(
-                    models_ranking_dict.keys())[-1])+"_best_model.kera"+
-                    "s", parent_path=self.parent_path, 
-                    ignore_non_existing_file=True)
+                    models_ranking_dict.keys())[-1])+"_best_"+
+                    model_base_name+".keras", parent_path=
+                    self.parent_path, ignore_non_existing_file=True)
 
                     # Move every other model below this one one step 
                     # downwards
@@ -711,9 +967,10 @@ class ModelCustomTraining:
 
                         # And renames the model file
 
-                        path_tools.rename_file(str(j)+"_best_model.k"+
-                        "eras", str(j+1)+"_best_model.keras", 
-                        parent_path=self.parent_path, saving_function=
+                        path_tools.rename_file(str(j)+"_best_"+
+                        model_base_name+".keras", str(j+1)+"_best_"+
+                        model_base_name+".keras", parent_path=
+                        self.parent_path, saving_function=
                         self.model.save)
                     
                     # Finally adds the current loss
@@ -724,7 +981,7 @@ class ModelCustomTraining:
                     # Saves this model
 
                     path_tools.rename_file(self.save_model_file, str(
-                    model_number+1)+"_best_model.keras", 
+                    model_number+1)+"_best_"+model_base_name+".keras", 
                     saving_function=self.model.save)
 
                     # Breaks the loop

@@ -575,8 +575,8 @@ return_visualization_file_name=False):
         mpi_print(comm_object, "Saves the visualization copy at file '"+
         str(copy_file_name)+"'\n")
 
-        mpi_print(comm_object, "Creates a new XDMFFile instance fo"+
-        "r the visualization copy file\n")
+        mpi_print(comm_object, "Creates a new XDMFFile instance for th"+
+        "e visualization copy file\n")
 
     visualization_copy_file = XDMFFile(
     function_space_info.monolithic_solution.function_space().mesh(
@@ -587,6 +587,14 @@ return_visualization_file_name=False):
     if isinstance(time_points, float) or isinstance(time_points, int):
 
         time_points = [time_points]
+
+        # Verifies if the read function is not a list
+
+        if not isinstance(read_function, list):
+
+            read_function = [read_function]
+
+    # Iterates over the time steps
 
     for step, time_point in enumerate(time_points):
 
@@ -981,8 +989,6 @@ return_visualization_file_name=False):
         else:
 
             time_points_copy = time_step+0
-
-        print("time_points_copy: "+str(time_points_copy))
 
         # Saves a visualization copy. Sets the flag 'reading_is_ready' 
         # to True since the file has already been read and the function
