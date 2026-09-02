@@ -81,7 +81,7 @@ False):
 # arguments? Does it have any keys that are not keyword arguments?
 
 def verify_dictionary_as_function_argument(function_object, 
-input_dictionary):
+input_dictionary, list_of_arguments_not_to_be_verified=[]):
 
     # Gets the dictionary of keyword arguments and the list of positi-
     # onal arguments
@@ -93,7 +93,8 @@ input_dictionary):
 
     for argument_name in positional_arguments_list:
 
-        if not (argument_name in input_dictionary):
+        if (not (argument_name in input_dictionary)) and (not (
+        argument_name in list_of_arguments_not_to_be_verified)):
 
             # Gets a string with the positional arguments
 

@@ -24,7 +24,7 @@ class SurrogateModel:
     def __init__(self, displacement_data_file, input_data_file, 
     saved_model_file, results_path, n_training_samples, 
     quotient_space_dimension, n_monte_carlo_realizations, n_best_models,
-    n_best_samples, mesh_file_name, screenshots_path):
+    n_best_samples, mesh_file_name, screenshots_path, optimizer):
 
         # Stores the data
 
@@ -50,6 +50,8 @@ class SurrogateModel:
 
         self.screenshots_path = screenshots_path
 
+        self.optimizer = optimizer
+
         # Reads the two files
 
         self.output_data = np.load(self.results_path+"//"+
@@ -60,7 +62,7 @@ class SurrogateModel:
         # Sets a list of layers and the activation functions
 
         self.activations_list = [{"elu": {"number of neurons": 100}}, {
-        "elu": {"number of neurons": 1000}}, {"linear": 
+        "elu": {"number of neurons": 100}}, {"linear": 
         self.n_output_neurons}]
 
     # Defines a function to train the neural network model
@@ -113,7 +115,7 @@ class SurrogateModel:
         maximum_iterations, verbose_deltaIterations=
         verbose_delta_iterations, save_model_file=self.saved_model_file, 
         match_data_float_type_to_trainables=True, parent_path=
-        self.results_path)
+        self.results_path, optimizer=self.optimizer)
 
         t_initial = time()
 
@@ -515,7 +517,9 @@ if __name__=="__main__":
 
     n_best_samples = 10
 
-    training_flag = False 
+    optimizer = "Adam"
+
+    training_flag = True 
 
     test_flag = False
 
@@ -532,7 +536,7 @@ if __name__=="__main__":
     surrogate_model_class = SurrogateModel(displacement_data_file, 
     input_data_file, saved_model_file, results_path, n_training_samples, 
     quotient_space_dimension, n_monte_carlo_realizations, n_best_models,
-    n_best_samples, mesh_file_name, screenshots_path)
+    n_best_samples, mesh_file_name, screenshots_path, optimizer)
 
     # Sets training forth if it is the case
 

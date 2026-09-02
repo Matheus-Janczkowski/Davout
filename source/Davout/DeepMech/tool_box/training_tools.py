@@ -30,6 +30,8 @@ from ...PythonicUtilities import string_tools
 
 from ...PythonicUtilities.function_tools import verify_dictionary_as_function_argument
 
+from ...PythonicUtilities.user_interaction_tools import PrintForLoopInfo
+
 # Defines a class to optimize the model's parameters
 
 class ModelTraining:
@@ -103,7 +105,6 @@ class ModelTraining:
     # tor to create a map for compilation, hence, speeding it up
 
     @tf.function
-
     def train_step(self):
 
         with tf.GradientTape() as tape:
@@ -316,14 +317,6 @@ class ModelCustomTraining:
         self.training_trueValues = tf.constant(training_trueArray, dtype
         =self.float_type)
 
-        # Construct a class to give the loss function, its gradient, and
-        # the instructions for parameters (weights and biases) flattening
-        # and reconstruction
-
-        self.loss_class, self.model_parameters = loss_tools.build_loss_gradient_varying_model_parameters(
-        self.model, self.loss_metric, self.training_input, 
-        model_true_values=self.training_trueValues, verbose=verbose)
-
         # Gets the number of output neurons. Tries to get first via a 
         # custom attribute
 
@@ -396,7 +389,8 @@ class ModelCustomTraining:
                 # are consistent
 
                 verify_dictionary_as_function_argument(
-                optimizer_class.__init__, optimizer_additional_info)
+                optimizer_class.__init__, optimizer_additional_info,
+                list_of_arguments_not_to_be_verified=["self", "kwargs"])
 
                 # Sets the hyperparameters
 
@@ -407,6 +401,16 @@ class ModelCustomTraining:
                 # differentiation and the keras optimizer
 
                 self.set_training = self.set_keras_training
+
+                # Sets the loss function as the one appropriate for Ke-
+                # ras optimizers
+
+                self.loss_function = self.loss_function_keras
+
+                # Sets the flag that tells if a scipy optimizer will be
+                # used to False
+
+                self.use_scipy_optimizer = False
 
             # Verifies if it is a scipy method
 
@@ -420,7 +424,8 @@ class ModelCustomTraining:
                 # Verifies if the given optimizer name is in the list of
                 # available methods
 
-                if not (optimizer_name in available_scipy_optimizers):
+                if not (optimizer_name.lower() in (
+                available_scipy_optimizers)):
 
                     # Gets the available methods in Keras
 
@@ -454,7 +459,7 @@ class ModelCustomTraining:
                 # Sets the method and the dictionary of additional in-
                 # formation
 
-                self.optimizer = optimizer_name
+                self.optimizer = optimizer_name.lower()
 
                 self.optimizer_additional_info = (
                 optimizer_additional_info)
@@ -462,6 +467,17 @@ class ModelCustomTraining:
                 # Sets the training method as the wrapper for scipy
 
                 self.set_training = self.set_scipy_training
+
+                # Sets the loss function as the one appropriate for sci-
+                # py using a flat tensor of trainable parameters of the
+                # model as input
+
+                self.loss_function = self.loss_function_scipy
+
+                # Sets the flag that tells if a scipy optimizer will be
+                # used to False
+
+                self.use_scipy_optimizer = True
 
         # Otherwise, treats the given optimizer as a keras-native opti-
         # mizer
@@ -472,6 +488,37 @@ class ModelCustomTraining:
             # ferentiation and the keras optimizer
 
             self.set_training = self.set_keras_training
+
+            # Sets the loss function as the one appropriate for Keras 
+            # optimizers
+
+            self.loss_function = self.loss_function_keras
+
+            # Sets the flag that tells if a scipy optimizer will be used
+            # to False
+
+            self.use_scipy_optimizer = False
+
+        # If a scipy optimizer will be used, instantiates the class for
+        # the loss function and automatic differentiation, then takes 
+        # the flat tensor of model parameters
+
+        if self.use_scipy_optimizer:
+
+            # Constructs a class to give the loss function, its gra-
+            # dient, and the instructions for parameters (weights and 
+            # biases) flattening and reconstruction
+
+            self.loss_class, self.model_parameters = loss_tools.build_loss_gradient_varying_model_parameters(
+            self.model, self.loss_metric, self.training_input, 
+            model_true_values=self.training_trueValues, verbose=verbose)
+
+        # Otherwise, initializes the flat tensor of model parameters as
+        # a None object
+
+        else:
+
+            self.model_parameters = None
 
     # Defines a method to evaluate the hessian of each output neuron of
     # the model
@@ -533,10 +580,24 @@ class ModelCustomTraining:
 
         return hessian_matrices
 
+    # Defines a function to evaluate the loss function from the input
+    # proper for use with Keras' optimizers
+
+    @tf.function
+    def loss_function_keras(self):
+
+        # Gets the model response
+
+        y_training = self.model(self.training_input)
+
+        # Gets the loss value
+
+        return self.loss_metric(self.training_trueValues, y_training)
+
     # Defines a method to evaluate the loss function given the trainable
     # parameters as input
 
-    def loss_function(self):
+    def loss_function_scipy(self):
 
         # Gets the loss value and returns it
 
@@ -679,7 +740,7 @@ class ModelCustomTraining:
 
         with tf.GradientTape() as tape:
 
-            loss = self.loss_function()
+            loss = self.loss_function_keras()
 
         gradients = tape.gradient(loss, self.model.trainable_variables)
 
@@ -699,8 +760,7 @@ class ModelCustomTraining:
 
         start_time = time.time()
 
-        initial_loss = self.loss_class.evaluate_scalar_function(
-        self.model_parameters).numpy()
+        initial_loss = self.loss_function().numpy()
 
         # Iterates through the optimization loop
 
@@ -747,18 +807,25 @@ class ModelCustomTraining:
                 # optimizer was used and the loss function and gradient
                 # vector must be evaluated from the model parameters
 
-                if loss_value is None:
+                if self.use_scipy_optimizer:
 
                     # Gets the loss function value and the gradient
 
-                    loss_value = self.loss_class.evaluate_scalar_function(
-                    self.model_parameters)
+                    loss_value = self.loss_function()
 
                     # Gets the gradient from the second position of the 
                     # call method
 
                     evaluated_gradient = self.loss_class(
                     self.model_parameters)[1]
+
+                # If it is a Keras' optimizer, the gradient must be 
+                # flattened
+
+                else:
+
+                    evaluated_gradient = tf.concat([tf.reshape(tensor, 
+                    [-1]) for tensor in evaluated_gradient], axis=0)
 
                 # Gets the gradient norm
 
@@ -777,11 +844,11 @@ class ModelCustomTraining:
 
                     break
 
-                print("Iteration group "+integer_toString(i, max_digits)
-                +": loss="+format(loss_value.numpy(), '.5e')+", gradie"+
-                "nt norm: "+format(gradient_value, '.5e')+",\ngradient"+
-                " norm divided by the square root of the number of tra"+
-                "inable parameters: "+format(gradient_value/
+                print("\nIteration group "+integer_toString(i, 
+                max_digits)+": loss="+format(loss_value.numpy(), '.5e')+
+                ", gradient norm: "+format(gradient_value, '.5e')+",\n"+
+                "gradient norm divided by the square root of the numbe"+
+                "r of trainable parameters: "+format(gradient_value/
                 self.number_trainable_parameters, '.5e')+"\nThe maximu"+
                 "m component of the gradient in absolute value is: "+
                 format(gradient_maximum_component, '.5e')+"\nThis cycl"+
@@ -806,8 +873,7 @@ class ModelCustomTraining:
 
             # Gets the final loss function
 
-            final_loss = self.loss_class.evaluate_scalar_function(
-            self.model_parameters).numpy()
+            final_loss = self.loss_function().numpy()
 
             print("\n#################################################"+
             "#######################\n#                        Trainin"+
@@ -821,10 +887,13 @@ class ModelCustomTraining:
 
             print("Training time: "+str(self.elapsed_time)+" seconds.\n")
         
-        # Gets the trained parameters and reassigns them to the model
+        # Gets the trained parameters and reassigns them to the model if 
+        # the model was trained using optimizers from scipy
 
-        self.loss_class.model_output_given_parameters.update_model_parameters(
-        self.model, self.model_parameters)
+        if self.use_scipy_optimizer:
+
+            self.loss_class.model_output_given_parameters.update_model_parameters(
+            self.model, self.model_parameters)
 
         # Saves the model automatically and returns it as well
 
@@ -878,7 +947,12 @@ class ModelCustomTraining:
 
         for i in range(best_models_rank_size):
 
-            models_ranking_dict[i] = np.inf 
+            models_ranking_dict[i+1] = np.inf 
+
+        # Instantiates the class that prints information
+
+        print_class = PrintForLoopInfo(["Initializes the realization o"+
+        "f number "])
 
         # Initializes a variable to store the elapsed time for training
         # each model at each realization
@@ -889,6 +963,11 @@ class ModelCustomTraining:
 
         for i in tqdm(range(n_realizations), desc="Training realizatio"+
         "ns"):
+
+            # Prints information on terminal that tells that this reali-
+            # zatio is being initialized
+
+            print_class([i+1])
 
             # Reinitializes the model parameters using the same initia-
             # lizers that were assigned when the model was first created
@@ -936,12 +1015,10 @@ class ModelCustomTraining:
             # Iterates through the best ranking models to check if the
             # current one outperforms any of them
 
-            for model_number in models_ranking_dict.keys():
+            for model_number, model_loss in models_ranking_dict.items():
 
                 # Gets the model loss and compares it to the loss value
                 # of the current model
-
-                model_loss = models_ranking_dict[model_number]
 
                 if model_loss>training_loss:
 
@@ -967,8 +1044,8 @@ class ModelCustomTraining:
 
                         # And renames the model file
 
-                        path_tools.rename_file(str(j)+"_best_"+
-                        model_base_name+".keras", str(j+1)+"_best_"+
+                        path_tools.rename_file(str(j-1)+"_best_"+
+                        model_base_name+".keras", str(j)+"_best_"+
                         model_base_name+".keras", parent_path=
                         self.parent_path, saving_function=
                         self.model.save)
@@ -981,7 +1058,7 @@ class ModelCustomTraining:
                     # Saves this model
 
                     path_tools.rename_file(self.save_model_file, str(
-                    model_number+1)+"_best_"+model_base_name+".keras", 
+                    model_number)+"_best_"+model_base_name+".keras", 
                     saving_function=self.model.save)
 
                     # Breaks the loop
