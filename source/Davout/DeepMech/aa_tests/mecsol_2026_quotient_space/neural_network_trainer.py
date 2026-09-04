@@ -77,7 +77,7 @@ class SurrogateModel:
 
         # Sets a list of layers and the activation functions
 
-        self.activations_list = [{"elu": {"number of neurons": 100}}, {
+        self.activations_list = [{"relu": {"number of neurons": 100}}, {
         "elu": {"number of neurons": 100}}, {"linear": 
         self.n_output_neurons}]
 
@@ -264,7 +264,7 @@ class SurrogateModel:
             # panded to match subdofs
 
             row_indices = tf.repeat(tf.range(self.number_of_samples-
-            self.n_training_samples)[:,None], repeats=num_dofs, axis=1)
+            self.n_training_samples)[:, None], repeats=num_dofs, axis=1)
 
             column_indices = tf.tile(tf.constant(self.subdofs_to_learn)[
             None,:], multiples=[self.number_of_samples-
@@ -459,9 +459,9 @@ class SurrogateModel:
             paraview_tools.frozen_snapshots(xdmf_field_file, "Displace"+
             "ment", time=0.0, representation_type="Surface With Edges", 
             axes_color="black", legend_bar_font="latex", zoom_factor=1.0, 
-            component_to_plot=self.displacement_component_to_plot, 
+            component_to_plot=self.displacement_component_to_plot,
             warp_by_vector=False, resolution_ratio=10, background_color=
-            "WhiteBackground", display_reference_configuration=False, 
+            "WhiteBackground", display_reference_configuration=True, 
             transparent_background=True, legend_bar_font_color="black", 
             set_camera_interactively=False, 
             #color_bar_min_value=0.1, color_bar_max_value=0.6,
@@ -478,7 +478,7 @@ class SurrogateModel:
             zoom_factor=1.0, component_to_plot=
             self.displacement_component_to_plot, warp_by_vector=False, 
             resolution_ratio=10, background_color="WhiteBackground", 
-            display_reference_configuration=False, 
+            display_reference_configuration=True, 
             transparent_background=True, legend_bar_font_color="black", 
             set_camera_interactively=False, 
             #color_bar_min_value=0.1, color_bar_max_value=0.6,
@@ -556,7 +556,7 @@ class SurrogateModel:
             axes_color="black", legend_bar_font="latex", zoom_factor=1.0, 
             component_to_plot=self.displacement_component_to_plot, 
             warp_by_vector=False, resolution_ratio=10, background_color=
-            "WhiteBackground", display_reference_configuration=False, 
+            "WhiteBackground", display_reference_configuration=True, 
             transparent_background=True, legend_bar_font_color="black", 
             set_camera_interactively=False, 
             #color_bar_min_value=0.1, color_bar_max_value=0.6,
@@ -572,8 +572,8 @@ class SurrogateModel:
             "dges", axes_color="black", legend_bar_font="latex", 
             zoom_factor=1.0, component_to_plot=
             self.displacement_component_to_plot, warp_by_vector=False, 
-            resolution_ratio=10, background_color="WhiteBackground", 
-            display_reference_configuration=False, 
+            resolution_ratio=10, background_color= "WhiteBackground", 
+            display_reference_configuration=True, 
             transparent_background=True, legend_bar_font_color="black", 
             set_camera_interactively=False, 
             #color_bar_min_value=0.1, color_bar_max_value=0.6,
@@ -611,7 +611,7 @@ if __name__=="__main__":
 
     # Trains a new model
 
-    n_monte_carlo_realizations = 500
+    n_monte_carlo_realizations = 200
 
     n_best_models = 30
 
