@@ -24,6 +24,8 @@ from ..tool_box import loss_tools
 
 from ..tool_box import parameters_tools
 
+from ..tool_box import loss_assembler_classes
+
 from ...PythonicUtilities import path_tools
 
 from ...PythonicUtilities import string_tools
@@ -31,6 +33,10 @@ from ...PythonicUtilities import string_tools
 from ...PythonicUtilities.function_tools import verify_dictionary_as_function_argument
 
 from ...PythonicUtilities.user_interaction_tools import PrintForLoopInfo
+
+from ...PythonicUtilities.programming_tools import dispatch_classes
+
+from ...PythonicUtilities.dictionary_tools import delete_dictionary_keys
 
 # Defines a class to optimize the model's parameters
 
@@ -48,8 +54,6 @@ class ModelTraining:
 
         self.model = model
 
-        self.loss_metric = loss_metric
-
         self.optimizer = optimizer
 
         self.n_iterations = n_iterations
@@ -59,6 +63,11 @@ class ModelTraining:
         self.verbose_deltaIterations = verbose_deltaIterations
 
         self.verbose = verbose
+
+        # Transforms the loss metric to a live loss class instance if it
+        # were given as a string or dictionary
+
+        self.loss_metric = verify_loss_metric(loss_metric)
 
         # Gets the number of trainable parameters of the model
 
@@ -233,7 +242,10 @@ class ModelCustomTraining:
 
         self.verbose = verbose
 
-        self.loss_metric = loss_metric
+        # Transforms the loss metric to a live loss class instance if it
+        # were given as a string or dictionary
+
+        self.loss_metric = verify_loss_metric(loss_metric)
 
         # Gets the number of trainable parameters of the model
 
@@ -766,6 +778,12 @@ class ModelCustomTraining:
 
         max_digits = len(str(self.n_iterations))
 
+        # Initializes the recorders for the gradient statistics
+
+        gradient_value = None 
+
+        gradient_maximum_component = None
+
         # Sets the initial time
 
         self.initial_time = time.time()
@@ -881,11 +899,20 @@ class ModelCustomTraining:
             "#########################################################"+
             "\n")
 
-            print("Initial loss.: "+format(initial_loss, '.5e'))
+            print("Initial loss.......................: "+format(
+            initial_loss, '.5e'))
 
-            print("Final loss...: "+format(final_loss, '.5e'))
+            print("Final loss.........................: "+format(
+            final_loss, '.5e'))
 
-            print("Training time: "+str(self.elapsed_time)+" seconds.\n")
+            print("Gradient norm......................: "+format(
+            gradient_value, '.5e'))
+
+            print("Gradient maximum absolute component: "+format(
+            gradient_maximum_component, '.5e'))
+
+            print("Training time......................: "+str(
+            self.elapsed_time)+" seconds.\n")
         
         # Gets the trained parameters and reassigns them to the model if 
         # the model was trained using optimizers from scipy
@@ -967,7 +994,7 @@ class ModelCustomTraining:
             # Prints information on terminal that tells that this reali-
             # zatio is being initialized
 
-            print_class([i+1])
+            print_class([str(i+1)+" out of "+str(n_realizations)])
 
             # Reinitializes the model parameters using the same initia-
             # lizers that were assigned when the model was first created
@@ -1113,7 +1140,7 @@ class ModelCustomTraining:
         print("Loads the best model")
 
         self.model = tf.keras.models.load_model(self.parent_path+"//1_"+
-        "best_model.keras")
+        "best_"+model_base_name+".keras")
 
 ########################################################################
 #                               Utilities                              #
@@ -1137,3 +1164,124 @@ def integer_toString(number, maximum_digits):
         number_string = " "+number_string
 
     return number_string
+
+# Defines a function to verify if a given loss metric is a valid Keras'
+# loss or whether it is a custom loss
+
+def verify_loss_metric(loss_metric):
+
+    # Assembles a dictionary of all natively available Keras' losses
+
+    available_keras_losses = {}
+
+    for loss_name, loss_class in inspect.getmembers(tf.keras.losses):
+
+        # Verifies if the object is indeed a class and if it is a sub-
+        # class of the Keras' Loss parent class. Also excludes objects
+        # starting with _
+
+        if inspect.isclass(loss_class) and issubclass(loss_class, 
+        tf.keras.losses.Loss) and (not loss_name.startswith("_")):
+
+            # Saves the object's name in lower case 
+
+            available_keras_losses[loss_name.lower()] = loss_class
+
+    # Verifies if the loss metric is a string
+
+    if isinstance(loss_metric, str):
+
+        # Converts it to a dictionary first
+
+        loss_metric = {"name": loss_metric}
+
+    # Verifies if the loss metric is a dictionary
+
+    if isinstance(loss_metric, dict):
+
+        # Verifies if this dictionary has the key name
+
+        if not ("name" in loss_metric):
+
+            raise ValueError("'loss_metric' is a dictionary, but it do"+
+            "es not have the key 'name'. This key is essential to find"+
+            "ing the loss metric. Check the given 'loss_metric':\n"+str(
+            loss_metric))
+
+        # Recovers the name of the loss metric and removes this key-value
+        # pair from the dictionary
+
+        loss_metric_name = loss_metric["name"]
+
+        loss_metric_info = delete_dictionary_keys(loss_metric, "name")
+
+        # Verifies if this loss is a Keras' loss
+
+        if loss_metric_name.lower() in available_keras_losses:
+
+            # Recovers the loss class
+
+            loss_metric = available_keras_losses[
+            loss_metric_name.lower()]
+
+            # Verifies if the input dictionary has valid arguments for 
+            # the instantiation of the class
+
+            verify_dictionary_as_function_argument(loss_metric.__init__, 
+            loss_metric_info, list_of_arguments_not_to_be_verified=["s"+
+            "elf", "kwargs"])
+
+            # Instantiates the class
+
+            return loss_metric(**loss_metric_info)
+
+        # Otherwise, verifies if they are a custom loss function defined
+        # in loss_assembler_class.py
+
+        else:
+
+            # Verifies if the given loss name is a valid class
+
+            loss_metric_result = dispatch_classes([loss_metric_name],
+            loss_assembler_classes, class_input=loss_metric_info,
+            class_kind_name_for_error_message="loss class", 
+            return_error_message=True)
+
+            # If the result is a string, it means the loss class was not
+            # found
+
+            if isinstance(loss_metric_result, str):
+
+                keras_losses = ""
+
+                for name in available_keras_losses:
+
+                    keras_losses += "\n'"+str(name)+"'"
+
+                raise ValueError("'loss_metric' was not found in Keras"+
+                "' native loss functions nor in the custom-built ones."+
+                "\nThe given name is '"+str(loss_metric_name)+"'. Chec"+
+                "k the available Keras' loss functions:\n"+keras_losses+
+                "\n\nCheck the error for the custom-built losses:\n"+
+                loss_metric_result)
+
+            # Otherwise, takes the loss class instance from the result
+            # dictionary
+
+            return loss_metric_result[loss_metric_name]
+
+    # Otherwise, verifies if the loss metric is a Keras' loss instance
+
+    elif not isinstance(loss_metric, tf.keras.losses.Loss):
+
+        raise TypeError("'loss_metric' can be a string with the name o"+
+        "f a loss function from\nKeras or from the custom-built loss f"+
+        "unctions. It can also be a dictio-\nnary with the name of the"+
+        " loss function and additional information. Fi-\nnally, 'loss_"+
+        "metric' can be an instance of a Keras' native loss. Curren-\n"+
+        "tly, it is neither. Check the provided 'loss_metric':\n"+str(
+        loss_metric))
+
+    # If no error has been risen, just returns the loss instance
+
+    return loss_metric

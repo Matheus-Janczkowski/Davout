@@ -41,6 +41,17 @@ sys.modules["dictionary_tools"] = dictionary_tools
 
 specifications.loader.exec_module(dictionary_tools)
 
+# Imports function tools
+
+specifications = util.spec_from_file_location("function_tools", 
+broken_path[1]/"PythonicUtilities"/"function_tools.py")
+
+function_tools = util.module_from_spec(specifications)
+
+sys.modules["function_tools"] = function_tools
+
+specifications.loader.exec_module(function_tools)
+
 ########################################################################
 #                             Progress bar                             #
 ########################################################################
@@ -688,7 +699,9 @@ None, searched_entity="classes"):
 @optional_argumentsInitializer({'reserved_entities': lambda: []})
 
 def dispatch_classes(methods_names, searched_file, parent_class=None, 
-class_input=None, reserved_entities=None):
+class_input=None, reserved_entities=None, 
+class_kind_name_for_error_message="class method", return_error_message=
+False):
 
     # Assures methods_names is a list, or a tuple or a dictionary
 
@@ -732,9 +745,18 @@ class_input=None, reserved_entities=None):
 
                     available_list += "'"+name+"'\n"
 
+                # If the error message is to be returned instead of au-
+                # tomatically risen
+
+                if return_error_message:
+
+                    return ("'"+str(method_name)+"' is not an availabl"+
+                    "e "+class_kind_name_for_error_message+". Find one"+
+                    " in the list:"+available_list)
+
                 raise NameError("'"+str(method_name)+"' is not an avai"+
-                "lable class method. Find one in the list:"+
-                available_list)
+                "lable "+class_kind_name_for_error_message+". Find one"+
+                " in the list:"+available_list)
 
     elif isinstance(class_input, tuple):
 
@@ -756,9 +778,62 @@ class_input=None, reserved_entities=None):
 
                     available_list += "'"+name+"'\n"
 
+                # If the error message is to be returned instead of au-
+                # tomatically risen
+
+                if return_error_message:
+
+                    return ("'"+str(method_name)+"' is not an availabl"+
+                    "e "+class_kind_name_for_error_message+". Find one"+
+                    " in the list:"+available_list)
+
                 raise NameError("'"+str(method_name)+"' is not an avai"+
-                "lable class method. Find one in the list:"+
-                available_list)
+                "lable "+class_kind_name_for_error_message+". Find one"+
+                " in the list:"+available_list)
+
+    # If the class input is a dictionary
+
+    elif isinstance(class_input, dict):
+    
+        for method_name in methods_names:
+
+            # If the name is in the list of available methods, updates 
+            # the dictionary of classes
+
+            if method_name in available_methodsNames:
+
+                # Verifies if the given class input has all the necessary
+                # positional arguments and possible keyword arguments
+
+                function_tools.verify_dictionary_as_function_argument(
+                methods_classesDict[method_name].__init__, class_input,
+                list_of_arguments_not_to_be_verified=["self", "kwargs"])
+
+                # Instantiates the class by unpacking the dictionary
+
+                methods_classes[method_name] = methods_classesDict[
+                method_name](**class_input)
+
+            else:
+
+                available_list = "\n"
+
+                for name in available_methodsNames:
+
+                    available_list += "'"+name+"'\n"
+
+                # If the error message is to be returned instead of au-
+                # tomatically risen
+
+                if return_error_message:
+
+                    return ("'"+str(method_name)+"' is not an availabl"+
+                    "e "+class_kind_name_for_error_message+". Find one"+
+                    " in the list:"+available_list)
+
+                raise NameError("'"+str(method_name)+"' is not an avai"+
+                "lable "+class_kind_name_for_error_message+". Find one"+
+                " in the list:"+available_list)
 
     else:
 
@@ -780,9 +855,18 @@ class_input=None, reserved_entities=None):
 
                     available_list += "'"+name+"'\n"
 
+                # If the error message is to be returned instead of au-
+                # tomatically risen
+
+                if return_error_message:
+
+                    return ("'"+str(method_name)+"' is not an availabl"+
+                    "e "+class_kind_name_for_error_message+". Find one"+
+                    " in the list:"+available_list)
+
                 raise NameError("'"+str(method_name)+"' is not an avai"+
-                "lable class method. Find one in the list:"+
-                available_list)
+                "lable "+class_kind_name_for_error_message+". Find one"+
+                " in the list:"+available_list)
         
     # Returns the dictionary of classes that will be used given the na-
     # mes and the available classes

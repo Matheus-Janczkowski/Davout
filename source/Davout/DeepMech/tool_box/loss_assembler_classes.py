@@ -951,7 +951,7 @@ class QuadraticLossOverAnyResidualAssembler(tf.keras.losses.Loss):
 #                          Conventional losses                         #
 ########################################################################
 
-# Defines a function for the maximum absolute error
+# Defines a class for the maximum absolute error
 
 class MaximumAbsoluteError(tf.keras.losses.Loss):
 
@@ -966,3 +966,161 @@ class MaximumAbsoluteError(tf.keras.losses.Loss):
     def minimum_absolute_error(self, y_true, y_pred):
 
         return tf.reduce_min(tf.abs(y_true - y_pred))
+
+# Defines a class for the Lp norm of the absolute error
+
+class LpNormError(tf.keras.losses.Loss):
+
+    """
+    Lp norm of the error. This loss evaluates the following expression,
+
+    L = (E_ij^p)^(1/p),
+
+    where E_ij is the error measured at the j-th component of the i-th 
+    sample. 
+    
+    Parameters
+    ----------
+    p : float, default=2.0
+        p exponent of the Lp norm.
+        
+    name : str, default="lp_norm_loss"
+        Name of the loss function instance.
+    """
+
+    def __init__(self, p=2.0, epsilon=1E-7, dtype=tf.float32, name="lp"+
+    "_norm_loss", use_stable_implementation=False, **kwargs):
+
+        super().__init__(name=name, dtype=tf.as_dtype(dtype), **kwargs)
+
+        # Saves the original rawly given objects
+
+        self.raw_p = float(p)
+
+        self.raw_epsilon = float(epsilon)
+
+        self.raw_dtype = tf.as_dtype(dtype).name
+
+        self.use_stable_implementation = use_stable_implementation
+
+        # Saves the live object
+
+        self.epsilon = tf.cast(epsilon, dtype=self.dtype)
+
+        # Verifies if the stable implementation is to be used
+
+        if self.use_stable_implementation:
+
+            self.p = tf.cast(self.raw_p, dtype=self.dtype)
+            
+            # Selects the call method that scales and rescales the loss
+            # function to avoid numerical instabilities
+
+            self.call_method = self.scale_evaluate_and_rescale_method
+
+        # Verifies if the exponent p is an even positive integer
+
+        elif self.raw_p%2==0 and self.raw_p>1.0:
+
+            self.p = tf.cast(self.raw_p, dtype=self.dtype)
+
+            # Selects the call method to avoid evaluating the absolute
+            # value
+
+            self.call_method = self.even_exponent_loss
+
+        # Otherwise, changes p to half of p to compensate for the smooth
+        # absolute value
+
+        elif self.raw_p>=1.0:
+
+            self.p = tf.cast(self.raw_p*0.5, dtype=self.dtype)
+
+            # Selects the call method to ensure evaluating the absolute
+            # value before evaluating the Lp norm
+
+            self.call_method = self.non_even_exponent_loss
+
+        else:
+
+            raise ValueError("The 'p' exponent in 'LpNormError' loss c"+
+            "lass must be greater than or equal to 1. Currently, it is"+
+            ": "+str(p))
+
+        # Sets the reciprocal of the original p exponent
+
+        self.p_reciprocal = tf.cast(1.0/self.raw_p, dtype=self.dtype)
+
+    # Defines the generic call method to be differentiated using AD
+
+    def call(self, y_true, y_model):
+
+        return self.call_method(y_true, y_model)
+
+    # Defines the call method to evaluate the loss function when the ex-
+    # ponent is an even integer
+
+    def even_exponent_loss(self, y_true, y_model):
+
+        # Computes the Lp norm of the error tensor. Adds a constant epsi-
+        # lon to the computation of the p-th root to avoid exploding gra-
+        # dients when the p-th root tends to zero
+
+        return tf.pow(tf.reduce_sum(tf.pow(y_true-y_model, self.p), 
+        axis=-1)+self.epsilon, self.p_reciprocal)
+
+    # Defines the call method to evaluate the loss function when the ex-
+    # ponent is not an integer or when it is an odd integer. Thus, the 
+    # absolute value is taken first
+
+    def non_even_exponent_loss(self, y_true, y_model):
+
+        # Evaluates the smooth absolute value of the error tensor first
+
+        absolute_error = tf.square(y_true-y_model)+self.epsilon
+
+        # Computes the Lp norm of the error tensor
+
+        return tf.pow(tf.reduce_sum(tf.pow(absolute_error, self.p),
+        axis=-1), self.p_reciprocal)
+
+    # Defines a safe and numerically stable evaluation of this loss 
+    # function common to both even and odd exponents. With the caveat
+    # that the absolute value is calculated using tf.abs
+
+    def scale_evaluate_and_rescale_method(self, y_true, y_model):
+
+        # Evaluates the absolute error tensor
+
+        absolute_error_tensor = tf.abs(y_true-y_model)
+
+        # Gets the maximum error per sample as a tensor
+
+        maximum_per_sample = tf.reduce_max(absolute_error_tensor, axis=
+        -1, keepdims=True)
+
+        # Divides the error tensor by the maximum absolute error. But 
+        # care is taken to avoid division by zero
+
+        absolute_error_tensor = tf.math.divide_no_nan(
+        absolute_error_tensor, maximum_per_sample)
+
+        # Evaluates the Lp norm by computing the powers with the scaled
+        # components then muliplying by the scale factor
+
+        return tf.squeeze(maximum_per_sample, axis=-1)*tf.pow(
+        tf.reduce_sum(tf.pow(absolute_error_tensor, self.p), axis=-1),
+        self.p_reciprocal)
+
+    # Defines the get-config method to ensure serialization when saving
+    # and loading models
+
+    def get_config(self):
+
+        config = super().get_config()
+
+        config.update({"p": self.raw_p, "dtype": self.raw_dtype, "epsi"+
+        "lon": self.raw_epsilon, "use_stable_implementation":
+        self.use_stable_implementation})
+
+        return config

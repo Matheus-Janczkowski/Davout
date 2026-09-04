@@ -24,7 +24,8 @@ class SurrogateModel:
     def __init__(self, displacement_data_file, input_data_file, 
     saved_model_file, results_path, n_training_samples, 
     quotient_space_dimension, n_monte_carlo_realizations, n_best_models,
-    n_best_samples, mesh_file_name, screenshots_path, optimizer):
+    n_best_samples, mesh_file_name, screenshots_path, optimizer, 
+    loss_metric, subdofs_to_learn, displacement_component_to_plot):
 
         # Stores the data
 
@@ -52,12 +53,31 @@ class SurrogateModel:
 
         self.optimizer = optimizer
 
+        self.loss_metric = loss_metric
+
+        self.displacement_component_to_plot = (
+        displacement_component_to_plot)
+
+        # Converts the tensor of dofs to a tensorflow integer tensor
+
+        self.subdofs_to_learn = tf.convert_to_tensor(subdofs_to_learn,
+        dtype=tf.int32)
+
         # Reads the two files
 
         self.output_data = np.load(self.results_path+"//"+
         self.displacement_data_file)
 
-        self.n_output_neurons = self.output_data.shape[1]
+        # Gets the number of samples and of the total of DOFs
+
+        self.number_of_samples, self.total_number_of_dofs = (
+        self.output_data.shape)
+
+        # Gets the only output data that is necessary
+        
+        self.output_data = self.output_data[:,self.subdofs_to_learn]
+
+        self.n_output_neurons = self.subdofs_to_learn.shape[0]
 
         # Sets a list of layers and the activation functions
 
@@ -65,9 +85,7 @@ class SurrogateModel:
         "elu": {"number of neurons": 100}}, {"linear": 
         self.n_output_neurons}]
 
-    # Defines a function to train the neural network model
-
-    def train_surrogate_model(self):
+        # Gets the input data
 
         input_data = np.load(self.results_path+"//"+self.input_data_file)
 
@@ -75,20 +93,55 @@ class SurrogateModel:
         # columns. This is a requirement of the implementation of the 
         # GatedQuotientSpace architecture
 
-        input_data = np.hstack((input_data[:,(input_data.shape[1]-
-        self.quotient_space_dimension):], input_data[:,:(
-        input_data.shape[1]-self.quotient_space_dimension)]))
+        kinematic_input_data = input_data[:,(input_data.shape[1]-
+        self.quotient_space_dimension):]
+
+        material_input_data = input_data[:,:(input_data.shape[1]-
+        self.quotient_space_dimension)]
+
+        # Gets the magnitude order of each data type
+
+        kinematic_magnitude_order = np.floor(np.log10(np.maximum(np.max(
+        np.abs(kinematic_input_data)), 1e-12))) 
+
+        material_magnitude_order = np.floor(np.log10(np.maximum(np.max(
+        np.abs(material_input_data)), 1e-12))) 
+
+        print("\nThe order of magnitude of the kinematic data is: "+str(
+        kinematic_magnitude_order)+"; the maximum absolute is: "+str(
+        np.max(np.abs(kinematic_input_data)))+"\nThe order of magnitud"+
+        "e of the material data is: "+str(material_magnitude_order)+";"+
+        " the maximum absolute is: "+str(np.max(np.abs(
+        material_input_data)))+"\n")
+
+        input("The architecture is:\n"+str(self.activations_list)+"\n"+
+        "\nThe output data has a total of "+str(self.total_number_of_dofs
+        )+" DOFs\n\nPress ENTER to continue\n\n")
+
+        # The order of magnitude of the material data is expected to be 
+        # larger than the kinematic data. Thus, gets the material input
+        # data to the magnitude order of the kinematic data
+
+        material_input_data = ((10.0**(kinematic_magnitude_order-
+        material_magnitude_order))*material_input_data)
+
+        self.input_data = np.hstack((kinematic_input_data, 
+        material_input_data))
+
+    # Defines a function to train the neural network model
+
+    def train_surrogate_model(self):
 
         # Sets the training data
 
-        training_data = input_data[0:self.n_training_samples,:]
+        training_data = self.input_data[0:self.n_training_samples,:]
 
         training_true_values = self.output_data[0:(
         self.n_training_samples),:]
 
         # Gets the number of input and output neurons
 
-        n_input_neurons = input_data.shape[1]
+        n_input_neurons = self.input_data.shape[1]
 
         # Creates the class of neural network information
 
@@ -110,9 +163,8 @@ class SurrogateModel:
         # Sets the optimization class for training
 
         training_class = training_tools.ModelCustomTraining(custom_model,
-        training_data, training_true_values, 
-        tf.keras.losses.MeanAbsoluteError(), verbose=True, n_iterations=
-        maximum_iterations, verbose_deltaIterations=
+        training_data, training_true_values, self.loss_metric, verbose=
+        True, n_iterations=maximum_iterations, verbose_deltaIterations=
         verbose_delta_iterations, save_model_file=self.saved_model_file, 
         match_data_float_type_to_trainables=True, parent_path=
         self.results_path, optimizer=self.optimizer)
@@ -129,7 +181,8 @@ class SurrogateModel:
 
         training_class.monte_carlo_training(n_realizations=
         self.n_monte_carlo_realizations, best_models_rank_size=
-        self.n_best_models, show_reinitialization_distance=True)
+        self.n_best_models, show_reinitialization_distance=True,
+        model_base_name=self.saved_model_file)
 
         # Checks the loss again with the best model of the Monte Carlo
         # training
@@ -143,24 +196,9 @@ class SurrogateModel:
 
     def test_surrogate_model(self):
 
-        # Reads the input file
-
-        input_data = np.load(self.results_path+"//"+self.input_data_file)
-
-        print("The data has a total of "+str(input_data.shape[0])+"sam"+
-        "ples\n")
-
-        # Reshufles data to put the displacement gradient as the first
-        # columns. This is a requirement of the implementation of the 
-        # GatedQuotientSpace architecture
-
-        input_data = np.hstack((input_data[:,(input_data.shape[1]-
-        self.quotient_space_dimension):], input_data[:,:(
-        input_data.shape[1]-self.quotient_space_dimension)]))
-
         # Sets the test data
 
-        test_data = input_data[self.n_training_samples:,:]
+        test_data = self.input_data[self.n_training_samples:,:]
 
         test_true_values = self.output_data[self.n_training_samples:,:]
 
@@ -217,6 +255,37 @@ class SurrogateModel:
             "the following mean absolute error:\n"+str(loss_per_sample[
             best_samples_indices])+"\n")
 
+            # Gets the displacement of the model into a null tensor. In
+            # other words, only the predicted DOFs are updated
+
+            model_displacement = tf.zeros((self.number_of_samples,
+            self.total_number_of_dofs))
+
+            num_dofs = tf.shape(self.subdofs_to_learn)[0]
+
+            # Creates grid of row indices [0, 1, ... num_samples-1] ex- 
+            # panded to match subdofs
+
+            row_indices = tf.repeat(tf.range(self.number_of_samples)[:,
+            None], repeats=num_dofs, axis=1)
+
+            column_indices = tf.tile(tf.constant(self.subdofs_to_learn)[
+            None,:], multiples=[self.number_of_samples,1])
+
+            # Stacks into shape (num_samples * num_dofs, 2)
+
+            indices = tf.reshape(tf.stack([row_indices, column_indices], 
+            axis=-1), [-1, 2])
+
+            # Flattens output_model to match indices
+
+            updates = tf.reshape(output_model, [-1])
+
+            # Performs scatter update
+
+            model_displacement = tf.tensor_scatter_nd_update(
+            model_displacement, indices, updates)
+
             # Saves as binary files the true data and the output data of 
             # the best preserving samples
 
@@ -233,21 +302,9 @@ class SurrogateModel:
 
     def plot_training_response(self):
 
-        # Gets the input data
-
-        input_data = np.load(self.results_path+"//"+self.input_data_file)
-    
-        # Reshufles data to put the displacement gradient as the first
-        # columns. This is a requirement of the implementation of the 
-        # GatedQuotientSpace architecture
-
-        input_data = np.hstack((input_data[:,(input_data.shape[1]-
-        self.quotient_space_dimension):], input_data[:,:(
-        input_data.shape[1]-self.quotient_space_dimension)]))
-
         # Sets the training data
 
-        training_data = input_data[0:self.n_training_samples,:]
+        training_data = self.input_data[0:self.n_training_samples,:]
 
         training_true_values = self.output_data[0:(
         self.n_training_samples),:]
@@ -317,13 +374,44 @@ class SurrogateModel:
             true_displacement_output_file = (self.results_path+"//true"+
             "_best_training_samples_of_"+str(i+1)+"_best_model.npy")
 
+            # Gets the displacement of the model into a null tensor. In
+            # other words, only the predicted DOFs are updated
+
+            model_displacement = tf.zeros((self.number_of_samples,
+            self.total_number_of_dofs))
+
+            num_dofs = tf.shape(self.subdofs_to_learn)[0]
+
+            # Creates grid of row indices [0, 1, ... num_samples-1] ex- 
+            # panded to match subdofs
+
+            row_indices = tf.repeat(tf.range(self.number_of_samples)[:,
+            None], repeats=num_dofs, axis=1)
+
+            column_indices = tf.tile(tf.constant(self.subdofs_to_learn)[
+            None,:], multiples=[self.number_of_samples,1])
+
+            # Stacks into shape (num_samples * num_dofs, 2)
+
+            indices = tf.reshape(tf.stack([row_indices, column_indices], 
+            axis=-1), [-1, 2])
+
+            # Flattens output_model to match indices
+
+            updates = tf.reshape(output_model, [-1])
+
+            # Performs scatter update
+
+            model_displacement = tf.tensor_scatter_nd_update(
+            model_displacement, indices, updates)
+
             # Saves as binary files the true data and the output data of 
             # the best preserving samples
 
             np.save(true_displacement_output_file, training_true_values[
             best_samples_indices,:])
 
-            np.save(displacement_output_file, output_model.numpy()[
+            np.save(displacement_output_file, model_displacement.numpy()[
             best_samples_indices,:])
 
             # Reads the binary file directly and converts it to a FEniCS 
@@ -372,9 +460,9 @@ class SurrogateModel:
             paraview_tools.frozen_snapshots(xdmf_field_file, "Displace"+
             "ment", time=0.0, representation_type="Surface With Edges", 
             axes_color="black", legend_bar_font="latex", zoom_factor=1.0, 
-            component_to_plot="Magnitude", warp_by_vector=True, 
-            resolution_ratio=10, background_color="WhiteBackground", 
-            display_reference_configuration=False, 
+            component_to_plot=self.displacement_component_to_plot, 
+            warp_by_vector=False, resolution_ratio=10, background_color=
+            "WhiteBackground", display_reference_configuration=False, 
             transparent_background=True, legend_bar_font_color="black", 
             set_camera_interactively=False, 
             #color_bar_min_value=0.1, color_bar_max_value=0.6,
@@ -388,9 +476,10 @@ class SurrogateModel:
             paraview_tools.frozen_snapshots(xdmf_true_field_file, "Dis"+
             "placement", time=0.0, representation_type="Surface With E"+
             "dges", axes_color="black", legend_bar_font="latex", 
-            zoom_factor=1.0, component_to_plot="Magnitude", 
-            warp_by_vector=True, resolution_ratio=10, background_color=
-            "WhiteBackground", display_reference_configuration=False, 
+            zoom_factor=1.0, component_to_plot=
+            self.displacement_component_to_plot, warp_by_vector=False, 
+            resolution_ratio=10, background_color="WhiteBackground", 
+            display_reference_configuration=False, 
             transparent_background=True, legend_bar_font_color="black", 
             set_camera_interactively=False, 
             #color_bar_min_value=0.1, color_bar_max_value=0.6,
@@ -411,7 +500,8 @@ class SurrogateModel:
             # ment DOFs of this model
 
             displacement_output_file = (self.results_path+"//surrogate"+
-            "_best_samples_of_"+str(i+1)+"_best_model.npy")
+            "_best_samples_of_"+str(i+1)+"_best_"+self.saved_model_file+
+            ".npy")
 
             # Recovers the name of the file with the true values of dis-
             # placement
@@ -465,9 +555,9 @@ class SurrogateModel:
             paraview_tools.frozen_snapshots(xdmf_field_file, "Displace"+
             "ment", time=0.0, representation_type="Surface With Edges", 
             axes_color="black", legend_bar_font="latex", zoom_factor=1.0, 
-            component_to_plot="Magnitude", warp_by_vector=True, 
-            resolution_ratio=10, background_color="WhiteBackground", 
-            display_reference_configuration=False, 
+            component_to_plot=self.displacement_component_to_plot, 
+            warp_by_vector=False, resolution_ratio=10, background_color=
+            "WhiteBackground", display_reference_configuration=False, 
             transparent_background=True, legend_bar_font_color="black", 
             set_camera_interactively=False, 
             #color_bar_min_value=0.1, color_bar_max_value=0.6,
@@ -481,9 +571,10 @@ class SurrogateModel:
             paraview_tools.frozen_snapshots(xdmf_true_field_file, "Dis"+
             "placement", time=0.0, representation_type="Surface With E"+
             "dges", axes_color="black", legend_bar_font="latex", 
-            zoom_factor=1.0, component_to_plot="Magnitude", 
-            warp_by_vector=True, resolution_ratio=10, background_color=
-            "WhiteBackground", display_reference_configuration=False, 
+            zoom_factor=1.0, component_to_plot=
+            self.displacement_component_to_plot, warp_by_vector=False, 
+            resolution_ratio=10, background_color="WhiteBackground", 
+            display_reference_configuration=False, 
             transparent_background=True, legend_bar_font_color="black", 
             set_camera_interactively=False, 
             #color_bar_min_value=0.1, color_bar_max_value=0.6,
@@ -503,11 +594,21 @@ if __name__=="__main__":
     input_data_file = ("00_successful_complete_data_matrix_pc_matheus."+
     "npy")
 
-    saved_model_file = "saved_model"
+    Lp_norm_exponent = 12
+
+    saved_model_file = "saved_model_lp_norm_"+str(Lp_norm_exponent)
 
     n_training_samples = 10000
 
     quotient_space_dimension = 9
+
+    # Sets the range of DOFs to learn
+
+    subdofs_to_learn = np.arange(0, 20577, 3)
+
+    # Sets the displacement component to plot
+
+    displacement_component_to_plot = "X"
 
     # Trains a new model
 
@@ -518,6 +619,9 @@ if __name__=="__main__":
     n_best_samples = 10
 
     optimizer = "Adam"
+
+    loss_metric = {"name": "LpNormError", "p": Lp_norm_exponent, 
+    "use_stable_implementation": True}
 
     training_flag = True 
 
@@ -536,7 +640,8 @@ if __name__=="__main__":
     surrogate_model_class = SurrogateModel(displacement_data_file, 
     input_data_file, saved_model_file, results_path, n_training_samples, 
     quotient_space_dimension, n_monte_carlo_realizations, n_best_models,
-    n_best_samples, mesh_file_name, screenshots_path, optimizer)
+    n_best_samples, mesh_file_name, screenshots_path, optimizer, 
+    loss_metric, subdofs_to_learn, displacement_component_to_plot)
 
     # Sets training forth if it is the case
 
