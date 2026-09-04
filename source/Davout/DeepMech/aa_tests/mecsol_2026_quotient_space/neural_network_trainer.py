@@ -73,10 +73,6 @@ class SurrogateModel:
         self.number_of_samples, self.total_number_of_dofs = (
         self.output_data.shape)
 
-        # Gets the only output data that is necessary
-        
-        self.output_data = self.output_data[:,self.subdofs_to_learn]
-
         self.n_output_neurons = self.subdofs_to_learn.shape[0]
 
         # Sets a list of layers and the activation functions
@@ -137,7 +133,7 @@ class SurrogateModel:
         training_data = self.input_data[0:self.n_training_samples,:]
 
         training_true_values = self.output_data[0:(
-        self.n_training_samples),:]
+        self.n_training_samples), self.subdofs_to_learn]
 
         # Gets the number of input and output neurons
 
@@ -200,7 +196,8 @@ class SurrogateModel:
 
         test_data = self.input_data[self.n_training_samples:,:]
 
-        test_true_values = self.output_data[self.n_training_samples:,:]
+        test_true_values = self.output_data[self.n_training_samples:,
+        self.subdofs_to_learn]
 
         # Defines the loss function metric
 
@@ -215,7 +212,7 @@ class SurrogateModel:
             # Loads this model
 
             loaded_model = tf.keras.models.load_model(self.results_path+
-            "//"+str(i+1)+"_best_model.keras")
+            "//"+str(i+1)+"_best_"+self.saved_model_file+".keras")
 
             # Gets the output of the loaded model
 
@@ -258,19 +255,20 @@ class SurrogateModel:
             # Gets the displacement of the model into a null tensor. In
             # other words, only the predicted DOFs are updated
 
-            model_displacement = tf.zeros((self.number_of_samples,
-            self.total_number_of_dofs))
+            model_displacement = tf.zeros((self.number_of_samples-
+            self.n_training_samples, self.total_number_of_dofs))
 
             num_dofs = tf.shape(self.subdofs_to_learn)[0]
 
             # Creates grid of row indices [0, 1, ... num_samples-1] ex- 
             # panded to match subdofs
 
-            row_indices = tf.repeat(tf.range(self.number_of_samples)[:,
-            None], repeats=num_dofs, axis=1)
+            row_indices = tf.repeat(tf.range(self.number_of_samples-
+            self.n_training_samples)[:,None], repeats=num_dofs, axis=1)
 
             column_indices = tf.tile(tf.constant(self.subdofs_to_learn)[
-            None,:], multiples=[self.number_of_samples,1])
+            None,:], multiples=[self.number_of_samples-
+            self.n_training_samples, 1])
 
             # Stacks into shape (num_samples * num_dofs, 2)
 
@@ -290,12 +288,12 @@ class SurrogateModel:
             # the best preserving samples
 
             np.save(self.results_path+"//true_best_samples_of_"+str(i+1
-            )+"_best_model.npy", test_true_values[best_samples_indices,:
-            ])
+            )+"_best_model.npy", self.output_data[
+            self.n_training_samples:,:][best_samples_indices,:])
 
             np.save(self.results_path+"//surrogate_best_samples_of_"+
-            str(i+1)+"_best_model.npy", output_model.numpy()[
-            best_samples_indices,:])
+            str(i+1)+"_best_"+self.saved_model_file+".npy", 
+            model_displacement.numpy()[best_samples_indices,:])
 
     # Defines a function to insert the results into a function space and
     # plot it for the samples of the training set
@@ -307,7 +305,7 @@ class SurrogateModel:
         training_data = self.input_data[0:self.n_training_samples,:]
 
         training_true_values = self.output_data[0:(
-        self.n_training_samples),:]
+        self.n_training_samples), self.subdofs_to_learn]
 
         # Defines the loss function metric
 
@@ -322,7 +320,7 @@ class SurrogateModel:
             # Loads this model
 
             loaded_model = tf.keras.models.load_model(self.results_path+
-            "//"+str(i+1)+"_best_model.keras")
+            "//"+str(i+1)+"_best_"+self.saved_model_file+".keras")
 
             # Gets the output of the loaded model
 
@@ -366,7 +364,8 @@ class SurrogateModel:
             # ment DOFs of this model
 
             displacement_output_file = (self.results_path+"//surrogate"+
-            "_best_training_samples_of_"+str(i+1)+"_best_model.npy")
+            "_best_training_samples_of_"+str(i+1)+"_best_"+
+            self.saved_model_file+".npy")
 
             # Recovers the name of the file with the true values of dis-
             # placement
@@ -377,7 +376,7 @@ class SurrogateModel:
             # Gets the displacement of the model into a null tensor. In
             # other words, only the predicted DOFs are updated
 
-            model_displacement = tf.zeros((self.number_of_samples,
+            model_displacement = tf.zeros((self.n_training_samples,
             self.total_number_of_dofs))
 
             num_dofs = tf.shape(self.subdofs_to_learn)[0]
@@ -385,16 +384,16 @@ class SurrogateModel:
             # Creates grid of row indices [0, 1, ... num_samples-1] ex- 
             # panded to match subdofs
 
-            row_indices = tf.repeat(tf.range(self.number_of_samples)[:,
+            row_indices = tf.repeat(tf.range(self.n_training_samples)[:,
             None], repeats=num_dofs, axis=1)
 
             column_indices = tf.tile(tf.constant(self.subdofs_to_learn)[
-            None,:], multiples=[self.number_of_samples,1])
+            None,:], multiples=[self.n_training_samples,1])
 
             # Stacks into shape (num_samples * num_dofs, 2)
 
-            indices = tf.reshape(tf.stack([row_indices, column_indices], 
-            axis=-1), [-1, 2])
+            indices = tf.cast(tf.reshape(tf.stack([row_indices, 
+            column_indices], axis=-1), [-1, 2]), dtype=tf.int32)
 
             # Flattens output_model to match indices
 
@@ -408,8 +407,8 @@ class SurrogateModel:
             # Saves as binary files the true data and the output data of 
             # the best preserving samples
 
-            np.save(true_displacement_output_file, training_true_values[
-            best_samples_indices,:])
+            np.save(true_displacement_output_file, self.output_data[0:(
+            self.n_training_samples),:][best_samples_indices,:])
 
             np.save(displacement_output_file, model_displacement.numpy()[
             best_samples_indices,:])
@@ -445,7 +444,7 @@ class SurrogateModel:
             # Sets the name of the screenshot file
 
             screenshot_file = ("surrogate_best_training_sample_of_"+str(
-            i+1)+"_best_model.png")
+            i+1)+"_best_"+self.saved_model_file+".png")
 
             # Sets the name of the screenshot file for the true displa-
             # cement
@@ -540,7 +539,7 @@ class SurrogateModel:
             # Sets the name of the screenshot file
 
             screenshot_file = ("surrogate_best_sample_of_"+str(i+1)+"_"+
-            "best_model.png")
+            "best_"+self.saved_model_file+".png")
 
             # Sets the name of the screenshot file for the true displa-
             # cement
