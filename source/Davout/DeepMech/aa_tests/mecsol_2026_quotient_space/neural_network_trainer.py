@@ -15,7 +15,7 @@ from .....Davout.PythonicUtilities.path_tools import get_parent_path_of_file
 
 from .....Davout.MultiMech.tool_box.binary_tools import read_field_from_binary
 
-from .....Davout.GraphUtilities import paraview_tools
+from .....Davout.GraphUtilities import paraview_tools, collage_tools
 
 # Defines a class for the training and testing procedures
 
@@ -25,7 +25,8 @@ class SurrogateModel:
     saved_model_file, results_path, n_training_samples, 
     quotient_space_dimension, n_monte_carlo_realizations, n_best_models,
     n_best_samples, mesh_file_name, screenshots_path, optimizer, 
-    loss_metric, subdofs_to_learn, displacement_component_to_plot):
+    loss_metric, subdofs_to_learn, displacement_component_to_plot,
+    saved_model_without_gate_file):
 
         # Stores the data
 
@@ -34,6 +35,8 @@ class SurrogateModel:
         self.input_data_file = input_data_file
 
         self.saved_model_file = saved_model_file
+
+        self.saved_model_without_gate_file = saved_model_without_gate_file
 
         self.results_path = results_path
 
@@ -89,7 +92,7 @@ class SurrogateModel:
         # columns. This is a requirement of the implementation of the 
         # GatedQuotientSpace architecture
 
-        kinematic_input_data = input_data[:,(input_data.shape[1]-
+        self.kinematic_input_data = input_data[:,(input_data.shape[1]-
         self.quotient_space_dimension):]
 
         material_input_data = input_data[:,:(input_data.shape[1]-
@@ -98,16 +101,16 @@ class SurrogateModel:
         # Gets the magnitude order of each data type
 
         kinematic_magnitude_order = np.floor(np.log10(np.maximum(np.max(
-        np.abs(kinematic_input_data)), 1e-12))) 
+        np.abs(self.kinematic_input_data)), 1e-12))) 
 
         material_magnitude_order = np.floor(np.log10(np.maximum(np.max(
         np.abs(material_input_data)), 1e-12))) 
 
         print("\nThe order of magnitude of the kinematic data is: "+str(
         kinematic_magnitude_order)+"; the maximum absolute is: "+str(
-        np.max(np.abs(kinematic_input_data)))+"\nThe order of magnitud"+
-        "e of the material data is: "+str(material_magnitude_order)+";"+
-        " the maximum absolute is: "+str(np.max(np.abs(
+        np.max(np.abs(self.kinematic_input_data)))+"\nThe order of mag"+
+        "nitude of the material data is: "+str(material_magnitude_order
+        )+"; the maximum absolute is: "+str(np.max(np.abs(
         material_input_data)))+"\n")
 
         input("The architecture is:\n"+str(self.activations_list)+"\n"+
@@ -118,11 +121,11 @@ class SurrogateModel:
         # larger than the kinematic data. Thus, gets the material input
         # data to the magnitude order of the kinematic data
 
-        material_input_data = ((10.0**(kinematic_magnitude_order-
+        self.material_input_data = ((10.0**(kinematic_magnitude_order-
         material_magnitude_order))*material_input_data)
 
-        self.input_data = np.hstack((kinematic_input_data, 
-        material_input_data))
+        self.input_data = np.hstack((self.kinematic_input_data, 
+        self.material_input_data))
 
     # Defines a function to train the neural network model
 
@@ -298,7 +301,7 @@ class SurrogateModel:
     # Defines a function to insert the results into a function space and
     # plot it for the samples of the training set
 
-    def plot_training_response(self):
+    def plot_training_response(self, limit_model=None):
 
         # Sets the training data
 
@@ -313,9 +316,17 @@ class SurrogateModel:
 
         maximum_absolute_error = MaximumAbsoluteError()
 
+        # Sets the last model to be plotted
+
+        last_model = self.n_best_models+0
+
+        if limit_model is not None:
+
+            last_model = limit_model+0
+
         # Iterates through the best models
 
-        for i in range(self.n_best_models):
+        for i in range(last_model):
 
             # Loads this model
 
@@ -486,6 +497,9 @@ class SurrogateModel:
             self.screenshots_path, read_camera_settings_dictionary=True, 
             legend_bar_visibility=True)
 
+            print("\nThe input data for the "+str(i+1)+"-th model is: "+
+            str(training_data[best_samples_indices[0],:])+"\n")
+
     # Defines a function to insert the results into a function space and
     # plot it for the samples of the test set
 
@@ -581,6 +595,160 @@ class SurrogateModel:
             self.screenshots_path, read_camera_settings_dictionary=True, 
             legend_bar_visibility=True)
 
+    # Defines a function to generate the plot of comparison between a
+    # model and the true value
+
+    def plot_comparison_between_surrogate_and_true_data(self,
+    model_number):
+
+        # Gets the name of the screenshot file
+        
+        screenshot_file = ("surrogate_best_training_sample_of_"+str(
+        model_number)+"_best_"+self.saved_model_file+".png")
+
+        # Sets the name of the screenshot file for the true displa-
+        # cement
+
+        screenshot_true_file = ("true_best_training_sample_of_"+str(
+        model_number)+"_best_model.png")
+
+        # Creates the box collage
+
+        collage_tools.create_box_collage("training_comparison.png", input_path=
+        self.screenshots_path, output_path=self.screenshots_path,
+        input_image_list=[{"file name": screenshot_file, "position": [50.0, 199.0], 
+        "size": 50.0, "trim transparent background": True, "origin point":
+        "bottom-left"}, 
+        {"file name": screenshot_true_file, "position": [106.0, 199.0], "size": 50.0, 
+        "trim transparent background": True, "origin point": "bottom-left"}], 
+
+        input_text_list=[{"text": "a)", "position": [49.0, 236.0], "fo"+
+        "nt size": 4, "origin point": "top-left"}, 
+        {"text": "b)", "position": [105.0, 236.0], "font size": 4, "or"+
+        "igin point": "top-left"}, 
+        {"text": "Surrogate ANN model", "position": [100.0, 236.0], "f"+
+        "ont size": 4, "origin point": "top-right"}, 
+        {"text": "Original FEM model", "position": [157.0, 236.0], "f"+
+        "ont size": 4, "origin point": "top-right"}],
+
+        boxes_list=[{"contour color": "black", "fill color": "grey 3", 
+        "contour thickness": 0.2, "position": [46.0, 196.0], "width": 
+        115.0, "height": 43.0, "contour style": "solid", "origin point": 
+        "bottom-left", "name": "background"},
+        {"contour color": "black", "fill color": "grey 1", "contour thi"+
+        "ckness": 0.2, "position": [48.0, 198.0], "width": 54.0, "heig"+
+        "ht": 39.0, "contour style": "solid", "origin point": "bottom-"+
+        "left", "name": "left box"},
+        {"contour color": "black", "fill color": "grey 1", "contour thi"+
+        "ckness": 0.2, "position": [104.0, 198.0], "width": 55.0, "hei"+
+        "ght": 39.0, "contour style": "solid", "origin point": "bottom"+
+        "-left", "name": "right box"}],
+
+        verbose=True, no_padding=True, add_overlaying_grid=False, dpi=1000,
+        grid_annotation_length=10, save_lists_to_txt=True, 
+        interactive_preview=False, size_template="A4", export_selection={
+        "origin point": "bottom-left", "position": [46.0, 196.0], "wid"+
+        "th": 115.0, "height": 43.0}, compress_level=1, 
+        ignore_read_repetitions=True)
+
+    # Defines a function to train the neural network model
+    
+    def train_surrogate_model_without_gate(self):
+
+        # Sets the training data
+
+        training_data = self.input_data[0:self.n_training_samples,:]
+
+        training_true_values = self.output_data[0:(
+        self.n_training_samples), self.subdofs_to_learn]
+
+        # Gets the number of input and output neurons
+
+        n_input_neurons = self.input_data.shape[1]
+
+        # Creates the class of neural network information
+
+        ANN_class = ANN_tools.MultiLayerModel(n_input_neurons, 
+        self.activations_list, enforce_customLayers=True, verbose=True, 
+        parameters_dtype="float32", custom_architecture={"name": "Gene"+
+        "ricFeedForwardNNs"})
+
+        custom_model = ANN_class()
+
+        # Sets the number of training iterations and the number of iter-
+        # ations to plot results in the terminal
+
+        maximum_iterations = 1000
+        
+        verbose_delta_iterations = 50
+
+        # Sets the optimization class for training
+
+        training_class = training_tools.ModelCustomTraining(custom_model,
+        training_data, training_true_values, self.loss_metric, verbose=
+        True, n_iterations=maximum_iterations, verbose_deltaIterations=
+        verbose_delta_iterations, save_model_file=
+        self.saved_model_without_gate_file, 
+        match_data_float_type_to_trainables=True, parent_path=
+        self.results_path, optimizer=self.optimizer)
+
+        t_initial = time()
+
+        training_class()
+
+        elapsed_time = time()-t_initial
+
+        print("\nTrains at "+str(elapsed_time)+" seconds")
+
+        # Tests Monte Carlo training
+
+        training_class.monte_carlo_training(n_realizations=
+        self.n_monte_carlo_realizations, best_models_rank_size=
+        self.n_best_models, show_reinitialization_distance=True,
+        model_base_name=self.saved_model_without_gate_file)
+
+        # Checks the loss again with the best model of the Monte Carlo
+        # training
+
+        print("\nThe loss function evaluated again over the set of tra"+
+        "ining data for the best model is "+str(
+        training_class.loss_unseen_data(training_true_values, 
+        training_data, output_as_numpy=True)))
+
+        # Nullifies the kinematic data to test the null space
+
+        input_data_null_space = np.hstack((0.0*self.kinematic_input_data, 
+        self.material_input_data))
+
+        # Gets the model output in this input data
+
+        output_on_null_space = training_class.model(
+        input_data_null_space)
+
+        # Gets the maximum value of the model output
+
+        maximum_output = tf.reduce_max(tf.abs(output_on_null_space))
+
+        # Loads the best gated model
+        
+        loaded_gated_model = tf.keras.models.load_model(
+        self.results_path+"//1_best_"+self.saved_model_file+".keras")
+
+        # Gets the output of the loaded gated model
+
+        output_gated_model_on_null_space = loaded_gated_model(
+        input_data_null_space)
+
+        # Gets the maximum value of the gated model output
+
+        maximum_gated_output = tf.reduce_max(tf.abs(
+        output_gated_model_on_null_space))
+
+        print("\nThe maximum output of the non-gated model on the null"+
+        "-space is: "+str(maximum_output.numpy())+"\n\nThe maximum out"+
+        "put of the gated model on the null-space is: "+str(
+        maximum_gated_output.numpy())+"\n")
+
 # Execution block block
 
 if __name__=="__main__":
@@ -597,6 +765,9 @@ if __name__=="__main__":
 
     saved_model_file = "saved_model_lp_norm_"+str(Lp_norm_exponent)
 
+    saved_model_without_gate_file = ("saved_model_without_gate_lp_norm"+
+    "_"+str(Lp_norm_exponent))
+
     n_training_samples = 10000
 
     quotient_space_dimension = 9
@@ -611,9 +782,9 @@ if __name__=="__main__":
 
     # Trains a new model
 
-    n_monte_carlo_realizations = 200
+    n_monte_carlo_realizations = 2
 
-    n_best_models = 30
+    n_best_models = 2
 
     n_best_samples = 10
 
@@ -622,9 +793,17 @@ if __name__=="__main__":
     loss_metric = {"name": "LpNormError", "p": Lp_norm_exponent, 
     "use_stable_implementation": True}
 
-    training_flag = True 
+    training_flag = False 
 
     test_flag = False
+
+    plot_training_responses = False
+
+    plot_test_responses = False
+
+    collage_flag = False
+
+    compare_without_gate = True
 
     # Gets the mesh of the RVE
 
@@ -640,7 +819,8 @@ if __name__=="__main__":
     input_data_file, saved_model_file, results_path, n_training_samples, 
     quotient_space_dimension, n_monte_carlo_realizations, n_best_models,
     n_best_samples, mesh_file_name, screenshots_path, optimizer, 
-    loss_metric, subdofs_to_learn, displacement_component_to_plot)
+    loss_metric, subdofs_to_learn, displacement_component_to_plot,
+    saved_model_without_gate_file)
 
     # Sets training forth if it is the case
 
@@ -656,6 +836,24 @@ if __name__=="__main__":
 
     # Plots the best models
 
-    surrogate_model_class.plot_training_response()
+    if plot_training_responses:
 
-    #surrogate_model_class.plot_test_response()
+        surrogate_model_class.plot_training_response()
+
+    if plot_test_responses:
+
+        surrogate_model_class.plot_test_response()
+
+    # Makes the collage 
+
+    if collage_flag:
+
+        # The argument is the number of the best model to be plotted
+
+        surrogate_model_class.plot_comparison_between_surrogate_and_true_data(18)
+
+    # Compares the architecture without the gating function
+
+    if compare_without_gate:
+
+        surrogate_model_class.train_surrogate_model_without_gate()
