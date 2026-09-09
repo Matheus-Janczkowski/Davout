@@ -852,7 +852,7 @@ if __name__=="__main__":
 
         surrogate_model_class.plot_comparison_between_surrogate_and_true_data(18)
 
-    # Compares the architecture without the gating function
+    # Compares the architecture without the gating function 
 
     if compare_without_gate:
 
