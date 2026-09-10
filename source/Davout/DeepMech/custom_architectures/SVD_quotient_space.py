@@ -41,60 +41,100 @@ class SVDQuotientSpace:
         "onal matrix", "default": "hardware-based suggestion"}, "hardw"+
         "are device": {"type": str, "description": "String with the na"+
         "me of the device that runs the code. It can be either 'CPU' o"+
-        "r 'GPU'", "default": "CPU"}}, 
+        "r 'GPU'", "default": "CPU"}, "non-orthogonal matrices": {"typ"+
+        "e": bool, "description": "Boolean (True or False) that tells "+
+        "if the matrices of the SVD must be orthogonal or not. The def"+
+        "ault value is False, i.e. the matrices are indeed orthogonal."+
+        " If the user set it up as True, the matrices of the decomposi"+
+        "tion will have only unit-norm rows or columns; but they will "+
+        "not be orthogonal to each other.", "default": False}}, 
         "custom_architecture", "SVDQuotientSpace")
 
-        # Checks whether the code is run in CPU or GPU
+        # Gets the flag that tells if the matrices of the SVD decomposi-
+        # tion are orthogonal or not
 
-        if architecture_info_dict["hardware device"]=="CPU":
+        self.non_orthogonal_matrices = architecture_info_dict["non-ort"+
+        "hogonal matrices"]
 
-            # Uses the method that stores the Householder DOFs in a Ten-
-            # sorArray. This method was benchmarked to be the fastest 
-            # option in CPU
+        # If the matrices of the SVD are to be orthogonal
 
-            self.multiply_input_vector_by_householder_chain = (
-            self.multiply_input_vector_by_householder_chain_tensor_array)
+        if not self.non_orthogonal_matrices:
 
-            # Selects, thus, the method that extracts and assembles the
-            # Householder vector
+            # Sets the appropriate method to initialize the trainable
+            # parameters of the chain of Householder reflectors
 
-            self.method_for_householder_vector_from_parameters = (
-            self.get_householder_vector_from_parameters_tensor_array)
+            self.initialize_trainable_parameters = (
+            self.initialize_householder_parameters)
 
-        elif architecture_info_dict["hardware device"]=="GPU":
+            # Checks whether the code is run in CPU or GPU
 
-            # Uses the method that stores the Householder DOFs in a flat
-            # tensor, then each Householder vector is sliced from the 
-            # flat tensor. This method was benchmarked to be the fastest 
-            # option in GPU
+            if architecture_info_dict["hardware device"]=="CPU":
 
-            self.multiply_input_vector_by_householder_chain = (
-            self.multiply_input_vector_by_householder_chain_slice)
+                # Uses the method that stores the Householder DOFs in a 
+                # TensorArray. This method was benchmarked to be the 
+                # fastest option in CPU
 
-            # Selects, thus, the method that extracts and assembles the
-            # Householder vector
+                self.multiply_input_vector_by_householder_chain = (
+                self.multiply_input_vector_by_householder_chain_tensor_array)
 
-            self.method_for_householder_vector_from_parameters = (
-            self.get_householder_vector_from_parameters_slice)
+                # Selects, thus, the method that extracts and assembles 
+                # the Householder vector
+
+                self.method_for_householder_vector_from_parameters = (
+                self.get_householder_vector_from_parameters_tensor_array)
+
+            elif architecture_info_dict["hardware device"]=="GPU":
+
+                # Uses the method that stores the Householder DOFs in a 
+                # flat tensor, then each Householder vector is sliced 
+                # from the flat tensor. This method was benchmarked to 
+                # be the fastest option in GPU
+
+                self.multiply_input_vector_by_householder_chain = (
+                self.multiply_input_vector_by_householder_chain_slice)
+
+                # Selects, thus, the method that extracts and assembles 
+                # the Householder vector
+
+                self.method_for_householder_vector_from_parameters = (
+                self.get_householder_vector_from_parameters_slice)
+
+            else:
+
+                raise ValueError("The value for the key 'hardware devi"+
+                "ce' in 'SVDQuotientSpace' is '"+str(
+                architecture_info_dict["hardware device"])+"'. But it "+
+                "must be 'CPU' or 'GPU'")
+
+            # Checks if a specific method to get the Householder vector 
+            # was prescribed by the user
+
+            if architecture_info_dict["householder vector builder meth"+
+            "od"]!="hardware-based suggestion":
+
+                # Selects the method for computing the Householder vec-
+                # tors from the flat tensor of parameters
+
+                self.method_for_householder_vector_from_parameters = getattr(
+                self, architecture_info_dict["householder vector build"+
+                "er method"])
+
+        # Otherwise, if the constraint of the matrices to be orthogonal 
+        # is to be relaxed to create a pseudo SVD
 
         else:
+        
+            # Sets the appropriate method to initialize the trainable
+            # non-orthogonal matrices A and B
 
-            raise ValueError("The value for the key 'hardware device' "+
-            "in 'SVDQuotientSpace' is '"+str(architecture_info_dict["h"+
-            "ardware device"])+"'. But it must be 'CPU' or 'GPU'")
+            self.initialize_trainable_parameters = (
+            self.initialize_non_orthogonal_matrices_parameters)
 
-        # Checks if a specific method to get the Householder vector was
-        # prescribed by the used
+            # Selects the method that multiplies the input tensor by the
+            # trainable non-orthogonal matrices 
 
-        if architecture_info_dict["householder vector builder method"
-        ]!="hardware-based suggestion":
-
-            # Selects the method for computing the Householder vectors 
-            # from the flat tensor of parameters
-
-            self.method_for_householder_vector_from_parameters = getattr(
-            self, architecture_info_dict["householder vector builder m"+
-            "ethod"])
+            self.multiply_input_vector_by_householder_chain = (
+            self.multiply_input_vector_by_matrix_with_unit_axis)
         
         # Stores variables that will be used in the get_config for seri-
         # alization and class rebuilding
@@ -718,9 +758,9 @@ class SVDQuotientSpace:
         self.input_size_accessory_layer))
 
         # Initializes all trainable parameters and indices for the
-        # Householder chains
+        # Householder chains or non-orthogonal matrices
 
-        self.initialize_householder_parameters()
+        self.initialize_trainable_parameters()
 
         # Constructs the layer
 
@@ -872,14 +912,13 @@ class SVDQuotientSpace:
         householder_parameters_B_matrix)
 
     ####################################################################
-    #                      Householder reflectors                      #
+    #   Householder reflectors and non-orthogonal trainable matrices   #
     ####################################################################
 
-    # Defines a function to initialize the trainable parameters of the
-    # Householder chain of each orthogonal matrix of the SVD of this 
-    # layer. This function also creates the tuples of indices
+    # Defines a function to get the number of neurons in the input and
+    # output of this layer
 
-    def initialize_householder_parameters(self):
+    def get_layer_info(self):
 
         # Gets the number of neurons of the incoming layer and the num-
         # ber of neurons of this layer. Sums 1 to the layer number since
@@ -939,6 +978,121 @@ class SVDQuotientSpace:
             self.initial_weight_matrix = tf.eye(self.weights_rank, 
             self.n_neurons_last_main_layer, dtype=
             self.layer_self.code_given_info_class.float_dtype)
+
+    # Defines a function to initialize the trainable non-orthogonal ma-
+    # trices of the pseudo SVD of this layer. This function also creates 
+    # variables with information to which axis to normalize in the ma-
+    # trices and so forth
+
+    def initialize_non_orthogonal_matrices_parameters(self):
+
+        # Recovers information about the layer, such as rank and dimen-
+        # sionality of the input and of the output of the layer
+
+        self.get_layer_info()
+
+        # The variables named householder_reflectors_indices will carry
+        # the axis that must be inserted in the normalization operation.
+        # The two non-orthogonal matrices, A and B, will have their rows
+        # or columns normalized. Thus, the axis information must be 0 if
+        # the columns must be normalized; or the axis have to be 1 if 
+        # the rows shall be normalized.
+        #
+        # The B matrix is transposed in the multiplication, hence its 
+        # rows must be normalized. On the other hand, A must have its 
+        # columns normalized
+
+        self.householder_reflectors_indices_A = 0
+
+        self.householder_reflectors_indices_B = 1
+
+        # According to the difference of the number of neurons from the
+        # last layer to this one, sets the methods that perform the mul-
+        # tiplication of the singular values
+
+        if self.n_neurons_last_main_layer<self.n_neurons_current_main_layer:
+
+            # Sets the function to multiply the output of the operation
+            # B.T*input by the tensor of singular values
+
+            self.singular_values_multiplier = self.multiply_input_vector_by_singular_values_expanding_layer
+
+            # Sets the function to multiply the B matrix by the tensor 
+            # of singular values
+
+            self.singular_values_by_matrix = self.multiply_B_matrix_by_singular_values_expanding_layer
+
+        # If the current layer has less neurons than the last layer, the
+        # rank of the weight matrix is dominated by the current layer 
+        # and the non-orthogonal matrix A will be full-rank. Additional-
+        # ly, if the current and the last layers have the same number of
+        # neurons, both matrices A and B have full rank
+
+        else:
+
+            # Sets the function to multiply the output of the operation
+            # B.T*input by the tensor of singular values
+
+            self.singular_values_multiplier = self.multiply_input_vector_by_singular_values_shirinking_layer
+
+            # Sets the function to multiply the B matrix by the tensor 
+            # of singular values
+
+            self.singular_values_by_matrix = self.multiply_B_matrix_by_singular_values_shrinking_layer
+
+        # Sets the initializer of the non-orthogonal matrices A and B u-
+        # sing a random initialization in a normal distribution. This i-
+        # nitialization returns vectors in an isotropic ball in the spa-
+        # ce of dimension of the input or output of the layer
+
+        initializer = tf.keras.initializers.RandomNormal(mean=0.0,
+        stddev=1.0)
+
+        # Initializes the non-orthogonal matrices of the pseudo SVD of 
+        # the weights matrix W, W=A*diag(sigma)*transpose(B)
+
+        self.layer_self.householder_parameters_A_matrix = self.layer_self.add_weight(
+        name="householder_parameters_A_matrix", shape=(
+        self.n_neurons_current_main_layer, self.weights_rank), 
+        initializer=initializer, dtype=
+        self.layer_self.code_given_info_class.float_dtype, trainable=
+        True)
+
+        # The B matrix is created already in its transposed format
+
+        self.layer_self.householder_parameters_B_matrix = self.layer_self.add_weight(
+        name="householder_parameters_B_matrix", shape=(self.weights_rank,
+        self.n_neurons_last_main_layer), initializer=initializer, dtype=
+        self.layer_self.code_given_info_class.float_dtype, trainable=
+        True)
+
+        # Creates the variables that are used by chains of Householder
+        # reflectors as None. Thus, the signature of the functions en-
+        # volved in calculation of the layer's output will not be changed
+
+        self.householder_first_index_A = None
+        
+        self.householder_first_index_B = None
+
+        self.householder_length_A = None
+
+        self.householder_length_B = None
+
+        self.householder_number_of_leading_zeros_A = None
+
+        self.householder_number_of_leading_zeros_B = None
+
+    # Defines a function to initialize the trainable parameters of the
+    # Householder chain of each orthogonal matrix of the SVD of this 
+    # layer. This function also creates the tensors of integer indices,
+    # lengths, and leading zeros
+
+    def initialize_householder_parameters(self):
+
+        # Recovers information about the layer, such as rank and dimen-
+        # sionality of the input and of the output of the layer
+
+        self.get_layer_info()
 
         # Initializes the tuple with the indices of the Householder re-
         # flectors of the Householder chain for each orthogonal matrix
@@ -1556,6 +1710,47 @@ class SVDQuotientSpace:
 
         return tf.foldl(update_step, householder_reflector_indices,
         initializer=input_vector)
+
+    # Defines a function to create a wrapper for the method that multi-
+    # plies the input vector by a matrix whose rows or columns have u-
+    # nit norm. This matrix is fed as argument through the variable
+    # 'householder_parameters_orthogonal_matrix', even though it's not
+    # an orthogonal matrix
+
+    def multiply_input_vector_by_matrix_with_unit_axis(
+    self, input_vector, householder_reflector_indices, 
+    householder_first_index, householder_length, 
+    householder_number_of_leading_zeros, 
+    householder_parameters_orthogonal_matrix, input_dimensionality):
+
+        # The matrix that will be used as kernel comes as argument in
+        # householder_parameters_orthogonal_matrix. First, the rows or
+        # columns of this matrix must have unit norm. Thus, evaluate the
+        # norm first.
+        # If axis=1, the norms will be reduced over the column axis, 
+        # hence there will be a norm value for each row. On the other 
+        # hand, if axis=0, the norms will be reduced over the row axis,
+        # and there be a norm value for each column. The variable that
+        # informs the axis is householder_reflector_indices.
+        #
+        # If we want to normalize the incoming matrix in the row axis,
+        # axis must be 1. If we want to normalize it in the column axis,
+        # axist must be 0
+
+        axis_norms = tf.linalg.norm(
+        householder_parameters_orthogonal_matrix, axis=
+        householder_reflector_indices, keepdims=True)
+
+        # Divides the matrix by the norms evaluated across the desired
+        # axis. But takes care to avoid division by zero. The objective
+        # is to maintain a zero row or column as zero
+
+        normalized_matrix = tf.math.divide_no_nan(
+        householder_parameters_orthogonal_matrix, axis_norms)
+
+        # Multiplies the normalized matrix by the input tensor
+
+        return tf.einsum('ij,kj->ki', normalized_matrix, input_vector)
     
     # Defines a function to evaluate the multiplication of the Househol-
     # der chain of the transposed B matrix of the SVD decomposition (A*
