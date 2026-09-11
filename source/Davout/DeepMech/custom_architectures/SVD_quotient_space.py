@@ -240,8 +240,11 @@ class SVDQuotientSpace:
 
         if (architecture_info_dict["weights modulating function"]=="id"+
         "entity"):
+
+            # Sets the flag to initialize the full matrix W=A*D*B.T to
+            # false
             
-            self.modulation_option = "identity"
+            self.initialize_full_matrix = False
 
             # Sets the evaluator of the generic layer from input to the
             # method that multiplies the input vector by the chain of
@@ -253,11 +256,52 @@ class SVDQuotientSpace:
 
             self.generic_layers_from_parameters = self.identity_modulation_call_with_parameters
 
+        # If a modulating function is given but the factor matrices A 
+        # and B must not be orthogonal
+
+        elif self.non_orthogonal_matrices:
+
+            # Sets the flag to initialize the full matrix W=A*D*B.T to
+            # false, since the full matrix will not be created
+
+            self.initialize_full_matrix = False
+
+            # Initializes the class to build tensorflow expressions
+
+            build_tensorflow_math_expressions = BuildTensorflowMathExpressions(
+            dtype=self.layer_self.code_given_info_class.float_dtype)
+
+            self.modulating_function = build_tensorflow_math_expressions(
+            architecture_info_dict["weights modulating function"])
+
+            # Sets the evaluator of the generic layer from input to the
+            # method that multiplies each factor of the decomposition to
+            # the input tensor. The modulating function will be applied 
+            # to each factor individually. This is a nice property of 
+            # the relaxed factorization, when A and B must not be ortho-
+            # gonal matrices. Since the singular values given by the 
+            # auxiliar network are positive, the resulting matrix W=A*D*
+            # B.T will be positive if A and B are individually positive
+
+            self.generic_layers_from_input = self.identity_modulation_from_input
+            
+            self.generic_layers_from_parameters = self.identity_modulation_call_with_parameters
+
+            # Updates the function that multiplies the input tensor to
+            # include the modulating function
+
+            self.multiply_input_vector_by_householder_chain = (
+            self.multiply_input_vector_by_matrix_with_unit_axis_with_modulation)
+
         # Otherwise, gets the modulating function
 
         else:
 
-            self.modulation_option = "not identity"
+            # Sets the flag to initialize the full matrix W=A*D*B.T to
+            # True, since the full matrix must be created to modulate it
+            # once it is created by the chain of Householder reflectors
+
+            self.initialize_full_matrix = True
 
             # Initializes the class to build tensorflow expressions
 
@@ -970,10 +1014,10 @@ class SVDQuotientSpace:
             "ing list of numbers of neurons per layer:\n"+str(
             self.layer_self.code_given_info_class.number_neurons_per_main_layer))
 
-        # In case the modulating function is not the identity, creates
-        # the initial weight matrix as the identity
+        # In case the weight matrix must be initialized to recreate it
+        # in full before modulation
 
-        if self.modulation_option!="identity":
+        if self.initialize_full_matrix:
 
             self.initial_weight_matrix = tf.eye(self.weights_rank, 
             self.n_neurons_last_main_layer, dtype=
@@ -1006,39 +1050,18 @@ class SVDQuotientSpace:
 
         self.householder_reflectors_indices_B = 1
 
-        # According to the difference of the number of neurons from the
-        # last layer to this one, sets the methods that perform the mul-
-        # tiplication of the singular values
+        # Sets the function to multiply the output of the operation
+        # B.T*input by the tensor of singular values. There is no diffe-
+        # rence whether the layer is shrinking or expanding for the non-
+        # orthogonal case
 
-        if self.n_neurons_last_main_layer<self.n_neurons_current_main_layer:
+        self.singular_values_multiplier = self.multiply_input_vector_by_singular_values_shirinking_layer
 
-            # Sets the function to multiply the output of the operation
-            # B.T*input by the tensor of singular values
+        # Sets the function to multiply the B matrix by the tensor 
+        # of singular values. There is no difference whether the layer 
+        # is shrinking or expanding for the non-orthogonal case
 
-            self.singular_values_multiplier = self.multiply_input_vector_by_singular_values_expanding_layer
-
-            # Sets the function to multiply the B matrix by the tensor 
-            # of singular values
-
-            self.singular_values_by_matrix = self.multiply_B_matrix_by_singular_values_expanding_layer
-
-        # If the current layer has less neurons than the last layer, the
-        # rank of the weight matrix is dominated by the current layer 
-        # and the non-orthogonal matrix A will be full-rank. Additional-
-        # ly, if the current and the last layers have the same number of
-        # neurons, both matrices A and B have full rank
-
-        else:
-
-            # Sets the function to multiply the output of the operation
-            # B.T*input by the tensor of singular values
-
-            self.singular_values_multiplier = self.multiply_input_vector_by_singular_values_shirinking_layer
-
-            # Sets the function to multiply the B matrix by the tensor 
-            # of singular values
-
-            self.singular_values_by_matrix = self.multiply_B_matrix_by_singular_values_shrinking_layer
+        self.singular_values_by_matrix = self.multiply_B_matrix_by_singular_values_shrinking_layer
 
         # Sets the initializer of the non-orthogonal matrices A and B u-
         # sing a random initialization in a normal distribution. This i-
@@ -1747,6 +1770,49 @@ class SVDQuotientSpace:
 
         normalized_matrix = tf.math.divide_no_nan(
         householder_parameters_orthogonal_matrix, axis_norms)
+
+        # Multiplies the normalized matrix by the input tensor
+
+        return tf.einsum('ij,kj->ki', normalized_matrix, input_vector)
+
+    # Defines the same function as before but with modulation of the 
+    # factor matrix
+
+    def multiply_input_vector_by_matrix_with_unit_axis_with_modulation(
+    self, input_vector, householder_reflector_indices, 
+    householder_first_index, householder_length, 
+    householder_number_of_leading_zeros, 
+    householder_parameters_orthogonal_matrix, input_dimensionality):
+
+        # Modulates the incoming tensor
+
+        modulated_householder_parameters_orthogonal_matrix = self.modulating_function(
+        householder_parameters_orthogonal_matrix)
+
+        # The matrix that will be used as kernel comes as argument in
+        # householder_parameters_orthogonal_matrix. First, the rows or
+        # columns of this matrix must have unit norm. Thus, evaluate the
+        # norm first.
+        # If axis=1, the norms will be reduced over the column axis, 
+        # hence there will be a norm value for each row. On the other 
+        # hand, if axis=0, the norms will be reduced over the row axis,
+        # and there be a norm value for each column. The variable that
+        # informs the axis is householder_reflector_indices.
+        #
+        # If we want to normalize the incoming matrix in the row axis,
+        # axis must be 1. If we want to normalize it in the column axis,
+        # axist must be 0
+
+        axis_norms = tf.linalg.norm(
+        modulated_householder_parameters_orthogonal_matrix, axis=
+        householder_reflector_indices, keepdims=True)
+
+        # Divides the matrix by the norms evaluated across the desired
+        # axis. But takes care to avoid division by zero. The objective
+        # is to maintain a zero row or column as zero
+
+        normalized_matrix = tf.math.divide_no_nan(
+        modulated_householder_parameters_orthogonal_matrix, axis_norms)
 
         # Multiplies the normalized matrix by the input tensor
 

@@ -359,6 +359,11 @@ class TestSVDArchitecture:
 
         householder_vector_builder_method = "hardware-based suggestion"
 
+        # Selects the flag to inform whether the matrices of the (pseudo)
+        # or proper SVD are orthogonal or not
+
+        non_orthogonal_matrices = True
+
         # Sets sets of architectures
 
         number_of_neurons_hidden_layer_main_network_performance = [[500],
@@ -527,7 +532,8 @@ class TestSVDArchitecture:
             "activations accessory layer list": 
             accessory_activation_list_performance, "householder vector"+
             " builder method": householder_vector_builder_method,
-            "hardware device": "CPU"}  
+            "hardware device": "CPU", "non-orthogonal matrices":
+            non_orthogonal_matrices}  
 
             # Assembles the model
 
