@@ -35,8 +35,8 @@ class TestSVDArchitecture:
         self.accessory_activation_list_tests = [{"quadratic": {"number"+
         " of neurons": min(self.quotient_space_dimension,
         self.number_of_neurons_hidden_layer_main_network), "a2": 1.0}}, 
-        {"linear": min(self.output_dimension, 
-        self.number_of_neurons_hidden_layer_main_network)}]
+        {"quadratic": {"number of neurons": min(self.output_dimension, 
+        self.number_of_neurons_hidden_layer_main_network), "a2": 1.0}}]
 
         # Sets the parameters of the custom SVD-based architecture
 
@@ -362,7 +362,7 @@ class TestSVDArchitecture:
         # Selects the flag to inform whether the matrices of the (pseudo)
         # or proper SVD are orthogonal or not
 
-        non_orthogonal_matrices = True
+        non_orthogonal_matrices = False
 
         # Sets sets of architectures
 
@@ -681,13 +681,51 @@ class TestSVDArchitecture:
 
     def test_convexity_in_quotient_space(self):
 
+        # Sets if the factor matrices of pseudo or real SVD will be or-
+        # thogonal or nor
+
+        non_orthogonal_matrices = False
+
+        # Sets the model architecture and the model class
+
+        custom_architecture = {"name": "SVDQuotientSpace", "weights mo"+
+        "dulating function": self.modulating_function, "activations ac"+
+        "cessory layer list": self.accessory_activation_list_tests, "n"+
+        "on-orthogonal matrices": non_orthogonal_matrices, "hardware d"+
+        "evice": "CPU"}
+
+        ANN_class = ANN_tools.MultiLayerModel(
+        self.whole_input_dimension, self.activation_list_main_network, 
+        enforce_customLayers=True, verbose=True, parameters_dtype=
+        self.parameters_dtype, custom_architecture=custom_architecture, 
+        input_size_main_network=self.quotient_space_dimension)
+
+        custom_model = ANN_class()
+
+        # Sets the optimization class for training
+        
+        training_class = training_tools.ModelCustomTraining(
+        custom_model, self.training_data, self.training_true_values, 
+        self.loss_metric, verbose=True, n_iterations=
+        self.maximum_iterations, verbose_deltaIterations=
+        self.verbose_delta_iterations, save_model_file=
+        self.save_model_file)
+
+        t_initial = time.time()
+
+        training_class()
+
+        elapsed_time = time.time()-t_initial
+
+        print("\nTrains at "+str(elapsed_time)+" seconds")
+
         # Sets a flag to evaluate the eigenvalues of the hessian matrix
 
         return_eigenvalues = True
 
         # Checks the hessian matrices
 
-        hessian_info = self.training_class.get_hessian_outputs_model(
+        hessian_info = training_class.get_hessian_outputs_model(
         eigenvalues=False)
 
         print("Finishes calculating the hessian matrix\n")
@@ -721,8 +759,10 @@ class TestSVDArchitecture:
 
                 eigenvalues = tf.linalg.eigvalsh(hessian_matrix)
 
-                hessian_matrices += "\n\nEigenvalues (shape: "+str(
-                eigenvalues.shape)+"):\n"+str(eigenvalues.numpy())
+                hessian_matrices += ("\n\nEigenvalues (shape: "+str(
+                eigenvalues.shape)+"):\n"+str(eigenvalues.numpy())+"\n"+
+                "\nThe smallest eigenvalue is: "+str(tf.reduce_min(
+                eigenvalues).numpy()))
 
         print("\nThere follow the hessian matrices with respect to the"+
         " variables in the quotient space:\n"+str(hessian_matrices)+
@@ -741,15 +781,35 @@ if __name__=="__main__":
     # Creates a list of methods (using their names) that are not to be
     # tested
 
-    #"""
-    reserved_methods = ["test_assembling_model", "test_saving_and_load"+
-    "ing", "test_input_and_parameters", "test_derivative", "test_train"+
-    "ing_model", "test_monte_carlo_training_model", "test_quotient_spa"+
-    "ce_invariance_model", "test_convexity_in_quotient_space"]#"""
+    reserved_methods = []
 
-    #reserved_methods = ["test_convexity_in_quotient_space"]
+    # Selects an specific test set
 
-    #reserved_methods = ["test_derivative_performance"]
+    test_derivative_performance = False 
+
+    test_convexity = True
+
+    # Defines a set of methods to be reserved so that only derivative 
+    # performance is assessed
+
+    if test_derivative_performance:
+    
+        reserved_methods = ["test_assembling_model", "test_saving_and_"+
+        "loading", "test_input_and_parameters", "test_derivative", "te"+
+        "st_training_model", "test_monte_carlo_training_model", "test_"+
+        "quotient_space_invariance_model", "test_convexity_in_quotient"+
+        "_space"]
+
+    # Defines a set of methods to be reserved so that only convexity in
+    # the quotient space is assessed
+
+    elif test_convexity:
+    
+        reserved_methods = ["test_assembling_model", "test_saving_and_"+
+        "loading", "test_input_and_parameters", "test_derivative", "te"+
+        "st_training_model", "test_monte_carlo_training_model", "test_"+
+        "quotient_space_invariance_model", "test_derivative_performanc"+
+        "e"]
 
     # Calls the function to run all the necessary tests
 

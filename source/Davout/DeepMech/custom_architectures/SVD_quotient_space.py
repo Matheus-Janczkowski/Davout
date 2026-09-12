@@ -77,6 +77,15 @@ class SVDQuotientSpace:
                 self.multiply_input_vector_by_householder_chain = (
                 self.multiply_input_vector_by_householder_chain_tensor_array)
 
+                # Sets the two methods that update the factor matrices A
+                # and B accordingly
+
+                self.update_A_matrix_with_householder_chain = (
+                self.update_A_matrix_with_householder_chain_tensor_array)
+
+                self.update_B_matrix_with_householder_chain = (
+                self.update_B_matrix_with_householder_chain_tensor_array)
+
                 # Selects, thus, the method that extracts and assembles 
                 # the Householder vector
 
@@ -92,6 +101,15 @@ class SVDQuotientSpace:
 
                 self.multiply_input_vector_by_householder_chain = (
                 self.multiply_input_vector_by_householder_chain_slice)
+
+                # Sets the two methods that update the factor matrices A
+                # and B accordingly
+
+                self.update_A_matrix_with_householder_chain = (
+                self.update_A_matrix_with_householder_chain_slice)
+
+                self.update_B_matrix_with_householder_chain = (
+                self.update_B_matrix_with_householder_chain_slice)
 
                 # Selects, thus, the method that extracts and assembles 
                 # the Householder vector
@@ -1257,7 +1275,8 @@ class SVDQuotientSpace:
             # Verifies if there is any component left to build a House-
             # holder vector for the A matrix
 
-            if (self.n_neurons_current_main_layer-1-reflector_index)>0:
+            if (self.n_neurons_current_main_layer+reflector_index-
+            self.weights_rank)>0:
 
                 # Appends the index of the first parameter for the cor-
                 # responding Householder vector; the number of parame-
@@ -1734,6 +1753,10 @@ class SVDQuotientSpace:
         return tf.foldl(update_step, householder_reflector_indices,
         initializer=input_vector)
 
+    ####################################################################
+    #         Multiplication of non-orthogonal factor matrices         #
+    ####################################################################
+
     # Defines a function to create a wrapper for the method that multi-
     # plies the input vector by a matrix whose rows or columns have u-
     # nit norm. This matrix is fed as argument through the variable
@@ -1817,97 +1840,193 @@ class SVDQuotientSpace:
         # Multiplies the normalized matrix by the input tensor
 
         return tf.einsum('ij,kj->ki', normalized_matrix, input_vector)
+
+    ####################################################################
+    #                       Whole matrix assembly                      #
+    ####################################################################
+
+    # Defines a function to perform the rank-1 update of the incoming B
+    # matrix by the Householder vector
+
+    def multiply_B_matrix_by_reflector(self, partial_B_matrix,
+    householder_first_index_B, householder_length_B, 
+    householder_number_of_leading_zeros_B, 
+    householder_parameters_B_matrix, householder_reflector_index,
+    input_dimensionality):
+
+        # Gets the Householder vector from the Householder parameters of 
+        # the B matrix. Keep in mind that the order of the Householder 
+        # chain of the B matrix is reversed with respect to the A matrix, 
+        # since B is transposed in the SVD
+
+        (householder_vector_core, number_of_leading_zeros
+        ) = self.method_for_householder_vector_from_parameters(
+        householder_first_index_B, householder_length_B, 
+        householder_number_of_leading_zeros_B, 
+        householder_parameters_B_matrix, householder_reflector_index,
+        input_dimensionality)
+
+        # Multiplies the partially reconstructed B matrix by the 
+        # Householder reflector to the left. However, the structure 
+        # of the rank-1 projection is taken advantage of
+
+        return partial_B_matrix-tf.pad((self.two*tf.einsum('ij,j->i',
+        partial_B_matrix[:,number_of_leading_zeros:], 
+        householder_vector_core)[:, None]*householder_vector_core[None, 
+        :]), [[0,0], [number_of_leading_zeros,0]]) 
     
     # Defines a function to evaluate the multiplication of the Househol-
     # der chain of the transposed B matrix of the SVD decomposition (A*
     # diag(sigma)*transpose(B)). The partial_B_matrix is a tensor [p_i, 
     # rank] where p_i is the number of neurons of the i-th layer and 
-    # rank is the rank of the weight matrix
+    # rank is the rank of the weight matrix. This implementation consi-
+    # ders that the Householder vector is constructed through slicing of
+    # the flat tensor of DOFs of the Householder chain
 
-    #@tf.function
-    def update_B_matrix_with_householder_chain(self, partial_B_matrix, 
-    householder_reflector_indices, householder_first_index_B, 
-    householder_length_B, householder_number_of_leading_zeros_B,
+    def update_B_matrix_with_householder_chain_slice(self, 
+    partial_B_matrix, householder_reflector_indices, 
+    householder_first_index_B, householder_length_B, 
+    householder_number_of_leading_zeros_B,
     householder_parameters_B_matrix, input_dimensionality):
         
-        # Iterates through the indices of Householder reflectors
+        # Defines the step function that will perform each update of the
+        # B matrix by means of the Householder reflector
 
-        for householder_reflector_index in householder_reflector_indices:
-        
-            # Gets the Householder vector from the Householder param-
-            # eters of the B matrix. Keep in mind that the order of the 
-            # Householder chain of the B matrix is reversed with respect 
-            # to the A matrix, since B is transposed in the SVD
+        def update_step(accumulator_matrix, householder_reflector_index):
 
-            (householder_vector_core, number_of_leading_zeros
-            ) = self.method_for_householder_vector_from_parameters(
-            householder_first_index_B, householder_length_B, 
-            householder_number_of_leading_zeros_B, 
+            return self.multiply_B_matrix_by_reflector(
+            accumulator_matrix, householder_first_index_B, 
+            householder_length_B, householder_number_of_leading_zeros_B, 
             householder_parameters_B_matrix, householder_reflector_index,
             input_dimensionality)
 
-            # Gets the Householder vector by padding the core with the
-            # leading zeros
+        # Uses foldl to perform the chain multiplication
 
-            householder_vector = tf.pad(householder_vector_core, [[
-            number_of_leading_zeros, 0]])
+        return tf.foldl(update_step, householder_reflector_indices,
+        initializer=partial_B_matrix)
 
-            # Multiplies the partially reconstructed B matrix by the 
-            # Householder reflector to the left. However, the structure 
-            # of the rank-1 projection is taken advantage of
+    # Defines a function for the same operation of the previous function.
+    # The difference is that the function below expects all the Househol-
+    # der vectors of the chain to be separated first into a tensor array 
 
-            partial_B_matrix = partial_B_matrix-(self.two*tf.matmul(
-            partial_B_matrix, householder_vector[:, None])*
-            householder_vector[None,:])
+    def update_B_matrix_with_householder_chain_tensor_array(self, 
+    partial_B_matrix, householder_reflector_indices, 
+    householder_first_index_B, householder_length_B, 
+    householder_number_of_leading_zeros_B,
+    householder_parameters_B_matrix, input_dimensionality):
 
-        # Returns the recursively updated matrix
+        # Splits the Householder DOFs of each Householder vector from 
+        # the flat tensor of DOFs of the chain
 
-        return partial_B_matrix
+        householder_dofs_tensor_array = self.split_flat_tensor_into_householder_dofs(
+        householder_parameters_B_matrix, householder_length_B)
+        
+        # Defines the step function that will perform each update of the
+        # B matrix by means of the Householder reflector
+
+        def update_step(accumulator_matrix, householder_reflector_index):
+
+            return self.multiply_B_matrix_by_reflector(
+            accumulator_matrix, householder_first_index_B, 
+            householder_length_B, householder_number_of_leading_zeros_B, 
+            householder_dofs_tensor_array, householder_reflector_index,
+            input_dimensionality)
+
+        # Uses foldl to perform the chain multiplication
+
+        return tf.foldl(update_step, householder_reflector_indices,
+        initializer=partial_B_matrix)
+
+    # Defines a function to perform the rank-1 update of the incoming A
+    # matrix by the Householder vector
+
+    def multiply_A_matrix_by_reflector(self, partial_A_matrix,
+    householder_first_index_A, householder_length_A, 
+    householder_number_of_leading_zeros_A, 
+    householder_parameters_A_matrix, householder_reflector_index,
+    input_dimensionality):
+
+        # Gets the Householder vector from the Householder parameters of
+        # the A matrix
+
+        (householder_vector_core, number_of_leading_zeros
+        ) = self.method_for_householder_vector_from_parameters(
+        householder_first_index_A, householder_length_A, 
+        householder_number_of_leading_zeros_A, 
+        householder_parameters_A_matrix, householder_reflector_index,
+        input_dimensionality)
+
+        # Multiplies the partially reconstructed A matrix by the House-
+        # holder reflector to the left. However, the structure of the 
+        # rank-1 projection is taken advantage of. The multiplication of 
+        # the Householder vector by the partial update of the A matrix 
+        # is different, because A matrix has the dimension with the num-
+        # ber of samples. The dimension of samples was gained due to the 
+        # multiplication by the singular values coming from the accesso-
+        # ry layer
+
+        return partial_A_matrix-tf.pad((self.two*householder_vector_core[
+        None, :, None]*tf.einsum("p,spr->sr", householder_vector_core, 
+        partial_A_matrix[:,number_of_leading_zeros:,:])[:, None, :]), [[
+        0, 0], [number_of_leading_zeros, 0], [0, 0]])
     
     # Defines a function to evaluate the multiplication of the Househol-
     # der chain of the A matrix of the SVD decomposition (A*diag(sigma)*
     # transpose(B)). The partial_A_matrix is a tensor [n_samples, p_(i+1
     # ), rank] where p_(i+1) is the number of neurons of the (i+1)-th 
-    # layer and rank is the rank of the weight matrix
+    # layer and rank is the rank of the weight matrix. This function ex-
+    # pects the Householder vector to be retrieved from the flat tensor
+    # of DOFs of the Householder chain using the slice function
 
-    def update_A_matrix_with_householder_chain(self, partial_A_matrix, 
-    householder_reflector_indices, householder_first_index_A, 
-    householder_length_A, householder_number_of_leading_zeros_A,
+    def update_A_matrix_with_householder_chain_slice(self, 
+    partial_A_matrix, householder_reflector_indices, 
+    householder_first_index_A, householder_length_A, 
+    householder_number_of_leading_zeros_A, 
     householder_parameters_A_matrix, input_dimensionality):
         
-        # Iterates through the indices of Householder reflectors
+        # Defines the step function that will perform each update of the
+        # A matrix by means of the Householder reflector
 
-        for householder_reflector_index in householder_reflector_indices:
-        
-            # Gets the Householder vector from the Householder parameters 
-            # of the A matrix
+        def update_step(accumulator_matrix, householder_reflector_index):
 
-            (householder_vector_core, number_of_leading_zeros
-            ) = self.method_for_householder_vector_from_parameters(
-            householder_first_index_A, householder_length_A, 
-            householder_number_of_leading_zeros_A, 
+            return self.multiply_A_matrix_by_reflector(
+            accumulator_matrix, householder_first_index_A, 
+            householder_length_A, householder_number_of_leading_zeros_A, 
             householder_parameters_A_matrix, householder_reflector_index,
             input_dimensionality)
 
-            # Gets the Householder vector by padding the core with the
-            # leading zeros
+        # Uses foldl to perform the chain multiplication
 
-            householder_vector = tf.pad(householder_vector_core, [[
-            number_of_leading_zeros, 0]])
+        return tf.foldl(update_step, householder_reflector_indices,
+        initializer=partial_A_matrix)
 
-            # Multiplies the partially reconstructed A matrix by the 
-            # Householder reflector to the left. However, the structure 
-            # of the rank-1 projection is taken advantage of. The multi-
-            # plication of the Householder vector by the partial update 
-            # of the A matrix is different, because A matrix has the di-
-            # mension with the number of samples. The dimension of sam-
-            # ples was gained due to the multiplication by the singular 
-            # values coming from the accessory layer
+    # Defines the same function as above, but to retrieve the Househol-
+    # der vectors from a tensor array
 
-            partial_A_matrix = partial_A_matrix-(self.two*
-            householder_vector[None, :, None]*tf.einsum("p,spr->sr", 
-            householder_vector, partial_A_matrix)[:, None, :])
+    def update_A_matrix_with_householder_chain_tensor_array(self, 
+    partial_A_matrix, householder_reflector_indices, 
+    householder_first_index_A, householder_length_A, 
+    householder_number_of_leading_zeros_A, 
+    householder_parameters_A_matrix, input_dimensionality):
 
-        # Returns the recursively updated matrix
+        # Splits the Householder DOFs of each Householder vector from 
+        # the flat tensor of DOFs of the chain
 
-        return partial_A_matrix
+        householder_dofs_tensor_array = self.split_flat_tensor_into_householder_dofs(
+        householder_parameters_A_matrix, householder_length_A)
+        
+        # Defines the step function that will perform each update of the
+        # A matrix by means of the Householder reflector
+
+        def update_step(accumulator_matrix, householder_reflector_index):
+
+            return self.multiply_A_matrix_by_reflector(
+            accumulator_matrix, householder_first_index_A, 
+            householder_length_A, householder_number_of_leading_zeros_A, 
+            householder_dofs_tensor_array, householder_reflector_index,
+            input_dimensionality)
+
+        # Uses foldl to perform the chain multiplication
+
+        return tf.foldl(update_step, householder_reflector_indices,
+        initializer=partial_A_matrix)

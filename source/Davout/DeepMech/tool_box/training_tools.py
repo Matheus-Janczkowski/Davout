@@ -792,6 +792,9 @@ class ModelCustomTraining:
 
         if self.verbose:
 
+            print("\nThe initial loss function is: "+str(initial_loss)+
+            "\n")
+
             # Sets the number of maximum iterations per cycle
 
             self.maximum_iterations_per_cycle = self.verbose_deltaIterations
