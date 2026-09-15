@@ -47,6 +47,7 @@ such as FEniCS, TensorFlow, GMSH, ParaView, and matplotlib.
 pip install Davout
 
 Or for a special dev version (123 for example):
+
 pip install Davout==0.1.1.dev123
 
 # Installation using installer file
