@@ -46,6 +46,9 @@ such as FEniCS, TensorFlow, GMSH, ParaView, and matplotlib.
 # Installation using pip
 pip install Davout
 
+Or for a special dev version (123 for example):
+pip install Davout==0.1.1.dev123
+
 # Installation using installer file
 Download the zip file, unzip it and move it to a suitable directory.
 Open the Davout folder, where setup.py is located. Open this path in

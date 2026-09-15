@@ -88,6 +88,11 @@ None, explicit_surface_physical_group_name=None, same_point_tolerance=
     else:
 
         parametric_curves = {}
+
+    # Initializes the flag that informs if the rows of the matrix of 
+    # corner points represent points
+
+    rows_are_points = False
     
     # Tests if the corner points is a numpy array
 
