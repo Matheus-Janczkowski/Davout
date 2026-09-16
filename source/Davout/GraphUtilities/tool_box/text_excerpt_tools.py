@@ -2,9 +2,17 @@
 
 from copy import deepcopy
 
+from math import cos, sin, radians
+
 from .collage_classes import milimeters_to_points
 
+from matplotlib.textpath import TextPath
+
+from matplotlib.patches import PathPatch
+
 from matplotlib.transforms import Affine2D
+
+from matplotlib.font_manager import FontProperties
 
 # Defines a function to plot excerpts of text from a list
 
@@ -169,6 +177,14 @@ color_class, verbose, depth_order):
 
             aspect_ratio = input_dictionary["aspect ratio"]
 
+        # Checks if the rendering method was provided
+
+        rendering_method = "matplotlib text"
+
+        if "rendering method" in input_dictionary:
+
+            rendering_method = input_dictionary["rendering method"]
+
         # Adds the text input
 
         if verbose:
@@ -176,23 +192,109 @@ color_class, verbose, depth_order):
             print("Adds text at point "+str(position)+" with 'origin p"+
             "oint' as '"+str(origin_point)+"'\n")
 
-        text_artist = general_axes.text(position[0], position[1], 
-        input_text, fontsize=font_size, ha=ha, va=va, rotation=angle, 
-        rotation_mode="anchor", zorder=local_depth_order, transform=
-        general_axes.transData, color=color)
+        # If the rendering method is the conventional text of matplotlib
 
-        # Gets the position in display coordinates
+        if rendering_method=="matplotlib text":
 
-        display_position = general_axes.transData.transform(position)
+            text_artist = general_axes.text(position[0], position[1], 
+            input_text, fontsize=font_size, ha=ha, va=va, rotation=angle, 
+            rotation_mode="anchor", zorder=local_depth_order, transform=
+            general_axes.transData, color=color)
 
-        # Creates a transform centered at the text anchor
+            # Gets the position in display coordinates
 
-        text_transform = (Affine2D().translate(-display_position[0], 
-        -display_position[1]).scale(aspect_ratio, 1.0).translate(
-        display_position[0], display_position[1]))
+            display_position = general_axes.transData.transform(position)
 
-        # Sets the transform to the text excerpt
+            # Creates a transform centered at the text anchor
 
-        text_artist.set_transform(general_axes.transData+text_transform)
+            text_transform = (Affine2D().translate(-display_position[0], 
+            -display_position[1]).scale(aspect_ratio, 1.0).translate(
+            display_position[0], display_position[1]))
+
+            # Sets the transform to the text excerpt
+
+            text_artist.set_transform(general_axes.transData+
+            text_transform)
+
+        # Otherwise, if the rendering method is TextPath
+
+        elif rendering_method=="TextPath":
+
+            # Creates the text excerpt as a text path. Positions it at 
+            # the origin first; the patch will be scaled and translated 
+            # later
+
+            text_path = TextPath((0, 0), input_text, size=font_size, 
+            usetex=True)
+
+            # gets the bounding box of the text path in points
+
+            text_bounding_box = text_path.get_extents()
+
+            # Checks the alignment options to set the anchor
+
+            if ha=="left":
+
+                anchor_x = text_bounding_box.xmin
+
+            elif ha=="center":
+
+                anchor_x = 0.5*(text_bounding_box.xmin+
+                text_bounding_box.xmax)
+
+            elif ha=="right":
+
+                anchor_x = text_bounding_box.xmax
+
+            else:
+
+                anchor_x = text_bounding_box.xmin
+
+            if va=="bottom":
+
+                anchor_y = text_bounding_box.ymin
+
+            elif va=="center":
+
+                anchor_y = 0.5*(text_bounding_box.ymin+
+                text_bounding_box.ymax)
+
+            elif va=="top":
+
+                anchor_y = text_bounding_box.ymax
+
+            else:
+
+                anchor_y = text_bounding_box.ymin
+
+            # Gets the transformation of the text path 
+
+            points_to_millimeters = 25.4/72
+
+            path_transform = (Affine2D().translate(-anchor_x, -anchor_y)
+            .scale(aspect_ratio, 1.0).rotate_deg(angle).scale(
+            points_to_millimeters))
+
+            # Then translates the path to the final position
+
+            text_transform = (path_transform+Affine2D().translate(
+            position[0], position[1])+general_axes.transData)
+
+            # Creates the patch and add to the canvas
+
+            patch_instance = PathPatch(text_path, transform=
+            text_transform, facecolor=color, edgecolor="none", zorder=
+            local_depth_order,clip_on=False)
+
+            general_axes.add_patch(patch_instance)
+
+        # Otherwise, throws an error
+
+        else:
+
+            raise NameError("'rendering method' in the dictionary of t"+
+            "ext excerpts was selected as '"+str(rendering_method)+"'."+
+            " This value is invalid; you have to choose one of the fol"+
+            "lowing options:\n'matplotlib text'\n'TextPath'")
 
     return general_axes, depth_order

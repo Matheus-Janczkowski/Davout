@@ -41,11 +41,14 @@ class TestCollage():
         "opacity": 0.5}], 
 
         input_text_list=[{"text": "Lateral", "position": [100.0, 195.0], "font size": 
-        4, "origin point": "bottom-right"}, 
-        {"text": "Upper", "position": [157.0, 195.0], "font size": 4,
-        "origin point": "bottom-right"},
-        {"text": "$\MaterialDivOf{\\boldsymbol{P}}=\\boldsymbol{0}$", 
-        "position": [50.0, 195.0], "font size": 4, "origin point": "bottom-left"}],
+        4, "origin point": "bottom-right", "rendering method": "matplotlib text",
+        "object name": "lateral sign"}, 
+        {"text": "\\textbf{Upper}", "position": [157.0, 195.0], "font size": 4,
+        "origin point": "bottom-right", "rendering method": "TextPath",
+        "object name": "upper sign"},
+        {"text": "$\\MaterialDivOf{\\boldsymbol{P}}=\\boldsymbol{0}$", 
+        "position": [50.0, 195.0], "font size": 4, "origin point": "bottom-left", 
+        "rendering method": "TextPath", "object name": "div sign"}],
 
         boxes_list=[{"contour color": "black", "fill color": "red 2", "contour"+
         " thickness": 0.2, "position": [46.5, 193.0], "width": 114.0, "height": 58.0,
@@ -78,10 +81,10 @@ class TestCollage():
 
         verbose=True, no_padding=True, add_overlaying_grid=True, dpi=500,
         grid_annotation_length=10, save_lists_to_txt=True, 
-        interactive_preview=True, size_template="A4", export_selection={
-        "origin point": "bottom-left", "position": [42.0, 191.0], "wid"+
-        "th": 123.0, "height": 63.0}, compress_level=1, 
-        ignore_read_repetitions=True)
+        interactive_preview=False, size_template="A4",
+        #export_selection={"origin point": "bottom-left", "position": [
+        #42.0, 191.0], "width": 123.0, "height": 63.0}, 
+        compress_level=1, ignore_read_repetitions=True)
 
 # Runs all tests
 
