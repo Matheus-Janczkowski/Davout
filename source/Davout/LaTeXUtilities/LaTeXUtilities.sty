@@ -12,6 +12,15 @@
 
 \newcommand{\LU@babelLang}{english}
 
+% Initializes the option to import hyperref or not. Hyperref will be
+% automatically imported unless this package is imported as
+% \usepackage[nohyperref]{LaTeXUtilities}
+
+\newif\ifLU@hyperref
+\LU@hyperreftrue
+
+\DeclareOption{nohyperref}{\LU@hyperreffalse}
+
 % Declares the options
 
 \DeclareOption{english}{\renewcommand{\LU@babelLang}{english}}
@@ -54,7 +63,12 @@
 \RequirePackage{mathrsfs}
 %\RequirePackage{authblk}
 \RequirePackage{accents}
-\RequirePackage{hyperref}
+
+% Imports hyperref if necessary
+\ifLU@hyperref
+    \RequirePackage{hyperref}
+\fi
+
 \RequirePackage{algpseudocode}
 \RequirePackage{algorithm}
 \RequirePackage[algo2e,ruled,linesnumbered]{algorithm2e}
@@ -754,6 +768,10 @@ top=3cm, bottom=2cm}}\onehalfspacing\setlength{\parindent}{1.25cm}%
 
 \newcommand{\EulerAlmansi}{\boldsymbol{e}}
 
+% xiii) Inifinitesimal strain tensor
+
+\newcommand{\InfinitesimalStrain}{\boldsymbol{\varepsilon}}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%                            Optimization                            %%
@@ -926,6 +944,13 @@ $\displaystyle\left\{\begin{aligned}
 \definecolor{Yellow3}{rgb}{1.0,0.702,0.502}
 \definecolor{Yellow4}{rgb}{1.0,0.6,0.333}
 \definecolor{Yellow5}{rgb}{1.0,0.498,0.165}
+
+% Blues
+\definecolor{Blue1}{rgb}{0.835,0.898,1.0}
+\definecolor{Blue2}{rgb}{0.667,0.800,1.0}
+\definecolor{Blue3}{rgb}{0.502,0.702,1.0}
+\definecolor{Blue4}{rgb}{0.333,0.600,1.0}
+\definecolor{Blue5}{rgb}{0.165,0.498,1.0}
 
 % Defines a set of environments with three shades of shadows
 
@@ -1130,6 +1155,21 @@ trapezium right angle=120, minimum height=2em]
 % Updates the exercise counter
 colback=Red1, colbacktitle=Red2, colframe=black, coltitle=black, 
 title=\textit{\textbf{\ExerciseName\;\theexercise}}, halign title=left, 
+lefttitle=0pt, width=\linewidth, boxrule=0.5pt, arc=0pt, left=2pt}
+
+% Environment to create a blue-colored box as wide as the page for pro-
+% jects. Creates the counter of project boxes
+
+\newcounter{project}[section]
+
+\renewcommand{\theproject}{\thesection.\arabic{project}}
+
+\newcommand{\ProjectName}{Project}
+
+\newtcolorbox{ProjectBox}{before title=\refstepcounter{project},
+% Updates the project counter
+colback=Blue1, colbacktitle=Blue3, colframe=black, coltitle=black, 
+title=\textit{\textbf{\ProjectName\;\theproject}}, halign title=left, 
 lefttitle=0pt, width=\linewidth, boxrule=0.5pt, arc=0pt, left=2pt}
 
 % Environment to create a grey box as wide as the page for remarks.

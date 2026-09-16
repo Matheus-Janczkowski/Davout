@@ -48,7 +48,8 @@ os.environ.get("TEXINPUTS", ""))
 matplotlib.rcParams.update({"text.usetex": True, "font.family": "serif",
 "font.serif": ["Computer Modern Roman"], "axes.labelsize": 14, "fo"+
 "nt.size": 14, "legend.fontsize": 12, "xtick.labelsize": 12, "ytic"+
-"k.labelsize": 12, "text.latex.preamble": r"\usepackage{LaTeXUtilities}"})
+"k.labelsize": 12, "text.latex.preamble": r"\usepackage[nohyperref]{La"+
+"TeXUtilities}"})
 
 ########################################################################
 #                          Bidimensional plots                         #
@@ -402,13 +403,30 @@ transparent_background=False):
 
             multiple_curves = len(x_data)
 
+    # Gets the import preamble of the LaTeX package
+
+    preamble_import = "" 
+
+    # Checks if there are brackets that indicate options 
+
+    if "[" in latex_package:
+
+        # Puts the package directly 
+
+        preamble_import = r"\usepackage"+str(latex_package)
+
+    # Otherwise, puts the brackets
+
+    else:
+
+        preamble_import = r"\usepackage{"+str(latex_package)+"}"
+
     # Sets the graph to be plotted in LaTeX style
 
     plt.rcParams.update({"text.usetex": True, "font.family": "serif",
     "font.serif": ["Computer Modern Roman"], "axes.labelsize": 14, "fo"+
     "nt.size": 14, "legend.fontsize": 12, "xtick.labelsize": 12, "ytic"+
-    "k.labelsize": 12, "text.latex.preamble": r"\usepackage{"+str(
-    latex_package)+"}"})
+    "k.labelsize": 12, "text.latex.preamble": preamble_import})
 
     # Gets the color map
 

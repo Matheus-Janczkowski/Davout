@@ -4,6 +4,8 @@ from copy import deepcopy
 
 from .collage_classes import milimeters_to_points
 
+from matplotlib.transforms import Affine2D
+
 # Defines a function to plot excerpts of text from a list
 
 def plot_text_excerpts(general_axes, input_text_list, alignments_class, 
@@ -159,6 +161,14 @@ color_class, verbose, depth_order):
 
         color = color_class(color)
 
+        # Verifies if aspect ration (width/height) was given
+
+        aspect_ratio = 1.0
+
+        if "aspect ratio" in input_dictionary:
+
+            aspect_ratio = input_dictionary["aspect ratio"]
+
         # Adds the text input
 
         if verbose:
@@ -166,9 +176,23 @@ color_class, verbose, depth_order):
             print("Adds text at point "+str(position)+" with 'origin p"+
             "oint' as '"+str(origin_point)+"'\n")
 
-        general_axes.text(position[0], position[1], input_text, fontsize=
-        font_size, ha=ha, va=va, rotation=angle, rotation_mode="anchor", 
-        zorder=local_depth_order, transform=general_axes.transData,
-        color=color)
+        text_artist = general_axes.text(position[0], position[1], 
+        input_text, fontsize=font_size, ha=ha, va=va, rotation=angle, 
+        rotation_mode="anchor", zorder=local_depth_order, transform=
+        general_axes.transData, color=color)
+
+        # Gets the position in display coordinates
+
+        display_position = general_axes.transData.transform(position)
+
+        # Creates a transform centered at the text anchor
+
+        text_transform = (Affine2D().translate(-display_position[0], 
+        -display_position[1]).scale(aspect_ratio, 1.0).translate(
+        display_position[0], display_position[1]))
+
+        # Sets the transform to the text excerpt
+
+        text_artist.set_transform(general_axes.transData+text_transform)
 
     return general_axes, depth_order

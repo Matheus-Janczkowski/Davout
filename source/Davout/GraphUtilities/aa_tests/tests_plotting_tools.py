@@ -2,6 +2,8 @@
 
 import numpy as np
 
+from scipy.optimize import curve_fit
+
 from ...PythonicUtilities.path_tools import get_parent_path_of_file
 
 from ...PythonicUtilities.testing_tools import run_class_of_tests
@@ -57,7 +59,8 @@ class TestPlots:
         y_data = [[1.0, 2.0, 3.0], [1.0, 4.0, 6.0]]
 
         plotting_tools.plane_plot(x_data=x_data, y_data=y_data, 
-        file_name="test_two_curves_list")
+        file_name="test_two_curves_list", label=["Exponential $a=24.83$", 
+        "Numerical data"])
 
     # Defines a function to test the plot of a curve with error bar
     
@@ -284,6 +287,95 @@ class TestPlots:
         y_data, plot_type="scatter", element_size=2.5, label=labels, 
         title="$E^{p}\\left(\mathbf{D},\mathbf{x}_{c}\\right)$",
         color_map="coolwarm", aspect_ratio=1.0)
+
+    def test_curve_fitting(self):
+
+        #############################################################
+        # Defines a cdde that generates the graph of the rate failures
+        # of the simulation, to comprove that increasing the p exponent 
+        # of the Lp norm, the parameters set region approaches to the 
+        # hypercube topology
+        #############################################################
+
+        p = [2, 4, 8, 16, 32]
+
+        # Dados feitos no lagrange
+
+        #error_rate = [0.12, 9.12, 18.58, 22.38, 24.29]
+
+        # Dados feitos no pc do rafael
+
+        error_rate = [0.12, 6.66, 17.82, 22.89, 24.71]
+
+        def Logistic(x, a, b, c):
+
+            return(a/(1+(1/(np.exp(b*x+c)))))
+
+        def Hiperbole(x, a, b,c):
+
+            return (c/(x+b))+a
+
+        def Exponential(x, a, b, c):
+
+            return (a-1/np.exp((b*x)+c))
+
+        curve_function = Exponential
+
+        # 2. Aplicar a regressão usando o curve_fit
+        # 'popt' retornará os parâmetros otimizados (a, b)
+        # 'pcov' retornará a matriz de covariância (incerteza do ajuste)
+
+        popt, pcov = curve_fit(curve_function, p, error_rate)
+
+        # Extraindo os coeficientes encontrados
+        a_opt, b_opt, c_opt = popt
+
+        print(f"Coeficientes encontrados: a = {a_opt:.4f}, b = {b_opt:.4f}, c = {c_opt:.4f}")
+
+        # 3. Gerar a curva ajustada para o plot com uma malha fina
+        x_fit = np.linspace(min(p), max(p), 500)
+        y_fit = curve_function(x_fit, a_opt, b_opt, c_opt)
+
+        p1=plotting_tools.plane_plot(
+                x_data=x_fit,#[np.array(p), x_fit], 
+                y_data=y_fit,#[np.array(error_rate), y_fit], 
+                file_name="error_rate_failure_Lp_norm.pdf", 
+                parent_path=get_parent_path_of_file(),  # Saves in the folder path
+                color_map="coolwarm", 
+                color=1.0,
+                label=str(curve_function.__name__)+" $a="+str(round(a_opt, 2))+"$",
+                verbose=True, 
+                highlight_points=False,
+                x_label="$p$", 
+                y_label="Error rate $\\Brackets{\\%}$", 
+                x_ticksLabels=p,
+                y_ticksLabels=error_rate,
+                transparent_background=True,
+                latex_package="[nohyperref]{LaTeXUtilities}", 
+                dpi=1000
+            )
+
+        plotting_tools.plane_plot(
+                x_data=p,#[np.array(p), x_fit], 
+                y_data=error_rate,#[np.array(error_rate), y_fit], 
+                file_name="error_rate_failure_Lp_norm.png", 
+                parent_path=get_parent_path_of_file(),  # Saves in the folder path
+                color_map="coolwarm", 
+                color=0.0,
+                element_style="x",
+                element_size=5.0,
+                plot_type="scatter",
+                verbose=True, 
+                label="Numerical data",
+                x_label="$p$", 
+                y_label="Error rate $\\Brackets{\\%}$", 
+                x_ticksLabels=p,
+                y_ticksLabels=error_rate,
+                latex_package="[nohyperref]{LaTeXUtilities}",
+                transparent_background=True,
+                dpi=1000,
+                plot_object=p1
+            )
 
 # Runs all tests
 
