@@ -10,7 +10,9 @@ to the repository and source files: https://github.com/Matheus-Janczkowski/Davou
 
 4. Link to the book on continuum mechanics: https://github.com/Matheus-Janczkowski/CompMechSelfStudy/tree/main/introduction_to_continuum_mechanics
 
-4. Link for the presentation template: https://www.overleaf.com/read/sbgxdphxswmm#6d7d64
+5. Link for the presentation template: https://www.overleaf.com/read/sbgxdphxswmm#6d7d64
+
+6. Link for the report/paper template: https://www.overleaf.com/read/vhpsmzhwdsfg#c5dee9
 
 # Citation
 https://doi.org/10.5281/zenodo.18806245
