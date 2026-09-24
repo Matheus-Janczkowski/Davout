@@ -51,16 +51,16 @@ class TestPlots:
         y_data = [np.array([1.0, 2.0, 3.0]), np.array([1.0, 4.0, 6.0])]
 
         plotting_tools.plane_plot(x_data=x_data, y_data=y_data, 
-        file_name="test_two_curves_numpy", plot_type=["line", "scatter"],
-        element_size=[1.5, 10.0], color=["yellow", "black"])
+        file_name="00_test_two_curves_numpy", plot_type=["line", "scat"+
+        "ter"], element_size=[1.5, 10.0], color=["yellow", "black"])
 
         x_data = [[1.0, 2.0, 3.0], [1.0, 2.0, 3.0]]
 
         y_data = [[1.0, 2.0, 3.0], [1.0, 4.0, 6.0]]
 
         plotting_tools.plane_plot(x_data=x_data, y_data=y_data, 
-        file_name="test_two_curves_list", label=["Exponential $a=24.83$", 
-        "Numerical data"])
+        file_name="00_test_two_curves_list", label=["Exponential $a=24"+
+        ".83$", "Numerical data"])
 
     # Defines a function to test the plot of a curve with error bar
     
@@ -84,18 +84,18 @@ class TestPlots:
 
         plot_object = plotting_tools.plane_plot(x_data=
         self.unimodal_x_data, y_data=self.unimodal_y_data, file_name=
-        "test_error_bar_separate_plotting", plot_type="scatter", 
+        "01_test_error_bar_separate_plotting", plot_type="scatter", 
         error_bar=error_bar, color="black")
 
         plotting_tools.plane_plot(x_data=self.unimodal_x_data, y_data=
-        self.unimodal_y_data2, file_name="test_error_bar_separate_plot"+
-        "ting", plot_type="line", plot_object=plot_object)
+        self.unimodal_y_data2, file_name="01_test_error_bar_separate_p"+
+        "lotting", plot_type="line", plot_object=plot_object)
 
         # Scatter single curve given the error bar
 
         plotting_tools.plane_plot(x_data=self.unimodal_x_data, y_data=
         self.unimodal_y_data, error_bar=error_bar, file_name=
-        "test_error_bar", plot_type="scatter")
+        "01_test_error_bar", plot_type="scatter")
 
         # Scatter single curve given the error bar with upper and lower
         # bounds for error
@@ -108,7 +108,7 @@ class TestPlots:
 
         plotting_tools.plane_plot(x_data=self.unimodal_x_data, y_data=
         self.unimodal_y_data, error_bar=error_bar_lower_upper, 
-        file_name="test_error_bar_lower_upper", plot_type="scatter")
+        file_name="01_test_error_bar_lower_upper", plot_type="scatter")
 
         # Scatter single curve given the error bar with upper and lower
         # bounds for error
@@ -121,7 +121,7 @@ class TestPlots:
 
         plotting_tools.plane_plot(x_data=self.unimodal_x_data, y_data=
         self.unimodal_y_data, error_bar=error_bar_lower_upper, 
-        file_name="test_error_bar_line_lower_upper", plot_type="line")
+        file_name="01_test_error_bar_line_lower_upper", plot_type="line")
 
         # Continuous single curve given the error bar
 
@@ -129,7 +129,7 @@ class TestPlots:
 
         plotting_tools.plane_plot(x_data=self.unimodal_x_data, y_data=
         self.unimodal_y_data, error_bar=error_bar, file_name=
-        "test_error_region", plot_type="line")
+        "01_test_error_region", plot_type="line")
 
         # Calls with multimodal data
 
@@ -151,7 +151,7 @@ class TestPlots:
 
         plotting_tools.plane_plot(x_data=self.multimodal_x_data, y_data=
         self.multimodal_y_data, error_bar=error_bar, file_name=
-        "test_error_region_multimodal", plot_type="line")
+        "01_test_error_region_multimodal", plot_type="line")
 
         # Continuous multiple curves given the error bar with upper and
         # lower bounds
@@ -161,7 +161,7 @@ class TestPlots:
 
         plotting_tools.plane_plot(x_data=self.multimodal_x_data, y_data=
         self.multimodal_y_data, error_bar=error_bar_lower_upper, file_name=
-        "test_error_region_multimodal_upper_lower", plot_type="line")
+        "01_test_error_region_multimodal_upper_lower", plot_type="line")
 
         # Continuous single curve automatically evaluating the error bar
         # for the t-Student distribution
@@ -170,8 +170,8 @@ class TestPlots:
         " evaluation of the error bar following t-Student")
 
         plotting_tools.plane_plot(x_data=self.unimodal_x_data, y_data=
-        self.multimodal_y_data, error_bar="t-Student", file_name="test_e"+
-        "rror_region_t_student", plot_type="line")
+        self.multimodal_y_data, error_bar="t-Student", file_name="01_t"+
+        "est_error_region_t_student", plot_type="line")
 
         # Continuous single curve automatically evaluating the error bar
         # for the normal distribution
@@ -181,7 +181,7 @@ class TestPlots:
 
         plotting_tools.plane_plot(x_data=self.unimodal_x_data, y_data=
         self.multimodal_y_data, error_bar="normal distribution", 
-        file_name="test_error_region_z_score", plot_type="line")
+        file_name="01_test_error_region_z_score", plot_type="line")
 
         # Scatter single curve automatically evaluating the error bar
         # for the normal distribution
@@ -191,7 +191,7 @@ class TestPlots:
 
         plotting_tools.plane_plot(x_data=self.unimodal_x_data, y_data=
         self.multimodal_y_data, error_bar="normal distribution", 
-        file_name="test_error_bar_z_score", plot_type="scatter")
+        file_name="01_test_error_bar_z_score", plot_type="scatter")
 
         # Continuous single curve automatically evaluating the error bar
         # for the t-Student distribution asking for a 90% confidence
@@ -202,7 +202,7 @@ class TestPlots:
 
         plotting_tools.plane_plot(x_data=self.unimodal_x_data, y_data=
         self.multimodal_y_data, error_bar={"name": "t-Student", "confi"+
-        "dence": 0.9}, file_name="test_error_region_t_student_0_90", 
+        "dence": 0.9}, file_name="01_test_error_region_t_student_0_90", 
         plot_type="line")
 
         # Continuous single curve automatically evaluating the error bar
@@ -214,8 +214,8 @@ class TestPlots:
 
         plotting_tools.plane_plot(x_data=self.unimodal_x_data, y_data=
         self.multimodal_y_data, error_bar={"name": "normal distribution",
-        "confidence": 0.9}, file_name="test_error_region_z_score_0_90", 
-        plot_type="line")
+        "confidence": 0.9}, file_name="01_test_error_region_z_score_0_"+
+        "90", plot_type="line")
 
     def test_matrix_plot(self):
 
@@ -237,7 +237,7 @@ class TestPlots:
                 generic_matrix[-1].append(((i+1)*(j+1))/(n**2))
 
         plotting_tools.plot_matrix(generic_matrix, 
-        get_parent_path_of_file(), "generic matrix")
+        get_parent_path_of_file(), "04_generic matrix")
 
     def test_mutliple_scattered_ellipses(self):
 
@@ -339,7 +339,7 @@ class TestPlots:
         p1=plotting_tools.plane_plot(
                 x_data=x_fit,#[np.array(p), x_fit], 
                 y_data=y_fit,#[np.array(error_rate), y_fit], 
-                file_name="error_rate_failure_Lp_norm.pdf", 
+                file_name="02_error_rate_failure_Lp_norm.pdf", 
                 parent_path=get_parent_path_of_file(),  # Saves in the folder path
                 color_map="coolwarm", 
                 color=1.0,
@@ -358,7 +358,7 @@ class TestPlots:
         plotting_tools.plane_plot(
                 x_data=p,#[np.array(p), x_fit], 
                 y_data=error_rate,#[np.array(error_rate), y_fit], 
-                file_name="error_rate_failure_Lp_norm.png", 
+                file_name="02_error_rate_failure_Lp_norm.png", 
                 parent_path=get_parent_path_of_file(),  # Saves in the folder path
                 color_map="coolwarm", 
                 color=0.0,
@@ -377,10 +377,97 @@ class TestPlots:
                 plot_object=p1
             )
 
+    # Defines a function to test a simple continuous curve
+
+    def test_continuous_curve(self):
+
+        # Sets the horizontal axis
+
+        x_data = np.linspace(-np.pi, np.pi, 500)
+
+        # Sets the function that describes the vertical axis
+
+        def y_function(theta):
+
+            #return np.sin(theta)-(np.cos(theta)*np.exp(np.sin(theta)-
+            #np.cos(theta)))
+
+            #y is negative in the interval -3.141592653589793 < x < -0.14480286780073204
+
+            #y is negative in the interval 0.7869721076126734 < x < 3.141592653589793
+
+            #return np.cos(theta)-(0.5*np.sqrt(2.0)*(2.0-np.cos(theta-(
+            #0.25*np.pi))))
+
+            lmbda = np.where(np.abs(theta)<1E-8, 0.0, 1.0/(2.0*np.sin(
+            theta/2.0)**2))
+
+            return (lmbda*np.sin(theta))+((1.0-lmbda)*0.5*np.sqrt(2))
+
+        y_data = y_function(x_data)
+
+        # Discovers the interval y_data is negative
+
+        flag_negative = False
+
+        negative_intervals = [[]]
+
+        for i, y_value in enumerate(y_data):
+
+            if flag_negative and (y_value>0):
+
+                # Makes the flag False 
+
+                flag_negative = False 
+
+                # Adds a new slot for a possible next negative interval
+
+                negative_intervals.append([])
+
+            elif flag_negative:
+
+                # Updates the upper limit
+
+                negative_intervals[-1][-1] = i 
+
+            elif y_value<0:
+
+                # Updates the lower limit
+
+                negative_intervals[-1] = [i, i]
+
+                # Updates the flag
+
+                flag_negative = True
+
+        # If the last negative interval is an empty list, removes this 
+        # list
+
+        if len(negative_intervals)>0 and len(negative_intervals[-1])==0:
+
+            negative_intervals = negative_intervals[0:-1]
+
+        # Prints the negative intervals
+
+        for negative_interval in negative_intervals:
+
+            print("\ny is negative in the interval "+str(x_data[
+            negative_interval[0]])+" < x < "+str(x_data[
+            negative_interval[1]]))
+
+        # Plots the curve
+
+        plotting_tools.plane_plot(x_data=x_data, y_data=y_data, 
+        file_name="03_continuous_curve.png", parent_path=
+        get_parent_path_of_file(), verbose=True, x_label="$\\theta$", 
+        y_label="$\\mathcal{M}\\Parentheses{\\boldsymbol{u}}\times\\bo"+
+        "ldsymbol{u}$", transparent_background=True, latex_package="[n"+
+        "ohyperref]{LaTeXUtilities}", dpi=1000)
+
 # Runs all tests
 
 if __name__=="__main__":
 
     class_of_tests = TestPlots()
 
-    run_class_of_tests(class_of_tests)
+    run_class_of_tests(class_of_tests, sort_methods_alphabetically=False)
