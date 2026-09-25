@@ -4,7 +4,11 @@
 
 import numpy as np
 
+from time import time
+
 from ....Davout.GraphUtilities.plotting_tools import plane_plot
+
+from ....Davout.GraphUtilities.collage_tools import create_box_collage
 
 from ....Davout.PythonicUtilities.path_tools import get_parent_path_of_file
 
@@ -108,7 +112,7 @@ space_dimension, tolerance=1E-10):
 # ray (n_samples, space_dimension)
 
 def normalize_and_rotate_vector_to_positive_orthant(u_vector,
-dimension_axis, tolerance=1E-8):
+dimension_axis, tolerance=1E-12):
 
     # Gets the space dimension
 
@@ -134,18 +138,18 @@ dimension_axis, tolerance=1E-8):
     # a vector perpendicular to the identity line in the subspace span-
     # ned by u and d
     
-    denominator = np.sqrt(u_dot_u-(u_dot_d*u_dot_d)) 
+    denominator = np.sqrt(u_dot_u-(u_dot_d*u_dot_d)+tolerance)
 
     # Checks if the denominator approaches zero
     
-    zero_denominator = np.abs(beta+1.0)<=tolerance
+    zero_denominator_condition = denominator<=tolerance
 
     # Computes the coefficients of the combination of the given vector u
     # and of the identity vector d. If u is colinear to the identity, 
     # makes the first coefficient 0 and the second 1
 
-    coefficient_u = np.where(zero_denominator, np.zeros_like(denominator
-    ), 1.0/denominator)
+    coefficient_u = np.where(zero_denominator_condition, np.zeros_like(
+    denominator), 1.0/denominator)
 
     coefficient_d = -(coefficient_u*u_dot_d)
 
@@ -186,7 +190,8 @@ dimension_axis, tolerance=1E-8):
     # Gets the mu corresponding to the final vector inside the positive
     # orthant
 
-    final_mu = (mu*(1-ratio))+ratio
+    final_mu = np.where(ratio<tolerance, np.ones_like(ratio), (mu*(1-
+    ratio))+ratio)
 
     denominator = np.sqrt((final_mu**2)+((1.0-final_mu)**2))
 
@@ -277,15 +282,25 @@ def plot_3D_modulating_function():
 
     # Sets the number of position vectors to be plotted
 
-    n_samples = 50
+    n_samples_radial = 96
 
-    # Creates a range of the polar angle
+    n_samples_elevation = 100
 
-    theta = np.linspace(-np.pi, np.pi, n_samples)
+    # Sets the elevation and azimuth angle for visualization
+
+    elevation_angle = 30#35.26
+
+    azimuth_angle = -15
+
+    # Creates a range of the polar angle. The final point is not inclu-
+    # ded to avoid repeating the first angle
+
+    theta = np.linspace(-(3/4)*np.pi, (5/4)*np.pi, n_samples_radial, 
+    endpoint=False)
 
     # And the range for the azimuthal angle
 
-    phi = np.linspace(-0.5*np.pi, 0.5*np.pi, n_samples)
+    phi = np.linspace(-0.5*np.pi, 0.5*np.pi, n_samples_elevation)
 
     # Generates a grid of the angles
 
@@ -313,66 +328,223 @@ def plot_3D_modulating_function():
     # Gets the rotation matrix to rotate this sphere to the identity li-
     # ne
 
-    R = tridimensional_rotation_tensor(np.array([0.5*np.sqrt(2.0), -0.5*
-    np.sqrt(2.0), 0.0])*np.arccos(-(np.sqrt(3)/3.0)))
+    R = tridimensional_rotation_tensor(np.array([-0.5*np.sqrt(2.0), 0.5*
+    np.sqrt(2.0), 0.0])*1.0*np.arccos((np.sqrt(3)/3.0)))
 
     # Rotates the position vectors
 
     position_vectors = np.einsum('ij,nj->ni', R, position_vectors)
+
+    # Adds points that will map to the coordinate axes
+
+    epsilon = 1E-3
+
+    coordinates_axes_vectors = np.asarray([[-1.0+epsilon, -1.0, -1.0], 
+    [-1.0, -1.0+epsilon, -1.0], [-1.0, -1.0, -1.0+epsilon]])
+
+    row_norms = np.linalg.norm(coordinates_axes_vectors, axis=1, 
+    keepdims=True)
+        
+    coordinates_axes_vectors = np.divide(coordinates_axes_vectors, 
+    row_norms, out=np.zeros_like(coordinates_axes_vectors), where=
+    row_norms!=0)
+
+    position_vectors = np.row_stack([coordinates_axes_vectors, 
+    position_vectors])
 
     # Assembles the x, y, and z data for plotting the original distribu-
     # tion of position vectors. The first column corresponds to the co-
     # ordinates of the origin, whereas the second column to the coordi-
     # nates in the circumference of a unit circle centered in the origin
 
-    x_data = np.column_stack([np.zeros_like(x_coordinates), 
+    x_data = np.column_stack([np.zeros_like(position_vectors[:,0]), 
     position_vectors[:,0]])
 
-    y_data = np.column_stack([np.zeros_like(y_coordinates), 
+    y_data = np.column_stack([np.zeros_like(position_vectors[:,1]), 
     position_vectors[:,1]])
 
-    z_data = np.column_stack([np.zeros_like(z_coordinates), 
+    z_data = np.column_stack([np.zeros_like(position_vectors[:,2]), 
     position_vectors[:,2]])
 
-    # Plots the circle
+    x_data = position_vectors[:,0]
+
+    y_data = position_vectors[:,1]
+
+    z_data = position_vectors[:,2]
+
+    # Plots the identity line
 
     color = np.linspace(0, 1, z_data.shape[0])
 
     common_ticks = np.linspace(-1.0, 1.0, 5)
 
+    n_points_boundary_edge = 100
+
+    n_points_first_section = 10
+    
+    n_points_second_section = 20
+
+    common_identity_line_points = np.concatenate([np.linspace(-1.0, 
+    ((n_points_first_section/n_points_boundary_edge)*2.0)-1.0,
+    n_points_first_section), np.linspace(1.0-((n_points_second_section/
+    n_points_boundary_edge)*2.0), 1.0, n_points_second_section)])
+
+    identity_line_plot = plane_plot("original_unit_sphere.png", 
+    x_data=common_identity_line_points, y_data=
+    common_identity_line_points, z_data=common_identity_line_points, 
+    color="black", parent_path=get_parent_path_of_file(), dpi=1000, 
+    aspect_ratio='equal', x_ticksLabels=common_ticks, y_ticksLabels=
+    common_ticks, z_ticksLabels=common_ticks, x_label="$x$", y_label="$y$", 
+    z_label="$z$", elevation_angle=elevation_angle, azimuth_angle=
+    azimuth_angle, plot_type="scatter", verbose=True, element_size=0.7,
+    transparent_background=True)
+
+    # Plots the sphere
+
     plane_plot("original_unit_sphere.png", x_data=x_data, y_data=y_data,
     z_data=z_data, color_map="coolwarm", color=color, parent_path=
     get_parent_path_of_file(), dpi=1000, aspect_ratio='equal',
     x_ticksLabels=common_ticks, y_ticksLabels=common_ticks, 
-    z_ticksLabels=common_ticks, x_label="x", y_label="y", z_label="z",
-    azimuth_angle=30)
+    z_ticksLabels=common_ticks, x_label="$x$", y_label="$y$", z_label="$z$",
+    elevation_angle=elevation_angle, azimuth_angle=azimuth_angle,
+    plot_type="scatter", verbose=True, plot_object=identity_line_plot,
+    right_padding_in_mm=7.5, top_padding_in_mm=-5.0, 
+    left_padding_in_mm=-9.0, bottom_padding_in_mm=3.0, 
+    transparent_background=True)
 
     # Uses the modulating function to transform all vectors to the posi-
     # tive quadrant
 
+    initial_time = time()
+
     modulated_vectors = normalize_and_rotate_vector_to_positive_orthant(
     position_vectors, dimension_axis=1)
 
+    final_time = time()
+
+    print("\nTo modulate a "+str(position_vectors.shape)+" matrix, it "+
+    "took "+str(final_time-initial_time)+" seconds")
+
     # Constructs the corresponding coordinates
 
-    modulated_x_data = np.column_stack([np.zeros_like(x_coordinates), 
-    modulated_vectors[:,0]])
+    modulated_x_data = np.column_stack([np.zeros_like(modulated_vectors[
+    :,0]), modulated_vectors[:,0]])
     
-    modulated_y_data = np.column_stack([np.zeros_like(y_coordinates), 
-    modulated_vectors[:,1]])
+    modulated_y_data = np.column_stack([np.zeros_like(modulated_vectors[
+    :,1]), modulated_vectors[:,1]])
     
-    modulated_z_data = np.column_stack([np.zeros_like(z_coordinates), 
-    modulated_vectors[:,2]])
+    modulated_z_data = np.column_stack([np.zeros_like(modulated_vectors[
+    :,2]), modulated_vectors[:,2]])
 
-    # Plots the modulated circle
+    modulated_x_data = modulated_vectors[:,0]
+
+    modulated_y_data = modulated_vectors[:,1]
+
+    modulated_z_data = modulated_vectors[:,2]
+
+    # Plots the identity line again, but adds the points of the edges of
+    # this octant
+
+    n_points_first_section = 59
+
+    n_points_second_section = 20
+
+    n_points_boundary_curved_edge = 30
+
+    common_identity_line_points = np.concatenate([np.linspace(-1.0, 
+    ((n_points_first_section/n_points_boundary_edge)*2.0)-1.0,
+    n_points_first_section), np.linspace(1.0-((n_points_second_section/
+    n_points_boundary_edge)*2.0), 1.0, n_points_second_section)])
+
+    # Sets the initial and final angles of the bottom and back edges
+
+    initial_angle_back_edge = (25/180)*np.pi
+
+    final_angle_bottom_edge = (70/180)*np.pi
+
+    x_data = np.concatenate([common_identity_line_points, np.cos(
+    np.linspace(0.5*np.pi, 0.0, n_points_boundary_curved_edge)), np.cos(
+    np.linspace(0.0, final_angle_bottom_edge, 
+    n_points_boundary_curved_edge)), np.linspace(0.0, 0.0, 
+    n_points_boundary_curved_edge)])
+
+    y_data = np.concatenate([common_identity_line_points, np.linspace(
+    0.0, 0.0, n_points_boundary_curved_edge), np.sin(np.linspace(0.0, 
+    final_angle_bottom_edge, n_points_boundary_curved_edge)), np.cos(
+    np.linspace(initial_angle_back_edge, 0.5*np.pi, 
+    n_points_boundary_curved_edge))])
+
+    z_data = np.concatenate([common_identity_line_points, np.sin(
+    np.linspace(0.5*np.pi, 0.0, n_points_boundary_curved_edge)), 
+    np.linspace(0.0, 0.0, n_points_boundary_curved_edge), np.sin(
+    np.linspace(initial_angle_back_edge, 0.5*np.pi, 
+    n_points_boundary_curved_edge))])
+
+    identity_line_plot = plane_plot("modulated_unit_sphere.png", 
+    x_data=x_data, y_data=y_data, z_data=z_data, 
+    color="black", parent_path=get_parent_path_of_file(), dpi=1000, 
+    aspect_ratio='equal', x_ticksLabels=common_ticks, y_ticksLabels=
+    common_ticks, z_ticksLabels=common_ticks, x_label="$x$", y_label="$y$", 
+    z_label="$z$", elevation_angle=elevation_angle, azimuth_angle=
+    azimuth_angle, plot_type="scatter", verbose=True, element_size=0.7, 
+    transparent_background=True)
 
     plane_plot("modulated_unit_sphere.png", x_data=modulated_x_data, 
     y_data=modulated_y_data, z_data=modulated_z_data, color_map=
     "coolwarm", color=color, parent_path=get_parent_path_of_file(), 
     aspect_ratio='equal', dpi=1000, x_ticksLabels=common_ticks, 
     y_ticksLabels=common_ticks, z_ticksLabels=common_ticks, x_label=
-    "x", y_label="y", z_label="z",
-    azimuth_angle=-10)
+    "$x$", y_label="$y$", z_label="$z$", elevation_angle=elevation_angle,
+    azimuth_angle=azimuth_angle, plot_type="scatter", verbose=True,
+    plot_object=identity_line_plot, right_padding_in_mm=7.5, 
+    top_padding_in_mm=-5.0, left_padding_in_mm=-9.0, 
+    bottom_padding_in_mm=3.0, transparent_background=True)
+
+# Defines a function to create a collage
+
+def create_collage():
+
+    create_box_collage("collage_modulating_function.pdf", input_path=
+    get_parent_path_of_file(),
+
+    input_image_list=[{"file name": "original_unit_sphere.png", 
+    "position": [50.0, 249.0], 
+    "size": 50.0, "trim transparent background": True, "origin point":
+    "top-left"}, 
+    {"file name": "modulated_unit_sphere.png", 
+    "position": [103.0, 249.0], "size": 50.0, 
+    "trim transparent background": True, "origin point": "top-left"}], 
+
+    input_text_list=[{"text": "$\\Omega_{\\mathcal{B}}\\in\\RealSpace{3}$", "position":
+    [100.0, 198.8], "font size": 4, "origin point": "top-right", 
+    "rendering method": "matplotlib text", "object name": "lateral sign"},
+    {"text": "$\\Omega_{\\mathrm{\\mathcal{M}}}\\in\\PositiveRealSpace{3}$", "position":
+    [153.0, 199.0], "font size": 4, "origin point": "top-right", 
+    "rendering method": "matplotlib text", "object name": "modulated title"},
+    {"text": "$\\mathcal{M}:\\RealSpace{n}\\rightarrow\\PositiveRealSpace{n}$", "position":
+    [103.0, 248.0], "font size": 4, "origin point": "top-left", 
+    "rendering method": "matplotlib text", "object name": "modulated title"}],
+
+    boxes_list=[{"contour color": "black", "fill color": "grey 3", "contour"+
+    " thickness": 0.2, "position": [48.0, 251.0], "width": 107.0, "height": 58.0,
+    "contour style": "solid", "origin point": "top-left"},
+    {"contour color": "black", "fill color": "grey 1", "contour"+
+    " thickness": 0.2, "position": [49.0, 250.0], "width": 52.0, "height": 56.0,
+    "contour style": "solid", "origin point": "top-left"},
+    {"contour color": "black", "fill color": "grey 1", "contour"+
+    " thickness": 0.2, "position": [102.0, 250.0], "width": 52.0, "height": 56.0,
+    "contour style": "solid", "origin point": "top-left"}], 
+
+    arrows_and_lines_list=[{"start point": [92.0, 240.0], "end point": [109.0, 240.0], 
+    "spline points": [[98.0, 244], [104.0, 244]], "thickness": 0.2,
+    "arrow style": "inkscape angular arrow"}],
+
+    verbose=True, no_padding=True, add_overlaying_grid=False, dpi=1000,
+    grid_annotation_length=10, save_lists_to_txt=False, 
+    interactive_preview=False, size_template="A4",
+    export_selection={"origin point": "bottom-right", "position": [
+    155.0, 193.0], "width": 107.0, "height": 58.0}, 
+    )
 
 # Testing block
 
@@ -391,9 +563,11 @@ if __name__=="__main__":
 
     # Gets the vector u in a batched format, i.e., an array (n_samples,
     # space_dimension)
+
+    epsilon = 1E-3
     
-    u = np.asarray([[-0.5, -0.5, 1.0], [-0.25, -0.25, 1.0], [-0.1, 0.25, 
-    1.0]])
+    u = np.asarray([[-1.0+epsilon, -1.0, -1.0], [-1.0, -1.0+epsilon, 
+    -1.0], [-1.0, -1.0, -1.0+epsilon]])
 
     # Evaluates the corresponding vector that shall be rotated to the 
     # positive orthant
@@ -401,14 +575,26 @@ if __name__=="__main__":
     positive_u = normalize_and_rotate_vector_to_positive_orthant(u,
     dimension_axis=1)
 
-    print("\nThe rotated vector to the positive orthant given by "+str(u
-    )+" is: "+str(positive_u)+"\nwhose norm is "+str(np.linalg.norm(
+    print("\nThe rotated vector to the positive orthant given by\n"+str(
+    u)+"\nis\n"+str(positive_u)+"\n\nwhose norm is "+str(np.linalg.norm(
     positive_u, axis=1)))
 
-    # Plots a visualization of the modulating function in 2D space
+    # Sets a flag for plotting
 
-    plot_2D_modulating_function()
+    flag_plot = False 
 
-    # And in 3D space
+    flag_collage = True
 
-    plot_3D_modulating_function()
+    if flag_plot:
+
+        # Plots a visualization of the modulating function in 2D space
+
+        plot_2D_modulating_function()
+
+        # And in 3D space
+
+        plot_3D_modulating_function()
+
+    if flag_collage:
+
+        create_collage()

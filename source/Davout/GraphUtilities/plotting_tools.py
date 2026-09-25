@@ -14,6 +14,8 @@ import matplotlib.colors as plt_colors
 
 import matplotlib.ticker as ticker
 
+from matplotlib.transforms import Bbox
+
 from matplotlib import markers
 
 from ..PythonicUtilities import path_tools
@@ -70,7 +72,10 @@ x_ticksLabels=None, y_ticksLabels=None, z_ticksLabels=None,
 ticks_fontsize=12, label_fontsize=14, legend_fontsize=12, 
 highlight_pointsColors='black', parent_path=None, error_bar=None, 
 plot_object=None, verbose=False, latex_package="amsmath", dpi=500,
-transparent_background=False, azimuth_angle=None, elevation_angle=None):
+transparent_background=False, azimuth_angle=None, elevation_angle=None,
+scatter_points_as_separate_curves=False, right_padding_in_mm=None, 
+top_padding_in_mm=None, left_padding_in_mm=None, bottom_padding_in_mm=
+None):
     
     """
     You can provide an array of data, where the first column will be in
@@ -411,10 +416,10 @@ transparent_background=False, azimuth_angle=None, elevation_angle=None):
             raise IndexError("The x data and y data are lists of diffe"+
             "rent sizes. Thus, cannot be used for plotting")
         
-        # If the plot type is catter, treats each point as a separate 
+        # If the plot type is scatter, treats each point as a separate 
         # curve
 
-        elif plot_type=="scatter":
+        elif plot_type=="scatter" and scatter_points_as_separate_curves:
 
             multiple_curves = len(x_data)
 
@@ -487,6 +492,12 @@ transparent_background=False, azimuth_angle=None, elevation_angle=None):
         else:
 
             figure, plot_object = plt.subplots()
+
+    elif not isinstance(plot_object, tuple):
+
+        raise TypeError("'plot_object' in 'plane_plot' must be a tuple"+
+        " with both figure and plot objects in it. The unpacking is ca"+
+        "rried out here automatically")
 
     else:
 
@@ -623,59 +634,11 @@ transparent_background=False, azimuth_angle=None, elevation_angle=None):
         
         elif color_map:
 
-            # Gets the extrema values of the colors
+            # Converts the color list as an interpolation of a colormap
+            # to actual color information
 
-            color_min = None
-
-            color_max = None
-
-            try:
-
-                color_min = min(color)
-
-                color_max = max(color)
-
-                # If the minimum value is not given
-
-                if color_barMinimum is None:
-
-                    color_barMinimum = color_min*1.0
-
-                elif color_min<color_barMinimum:
-
-                    color_barMinimum = color_min*1.0
-
-                # If the maximum is not given
-
-                if color_barMaximum is None:
-
-                    color_barMaximum = color_max*1.0
-
-                elif color_max>color_barMaximum:
-
-                    color_barMaximum = color_max*1.0
-
-            except:
-
-                pass
-
-            # Iterates through the color values
-
-            for i in range(len(color)):
-
-                if isinstance(color[i], float) or isinstance(color[i], 
-                int):
-                    
-                    color[i] = color_map((color[i]-color_barMinimum)/(
-                    color_barMaximum-color_barMinimum))
-
-            # Updates the color map variable to account for the maximum
-            # and minimum values
-
-            if (not (color_min is None)) and (not (color_max is None)):
-
-                color_map = [color_map, color_barMinimum, 
-                color_barMaximum]
+            color, color_map = convert_color_interpolation(color, 
+            color_barMinimum, color_barMaximum, color_map)
 
         # Verifies if there is a single label
 
@@ -734,13 +697,32 @@ transparent_background=False, azimuth_angle=None, elevation_angle=None):
                 element_size = element_size[0]
 
         # And verifies the line colors
+
+        if isinstance(color, np.ndarray):
+
+            color = color.tolist()
         
         if isinstance(color, list):
 
             if len(color)>1:
 
-                raise IndexError(str(len(color))+" colors were given, "+
-                "but there is only one curve to be plotted")
+                # If this is a scatter plot
+
+                if plot_type=="scatter":
+
+                    # Converts the color list as an interpolation of a 
+                    # colormap to actual color information
+        
+                    color, color_map = convert_color_interpolation(color, 
+                    color_barMinimum, color_barMaximum, color_map)
+
+                # Otherwise, throws and error
+
+                else:
+
+                    raise IndexError(str(len(color))+" colors were giv"+
+                    "en, but there is only one curve to be plotted and"+
+                    " 'plot_type' is not 'scatter'")
             
             else:
 
@@ -1200,6 +1182,11 @@ transparent_background=False, azimuth_angle=None, elevation_angle=None):
 
         if multiple_curves:
 
+            if verbose:
+
+                print("\nLines without labels will be plotted using mu"+
+                "ltiple curves")
+
             for i in range(multiple_curves):
 
                 local_plot_type = None 
@@ -1257,7 +1244,7 @@ transparent_background=False, azimuth_angle=None, elevation_angle=None):
                                 plotted_entities = plot_object.scatter(
                                 x_data[i], y_data[i], z_data[i], marker=
                                 element_style[i], s=element_size[i]**2, 
-                                color=color[i], zorder=3) 
+                                color=color[i]) 
 
                             else:
 
@@ -1273,7 +1260,7 @@ transparent_background=False, azimuth_angle=None, elevation_angle=None):
                                 plotted_entities = plot_object.scatter(
                                 x_data, y_data[i], z_data[i], marker=
                                 element_style[i], s=element_size[i]**2, 
-                                color=color[i], zorder=3)
+                                color=color[i])
 
                             else:
 
@@ -1292,7 +1279,7 @@ transparent_background=False, azimuth_angle=None, elevation_angle=None):
                             plotted_entities = plot_object.scatter(
                             x_data[i], y_data[i], z_data[i], marker=
                             element_style[i], s=element_size[i]**2, 
-                            color=color[i], zorder=3)
+                            color=color[i])
 
                         else:
 
@@ -1330,7 +1317,7 @@ transparent_background=False, azimuth_angle=None, elevation_angle=None):
 
                     plotted_entities = plot_object.scatter(x_data, 
                     y_data, z_data, marker=element_style, s=
-                    element_size**2, color=color, zorder=3)
+                    element_size**2, color=color)
 
                 else:
 
@@ -1419,7 +1406,7 @@ transparent_background=False, azimuth_angle=None, elevation_angle=None):
                                 plotted_entities = plot_object.scatter(
                                 x_data[i], y_data[i], z_data[i], marker=
                                 element_style[i], s=element_size[i]**2, 
-                                color=color[i], zorder=3, label=label[i])
+                                color=color[i], label=label[i])
 
                             else:
 
@@ -1435,7 +1422,7 @@ transparent_background=False, azimuth_angle=None, elevation_angle=None):
                                 plotted_entities = plot_object.scatter(
                                 x_data, y_data[i], z_data[i], marker=
                                 element_style[i], s=element_size[i]**2, 
-                                color=color[i], zorder=3, label=label[i])
+                                color=color[i], label=label[i])
 
                             else:
 
@@ -1456,7 +1443,7 @@ transparent_background=False, azimuth_angle=None, elevation_angle=None):
                                 plotted_entities = plot_object.scatter(
                                 x_data[i], y_data[i], z_data[i], marker=
                                 element_style[i], s=element_size[i]**2, 
-                                color=color[i], zorder=3, label=label[i])
+                                color=color[i], label=label[i])
 
                             else:
 
@@ -1472,7 +1459,7 @@ transparent_background=False, azimuth_angle=None, elevation_angle=None):
                                 plotted_entities = plot_object.scatter(
                                 x_data[i], y_data[i], z_data[i], marker=
                                 element_style[i], s=element_size[i]**2, 
-                                color=color[i], zorder=3)
+                                color=color[i])
 
                             else:
 
@@ -1510,7 +1497,7 @@ transparent_background=False, azimuth_angle=None, elevation_angle=None):
 
                     plotted_entities = plot_object.scatter(x_data, 
                     y_data, z_data, marker=element_style, s=element_size
-                    **2, color=color, label=label, zorder=3)
+                    **2, color=color, label=label)
 
                 else:
 
@@ -1547,7 +1534,7 @@ transparent_background=False, azimuth_angle=None, elevation_angle=None):
 
                             plot_object.scatter(x_data[i], y_data[i], 
                             z_data[i], color=highlight_pointsColors, 
-                            marker= highlight_points, zorder=3)
+                            marker= highlight_points)
 
                         else:
 
@@ -1561,7 +1548,7 @@ transparent_background=False, azimuth_angle=None, elevation_angle=None):
 
                             plot_object.scatter(x_data, y_data[i], 
                             z_data[i], color= highlight_pointsColors, 
-                            marker=highlight_points, zorder=3)
+                            marker=highlight_points)
 
                         else:
 
@@ -1577,7 +1564,7 @@ transparent_background=False, azimuth_angle=None, elevation_angle=None):
 
                             plot_object.scatter(x_data[i], y_data[i], 
                             z_data[i], color=color[i], marker=
-                            highlight_points, zorder=3)
+                            highlight_points)
 
                         else:
 
@@ -1591,7 +1578,7 @@ transparent_background=False, azimuth_angle=None, elevation_angle=None):
 
                             plot_object.scatter(x_data, y_data[i], 
                             z_data[i], color=color[i], marker=
-                            highlight_points, zorder=3)
+                            highlight_points)
 
                         else:
 
@@ -1605,8 +1592,7 @@ transparent_background=False, azimuth_angle=None, elevation_angle=None):
                 if three_dimensional_plot:
 
                     plot_object.scatter(x_data, y_data, z_data, color=
-                    highlight_pointsColors, marker=highlight_points, 
-                    zorder=3)
+                    highlight_pointsColors, marker=highlight_points)
 
                 else:
 
@@ -1619,7 +1605,7 @@ transparent_background=False, azimuth_angle=None, elevation_angle=None):
                 if three_dimensional_plot:
 
                     plot_object.scatter(x_data, y_data, z_data, color=
-                    'black', marker=highlight_points, zorder=3)
+                    'black', marker=highlight_points)
 
                 else:
 
@@ -1652,8 +1638,7 @@ transparent_background=False, azimuth_angle=None, elevation_angle=None):
                     plotted_entities = plot_object.scatter(x_data[0:2], 
                     [y_data[0], y_data[1]], [z_data[0], z_data[1]], c=[
                     color_map[1], color_map[2]], cmap=color_map[0], vmin=
-                    color_map[1], vmax=color_map[2], marker='x', zorder=
-                    3, s=0.001)
+                    color_map[1], vmax=color_map[2], marker='x', s=0.001)
 
                 else:
 
@@ -1674,7 +1659,7 @@ transparent_background=False, azimuth_angle=None, elevation_angle=None):
                         0:2], y_data[0][0:2], z_data[0][0:2], c=[
                         color_map[1], color_map[2]], cmap=color_map[0], 
                         vmin=color_map[1], vmax=color_map[2], marker='x', 
-                        zorder=3, s=0.001)
+                        s=0.001)
 
                     else:
 
@@ -1691,7 +1676,7 @@ transparent_background=False, azimuth_angle=None, elevation_angle=None):
                         ], y_data[0][0:2], z_data[0][0:2], c=[color_map[
                         1], color_map[2]], cmap=color_map[0], vmin=
                         color_map[1], vmax=color_map[2], marker='x', 
-                        zorder=3, s=0.001)
+                        s=0.001)
 
                     else:
 
@@ -1707,7 +1692,7 @@ transparent_background=False, azimuth_angle=None, elevation_angle=None):
                 plotted_entities = plot_object.scatter(x_data[0:2], 
                 y_data[0:2], z_data[0:2], c=[color_map[1], color_map[2]
                 ], cmap=color_map[0], vmin=color_map[1], vmax=color_map[
-                2], marker='x', zorder=3, s=0.001)
+                2], marker='x', s=0.001)
 
             else:
 
@@ -2022,6 +2007,13 @@ transparent_background=False, azimuth_angle=None, elevation_angle=None):
 
         figure.patch.set_alpha(0)
 
+        # If the plot is three-dimensional, makes the patcth behind the 
+        # plot transparent as well
+
+        if three_dimensional_plot:
+
+            plot_object.patch.set_alpha(0)
+
     # Saves the plot or shows it
 
     if file_name is None:
@@ -2058,8 +2050,55 @@ transparent_background=False, azimuth_angle=None, elevation_angle=None):
 
         try:
 
-            plt.savefig(file_name, bbox_inches="tight", pad_inches=0, 
-            dpi=dpi)
+            # Sets the bounding box
+
+            bounding_box = 'tight'
+
+            pad_inches = 0.0
+
+            if (right_padding_in_mm is not None) or (
+            left_padding_in_mm is not None) or (
+            top_padding_in_mm is not None) or (
+            bottom_padding_in_mm is not None):
+
+                figure.canvas.draw()
+
+                # Creates the bounding box
+
+                bounding_box = figure.get_tightbbox(
+                figure.canvas.get_renderer())
+
+                # Sets the padding options accordingly to the default 
+                # null if they were not given
+
+                if left_padding_in_mm is None:
+
+                    left_padding_in_mm = 0.0
+
+                if right_padding_in_mm is None:
+
+                    right_padding_in_mm = 0.0
+
+                if bottom_padding_in_mm is None:
+
+                    bottom_padding_in_mm = 0.0
+
+                if top_padding_in_mm is None:
+
+                    top_padding_in_mm = 0.0
+
+                bounding_box = Bbox.from_extents(bounding_box.x0
+                -(left_padding_in_mm/25.4), bounding_box.y0-
+                (bottom_padding_in_mm/25.4), bounding_box.x1+
+                (right_padding_in_mm/25.4), bounding_box.y1+
+                (top_padding_in_mm/25.4))
+
+                # Changes the padding to the default value
+
+                pad_inches = 0.1
+
+            plt.savefig(file_name, bbox_inches=bounding_box, dpi=dpi,
+            pad_inches=pad_inches)
 
         except Exception as e:
 
@@ -2247,6 +2286,70 @@ def color_mapBuilder(color_map_name, max_ticksColorBar=3):
     else:
 
         return color_map_name
+
+# Defines a function to convert a list of interpolation values of a co-
+# lor map to actual color information
+
+def convert_color_interpolation(color_list, color_barMinimum, 
+color_barMaximum, color_map):
+
+    # Gets the extrema values of the colors
+
+    color_min = None
+
+    color_max = None
+
+    try:
+
+        color_min = min(color_list)
+
+        color_max = max(color_list)
+
+        # If the minimum value is not given
+
+        if color_barMinimum is None:
+
+            color_barMinimum = color_min*1.0
+
+        elif color_min<color_barMinimum:
+
+            color_barMinimum = color_min*1.0
+
+        # If the maximum is not given
+
+        if color_barMaximum is None:
+
+            color_barMaximum = color_max*1.0
+
+        elif color_max>color_barMaximum:
+
+            color_barMaximum = color_max*1.0
+
+    except:
+
+        pass
+
+    # Iterates through the color values
+
+    for i in range(len(color_list)):
+
+        if isinstance(color_list[i], float) or isinstance(color_list[i], 
+        int):
+            
+            color_list[i] = color_map((color_list[i]-color_barMinimum)/(
+            color_barMaximum-color_barMinimum))
+
+    # Updates the color map variable to account for the maximum and mi-
+    # nimum values
+
+    if (not (color_min is None)) and (not (color_max is None)):
+
+        color_map = [color_map, color_barMinimum, 
+        color_barMaximum]
+
+    # Returns the color list and the color map
+
+    return color_list, color_map
 
 ########################################################################
 #                              Utilities                               #
