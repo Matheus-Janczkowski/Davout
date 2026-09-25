@@ -80,15 +80,15 @@ def tridimensional_rotation_tensor(pseudo_vector: np.ndarray):
 
     R[0,1] -= c_2*pseudo_vector[2]
 
-    R[1,0] = c_2*pseudo_vector[2]
+    R[1,0] += c_2*pseudo_vector[2]
 
-    R[0,2] = c_2*pseudo_vector[1]
+    R[0,2] += c_2*pseudo_vector[1]
 
     R[2,0] -= c_2*pseudo_vector[1]
 
     R[1,2] -= c_2*pseudo_vector[0]
 
-    R[2,1] = c_2*pseudo_vector[0]
+    R[2,1] += c_2*pseudo_vector[0]
 
     # Returns the rotation tensor
 

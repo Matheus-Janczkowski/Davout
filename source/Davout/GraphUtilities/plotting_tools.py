@@ -58,18 +58,19 @@ matplotlib.rcParams.update({"text.usetex": True, "font.family": "serif",
 # Defines a function to plot curves in the XY plane
 
 def plane_plot(file_name=None, data=None, x_data=None, y_data=None, 
-label=None, x_label=None, y_label=None, title=None, flag_grid=True, 
-highlight_points=False, color=None, flag_scientificNotation=False,
-element_style=None, element_size=1.5,  legend_position='upper left', 
-plot_type="line", color_map=False, flag_noTicks=False, aspect_ratio='a'+
-'uto', x_grid=None, y_grid=None, color_bar=False, color_barMaximum=None, 
-color_barMinimum=None, color_barTicks=None, color_barTitle=None, 
-color_barIntegerTicks=False, color_barNumberOfTicks=5, 
-color_barIncludeMinMaxTicks=False, x_ticksLabels=None, y_ticksLabels=
-None, ticks_fontsize=12, label_fontsize=14, legend_fontsize=12,
+z_data = None, label=None, x_label=None, y_label=None, z_label=None,
+title=None, flag_grid=True, highlight_points=False, color=None, 
+flag_scientificNotation=False, element_style=None, element_size=1.5,  
+legend_position='upper left', plot_type="line", color_map=False, 
+flag_noTicks=False, aspect_ratio='auto', x_grid=None, y_grid=None, 
+z_grid=None, color_bar=False, color_barMaximum=None, color_barMinimum=
+None, color_barTicks=None, color_barTitle=None, color_barIntegerTicks=
+False, color_barNumberOfTicks=5, color_barIncludeMinMaxTicks=False, 
+x_ticksLabels=None, y_ticksLabels=None, z_ticksLabels=None, 
+ticks_fontsize=12, label_fontsize=14, legend_fontsize=12, 
 highlight_pointsColors='black', parent_path=None, error_bar=None, 
 plot_object=None, verbose=False, latex_package="amsmath", dpi=500,
-transparent_background=False):
+transparent_background=False, azimuth_angle=None, elevation_angle=None):
     
     """
     You can provide an array of data, where the first column will be in
@@ -217,11 +218,12 @@ transparent_background=False):
 
     # Checks if all variables data, x_data, and y_data are None
 
-    if (data is None) and (x_data is None) and (y_data is None):
+    if (data is None) and (x_data is None) and (y_data is None) and (
+    z_data is None):
 
         raise ValueError("The list of lists of data has not been provi"+
-        "ded nor the x_data list neither the y_data. Thus, no data can"+
-        " be plotted")
+        "ded nor the x_data list, neither the y_data nor z_data. Thus,"+
+        " no data can be plotted")
 
     # If the data was given
 
@@ -262,13 +264,6 @@ transparent_background=False):
             for i in range(len(data[0])-1):
 
                 y_data.append([])
-
-        """# If the plot type is scatter, treats each point as a separate 
-        # curve
-
-        elif plot_type=="scatter":
-
-            multiple_curves = len(data)"""
 
         for point in data:
 
@@ -328,6 +323,20 @@ transparent_background=False):
             else:
 
                 y_data = y_data.tolist()
+
+        if (z_data is not None) and (not isinstance(z_data, list)):
+
+            # Verifies if does not have the to list method
+
+            if not hasattr(z_data, "tolist"):
+
+                raise TypeError("The z data is not a list nor a numpy "+
+                "array neither a tensorflow tensor, thus, cannot be us"+
+                "ed for plotting")
+            
+            else:
+
+                z_data = z_data.tolist()
 
         if (isinstance(y_data[0], list) or isinstance(y_data[0], 
         np.ndarray)):
@@ -391,6 +400,12 @@ transparent_background=False):
 
                         y_data[i] = y_data[i].tolist()
 
+                    if z_data is not None:
+                    
+                        if hasattr(z_data[i], "tolist"):
+
+                            z_data[i] = z_data[i].tolist()
+
         elif len(x_data)!=len(y_data):
 
             raise IndexError("The x data and y data are lists of diffe"+
@@ -402,6 +417,14 @@ transparent_background=False):
         elif plot_type=="scatter":
 
             multiple_curves = len(x_data)
+
+    # Creates a flag to inform whether the plot is 3D or not
+
+    three_dimensional_plot = False 
+
+    if z_data is not None:
+
+        three_dimensional_plot = True
 
     # Gets the import preamble of the LaTeX package
 
@@ -455,7 +478,15 @@ transparent_background=False):
 
     if plot_object is None:
 
-        figure, plot_object = plt.subplots()
+        if three_dimensional_plot:
+
+            figure = plt.figure()
+
+            plot_object = figure.add_subplot(111, projection="3d") 
+
+        else:
+
+            figure, plot_object = plt.subplots()
 
     else:
 
@@ -542,6 +573,12 @@ transparent_background=False):
             "sses were given")
         
         # Verifies the color vector
+
+        if isinstance(color, np.ndarray):
+
+            # Converts the color object to a list
+
+            color = color.tolist()
 
         if color is None:
 
@@ -722,7 +759,40 @@ transparent_background=False):
 
     # Sets the aspect ratio of the plot
 
-    plot_object.set_aspect(aspect_ratio)
+    if three_dimensional_plot:
+
+        if aspect_ratio=='equal' or aspect_ratio=='auto': 
+
+            plot_object.set_box_aspect((1, 1, 1))
+
+        elif isinstance(aspect_ratio, tuple):
+
+            plot_object.set_box_aspect(aspect_ratio)
+
+        else:
+
+            raise ValueError("'aspect_ratio' for three-dimensional plo"+
+            "ts must be a tuple with floats such as (0.5, 0.7, 1.0). C"+
+            "urrently, it is: "+str(aspect_ratio))
+
+    else:
+
+        plot_object.set_aspect(aspect_ratio)
+
+    # Sets the camera angle
+
+    if three_dimensional_plot and ((elevation_angle is not None) or (
+    azimuth_angle is not None)):
+
+        if elevation_angle is None:
+
+            elevation_angle = 30
+
+        if azimuth_angle is None:
+
+            azimuth_angle = 45
+
+        plot_object.view_init(elev=elevation_angle, azim=azimuth_angle)
 
     # Inititalizes the plotted entities
 
@@ -1146,15 +1216,33 @@ transparent_background=False):
 
                     if different_nPoints:
 
-                        plotted_entities = plot_object.plot(x_data[i], 
-                        y_data[i], linestyle=element_style[i], linewidth=
-                        element_size[i], color=color[i])
+                        if three_dimensional_plot:
+
+                            plotted_entities = plot_object.plot(x_data[i
+                            ], y_data[i], z_data[i], linestyle=
+                            element_style[i], linewidth=element_size[i], 
+                            color=color[i])
+
+                        else:
+
+                            plotted_entities = plot_object.plot(x_data[i
+                            ], y_data[i], linestyle=element_style[i], 
+                            linewidth=element_size[i], color=color[i])
 
                     else:
 
-                        plotted_entities = plot_object.plot(x_data, 
-                        y_data[i], linestyle=element_style[i], linewidth=
-                        element_size[i], color=color[i])
+                        if three_dimensional_plot:
+
+                            plotted_entities = plot_object.plot(x_data, 
+                            y_data[i], z_data[i], linestyle=
+                            element_style[i], linewidth=element_size[i], 
+                            color=color[i])
+
+                        else:
+
+                            plotted_entities = plot_object.plot(x_data, 
+                            y_data[i], linestyle=element_style[i], 
+                            linewidth=element_size[i], color=color[i])
 
                 elif local_plot_type=="scatter":
 
@@ -1164,26 +1252,54 @@ transparent_background=False):
 
                         if different_nPoints:
 
-                            plotted_entities = plot_object.scatter(
-                            x_data[i], y_data[i], marker=element_style[i
-                            ], s=element_size[i]**2, color=color[i], 
-                            zorder=3)
+                            if three_dimensional_plot:
+
+                                plotted_entities = plot_object.scatter(
+                                x_data[i], y_data[i], z_data[i], marker=
+                                element_style[i], s=element_size[i]**2, 
+                                color=color[i], zorder=3) 
+
+                            else:
+
+                                plotted_entities = plot_object.scatter(
+                                x_data[i], y_data[i], marker=
+                                element_style[i], s=element_size[i]**2, 
+                                color=color[i], zorder=3)
 
                         else:
 
-                            plotted_entities = plot_object.scatter(
-                            x_data, y_data[i], marker=element_style[i], 
-                            s=element_size[i]**2, color=color[i], zorder=
-                            3)
+                            if three_dimensional_plot:
+
+                                plotted_entities = plot_object.scatter(
+                                x_data, y_data[i], z_data[i], marker=
+                                element_style[i], s=element_size[i]**2, 
+                                color=color[i], zorder=3)
+
+                            else:
+
+                                plotted_entities = plot_object.scatter(
+                                x_data, y_data[i], marker=element_style[
+                                i], s=element_size[i]**2, color=color[i], 
+                                zorder=3)
 
                     # If it is just the default treatment of scatter 
                     # plots
 
                     else:
 
-                        plotted_entities = plot_object.scatter(x_data[
-                        i], y_data[i], marker=element_style[i], s=
-                        element_size[i]**2, color=color[i], zorder=3)
+                        if three_dimensional_plot:
+
+                            plotted_entities = plot_object.scatter(
+                            x_data[i], y_data[i], z_data[i], marker=
+                            element_style[i], s=element_size[i]**2, 
+                            color=color[i], zorder=3)
+
+                        else:
+
+                            plotted_entities = plot_object.scatter(
+                            x_data[i], y_data[i], marker=element_style[i
+                            ], s=element_size[i]**2, color=color[i], 
+                            zorder=3)
 
                 else:
 
@@ -1196,15 +1312,31 @@ transparent_background=False):
 
             if plot_type=="line":
 
-                plotted_entities = plot_object.plot(x_data, y_data, 
-                linestyle=element_style, linewidth=element_size, color=
-                color)
+                if three_dimensional_plot:
+
+                    plotted_entities = plot_object.plot(x_data, y_data, 
+                    z_data, linestyle=element_style, linewidth=
+                    element_size, color=color)
+
+                else:
+
+                    plotted_entities = plot_object.plot(x_data, y_data, 
+                    linestyle=element_style, linewidth=element_size, 
+                    color=color)
 
             elif plot_type=="scatter":
 
-                plotted_entities = plot_object.scatter(x_data, y_data, 
-                marker=element_style, s=element_size**2, color=color, 
-                zorder=3)
+                if three_dimensional_plot:
+
+                    plotted_entities = plot_object.scatter(x_data, 
+                    y_data, z_data, marker=element_style, s=
+                    element_size**2, color=color, zorder=3)
+
+                else:
+
+                    plotted_entities = plot_object.scatter(x_data, 
+                    y_data, marker=element_style, s=element_size**2, 
+                    color=color, zorder=3)
 
             else:
 
@@ -1244,15 +1376,35 @@ transparent_background=False):
 
                     if different_nPoints:
 
-                        plotted_entities = plot_object.plot(x_data[i], 
-                        y_data[i], linestyle=element_style[i], linewidth=
-                        element_size[i], color=color[i], label=label[i])
+                        if three_dimensional_plot: 
+
+                            plotted_entities = plot_object.plot(x_data[i
+                            ], y_data[i], z_data[i], linestyle=
+                            element_style[i], linewidth=element_size[i], 
+                            color=color[i], label=label[i])
+
+                        else:
+
+                            plotted_entities = plot_object.plot(x_data[i
+                            ], y_data[i], linestyle=element_style[i], 
+                            linewidth=element_size[i], color=color[i], 
+                            label=label[i])
 
                     else:
 
-                        plotted_entities = plot_object.plot(x_data, 
-                        y_data[i], linestyle=element_style[i], linewidth=
-                        element_size[i], color=color[i], label=label[i])
+                        if three_dimensional_plot:
+
+                            plotted_entities = plot_object.plot(x_data, 
+                            y_data[i], z_data[i], linestyle=
+                            element_style[i], linewidth=element_size[i], 
+                            color=color[i], label=label[i])
+
+                        else:
+
+                            plotted_entities = plot_object.plot(x_data, 
+                            y_data[i], linestyle=element_style[i], 
+                            linewidth=element_size[i], color=color[i], 
+                            label=label[i])
 
                 elif local_plot_type=="scatter":
 
@@ -1262,17 +1414,35 @@ transparent_background=False):
 
                         if different_nPoints:
 
-                            plotted_entities = plot_object.scatter(
-                            x_data[i], y_data[i], marker=element_style[i
-                            ], s=element_size[i]**2, color=color[i], 
-                            zorder=3, label=label[i])
+                            if three_dimensional_plot:
+
+                                plotted_entities = plot_object.scatter(
+                                x_data[i], y_data[i], z_data[i], marker=
+                                element_style[i], s=element_size[i]**2, 
+                                color=color[i], zorder=3, label=label[i])
+
+                            else:
+
+                                plotted_entities = plot_object.scatter(
+                                x_data[i], y_data[i], marker=
+                                element_style[i], s=element_size[i]**2, 
+                                color=color[i], zorder=3, label=label[i])
 
                         else:
 
-                            plotted_entities = plot_object.scatter(
-                            x_data, y_data[i], marker=element_style[i], 
-                            s=element_size[i]**2, color=color[i], 
-                            zorder=3, label=label[i])
+                            if three_dimensional_plot:
+
+                                plotted_entities = plot_object.scatter(
+                                x_data, y_data[i], z_data[i], marker=
+                                element_style[i], s=element_size[i]**2, 
+                                color=color[i], zorder=3, label=label[i])
+
+                            else:
+
+                                plotted_entities = plot_object.scatter(
+                                x_data, y_data[i], marker=element_style[
+                                i], s=element_size[i]**2, color=color[i], 
+                                zorder=3, label=label[i])
 
                     # If it is just the default treatment of scatter 
                     # plots
@@ -1281,17 +1451,35 @@ transparent_background=False):
 
                         if i==0:
 
-                            plotted_entities = plot_object.scatter(
-                            x_data[i], y_data[i], marker=element_style[i
-                            ], s=element_size[i]**2, color=color[i], 
-                            zorder=3, label=label[i])
+                            if three_dimensional_plot:
+
+                                plotted_entities = plot_object.scatter(
+                                x_data[i], y_data[i], z_data[i], marker=
+                                element_style[i], s=element_size[i]**2, 
+                                color=color[i], zorder=3, label=label[i])
+
+                            else:
+
+                                plotted_entities = plot_object.scatter(
+                                x_data[i], y_data[i], marker=
+                                element_style[i], s=element_size[i]**2, 
+                                color=color[i], zorder=3, label=label[i])
 
                         else:
 
-                            plotted_entities = plot_object.scatter(
-                            x_data[i], y_data[i], marker=element_style[i
-                            ], s=element_size[i]**2, color=color[i], 
-                            zorder=3)
+                            if three_dimensional_plot:
+
+                                plotted_entities = plot_object.scatter(
+                                x_data[i], y_data[i], z_data[i], marker=
+                                element_style[i], s=element_size[i]**2, 
+                                color=color[i], zorder=3)
+
+                            else:
+
+                                plotted_entities = plot_object.scatter(
+                                x_data[i], y_data[i], marker=
+                                element_style[i], s=element_size[i]**2, 
+                                color=color[i], zorder=3)
 
                 else:
 
@@ -1304,15 +1492,31 @@ transparent_background=False):
 
             if plot_type=="line":
 
-                plotted_entities = plot_object.plot(x_data, y_data, 
-                linestyle=element_style, linewidth=element_size, color=
-                color, label=label)
+                if three_dimensional_plot:
+
+                    plotted_entities = plot_object.plot(x_data, y_data, 
+                    z_data, linestyle=element_style, linewidth=
+                    element_size, color=color, label=label)
+
+                else: 
+
+                    plotted_entities = plot_object.plot(x_data, y_data, 
+                    linestyle=element_style, linewidth=element_size, 
+                    color=color, label=label)
 
             elif plot_type=="scatter":
 
-                plotted_entities = plot_object.scatter(x_data, y_data, 
-                marker=element_style, s=element_size**2, color=color, 
-                label=label, zorder=3)
+                if three_dimensional_plot:
+
+                    plotted_entities = plot_object.scatter(x_data, 
+                    y_data, z_data, marker=element_style, s=element_size
+                    **2, color=color, label=label, zorder=3)
+
+                else:
+
+                    plotted_entities = plot_object.scatter(x_data, 
+                    y_data, marker=element_style, s=element_size**2, 
+                    color=color, label=label, zorder=3)
 
             else:
 
@@ -1339,41 +1543,88 @@ transparent_background=False):
 
                     if different_nPoints:
 
-                        plot_object.scatter(x_data[i], y_data[i], 
-                        color=highlight_pointsColors, marker=
-                        highlight_points, zorder=3)
+                        if three_dimensional_plot:
+
+                            plot_object.scatter(x_data[i], y_data[i], 
+                            z_data[i], color=highlight_pointsColors, 
+                            marker= highlight_points, zorder=3)
+
+                        else:
+
+                            plot_object.scatter(x_data[i], y_data[i], 
+                            color=highlight_pointsColors, marker=
+                            highlight_points, zorder=3)
 
                     else:
 
-                        plot_object.scatter(x_data, y_data[i], color=
-                        highlight_pointsColors, marker=highlight_points, 
-                        zorder=3)
+                        if three_dimensional_plot:
+
+                            plot_object.scatter(x_data, y_data[i], 
+                            z_data[i], color= highlight_pointsColors, 
+                            marker=highlight_points, zorder=3)
+
+                        else:
+
+                            plot_object.scatter(x_data, y_data[i], color=
+                            highlight_pointsColors, marker=
+                            highlight_points, zorder=3)
 
                 else:
 
                     if different_nPoints:
 
-                        plot_object.scatter(x_data[i], y_data[i], 
-                        color=color[i], marker=highlight_points, zorder=
-                        3)
+                        if three_dimensional_plot:
+
+                            plot_object.scatter(x_data[i], y_data[i], 
+                            z_data[i], color=color[i], marker=
+                            highlight_points, zorder=3)
+
+                        else:
+
+                            plot_object.scatter(x_data[i], y_data[i], 
+                            color=color[i], marker=highlight_points, 
+                            zorder=3)
 
                     else:
 
-                        plot_object.scatter(x_data, y_data[i], color=
-                        color[i], marker=highlight_points, zorder=3)
+                        if three_dimensional_plot:
+
+                            plot_object.scatter(x_data, y_data[i], 
+                            z_data[i], color=color[i], marker=
+                            highlight_points, zorder=3)
+
+                        else:
+
+                            plot_object.scatter(x_data, y_data[i], color=
+                            color[i], marker=highlight_points, zorder=3)
 
         else:
 
             if isinstance(highlight_pointsColors, str):
 
-                plot_object.scatter(x_data, y_data, color=
-                highlight_pointsColors, marker=highlight_points, zorder=
-                3)
+                if three_dimensional_plot:
+
+                    plot_object.scatter(x_data, y_data, z_data, color=
+                    highlight_pointsColors, marker=highlight_points, 
+                    zorder=3)
+
+                else:
+
+                    plot_object.scatter(x_data, y_data, color=
+                    highlight_pointsColors, marker=highlight_points, 
+                    zorder=3)
 
             else:
 
-                plot_object.scatter(x_data, y_data, color='black', 
-                marker=highlight_points, zorder=3)
+                if three_dimensional_plot:
+
+                    plot_object.scatter(x_data, y_data, z_data, color=
+                    'black', marker=highlight_points, zorder=3)
+
+                else:
+
+                    plot_object.scatter(x_data, y_data, color='black', 
+                    marker=highlight_points, zorder=3)
 
     # Verifies if a color bar is asked for
 
@@ -1396,10 +1647,20 @@ transparent_background=False):
 
             if not isinstance(y_data[0], list):
 
-                plotted_entities = plot_object.scatter(x_data[0:2], 
-                [y_data[0], y_data[1]], c=[color_map[1], color_map[2]], 
-                cmap=color_map[0], vmin=color_map[1], vmax=color_map[2], 
-                marker='x', zorder=3, s=0.001)
+                if three_dimensional_plot:
+
+                    plotted_entities = plot_object.scatter(x_data[0:2], 
+                    [y_data[0], y_data[1]], [z_data[0], z_data[1]], c=[
+                    color_map[1], color_map[2]], cmap=color_map[0], vmin=
+                    color_map[1], vmax=color_map[2], marker='x', zorder=
+                    3, s=0.001)
+
+                else:
+
+                    plotted_entities = plot_object.scatter(x_data[0:2], 
+                    [y_data[0], y_data[1]], c=[color_map[1], color_map[2
+                    ]], cmap=color_map[0], vmin=color_map[1], vmax=
+                    color_map[2], marker='x', zorder=3, s=0.001)
 
             # Otherwise, plots elements of the first curve
 
@@ -1407,24 +1668,53 @@ transparent_background=False):
 
                 if different_nPoints:
 
-                    plotted_entities = plot_object.scatter(x_data[0][
-                    0:2], y_data[0][0:2], c=[color_map[1], color_map[2]], 
-                    cmap=color_map[0], vmin=color_map[1], vmax=color_map[
-                    2], marker='x', zorder=3, s=0.001)
+                    if three_dimensional_plot:
+
+                        plotted_entities = plot_object.scatter(x_data[0][
+                        0:2], y_data[0][0:2], z_data[0][0:2], c=[
+                        color_map[1], color_map[2]], cmap=color_map[0], 
+                        vmin=color_map[1], vmax=color_map[2], marker='x', 
+                        zorder=3, s=0.001)
+
+                    else:
+
+                        plotted_entities = plot_object.scatter(x_data[0][
+                        0:2], y_data[0][0:2], c=[color_map[1], color_map[
+                        2]], cmap=color_map[0], vmin=color_map[1], vmax=
+                        color_map[2], marker='x', zorder=3, s=0.001)
 
                 else:
 
-                    plotted_entities = plot_object.scatter(x_data[0:2
-                    ], y_data[0][0:2], c=[color_map[1], color_map[2]], 
-                    cmap=color_map[0], vmin=color_map[1], vmax=color_map[
-                    2], marker='x', zorder=3, s=0.001)
+                    if three_dimensional_plot:
+
+                        plotted_entities = plot_object.scatter(x_data[0:2
+                        ], y_data[0][0:2], z_data[0][0:2], c=[color_map[
+                        1], color_map[2]], cmap=color_map[0], vmin=
+                        color_map[1], vmax=color_map[2], marker='x', 
+                        zorder=3, s=0.001)
+
+                    else:
+
+                        plotted_entities = plot_object.scatter(x_data[0:2
+                        ], y_data[0][0:2], c=[color_map[1], color_map[2]
+                        ], cmap=color_map[0], vmin=color_map[1], vmax=
+                        color_map[2], marker='x', zorder=3, s=0.001)
 
         else:
 
-            plotted_entities = plot_object.scatter(x_data[0:2], 
-            y_data[0:2], c=[color_map[1], color_map[2]], cmap=color_map[
-            0], vmin=color_map[1], vmax=color_map[2], marker='x', 
-            zorder=3, s=0.001)
+            if three_dimensional_plot:
+
+                plotted_entities = plot_object.scatter(x_data[0:2], 
+                y_data[0:2], z_data[0:2], c=[color_map[1], color_map[2]
+                ], cmap=color_map[0], vmin=color_map[1], vmax=color_map[
+                2], marker='x', zorder=3, s=0.001)
+
+            else:
+
+                plotted_entities = plot_object.scatter(x_data[0:2], 
+                y_data[0:2], c=[color_map[1], color_map[2]], cmap=
+                color_map[0], vmin=color_map[1], vmax=color_map[2], 
+                marker='x', zorder=3, s=0.001)
 
         # Creates the color bar
 
@@ -1569,22 +1859,44 @@ transparent_background=False):
 
         plot_object.grid(True, axis='y')
 
+    if not (z_grid is None):
+
+        plot_object.zaxis.set_ticks(z_grid)
+        
+        plot_object.zaxis.set_ticklabels([])
+        
+        plot_object.grid(True)
+
     # Sets the tick labels
+
+    if isinstance(x_ticksLabels, np.ndarray):
+
+        # Converts it to list
+
+        x_ticksLabels = x_ticksLabels.tolist()
 
     if isinstance(x_ticksLabels, list):
 
-        # Gets the tick values and the location. Do not use minor ticks
-        # when they are given as lists
+        if three_dimensional_plot:
+        
+            plot_object.xaxis.set_ticks(x_ticksLabels)
 
-        plot_object.set_xticks(x_ticksLabels)
+            plot_object.xaxis.set_ticklabels(x_ticksLabels)
 
-        plot_object.set_xticklabels(x_ticksLabels)
+        else:
 
-        # Sets the font size of the x ticks
+            # Gets the tick values and the location. Do not use minor 
+            # ticks when they are given as lists
 
-        for tick_label in plot_object.get_xminorticklabels():
+            plot_object.set_xticks(x_ticksLabels)
 
-            tick_label.set_fontsize(ticks_fontsize)
+            plot_object.set_xticklabels(x_ticksLabels)
+
+            # Sets the font size of the x ticks
+
+            for tick_label in plot_object.get_xminorticklabels():
+
+                tick_label.set_fontsize(ticks_fontsize)
 
     elif isinstance(x_ticksLabels, dict):
 
@@ -1604,20 +1916,34 @@ transparent_background=False):
 
             tick_label.set_fontsize(ticks_fontsize)
 
+    if isinstance(y_ticksLabels, np.ndarray):
+    
+        # Converts it to list
+
+        y_ticksLabels = y_ticksLabels.tolist()
+
     if isinstance(y_ticksLabels, list):
 
-        # Gets the tick values and the location. Do not use minor ticks
-        # when they are given as lists
+        if three_dimensional_plot:
 
-        plot_object.set_yticks(y_ticksLabels)
+            plot_object.yaxis.set_ticks(y_ticksLabels)
 
-        plot_object.set_yticklabels(y_ticksLabels)
+            plot_object.yaxis.set_ticklabels(y_ticksLabels)
 
-        # Sets the font size of the y ticks
+        else:
 
-        for tick_label in plot_object.get_yminorticklabels():
+            # Gets the tick values and the location. Do not use minor 
+            # ticks when they are given as lists
 
-            tick_label.set_fontsize(ticks_fontsize)
+            plot_object.set_yticks(y_ticksLabels)
+
+            plot_object.set_yticklabels(y_ticksLabels)
+
+            # Sets the font size of the y ticks
+
+            for tick_label in plot_object.get_yminorticklabels():
+
+                tick_label.set_fontsize(ticks_fontsize)
 
     elif isinstance(y_ticksLabels, dict):
 
@@ -1637,15 +1963,43 @@ transparent_background=False):
 
             tick_label.set_fontsize(ticks_fontsize)
 
+    if isinstance(z_ticksLabels, np.ndarray):
+        
+        # Converts it to list
+
+        z_ticksLabels = z_ticksLabels.tolist()
+
+    if isinstance(z_ticksLabels, list):
+
+        plot_object.zaxis.set_ticks(z_ticksLabels)
+
+        plot_object.zaxis.set_ticklabels(z_ticksLabels)
+
     # Verifies and uses if necessary other optional attributes
 
     if not (x_label is None):
 
-        plt.xlabel(x_label, fontsize=label_fontsize)
+        if three_dimensional_plot:
+
+            plot_object.set_xlabel(x_label, fontsize=label_fontsize)
+
+        else:
+
+            plt.xlabel(x_label, fontsize=label_fontsize)
 
     if not (y_label is None):
 
-        plt.ylabel(y_label, fontsize=label_fontsize)
+        if three_dimensional_plot:
+        
+            plot_object.set_ylabel(y_label, fontsize=label_fontsize)
+        
+        else:
+
+            plt.ylabel(y_label, fontsize=label_fontsize)
+
+    if three_dimensional_plot and (not (z_label is None)):
+
+        plot_object.set_zlabel(z_label, fontsize=label_fontsize, labelpad=10)
 
     if not (title is None):
 
@@ -1658,7 +2012,9 @@ transparent_background=False):
 
     # Adjust the size of the plot to contain ticks and labels
 
-    plt.tight_layout()
+    if not three_dimensional_plot:
+
+        plt.tight_layout()
 
     # Takes out the background
 
@@ -1711,9 +2067,7 @@ transparent_background=False):
             "ualizer. Close it and try again. But the true error messa"+
             "ge is: "+str(e))
         
-    if verbose:
-
-        print("Finishes plotting\n")
+    print("\nFinishes plotting at:\n"+str(file_name))
 
     return figure, plot_object
 
