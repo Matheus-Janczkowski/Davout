@@ -6,6 +6,8 @@ from matplotlib.patches import ArrowStyle
 
 from matplotlib.transforms import Bbox
 
+import matplotlib.colors as mcolors
+
 from pathlib import Path as Path
 
 from importlib import util
@@ -53,11 +55,28 @@ class ColorMiscellany:
         0.325], "yellow 1": [1.0, 0.902, 0.835], "yellow 2": [1.0, 0.8, 
         0.667], "yellow 3": [1.0, 0.702, 0.502], "yellow 4": [1.0, 0.6, 
         0.333], "yellow 5": [1.0, 0.498, 0.165], "transparent": [1.0, 
-        0.835, 0.835, 0.01], "dark gray": [0.1, 0.1, 0.1]}
+        0.835, 0.835, 0.01], "dark gray": [0.1, 0.1, 0.1], "blue 1": [
+        0.835, 0.898, 1.0], "blue 2": [0.667, 0.800, 1.0], "blue 3": [
+        0.502, 0.702, 1.0], "blue 4": [0.333, 0.600, 1.0], "blue 5": [
+        0.165, 0.498, 1.0], "blue 6": [0.0, 0.4, 1.0], "blue 7": [0.0,
+        0.333, 0.831], "blue 8": [0.0, 0.257, 0.667], "blue 9": [0.0,
+        0.2, 0.502], "blue 10": [0.0, 0.133, 0.333]}
+
+        # Adds conventional Matplotlib colors
+
+        matplotlib_colors = ["red", "green", "blue", "cyan", "magenta",
+        "yellow", "orange", "purple", "pink", "brown", "lime", "navy",
+        "teal", "olive", "maroon", "aqua", "fuchsia", "gold", "silver"]
+
+        for color_name in matplotlib_colors:
+
+            self.color_dictionary[color_name] = list(mcolors.to_rgb(
+            color_name))
 
     # Defines a function to get the color
 
-    def __call__(self, key, throw_error=True):
+    def __call__(self, key, throw_error=True, return_original_in_absence=
+    False):
         
         # Verifies if it is one of the keys
 
@@ -91,6 +110,13 @@ class ColorMiscellany:
             error_message = ("'"+str(key)+"' is not a key of the dicti"+
             "onary of colors nor is a list with RGB values (3 componen"+
             "ts). Check the valid color names:"+available_colors)
+
+            # If the key is not present and the original result is to be
+            # returned, returns it
+
+            if return_original_in_absence:
+
+                return key
 
             # If an error is to be thrown
 

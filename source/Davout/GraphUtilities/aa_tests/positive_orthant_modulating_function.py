@@ -449,12 +449,24 @@ def plot_3D_modulating_function():
 
     n_points_second_section = 20
 
-    n_points_boundary_curved_edge = 30
+    n_points_boundary_curved_edge = 300
 
     common_identity_line_points = np.concatenate([np.linspace(-1.0, 
     ((n_points_first_section/n_points_boundary_edge)*2.0)-1.0,
     n_points_first_section), np.linspace(1.0-((n_points_second_section/
     n_points_boundary_edge)*2.0), 1.0, n_points_second_section)])
+
+    # Plots the identity line
+
+    identity_line_plot = plane_plot("modulated_unit_sphere.png", 
+    x_data=common_identity_line_points, y_data=
+    common_identity_line_points, z_data=common_identity_line_points, 
+    color="black", parent_path=get_parent_path_of_file(), dpi=1000, 
+    aspect_ratio='equal', x_ticksLabels=common_ticks, y_ticksLabels=
+    common_ticks, z_ticksLabels=common_ticks, x_label="$x$", y_label="$y$", 
+    z_label="$z$", elevation_angle=elevation_angle, azimuth_angle=
+    azimuth_angle, plot_type="scatter", verbose=True, element_size=0.7, 
+    transparent_background=True)
 
     # Sets the initial and final angles of the bottom and back edges
 
@@ -462,32 +474,30 @@ def plot_3D_modulating_function():
 
     final_angle_bottom_edge = (70/180)*np.pi
 
-    x_data = np.concatenate([common_identity_line_points, np.cos(
-    np.linspace(0.5*np.pi, 0.0, n_points_boundary_curved_edge)), np.cos(
-    np.linspace(0.0, final_angle_bottom_edge, 
-    n_points_boundary_curved_edge)), np.linspace(0.0, 0.0, 
-    n_points_boundary_curved_edge)])
+    x_data = np.concatenate([np.cos(np.linspace(0.5*np.pi, 0.0, 
+    n_points_boundary_curved_edge)), np.cos(np.linspace(0.0, 
+    final_angle_bottom_edge, n_points_boundary_curved_edge)), 
+    np.linspace(0.0, 0.0, n_points_boundary_curved_edge)])
 
-    y_data = np.concatenate([common_identity_line_points, np.linspace(
-    0.0, 0.0, n_points_boundary_curved_edge), np.sin(np.linspace(0.0, 
+    y_data = np.concatenate([np.linspace(0.0, 0.0, 
+    n_points_boundary_curved_edge), np.sin(np.linspace(0.0, 
     final_angle_bottom_edge, n_points_boundary_curved_edge)), np.cos(
     np.linspace(initial_angle_back_edge, 0.5*np.pi, 
     n_points_boundary_curved_edge))])
 
-    z_data = np.concatenate([common_identity_line_points, np.sin(
-    np.linspace(0.5*np.pi, 0.0, n_points_boundary_curved_edge)), 
-    np.linspace(0.0, 0.0, n_points_boundary_curved_edge), np.sin(
-    np.linspace(initial_angle_back_edge, 0.5*np.pi, 
-    n_points_boundary_curved_edge))])
+    z_data = np.concatenate([np.sin(np.linspace(0.5*np.pi, 0.0, 
+    n_points_boundary_curved_edge)), np.linspace(0.0, 0.0, 
+    n_points_boundary_curved_edge), np.sin(np.linspace(
+    initial_angle_back_edge, 0.5*np.pi, n_points_boundary_curved_edge))])
 
     identity_line_plot = plane_plot("modulated_unit_sphere.png", 
     x_data=x_data, y_data=y_data, z_data=z_data, 
-    color="black", parent_path=get_parent_path_of_file(), dpi=1000, 
+    color="blue 9", parent_path=get_parent_path_of_file(), dpi=1000, 
     aspect_ratio='equal', x_ticksLabels=common_ticks, y_ticksLabels=
     common_ticks, z_ticksLabels=common_ticks, x_label="$x$", y_label="$y$", 
     z_label="$z$", elevation_angle=elevation_angle, azimuth_angle=
-    azimuth_angle, plot_type="scatter", verbose=True, element_size=0.7, 
-    transparent_background=True)
+    azimuth_angle, plot_type="scatter", verbose=True, element_size=0.25, 
+    transparent_background=True, plot_object=identity_line_plot)
 
     plane_plot("modulated_unit_sphere.png", x_data=modulated_x_data, 
     y_data=modulated_y_data, z_data=modulated_z_data, color_map=
@@ -523,7 +533,11 @@ def create_collage():
     "rendering method": "matplotlib text", "object name": "modulated title"},
     {"text": "$\\mathcal{M}:\\RealSpace{n}\\rightarrow\\PositiveRealSpace{n}$", "position":
     [103.0, 248.0], "font size": 4, "origin point": "top-left", 
-    "rendering method": "matplotlib text", "object name": "modulated title"}],
+    "rendering method": "matplotlib text", "object name": "modulated title"},
+    {"text": "$1)$", "position": [50.0, 249.0], "font size": 4, "origin point": "top-left",
+    "rendering method": "matplotlib text", "object name": "frame 1"},
+    {"text": "$2)$", "position": [153.5, 249.0], "font size": 4, "origin point": "top-right",
+    "rendering method": "matplotlib text", "object name": "frame 2"}],
 
     boxes_list=[{"contour color": "black", "fill color": "grey 3", "contour"+
     " thickness": 0.2, "position": [48.0, 251.0], "width": 107.0, "height": 58.0,

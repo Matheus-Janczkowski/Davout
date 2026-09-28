@@ -24,6 +24,8 @@ from ..PythonicUtilities import programming_tools
 
 from ..PythonicUtilities import string_tools
 
+from ..GraphUtilities.tool_box.collage_classes import ColorMiscellany
+
 ########################################################################
 #                            LaTeX preamble                            #
 ########################################################################
@@ -156,6 +158,10 @@ None):
     if verbose:
 
         print("Starts plotting")
+
+    # Instantiates the class of colors
+
+    colors_class = ColorMiscellany()
 
     # Verifies the type of the plot
 
@@ -605,7 +611,11 @@ None):
 
         elif isinstance(color, str):
 
-            color = [color for i in range(multiple_curves)]
+            # Passes the color through the class of colors first
+
+            color_from_string = colors_class(color)
+
+            color = [color_from_string for i in range(multiple_curves)]
 
         elif isinstance(color, float) or isinstance(color, int):
 
@@ -734,6 +744,12 @@ None):
                 else:
 
                     color = color[0]
+
+        elif isinstance(color, str):
+        
+            # Passes the color through the class of colors first
+
+            color = colors_class(color)
 
         elif color is None:
 
