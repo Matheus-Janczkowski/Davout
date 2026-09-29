@@ -330,8 +330,145 @@ class BuildTensorflowMathExpressions:
         eps_squared = tf.square(eps)
 
         @tf.function
-        def smooth_abs(x, eps=eps, eps_squared=eps_squared):
+        def smooth_abs(x, eps=eps, eps_squared=eps_squared, axis=1):
 
             return tf.sqrt(tf.square(x)+eps_squared)-eps
 
         return smooth_abs
+
+    # Defines a function that maps vectors in the n-dimensional real 
+    # space to the positive orthant of this space. This transformation
+    # is smooth almost everywhere (except for the direction along the 
+    # negative identity line). This function can handle batched vectors
+    # in a (n_samples, n_dimensions) tensor or a (n_dimensions, 
+    # n_samples) tensor. Thus, the axis parameter tells which index of
+    # the incoming tensor contains the dimensionality of the real space
+
+    def contractive_positive_orthant_mapping(self, expression_name):
+
+        # Verifies if the dictionary has keys that are not for this ex-
+        # pression
+
+        expression_name = dictionary_tools.verify_dictionary_keys(
+        expression_name, {"name": "", "eps": tf.constant(1E-12, dtype=
+        self.dtype)}, dictionary_location="at the builder of tensorflo"+
+        "w math expressions", fill_in_keys=True)
+
+        # Returns the smooth absolute value
+
+        eps = expression_name["eps"]
+
+        eps_squared = tf.square(eps)
+
+        @tf.function
+        def contractive_mapping(w_vectors_tensor, epsilon=eps, 
+        epsilon_squared=eps_squared, dimension_axis=1):
+
+            # Gets the space dimension
+            
+            space_dimension = tf.shape(w_vectors_tensor)[dimension_axis]
+        
+            # Gets the dot product of the given u vector by the positive 
+            # identity vector
+        
+            dimensionality_reciprocal_square_root = tf.math.rsqrt(
+            tf.cast(space_dimension, dtype=w_vectors_tensor.dtype))
+        
+            u_dot_d = (tf.reduce_sum(w_vectors_tensor, axis=
+            dimension_axis)*dimensionality_reciprocal_square_root)
+        
+            # Computes the square norm of u
+        
+            u_dot_u = tf.reduce_sum(tf.square(w_vectors_tensor), axis=
+            dimension_axis)
+        
+            # Computes beta, that is the argument of the arccosine func-
+            # tion
+        
+            beta = u_dot_d*tf.math.rsqrt(u_dot_u)
+        
+            # Evaluates the common denominator of the coefficients to 
+            # generate a vector perpendicular to the identity line in 
+            # the subspace spanned by u and d
+            
+            denominator = tf.math.sqrt(u_dot_u-tf.square(u_dot_d)+
+            epsilon_squared)
+        
+            # Checks if the denominator approaches zero
+            
+            #zero_denominator_condition = denominator<=epsilon
+        
+            # Computes the coefficients of the combination of the given 
+            # vector u and of the identity vector d. If u is colinear to 
+            # the identity, makes the first coefficient 0 and the second 
+            # 1
+        
+            coefficient_u = tf.expand_dims(tf.math.divide_no_nan(
+            tf.cast(1.0, dtype=w_vectors_tensor.dtype), denominator), 
+            axis=dimension_axis)
+        
+            coefficient_d = -(coefficient_u*u_dot_d)
+        
+            # Builds the vector colinear to the identity line
+        
+            d_vector = tf.expand_dims(
+            dimensionality_reciprocal_square_root*tf.ones(tf.reshape(
+            space_dimension, [1]), dtype=w_vectors_tensor.dtype), axis=
+            dimension_axis)
+        
+            # Gets the orthonormal vector to the identity line. The sha-
+            # pe of the coefficients must be expanded to include the di-
+            # mension of the space, that was lost during summation ope-
+            # rations
+        
+            c_vector = (coefficient_u*w_vectors_tensor)+(coefficient_d*
+            d_vector)
+        
+            # Evaluates the inequation to determine the mu factor
+        
+            inequation_numerator = tf.abs(c_vector)-c_vector
+        
+            inequation_denominator = (2.0*(d_vector-c_vector))
+        
+            mu_inequation = tf.math.divide_no_nan(inequation_numerator, 
+            inequation_denominator)
+        
+            # Gets the maximum mu factor and the corresponding boundary 
+            # vector
+        
+            mu = tf.reduce_max(mu_inequation, axis=dimension_axis)
+        
+            # Gets the relative position of the vector u with respect to 
+            # the identity line. The relative position must be 1 when it 
+            # lies on the identity line and 0 when it lies on the nega-
+            # tive identity line. For this purpose, we use beta, since 
+            # it is contained within the interval [-1,1]
+        
+            ratio = 0.5*(beta+1.0)
+        
+            # Gets the mu corresponding to the final vector inside the 
+            # positive orthant
+        
+            final_mu = tf.where(ratio<epsilon, tf.ones_like(ratio), (mu*
+            (1.0-ratio))+ratio)
+        
+            denominator = tf.math.rsqrt(tf.square(final_mu)+tf.square((
+            1.0-final_mu)))
+        
+            # Expands the shape of the final mu coefficient and of the 
+            # common denominator to account for the space dimension that 
+            # was lost during summation operations
+        
+            final_mu = tf.expand_dims(final_mu, axis=dimension_axis)
+        
+            denominator = tf.expand_dims(denominator, axis=
+            dimension_axis)
+        
+            # Constructs the final vector as a linear interpolation of 
+            # the identity line and the orthonormal vector c. Returns an 
+            # array (n_samples, space_dimension)
+        
+            return ((final_mu*denominator)*d_vector)+(((1.0-final_mu)*
+            denominator)*c_vector)
+
+        return contractive_mapping
