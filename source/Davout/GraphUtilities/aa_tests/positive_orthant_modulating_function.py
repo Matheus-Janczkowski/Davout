@@ -525,10 +525,10 @@ def create_collage():
     "position": [103.0, 249.0], "size": 50.0, 
     "trim transparent background": True, "origin point": "top-left"}], 
 
-    input_text_list=[{"text": "$\\Omega_{\\mathcal{B}}\\in\\RealSpace{3}$", "position":
+    input_text_list=[{"text": "$\\Omega_{\\mathcal{B}}\\subset\\RealSpace{3}$", "position":
     [100.0, 198.8], "font size": 4, "origin point": "top-right", 
     "rendering method": "matplotlib text", "object name": "lateral sign"},
-    {"text": "$\\Omega_{\\mathrm{\\mathcal{M}}}\\in\\PositiveRealSpace{3}$", "position":
+    {"text": "$\\Omega_{\\mathrm{\\mathcal{M}}}\\subset\\PositiveRealSpace{3}$", "position":
     [153.0, 199.0], "font size": 4, "origin point": "top-right", 
     "rendering method": "matplotlib text", "object name": "modulated title"},
     {"text": "$\\mathcal{M}:\\RealSpace{n}\\rightarrow\\PositiveRealSpace{n}$", "position":
