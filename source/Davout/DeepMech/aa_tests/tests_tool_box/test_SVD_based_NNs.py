@@ -684,12 +684,16 @@ class TestSVDArchitecture:
         # Sets if the factor matrices of pseudo or real SVD will be or-
         # thogonal or nor
 
-        non_orthogonal_matrices = False
+        non_orthogonal_matrices = True
+
+        # Sets the modulating function
+
+        modulating_function_test = 'contractive_positive_orthant_mapping'
 
         # Sets the model architecture and the model class
 
         custom_architecture = {"name": "SVDQuotientSpace", "weights mo"+
-        "dulating function": self.modulating_function, "activations ac"+
+        "dulating function": modulating_function_test, "activations ac"+
         "cessory layer list": self.accessory_activation_list_tests, "n"+
         "on-orthogonal matrices": non_orthogonal_matrices, "hardware d"+
         "evice": "CPU"}

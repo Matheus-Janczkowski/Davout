@@ -8,6 +8,8 @@ from ...PythonicUtilities import dictionary_tools
 
 from ...PythonicUtilities import programming_tools
 
+from ...PythonicUtilities.function_tools import verify_function_arguments
+
 ########################################################################
 #                            Linear Algebra                            #
 ########################################################################
@@ -243,6 +245,26 @@ class BuildTensorflowMathExpressions:
         None, None, dictionary_of_methods=True, delete_init_key=True,
         reserved_methods=["__call__"])
 
+        # Checks if the available methods have the necessary common ar-
+        # guments
+
+        for method_name, method_object in self.available_methods.items():
+
+            # Gets the tensorflow function constructed by this method
+
+            tensorflow_expression = method_object({"name": method_name})
+
+            # Verifies the necessary arguments common to all tensorflow
+            # expressions
+
+            verify_function_arguments(tensorflow_expression, ["dimensi"+
+            "on_axis"], "BuildTensorflowMathExpressions")
+
+        # Defines a flag that tells if the output has unit norm along 
+        # the desired axis. The default value for safety is false
+
+        self.unit_norm_along_desired_axis = False
+
     # Defines the method that selects the expression name and converts 
     # it to a live expression
 
@@ -329,8 +351,18 @@ class BuildTensorflowMathExpressions:
 
         eps_squared = tf.square(eps)
 
+        # Defines a flag that tells if the output has unit norm along 
+        # the desired axis. The smooth absolute value is computed in a
+        # component-wise fashion, thus it does NOT yield unit norm vec-
+        # tors in the desired axis
+
+        self.unit_norm_along_desired_axis = False
+
+        # Defines the tensorflow expression
+
         @tf.function
-        def smooth_abs(x, eps=eps, eps_squared=eps_squared, axis=1):
+        def smooth_abs(x, eps=eps, eps_squared=eps_squared, 
+        dimension_axis=1):
 
             return tf.sqrt(tf.square(x)+eps_squared)-eps
 
@@ -354,15 +386,31 @@ class BuildTensorflowMathExpressions:
         self.dtype)}, dictionary_location="at the builder of tensorflo"+
         "w math expressions", fill_in_keys=True)
 
-        # Returns the smooth absolute value
+        # Precomputes some useful tensors and constants
 
         eps = expression_name["eps"]
 
         eps_squared = tf.square(eps)
 
+        constant_half = tf.cast(0.5, dtype=self.dtype)
+
+        constant_one = tf.cast(1.0, dtype=self.dtype)
+
+        constant_two = tf.cast(2.0, dtype=self.dtype)
+
+        # Defines a flag that tells if the output has unit norm along 
+        # the desired axis. This contractive mapping does yield unit 
+        # norm vectors in the desired axis
+
+        self.unit_norm_along_desired_axis = True
+
+        # Defines the function
+
         @tf.function
         def contractive_mapping(w_vectors_tensor, epsilon=eps, 
-        epsilon_squared=eps_squared, dimension_axis=1):
+        epsilon_squared=eps_squared, dimension_axis=1, dtype=self.dtype,
+        constant_one=constant_one, constant_two=constant_two, 
+        constant_half=constant_half):
 
             # Gets the space dimension
             
@@ -372,7 +420,7 @@ class BuildTensorflowMathExpressions:
             # identity vector
         
             dimensionality_reciprocal_square_root = tf.math.rsqrt(
-            tf.cast(space_dimension, dtype=w_vectors_tensor.dtype))
+            tf.cast(space_dimension, dtype=dtype))
         
             u_dot_d = (tf.reduce_sum(w_vectors_tensor, axis=
             dimension_axis)*dimensionality_reciprocal_square_root)
@@ -385,7 +433,7 @@ class BuildTensorflowMathExpressions:
             # Computes beta, that is the argument of the arccosine func-
             # tion
         
-            beta = u_dot_d*tf.math.rsqrt(u_dot_u)
+            beta = u_dot_d*tf.math.rsqrt(u_dot_u+epsilon_squared)
         
             # Evaluates the common denominator of the coefficients to 
             # generate a vector perpendicular to the identity line in 
@@ -394,27 +442,20 @@ class BuildTensorflowMathExpressions:
             denominator = tf.math.sqrt(u_dot_u-tf.square(u_dot_d)+
             epsilon_squared)
         
-            # Checks if the denominator approaches zero
-            
-            #zero_denominator_condition = denominator<=epsilon
-        
             # Computes the coefficients of the combination of the given 
             # vector u and of the identity vector d. If u is colinear to 
             # the identity, makes the first coefficient 0 and the second 
             # 1
         
-            coefficient_u = tf.expand_dims(tf.math.divide_no_nan(
-            tf.cast(1.0, dtype=w_vectors_tensor.dtype), denominator), 
-            axis=dimension_axis)
+            coefficient_u = tf.expand_dims(tf.math.reciprocal(
+            denominator), axis=dimension_axis)
         
             coefficient_d = -(coefficient_u*u_dot_d)
         
             # Builds the vector colinear to the identity line
         
-            d_vector = tf.expand_dims(
-            dimensionality_reciprocal_square_root*tf.ones(tf.reshape(
-            space_dimension, [1]), dtype=w_vectors_tensor.dtype), axis=
-            dimension_axis)
+            d_vector = tf.expand_dims(tf.reshape(
+            dimensionality_reciprocal_square_root, [1]), axis=dimension_axis)
         
             # Gets the orthonormal vector to the identity line. The sha-
             # pe of the coefficients must be expanded to include the di-
@@ -428,7 +469,7 @@ class BuildTensorflowMathExpressions:
         
             inequation_numerator = tf.abs(c_vector)-c_vector
         
-            inequation_denominator = (2.0*(d_vector-c_vector))
+            inequation_denominator = (constant_two*(d_vector-c_vector))
         
             mu_inequation = tf.math.divide_no_nan(inequation_numerator, 
             inequation_denominator)
@@ -444,16 +485,16 @@ class BuildTensorflowMathExpressions:
             # tive identity line. For this purpose, we use beta, since 
             # it is contained within the interval [-1,1]
         
-            ratio = 0.5*(beta+1.0)
+            ratio = constant_half*(beta+constant_one)
         
             # Gets the mu corresponding to the final vector inside the 
             # positive orthant
         
             final_mu = tf.where(ratio<epsilon, tf.ones_like(ratio), (mu*
-            (1.0-ratio))+ratio)
+            (constant_one-ratio))+ratio)
         
             denominator = tf.math.rsqrt(tf.square(final_mu)+tf.square((
-            1.0-final_mu)))
+            constant_one-final_mu)))
         
             # Expands the shape of the final mu coefficient and of the 
             # common denominator to account for the space dimension that 
@@ -468,7 +509,7 @@ class BuildTensorflowMathExpressions:
             # the identity line and the orthonormal vector c. Returns an 
             # array (n_samples, space_dimension)
         
-            return ((final_mu*denominator)*d_vector)+(((1.0-final_mu)*
-            denominator)*c_vector)
+            return ((final_mu*denominator)*d_vector)+(((constant_one-
+            final_mu)*denominator)*c_vector)
 
         return contractive_mapping

@@ -306,10 +306,19 @@ class SVDQuotientSpace:
             self.generic_layers_from_parameters = self.identity_modulation_call_with_parameters
 
             # Updates the function that multiplies the input tensor to
-            # include the modulating function
+            # include the modulating function. But, first, checks if the
+            # modulating function already outputs unit-norm vectors in
+            # the desired axis
 
-            self.multiply_input_vector_by_householder_chain = (
-            self.multiply_input_vector_by_matrix_with_unit_axis_with_modulation)
+            if build_tensorflow_math_expressions.unit_norm_along_desired_axis:
+
+                self.multiply_input_vector_by_householder_chain = (
+                self.multiply_input_vector_by_matrix_with_modulation)
+
+            else:
+
+                self.multiply_input_vector_by_householder_chain = (
+                self.multiply_input_vector_by_matrix_with_unit_axis_with_modulation)
 
         # Otherwise, gets the modulating function
 
@@ -1799,7 +1808,8 @@ class SVDQuotientSpace:
         return tf.einsum('ij,kj->ki', normalized_matrix, input_vector)
 
     # Defines the same function as before but with modulation of the 
-    # factor matrix
+    # factor matrix. Thus, the input vector is normalized to have unit
+    # norm along the desired axis
 
     def multiply_input_vector_by_matrix_with_unit_axis_with_modulation(
     self, input_vector, householder_reflector_indices, 
@@ -1840,6 +1850,30 @@ class SVDQuotientSpace:
         # Multiplies the normalized matrix by the input tensor
 
         return tf.einsum('ij,kj->ki', normalized_matrix, input_vector)
+
+    # Defines the same function as before, with modulation of the factor 
+    # matrix, but the input vector is not normalized after modulation. 
+    # This is the cleanest and cheapest way when the modulating function
+    # already guarantees the input vector to have unit norm along the 
+    # desired axis
+
+    def multiply_input_vector_by_matrix_with_modulation(
+    self, input_vector, householder_reflector_indices, 
+    householder_first_index, householder_length, 
+    householder_number_of_leading_zeros, 
+    householder_parameters_orthogonal_matrix, input_dimensionality):
+
+        # Modulates the incoming tensor. The result already have unit
+        # norm along the second axis
+
+        modulated_householder_parameters_orthogonal_matrix = self.modulating_function(
+        householder_parameters_orthogonal_matrix, dimension_axis=
+        householder_reflector_indices)
+
+        # Multiplies the normalized matrix by the input tensor
+
+        return tf.einsum('ij,kj->ki', 
+        modulated_householder_parameters_orthogonal_matrix, input_vector)
 
     ####################################################################
     #                       Whole matrix assembly                      #

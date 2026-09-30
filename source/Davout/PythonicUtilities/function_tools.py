@@ -32,7 +32,7 @@ False):
                 # If the argument is not empty, it is optional, thus, 
                 # does not count it
 
-                if default_value.default!=inspect._empty:
+                if default_value.default is not inspect._empty:
 
                     number_arguments -= 1
 
@@ -53,7 +53,7 @@ False):
         # If the default value is not empty (empty default value means 
         # the argument is positional and obligatory)
 
-        if default_value.default!=inspect._empty:
+        if default_value.default is not inspect._empty:
 
             # Saves the argument and its default value
 
@@ -75,6 +75,57 @@ False):
     # Returns the dictionary of keyword arguments
 
     return keyword_arguments
+
+# Defines a function to check if a function has arguments that are re-
+# quired elsewhere
+
+def verify_function_arguments(function_object, necessary_arguments_list,
+function_location_for_error_message):
+
+    # Gets a dictionary of keyword arguments and a list of positional 
+    # arguments
+
+    keyword_arguments, positional_arguments_list = get_functions_arguments(
+    function_object, return_positional_arguments_list=True)
+
+    # Iterates over the list of necessary arguments to check if they are
+    # present in the function's signature
+
+    for argument_name in necessary_arguments_list:
+
+        if (not (argument_name in keyword_arguments)) and (not (
+        argument_name in positional_arguments_list)):
+
+            # Gets a string with the names of necessary arguments
+
+            necessary_arguments_string = ""
+
+            for name in necessary_arguments_list:
+
+                necessary_arguments_string += "\n'"+str(name)+"'"
+
+            # Gets a string with the positional arguments and another 
+            # for the keyword arguments
+
+            positional_arguments_string = ""
+
+            for name in positional_arguments_list:
+
+                positional_arguments_string += "\n'"+str(name)+"'"
+
+            keyword_arguments_string = ""
+
+            for name in keyword_arguments.keys():
+
+                keyword_arguments_string += "\n'"+str(name)+"'"
+
+            raise NameError("Function '"+str(function_object.__name__)+
+            "' at "+str(function_location_for_error_message)+" does no"+
+            "t have the necessary arguments. Check the necessary argum"+
+            "ents:\n"+necessary_arguments_string+"\n\nThis function ha"+
+            "s the following positional arguments:\n"+
+            positional_arguments_string+"\n\nand the following keyword"+
+            " arguments:\n"+keyword_arguments_string)
 
 # Defines a function to verify if a dictionary can be used as argument
 # to a function. In other words, does the dictionary has all positional
