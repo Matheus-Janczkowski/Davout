@@ -47,7 +47,12 @@ class SVDQuotientSpace:
         "ault value is False, i.e. the matrices are indeed orthogonal."+
         " If the user set it up as True, the matrices of the decomposi"+
         "tion will have only unit-norm rows or columns; but they will "+
-        "not be orthogonal to each other.", "default": False}}, 
+        "not be orthogonal to each other.", "default": False}, "convex"+
+        " with respect to quotient space": {"type": bool, "description":
+        "flag that informs if the network's output neurons must be con"+
+        "vex with respect to the input of the quotient space. This fla"+
+        "g is meant only for verification of the activation functions",
+        "default": False}}, 
         "custom_architecture", "SVDQuotientSpace")
 
         # Gets the flag that tells if the matrices of the SVD decomposi-
@@ -235,20 +240,175 @@ class SVDQuotientSpace:
             "QuotientSpace', since this class constructs an accessorry"+
             " neural network")
 
-        # Concatenates the two dictionaries, but overrides the val-
-        # ues of the accessory dictionary with the values of the con-
-        # ventional one
+        # Gets the complete dictionary of live activation functions by
+        # adding the activations of the main layer. If the accessory and
+        # main layers share activation functions, the configuration of 
+        # the main layer's will override that of the accessory's
 
-        self.live_activationFunctions, *_ = verify_activationDict(
-        self.activations_accessory_layer_dict | activation_functionDict, 
+        (self.live_activationFunctions, _, 
+        mathematical_data_per_activation_main_layer
+        ) = verify_activationDict(activation_functionDict, 
         self.layer_number, {}, True, custom_activations_class)
 
-        # Gets all the live activation functions into a tuple
+        # Gets a dictionary of live activation functions for the acces-
+        # sory layer
+
+        (self.live_activationFunctions, _, 
+        mathematical_data_per_activation_accessory_layer
+        ) = verify_activationDict(
+        self.activations_accessory_layer_dict, self.layer_number, 
+        self.live_activationFunctions, True, custom_activations_class)
+
+        # Verifies if the activation functions of the accessory layer are
+        # non-negative
+
+        for activation_name, metadata_class in (
+        mathematical_data_per_activation_accessory_layer.items()):
+
+            if metadata_class.non_negative!=True:
+
+                # Gets the number of the layer to be printed on terminal 
+                # in case of error
+    
+                layer_print_number = str(self.layer_number+1)+"-th"
+                
+                if self.layer_number==-1:
+    
+                    layer_print_number = "last"
+
+                raise ValueError("The '"+str(activation_name)+"' activ"+
+                "ation function was chosen for the "+layer_print_number+
+                " layer of the accessory network. But this activation "+
+                "function is reported not to be non-negative, thus, it"+
+                " cannot be used")
+
+        # Gets the dictionary of information of previos main layers
+
+        previous_layers_info = (
+        self.layer_self.code_given_info_class.previous_layers_info_dict)
+
+        # Initializes a flag to tell if the previous layer has non-nega-
+        # tive activation functions
+
+        non_negative_previous_activations = False  
+
+        # Gets the numbers of the layers registered so far
+
+        layers_numbers_so_far = list(previous_layers_info.keys())
+
+        # Checks if the last registered layer had only non-negative ac-
+        # tivation functions
+
+        if len(layers_numbers_so_far)>0 and ("non-negative activations"+
+        " on main layer" in previous_layers_info[layers_numbers_so_far[
+        -1]]):
+
+            non_negative_previous_activations = previous_layers_info[
+            layers_numbers_so_far[-1]]["non-negative activations on ma"+
+            "in layer"]
+
+        # Initializes a dictionary of information of this layer to share
+        # with layers downstream
+
+        current_layer_info_dict = {"non-negative activations on main l"+
+        "ayer": True}
+
+        # Verifies if the activation functions of the main layer are
+        # centered at the origin
+
+        for activation_name, metadata_class in (
+        mathematical_data_per_activation_main_layer.items()):
+
+            # Gets the number of the layer to be printed on terminal in
+            # case of error
+
+            layer_print_number = str(self.layer_number+1)+"-th"
+            
+            if self.layer_number==-1:
+
+                layer_print_number = "last"
+
+            if metadata_class.origin_centered!=True:
+
+                raise ValueError("The '"+str(activation_name)+"' activ"+
+                "ation function was chosen for the "+layer_print_number+
+                " layer of the main network. But this activation funct"+
+                "ion is reported not to be centered at the origin, thu"+
+                "s, it cannot be used")
+
+            # Verifies if this activation function is non-negative
+
+            if metadata_class.non_negative!=True:
+
+                # Sets the non-negativity flag to true only if all acti-
+                # vation functions are true
+
+                current_layer_info_dict["non-negative activations on m"+
+                "ain layer"] = False
+
+            # If the network is to be convex, carry out some more tests
+
+            if architecture_info_dict["convex with respect to quotient"+
+            " space"]:
+
+                # Verifies if the activation functions are monotonically
+                # increasing for layers deeper than the first hidden 
+                # layer
+
+                if (self.layer_number>0 or self.layer_number==-1) and (
+                not (metadata_class.monotonically_increasing or (
+                non_negative_previous_activations and (
+                metadata_class.monotonically_increasing_on_non_negative_real_line
+                )))):
+
+                    raise ValueError("The '"+str(activation_name)+"' a"+
+                    "ctivation function was chosen for the "+
+                    layer_print_number+"\nlayer of the main network. B"+
+                    "ut this activation function is reported not\nto b"+
+                    "e monotonically increasing on the non-negative se"+
+                    "ction of the real\nline nor in the whole real lin"+
+                    "e.\nAll activations functions in the layers ahead"+
+                    " of the first hidden layer\nmust be monotonically"+
+                    " increasing on the whole real line OR in the non-"+
+                    "\nnegative sector of the real line if the previou"+
+                    "s layer contains only non-\nnegative activation f"+
+                    "unctions. This constraint is enforced for the out"+
+                    "put\nof the network to be convex with respect to "+
+                    "the quotient space\n\nCheck the activation functi"+
+                    "on info:\n'monotonically_increasing'............."+
+                    ".............: "+str(
+                    metadata_class.monotonically_increasing)+"\n'monot"+
+                    "onically_increasing_on_non_negative_real_line': "+
+                    str(metadata_class.monotonically_increasing_on_non_negative_real_line
+                    )+"\n'non_negative_previous_activations'.........."+
+                    ".......: "+str(non_negative_previous_activations))
+
+                # Verifies if the activation function is convex
+
+                if metadata_class.convex!=True:
+
+                    raise ValueError("The '"+str(activation_name)+"' a"+
+                    "ctivation function was chosen for the "+
+                    layer_print_number+" layer of the main network. Bu"+
+                    "t this activation function is reported not to be "+
+                    "convex. All activations functions in the main lay"+
+                    "er must be convex for the output of the network t"+
+                    "o be convex with respect to the quotient space")
+
+        # Updates the dictionary of information of the previous layers
+        # with information of the current layer
+
+        self.layer_self.code_given_info_class.previous_layers_info_dict[
+        self.layer_number] = current_layer_info_dict
+
+        # Gets all the live activation functions into a tuple for the 
+        # main layer
 
         self.activation_list = tuple([self.live_activationFunctions[name
         ] for name in activation_functionDict.keys()])
 
-        # Gets all the live activation functions into a tuple
+        # Gets all the live activation functions into a tuple for the 
+        # accessory layer
 
         self.activation_list_acessory_network = tuple([
         self.live_activationFunctions[name] for name in (
@@ -291,6 +451,20 @@ class SVDQuotientSpace:
 
             self.modulating_function = build_tensorflow_math_expressions(
             architecture_info_dict["weights modulating function"])
+
+            # If the output of the network must be convex with respect 
+            # to the quotient space, verifies if the modulating function
+            # is non-negative
+
+            if architecture_info_dict["convex with respect to quotient"+
+            " space"] and build_tensorflow_math_expressions.mathematical_data_class.non_negative!=True:
+
+                raise ValueError("This network was selected to be conv"+
+                "ex with respect to the quotient space. But the modula"+
+                "tin function is '"+str(architecture_info_dict["weight"+
+                "s modulating function"])+"', which is not non-negativ"+
+                "e. Choose a modulating function that is truly non-neg"+
+                "ative")
 
             # Sets the evaluator of the generic layer from input to the
             # method that multiplies each factor of the decomposition to
@@ -337,6 +511,20 @@ class SVDQuotientSpace:
 
             self.modulating_function = build_tensorflow_math_expressions(
             architecture_info_dict["weights modulating function"])
+
+            # If the output of the network must be convex with respect 
+            # to the quotient space, verifies if the modulating function
+            # is non-negative
+
+            if architecture_info_dict["convex with respect to quotient"+
+            " space"] and build_tensorflow_math_expressions.mathematical_data_class.non_negative!=True:
+
+                raise ValueError("This network was selected to be conv"+
+                "ex with respect to the quotient space. But the modula"+
+                "tin function is '"+str(architecture_info_dict["weight"+
+                "s modulating function"])+"', which is not non-negativ"+
+                "e. Choose a modulating function that is truly non-neg"+
+                "ative")
 
             # Sets the evaluator of the generic layer from input to the
             # method that assembles the SVD first and, then, applies the

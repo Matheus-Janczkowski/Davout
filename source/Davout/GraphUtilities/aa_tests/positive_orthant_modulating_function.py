@@ -6,6 +6,8 @@ import numpy as np
 
 from time import time
 
+import tensorflow as tf
+
 from ....Davout.GraphUtilities.plotting_tools import plane_plot
 
 from ....Davout.GraphUtilities.collage_tools import create_box_collage
@@ -13,6 +15,8 @@ from ....Davout.GraphUtilities.collage_tools import create_box_collage
 from ....Davout.PythonicUtilities.path_tools import get_parent_path_of_file
 
 from ....Davout.PythonicUtilities.tensor_and_math_tools import tridimensional_rotation_tensor
+
+from ....Davout.DeepMech.tool_box.numerical_tools import BuildTensorflowMathExpressions
 
 # Defines a function to evaluate a vector normal to the identity line in
 # n-dimensional real space that belongs to the subspace spanned by the 
@@ -114,6 +118,27 @@ space_dimension, tolerance=1E-10):
 def normalize_and_rotate_vector_to_positive_orthant(u_vector,
 dimension_axis, tolerance=1E-12):
 
+    # Tests the tensorflow implementation
+
+    dtype = tf.as_dtype("float32")
+
+    tensorflow_expressions_class = BuildTensorflowMathExpressions(dtype)
+
+    contractive_mapping = tensorflow_expressions_class({"name": "contr"+
+    "active_positive_orthant_mapping", "eps": tolerance})
+
+    # Transforms the input tensor of vectors to a tensor
+
+    input_tensor = tf.constant(u_vector, dtype=dtype)
+
+    # Gets the result and converts to a numpy array
+
+    tensorflow_result = contractive_mapping(input_tensor, 
+    dimension_axis=dimension_axis).numpy()
+
+    # Tests the numpy implementation
+
+    """
     # Gets the space dimension
 
     space_dimension = u_vector.shape[dimension_axis]
@@ -207,8 +232,14 @@ dimension_axis, tolerance=1E-12):
     # tity line and the orthonormal vector c. Returns an array 
     # (n_samples, space_dimension)
 
-    return ((final_mu/denominator)*d_vector)+(((1.0-final_mu)/
+    numpy_result = ((final_mu/denominator)*d_vector)+(((1.0-final_mu)/
     denominator)*c_vector)
+
+    print("\nThe Frobenius norm of the difference between the tensorfl"+
+    "ow's and numpy's results is: "+str(np.max(tensorflow_result
+    -numpy_result))+"\n")#"""
+
+    return tensorflow_result
 
 # Defines a function to plot a circle to test the modulating effect in
 # 2D space
@@ -595,9 +626,9 @@ if __name__=="__main__":
 
     # Sets a flag for plotting
 
-    flag_plot = False 
+    flag_plot = True 
 
-    flag_collage = True
+    flag_collage = False
 
     if flag_plot:
 

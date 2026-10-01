@@ -4,7 +4,9 @@ import tensorflow as tf
 
 import inspect
 
-from ...PythonicUtilities import function_tools
+from ...PythonicUtilities.dictionary_tools import verify_obligatory_and_optional_keys
+
+from ...DeepMech.tool_box.numerical_tools import FunctionMathematicalData
 
 class CustomActivationFunctions:
 
@@ -36,9 +38,8 @@ class CustomActivationFunctions:
                 # Adds to the dictionary all methods except those inside
                 # the list of exceptions
 
-                self.custom_activation_functions_dict[method_name] = [
-                method_function, function_tools.get_functions_arguments(
-                method_function)]
+                self.custom_activation_functions_dict[method_name] = (
+                method_function)
     
     # Defines a method to update the tensorflow type of the constants of
     # this class
@@ -75,25 +76,125 @@ class CustomActivationFunctions:
 
     # Defines a quadratic activation function
     
-    def quadratic(self, x, a2=1.0, a1=0.0, a0=0.0):
-        
-        a2 = tf.constant(a2, dtype=self.dtype)
-        
-        a1 = tf.constant(a1, dtype=self.dtype)
-        
-        a0 = tf.constant(a0, dtype=self.dtype)
+    def quadratic(self, arguments_dict):
 
-        return (a2*tf.square(x))+(a1*x)+a0
+        # Verifies if the dictionary of arguments has keys that are not 
+        # for this activation function
+
+        arguments_dict = verify_obligatory_and_optional_keys(
+        arguments_dict, {}, {"a2": {"type": float, "description": "coe"+
+        "fficient a2 of the polynomial a2*(x^2)+a1*x+a0", "default": 1.0
+        }, "a1": {"type": float, "description": "coefficient a1 of the"+
+        " polynomial a2*(x^2)+a1*x+a0", "default": 0.0}, "a0": {"type": 
+        float, "description": "coefficient a0 of the polynomial a2*(x^"+
+        "2)+a1*x+a0", "default": 0.0}}, "dictionary of activation func"+
+        "tion extra information", "CustomActivationFunctions")
+        
+        a2 = tf.constant(arguments_dict["a2"], dtype=self.dtype)
+        
+        a1 = tf.constant(arguments_dict["a1"], dtype=self.dtype)
+        
+        a0 = tf.constant(arguments_dict["a0"], dtype=self.dtype)
+
+        # Defines the activation function itself
+
+        @tf.function
+        def quadratic_activation(x):
+
+            return (a2*tf.square(x))+(a1*x)+a0
+
+        # Sets an instance of the class that stores mathematical metada-
+        # ta about this function
+
+        convex = False 
+
+        non_negative = False
+
+        non_negative_on_non_negative_real_line = False
+
+        monotonically_increasing_on_non_negative_real_line = True
+
+        if a2>0.0:
+
+            convex = True 
+
+            if ((4.0*a2*a0)-tf.square(a1))>=0.0:
+
+                non_negative = True
+
+                non_negative_on_non_negative_real_line = True
+
+            # Tests if the derivative is positive at zero
+
+            if a1>=0.0:
+
+                non_negative_on_non_negative_real_line = True
+
+                monotonically_increasing_on_non_negative_real_line = True
+
+        origin_centered = False
+
+        if a1==0.0 and a0==0.0:
+
+            origin_centered = True
+
+        mathematical_data_class = FunctionMathematicalData(convex=convex, 
+        monotonically_increasing=False, non_negative=non_negative,
+        origin_centered=origin_centered, 
+        non_negative_on_non_negative_real_line=
+        non_negative_on_non_negative_real_line,
+        monotonically_increasing_on_non_negative_real_line=
+        monotonically_increasing_on_non_negative_real_line)
+
+        return quadratic_activation, mathematical_data_class
     
     # Defines an exponential function
     
-    def exponential(self, x, a1=1.0, a0=0.0):
-        
-        a1 = tf.constant(a1, dtype=self.dtype)
-        
-        a0 = tf.constant(a0, dtype=self.dtype)
+    def exponential(self, arguments_dict):
 
-        return tf.exp((a1*x)+a0)
+        # Verifies if the dictionary of arguments has keys that are not 
+        # for this activation function
+
+        arguments_dict = verify_obligatory_and_optional_keys(
+        arguments_dict, {}, {"a1": {"type": float, "description": "coe"+
+        "fficient a1 of the expression exp((a1*x)+a0)", "default": 1.0}, 
+        "a0": {"type": float, "description": "coefficient a0 of the ex"+
+        "pression exp((a1*x)+a0)", "default": 0.0}}, "dictionary of ac"+
+        "tivation function extra information", "CustomActivationFuncti"+
+        "ons")
+        
+        a1 = tf.constant(arguments_dict["a1"], dtype=self.dtype)
+        
+        a0 = tf.constant(arguments_dict["a0"], dtype=self.dtype)
+
+        # Defines the activation function itself
+    
+        @tf.function
+        def exponential_activation(x):
+
+            return tf.exp((a1*x)+a0)
+
+        # Sets an instance of the class that stores mathematical metada-
+        # ta about this function
+
+        monotonically_increasing = False
+
+        monotonically_increasing_on_non_negative_real_line = False
+
+        if a1>0.0:
+
+            monotonically_increasing = True
+
+            monotonically_increasing_on_non_negative_real_line = True
+
+        mathematical_data_class = FunctionMathematicalData(convex=True, 
+        monotonically_increasing=monotonically_increasing, non_negative=
+        True, origin_centered=False, 
+        non_negative_on_non_negative_real_line=True,
+        monotonically_increasing_on_non_negative_real_line=
+        monotonically_increasing_on_non_negative_real_line)
+
+        return exponential_activation, mathematical_data_class
     
 ########################################################################
 #                               Testing                                #

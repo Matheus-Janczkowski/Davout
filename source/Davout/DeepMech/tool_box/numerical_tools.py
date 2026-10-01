@@ -226,6 +226,31 @@ reorder_indices=True, block_multiplication=True, n_samples=None):
 #                        Regularizing functions                        #
 ########################################################################
 
+# Defines a class that stores metadata on expressions and activation
+# functions. This data tells if a function is convex or not, monotoni-
+# cally increasing, and so forth
+
+class FunctionMathematicalData:
+
+    def __init__(self, convex=None, monotonically_increasing=None, 
+    non_negative=None, origin_centered=None, 
+    non_negative_on_non_negative_real_line=None,
+    monotonically_increasing_on_non_negative_real_line=None):
+
+        self.convex = convex
+
+        self.monotonically_increasing = monotonically_increasing
+
+        self.monotonically_increasing_on_non_negative_real_line = (
+        monotonically_increasing_on_non_negative_real_line)
+
+        self.non_negative = non_negative
+
+        self.non_negative_on_non_negative_real_line = (
+        non_negative_on_non_negative_real_line)
+
+        self.origin_centered = origin_centered
+
 # Defines a class to get a string with the name of the regularizing 
 # function to be used and return the live function in its call method. 
 # If a dictionary is given, optional parameters may be taken
@@ -358,6 +383,14 @@ class BuildTensorflowMathExpressions:
 
         self.unit_norm_along_desired_axis = False
 
+        # Sets an instance of the class that stores mathematical metada-
+        # ta about this function
+
+        self.mathematical_data_class = FunctionMathematicalData(convex=
+        True, monotonically_increasing=False, non_negative=True, 
+        origin_centered=True, non_negative_on_non_negative_real_line=
+        True, monotonically_increasing_on_non_negative_real_line=True)
+
         # Defines the tensorflow expression
 
         @tf.function
@@ -388,7 +421,7 @@ class BuildTensorflowMathExpressions:
 
         # Precomputes some useful tensors and constants
 
-        eps = expression_name["eps"]
+        eps = tf.cast(expression_name["eps"], dtype=self.dtype)
 
         eps_squared = tf.square(eps)
 
@@ -403,6 +436,14 @@ class BuildTensorflowMathExpressions:
         # norm vectors in the desired axis
 
         self.unit_norm_along_desired_axis = True
+
+        # Sets an instance of the class that stores mathematical metada-
+        # ta about this function
+
+        self.mathematical_data_class = FunctionMathematicalData(convex=
+        False, monotonically_increasing=False, non_negative=True,
+        non_negative_on_non_negative_real_line=True,
+        monotonically_increasing_on_non_negative_real_line=False)
 
         # Defines the function
 
@@ -447,29 +488,37 @@ class BuildTensorflowMathExpressions:
             # the identity, makes the first coefficient 0 and the second 
             # 1
         
-            coefficient_u = tf.expand_dims(tf.math.reciprocal(
-            denominator), axis=dimension_axis)
+            coefficient_u = tf.math.reciprocal(denominator)
         
             coefficient_d = -(coefficient_u*u_dot_d)
-        
-            # Builds the vector colinear to the identity line
-        
-            d_vector = tf.expand_dims(tf.reshape(
-            dimensionality_reciprocal_square_root, [1]), axis=dimension_axis)
+
+            # Then, expands the dimension of the vector components again
+            # for later broadcasting
+
+            coefficient_u = tf.expand_dims(coefficient_u, axis=
+            dimension_axis)
+
+            coefficient_d = tf.expand_dims(coefficient_d, axis=
+            dimension_axis)
         
             # Gets the orthonormal vector to the identity line. The sha-
             # pe of the coefficients must be expanded to include the di-
             # mension of the space, that was lost during summation ope-
-            # rations
+            # rations. Vector d is not built, since tensorflow broadcasts
+            # the constant value to the appropriate dimensions
         
             c_vector = (coefficient_u*w_vectors_tensor)+(coefficient_d*
-            d_vector)
+            dimensionality_reciprocal_square_root)
         
             # Evaluates the inequation to determine the mu factor
         
             inequation_numerator = tf.abs(c_vector)-c_vector
+
+            # Uses broadcasting of the individual components to avoid
+            # materializing the vector d
         
-            inequation_denominator = (constant_two*(d_vector-c_vector))
+            inequation_denominator = (constant_two*(
+            dimensionality_reciprocal_square_root-c_vector))
         
             mu_inequation = tf.math.divide_no_nan(inequation_numerator, 
             inequation_denominator)
@@ -507,9 +556,11 @@ class BuildTensorflowMathExpressions:
         
             # Constructs the final vector as a linear interpolation of 
             # the identity line and the orthonormal vector c. Returns an 
-            # array (n_samples, space_dimension)
+            # array (n_samples, space_dimension). Again the vector d is
+            # not built; rather its components are broadcast
         
-            return ((final_mu*denominator)*d_vector)+(((constant_one-
+            return ((final_mu*denominator)*
+            dimensionality_reciprocal_square_root)+(((constant_one-
             final_mu)*denominator)*c_vector)
 
         return contractive_mapping

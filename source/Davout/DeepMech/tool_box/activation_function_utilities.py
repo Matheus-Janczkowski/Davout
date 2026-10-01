@@ -4,7 +4,7 @@ import tensorflow as tf
 
 from copy import deepcopy
 
-from ...PythonicUtilities import dictionary_tools, function_tools
+from .numerical_tools import FunctionMathematicalData
 
 # Defines a function to test whether an activation function's name cor-
 # responds to an actual activation function in TensorFlow
@@ -78,6 +78,12 @@ live_activationFunctions, flag_customLayers, custom_activations_class):
 
     error_message = ""
 
+    # Initializes a dictionary of mathematical metadata. Each key is the
+    # name of the activation function and the corresponding values are 
+    # instances of a class of mathematical information
+
+    mathematical_data_per_activation = {}
+
     # Iterates over the activation functions' names
 
     for name, activation_info in activation_dict.items():
@@ -101,9 +107,13 @@ live_activationFunctions, flag_customLayers, custom_activations_class):
             # Gets the arguments and deletes the key for the number of 
             # neurons
 
-            arguments = deepcopy(activation_info)
+            arguments = {}
 
-            del arguments["number of neurons"]
+            for key, value in activation_info.items():
+
+                if key!="number of neurons":
+
+                    arguments[key] = value
 
             # If this dictionary is empty, turns this variable into None
             # again
@@ -125,13 +135,35 @@ live_activationFunctions, flag_customLayers, custom_activations_class):
             custom_activations_class.custom_activation_functions_dict.keys(
             ))[11:-2]+")")
 
-        # Verifies if this activation function has not already been map-
-        # ped into the dictionary of live-wired activation functions
+        # Otherwise, the function can be added to the dictionary of live
+        # activation functions or just their metadata can be recorded
 
-        elif not (name in live_activations):
+        else:
 
-            live_activationFunctions[name] = get_activationFunction(
-            name, custom_activations_class, arguments)
+            result = get_activationFunction(name, 
+            custom_activations_class, arguments)
+
+            # If the result is a a tuple, the class instance of metadata
+            # is present
+
+            if isinstance(result, tuple):
+
+                # Verifies if this activation function has not already 
+                # been mapped into the dictionary of live-wired activa-
+                # tion functions
+
+                if not (name in live_activations):
+
+                    live_activationFunctions[name] = result[0]
+
+                mathematical_data_per_activation[name] = result[1]
+
+            # Otherwise, appends this function to the dictionary only if
+            # it has not been appended before
+
+            elif not (name in live_activations):
+
+                live_activationFunctions[name] = result
 
     # If the error message is not empty, raises an exception
 
@@ -141,7 +173,8 @@ live_activationFunctions, flag_customLayers, custom_activations_class):
     
     # Returns the updated dictionary of live-wired activation functions
 
-    return live_activationFunctions, flag_customLayers
+    return (live_activationFunctions, flag_customLayers, 
+    mathematical_data_per_activation)
     
 # Defines a function to get the activation function by its name
 
@@ -150,40 +183,24 @@ arguments):
 
     if function_name=="linear":
 
-        return tf.identity
+        return tf.identity, FunctionMathematicalData(convex=True,
+        monotonically_increasing=True, non_negative=False, 
+        origin_centered=True)
     
     elif function_name in (
     custom_activations_class.custom_activation_functions_dict):
+
+        # If 'arguments' is None, makes it an empty dictionary
+
+        if arguments is None:
+
+            arguments = {}
         
-        # Gets the pair of function and keyword arguments
+        # Uses the method in the dictionary of custom activation
+        # functions to build the activation function itself
 
-        function_info = (
-        custom_activations_class.custom_activation_functions_dict[
-        function_name])
-
-        # If arguments have been prescribed
-
-        if not (arguments is None):
-
-            # Verifies if the dictionary of arguments has arguments that
-            # are allowed and adds the default values which were not 
-            # prescribed
-
-            arguments = dictionary_tools.verify_dictionary_keys(
-            arguments, function_info[1], dictionary_location="at defin"+
-            "ition of custom activation function '"+str(function_name)+
-            "'", fill_in_keys=True)
-
-            # Uses a wrapper to wrap the function to set the new values 
-            # for the keyword arguments
-        
-            return function_tools.construct_lambda_function(
-            function_info[0], arguments)
-
-        # If no arguments have been prescribed, returns the function 
-        # simply
-
-        return function_info[0]
+        return custom_activations_class.custom_activation_functions_dict[
+        function_name](arguments)
     
     else:
 

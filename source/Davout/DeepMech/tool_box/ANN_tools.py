@@ -174,7 +174,7 @@ class MultiLayerModel:
 
         for i in range(len(self.layers_info)):
 
-            self.live_activations, flag_customLayers = verify_activationDict(
+            self.live_activations, flag_customLayers, *_ = verify_activationDict(
             self.layers_info[i], layer_counter, self.live_activations, 
             flag_customLayers, self.custom_activations_class)
 
@@ -286,7 +286,7 @@ class MultiLayerModel:
         code_given_info_class = CodeGivenLayerInfo(
         self.input_size_main_network, self.input_size_main_network, 0,
         self.parameters_dtype, tuple(number_neurons_per_main_layer),
-        input_size_acessory_network, self.integer_dtype)
+        input_size_acessory_network, self.integer_dtype, {})
 
         output_eachLayer = MixedActivationLayer(self.layers_info[0], 
         self.custom_activations_class, code_given_info_class,
@@ -336,7 +336,8 @@ class MultiLayerModel:
             self.input_size_main_network, input_size_main_layer, 
             layer_number, self.parameters_dtype, tuple(
             number_neurons_per_main_layer), input_size_acessory_network,
-            self.integer_dtype)
+            self.integer_dtype, 
+            code_given_info_class.previous_layers_info_dict)
 
             output_eachLayer = MixedActivationLayer(self.layers_info[i],
             self.custom_activations_class, code_given_info_class, 
@@ -480,7 +481,7 @@ class CodeGivenLayerInfo:
 
     def __init__(self, input_size_main_network, input_size_main_layer,
     layer, float_dtype, number_neurons_per_main_layer, 
-    input_size_acessory_network, int_dtype):
+    input_size_acessory_network, int_dtype, previous_layers_info_dict):
         
         self.input_size_main_network = input_size_main_network
 
@@ -495,6 +496,8 @@ class CodeGivenLayerInfo:
         self.number_neurons_per_main_layer = number_neurons_per_main_layer
 
         self.input_size_acessory_network = input_size_acessory_network
+
+        self.previous_layers_info_dict = previous_layers_info_dict
 
 # Defines a class to construct a layer with different activation 
 # functions. Receives a dictionary of activation functions, the activa-

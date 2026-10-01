@@ -30,7 +30,7 @@ class TestSVDArchitecture:
 
         self.activation_list_main_network = [{"quadratic": {"number of"+
         " neurons": self.number_of_neurons_hidden_layer_main_network, 
-        "a2": 1.0}}, {"linear": self.output_dimension}]
+        "a2": 1.0}}, {"quadratic": self.output_dimension}]
 
         self.accessory_activation_list_tests = [{"quadratic": {"number"+
         " of neurons": min(self.quotient_space_dimension,
@@ -688,7 +688,7 @@ class TestSVDArchitecture:
 
         # Sets the modulating function
 
-        modulating_function_test = 'contractive_positive_orthant_mapping'
+        modulating_function_test = 'contractive_positive_orthant_mapping'#'smooth_absolute_value'
 
         # Sets the model architecture and the model class
 
@@ -696,7 +696,7 @@ class TestSVDArchitecture:
         "dulating function": modulating_function_test, "activations ac"+
         "cessory layer list": self.accessory_activation_list_tests, "n"+
         "on-orthogonal matrices": non_orthogonal_matrices, "hardware d"+
-        "evice": "CPU"}
+        "evice": "CPU", "convex with respect to quotient space": True}
 
         ANN_class = ANN_tools.MultiLayerModel(
         self.whole_input_dimension, self.activation_list_main_network, 
@@ -727,18 +727,20 @@ class TestSVDArchitecture:
 
         return_eigenvalues = True
 
+        # Initializes a string that will carry hessian information
+
+        hessian_matrices = ""
+
         # Checks the hessian matrices
 
+        """ 
         hessian_info = training_class.get_hessian_outputs_model(
         eigenvalues=False)
 
         print("Finishes calculating the hessian matrix\n")
 
-        # Converts the hessian info to a string
-
-        hessian_matrices = ""
-
-        # Iterates over the output neurons
+        # Converts the hessian info to a string. Thus, iterates over the 
+        # output neurons
     
         for output_index in range(self.output_dimension):
 
@@ -766,13 +768,13 @@ class TestSVDArchitecture:
                 hessian_matrices += ("\n\nEigenvalues (shape: "+str(
                 eigenvalues.shape)+"):\n"+str(eigenvalues.numpy())+"\n"+
                 "\nThe smallest eigenvalue is: "+str(tf.reduce_min(
-                eigenvalues).numpy()))
+                eigenvalues).numpy()))#"""
 
         print("\nThere follow the hessian matrices with respect to the"+
         " variables in the quotient space:\n"+str(hessian_matrices)+
         "\n\nRemember that the model should be convex when the modulat"+
         "ing function is\nnon-zero. The given modulating function is:"+
-        "\n'"+str(self.modulating_function)+"'\n")
+        "\n'"+str(modulating_function_test)+"'\n")
 
 # Runs all tests
 
