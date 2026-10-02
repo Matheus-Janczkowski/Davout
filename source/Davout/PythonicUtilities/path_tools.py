@@ -16,7 +16,7 @@ import unicodedata
 # rify their existence
 
 def join_path_and_verify_existence(files_list, parent_path=None, 
-path_bits_to_be_excluded=2):
+path_bits_to_be_excluded=2, required_termination=None):
 
     # Verifies if files list is a string
 
@@ -59,7 +59,8 @@ path_bits_to_be_excluded=2):
 
     for i, file_name in enumerate(files_list):
 
-        verify_file_existence(file_name)
+        verify_file_existence(file_name, termination=
+        required_termination)
 
     # Returns the list of files
 
@@ -139,8 +140,8 @@ None, do_not_raise_error=False):
         if file_path[-len(termination):len(file_path)]!=termination:
 
             raise NameError("The termination="+str(termination)+" is n"+
-            "ot the same as the 'file_path' "+str(file_path)+". Thus, "+
-            "the file existence cannot be asserted")
+            "ot the same as the 'file_path':\n"+str(file_path)+"\n\nTh"+
+            "us, the file existence cannot be asserted")
 
     if not os.path.exists(file_path):
 
