@@ -507,10 +507,10 @@ class TestSVDArchitecture:
             # Adds the output layer to both networks
 
             activation_list_main_network_performance.append({
-            "linear": output_dimension_performance})
+            "quadratic": output_dimension_performance})
 
-            accessory_activation_list_performance.append({"linear": min(
-            output_dimension_performance, 
+            accessory_activation_list_performance.append({"quadratic": 
+            min(output_dimension_performance, 
             number_of_neurons_per_hidden_layer_main_network[-1])})
 
             # Updates the string of neurons of the main network
@@ -733,7 +733,7 @@ class TestSVDArchitecture:
 
         # Checks the hessian matrices
 
-        """ 
+        #""" 
         hessian_info = training_class.get_hessian_outputs_model(
         eigenvalues=False)
 
@@ -787,13 +787,13 @@ if __name__=="__main__":
     # Creates a list of methods (using their names) that are not to be
     # tested
 
-    reserved_methods = []
+    reserved_methods = ["test_derivative_performance"]
 
     # Selects an specific test set
 
     test_derivative_performance = False 
 
-    test_convexity = True
+    test_convexity = False
 
     # Defines a set of methods to be reserved so that only derivative 
     # performance is assessed

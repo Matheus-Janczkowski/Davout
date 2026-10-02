@@ -172,7 +172,7 @@ class ModelTraining:
                     print("Iteration "+integer_toString(i, max_digits)+
                     ": loss="+format(loss_value.numpy(), '.5e')+", gra"+
                     "dient norm: "+format(gradient_norm.numpy(), '.5e')+
-                    ", gradient norm divided by the square root of the"+
+                    ", Gradient norm divided by the square root of the"+
                     " number of trainable parameters: "+format(
                     gradient_norm.numpy()/
                     self.number_trainable_parameters, '.5e')+"\nThe ma"+
@@ -867,8 +867,8 @@ class ModelCustomTraining:
 
                 print("\nIteration group "+integer_toString(i, 
                 max_digits)+": loss="+format(loss_value.numpy(), '.5e')+
-                ", gradient norm: "+format(gradient_value, '.5e')+",\n"+
-                "gradient norm divided by the square root of the numbe"+
+                ",\ngradient norm: "+format(gradient_value, '.5e')+",\n"+
+                "Gradient norm divided by the square root of the numbe"+
                 "r of trainable parameters: "+format(gradient_value/
                 self.number_trainable_parameters, '.5e')+"\nThe maximu"+
                 "m component of the gradient in absolute value is: "+
@@ -1020,7 +1020,7 @@ class ModelCustomTraining:
             if show_reinitialization_distance:
 
                 print("\nThe norm of the difference of the previous se"+
-                "t of parameters to the new set is: "+str(tf.norm(
+                "t of parameters to the new\nset is: "+str(tf.norm(
                 old_parameters-self.model_parameters).numpy()))
 
             # Initializes the saving of the model as training 

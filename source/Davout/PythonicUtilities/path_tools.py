@@ -12,6 +12,59 @@ import unicodedata
 #                              Path tools                              #
 ########################################################################
 
+# Defines a function to join a list of files to a parent path and to ve-
+# rify their existence
+
+def join_path_and_verify_existence(files_list, parent_path=None, 
+path_bits_to_be_excluded=2):
+
+    # Verifies if files list is a string
+
+    if isinstance(files_list, str):
+
+        # Makes it a single-element list
+
+        files_list = [files_list]
+
+    # Verifies if it is not a list
+
+    elif not isinstance(files_list, list):
+
+        raise TypeError("'files_list' in 'join_path_and_verify_existen"+
+        "ce' must be a list or a string (in case of a single file to b"+
+        "e checked). Currently, its type is "+str(type(files_list)+" a"+
+        "nd 'files_list' itself is: "+str(files_list)))
+
+    # Verifies if the parent path is None
+
+    if parent_path is None:
+
+        # Gets the path where this class has been called
+
+        parent_path = get_parent_path_of_file(
+        path_bits_to_be_excluded=path_bits_to_be_excluded)
+
+    # If the parent path was given or retrieved, joins it to the o-
+    # ther paths
+
+    if parent_path:
+
+        # Iterates over the list of files to add the parent path
+
+        for i in range(len(files_list)):
+
+            files_list[i] = parent_path+"//"+files_list[i]
+
+    # Iterates over the list of files to check their existence
+
+    for i, file_name in enumerate(files_list):
+
+        verify_file_existence(file_name)
+
+    # Returns the list of files
+
+    return files_list
+
 # Defines a function to get a list of directories within a path
 
 def get_list_of_directories(whole_path):

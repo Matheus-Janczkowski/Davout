@@ -9,6 +9,8 @@ from time import time
 
 from .....Davout.DeepMech.tool_box import ANN_tools, training_tools
 
+from .....Davout.DeepMech.tool_box.FEM_surrogate_testing_tools import FEMSurrogateEvaluator
+
 from .....Davout.DeepMech.tool_box.loss_assembler_classes import MaximumAbsoluteError
 
 from .....Davout.PythonicUtilities.path_tools import get_parent_path_of_file
@@ -302,6 +304,14 @@ class SurrogateModel:
     # plot it for the samples of the training set
 
     def plot_training_response(self, limit_model=None):
+
+        # Initializes the class for performance testing
+
+        surrogate_evaluation_class = FEMSurrogateEvaluator(
+        self.input_data_file, self.displacement_data_file, parent_path=
+        self.results_path)
+
+        float(a)
 
         # Sets the training data
 
@@ -797,13 +807,13 @@ if __name__=="__main__":
 
     test_flag = False
 
-    plot_training_responses = False
+    plot_training_responses = True
 
     plot_test_responses = False
 
     collage_flag = False
 
-    compare_without_gate = True
+    compare_without_gate = False
 
     # Gets the mesh of the RVE
 

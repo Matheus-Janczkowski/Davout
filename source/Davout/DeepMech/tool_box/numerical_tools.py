@@ -8,8 +8,6 @@ from ...PythonicUtilities import dictionary_tools
 
 from ...PythonicUtilities import programming_tools
 
-from ...PythonicUtilities.function_tools import verify_function_arguments
-
 ########################################################################
 #                            Linear Algebra                            #
 ########################################################################
@@ -270,20 +268,64 @@ class BuildTensorflowMathExpressions:
         None, None, dictionary_of_methods=True, delete_init_key=True,
         reserved_methods=["__call__"])
 
+        # Sets a flag for the methods to return only the list of argu-
+        # ments of each tensorflow expression
+
+        self.return_arguments_list = True
+
+        # Sets a list of arguments that are obligatory for all tensorflow
+        # expressions
+
+        obligatory_arguments = ["dimension_axis"]
+
         # Checks if the available methods have the necessary common ar-
         # guments
 
         for method_name, method_object in self.available_methods.items():
 
-            # Gets the tensorflow function constructed by this method
+            # Gets a list of arguments of the tensorflow expression
 
-            tensorflow_expression = method_object({"name": method_name})
+            tensorflow_expression_arguments = method_object({"name": 
+            method_name})
 
             # Verifies the necessary arguments common to all tensorflow
             # expressions
 
-            verify_function_arguments(tensorflow_expression, ["dimensi"+
-            "on_axis"], "BuildTensorflowMathExpressions")
+            for obligatory_argument in obligatory_arguments:
+
+                if not (obligatory_argument in (
+                tensorflow_expression_arguments)):
+
+                    # Gets a string with the obligatory arguments
+
+                    obligatory_arguments_string = ""
+
+                    for name in obligatory_arguments:
+
+                        obligatory_arguments_string += ("\n'"+str(name)+
+                        "'")
+
+                    # Gets a string with the given arguments of the ex-
+                    # pression constructor
+
+                    given_arguments = ""
+
+                    for name in tensorflow_expression_arguments:
+
+                        given_arguments += "\n'"+str(name)+"'"
+
+                    raise NameError("The argument '"+str(
+                    obligatory_argument)+"' was not found in the list "+
+                    "of arguments of the tensorflow expression constru"+
+                    "ctor '"+str(method_name)+"' in 'BuildTensorflowMa"+
+                    "thExpressions'.\nCheck the prescribed arguments b"+
+                    "y this constructor:\n"+given_arguments+"\n\nCheck"+
+                    " the obligatory arguments for all constructors:\n"+
+                    obligatory_arguments_string)
+
+        # Sets the flag for the methods to return the tensorflow object
+        
+        self.return_arguments_list = False
 
         # Defines a flag that tells if the output has unit norm along 
         # the desired axis. The default value for safety is false
@@ -391,6 +433,11 @@ class BuildTensorflowMathExpressions:
         origin_centered=True, non_negative_on_non_negative_real_line=
         True, monotonically_increasing_on_non_negative_real_line=True)
 
+        # Sets a list of arguments used for the method
+
+        expression_arguments_names = ["eps", "eps_squared", "dimension"+
+        "_axis"]
+
         # Defines the tensorflow expression
 
         @tf.function
@@ -399,7 +446,15 @@ class BuildTensorflowMathExpressions:
 
             return tf.sqrt(tf.square(x)+eps_squared)-eps
 
-        return smooth_abs
+        # Returns what the class requires
+
+        if self.return_arguments_list:
+
+            return expression_arguments_names
+
+        else:
+
+            return smooth_abs
 
     # Defines a function that maps vectors in the n-dimensional real 
     # space to the positive orthant of this space. This transformation
@@ -444,6 +499,12 @@ class BuildTensorflowMathExpressions:
         False, monotonically_increasing=False, non_negative=True,
         non_negative_on_non_negative_real_line=True,
         monotonically_increasing_on_non_negative_real_line=False)
+
+        # Sets a list of arguments used for the method
+        
+        expression_arguments_names = ["epsilon", "epsilon_squared", "d"+
+        "imension_axis", "dtype", "constant_one", "constant_two", "con"+
+        "stant_half"]
 
         # Defines the function
 
@@ -563,4 +624,12 @@ class BuildTensorflowMathExpressions:
             dimensionality_reciprocal_square_root)+(((constant_one-
             final_mu)*denominator)*c_vector)
 
-        return contractive_mapping
+        # Returns what the class requires
+
+        if self.return_arguments_list:
+
+            return expression_arguments_names
+
+        else:
+
+            return contractive_mapping
