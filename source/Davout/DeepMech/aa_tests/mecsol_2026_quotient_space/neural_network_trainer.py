@@ -115,9 +115,11 @@ class SurrogateModel:
         )+"; the maximum absolute is: "+str(np.max(np.abs(
         material_input_data)))+"\n")
 
-        input("The architecture is:\n"+str(self.activations_list)+"\n"+
+        print("The architecture is:\n"+str(self.activations_list)+"\n"+
         "\nThe output data has a total of "+str(self.total_number_of_dofs
-        )+" DOFs\n\nPress ENTER to continue\n\n")
+        )+" DOFs")
+        
+        #input("\nPress ENTER to continue\n\n")
 
         # The order of magnitude of the material data is expected to be 
         # larger than the kinematic data. Thus, gets the material input
@@ -308,8 +310,8 @@ class SurrogateModel:
         # Initializes the class for performance testing
 
         surrogate_evaluation_class = FEMSurrogateEvaluator(
-        self.input_data_file, self.displacement_data_file, parent_path=
-        self.results_path)
+        self.input_data_file, self.displacement_data_file, 
+        self.number_of_samples, parent_path=self.results_path)
 
         float(a)
 

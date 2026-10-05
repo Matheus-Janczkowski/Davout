@@ -7,13 +7,19 @@ import numpy as np
 
 from ...PythonicUtilities.path_tools import join_path_and_verify_existence
 
+from ...DeepMech.tool_box.training_tools import verify_loss_metric
+
+from ...DeepMech.tool_box.loss_assembler_classes import MaximumAbsoluteError
+
 # Defines a class to evaluate and compare the response of a FEM surroga-
 # te ANN model against the original FEM data
 
 class FEMSurrogateEvaluator:
 
     def __init__(self, input_data_file_name, output_true_data_file_name, 
-    indices_of_training_samples, parent_path=None, subdofs_to_learn=None):
+    indices_of_training_samples, saved_model_file_name, 
+    number_of_trained_best_models=None, parent_path=None, 
+    subdofs_to_learn=None, loss_metric="MeanAbsoluteError"):
 
         # Checks whether the file paths exist and returns the file paths
         # updated with the parent path. Additionally, the given files 
@@ -128,3 +134,23 @@ class FEMSurrogateEvaluator:
         # Saves the subdofs to be learned in the class
 
         self.subdofs_to_learn = subdofs_to_learn
+
+        # Gets the loss metric and verifies if it is a valid option
+
+        self.loss_metric = verify_loss_metric(loss_metric)
+
+        # Instantiates the class to compute the average maximum absolute
+        # error over a set of samples
+
+        self.maximum_absolute_error_class = MaximumAbsoluteError()
+
+    # Defines a function to compute the mean absolute error per sample
+
+    def get_mean_absolute_error_per_sample(self, true_output, 
+    model_output):
+
+        # Reduces the mean alongside the axis of columns, since the rows
+        # are the samples
+
+        return tf.reduce_mean(tf.abs(true_output-model_output), axis=1
+        ).numpy()
