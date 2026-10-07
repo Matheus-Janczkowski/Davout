@@ -219,7 +219,7 @@ class SurrogateModel:
             # Loads this model
 
             loaded_model = tf.keras.models.load_model(self.results_path+
-            "//"+str(i+1)+"_best_"+self.saved_model_file+".keras")
+            "//"+str(i+1)+"_"+self.saved_model_file+".keras")
 
             # Gets the output of the loaded model
 
@@ -299,21 +299,13 @@ class SurrogateModel:
             self.n_training_samples:,:][best_samples_indices,:])
 
             np.save(self.results_path+"//surrogate_best_samples_of_"+
-            str(i+1)+"_best_"+self.saved_model_file+".npy", 
+            str(i+1)+"_"+self.saved_model_file+".npy", 
             model_displacement.numpy()[best_samples_indices,:])
 
     # Defines a function to insert the results into a function space and
     # plot it for the samples of the training set
 
     def plot_training_response(self, limit_model=None):
-
-        # Initializes the class for performance testing
-
-        surrogate_evaluation_class = FEMSurrogateEvaluator(
-        self.input_data_file, self.displacement_data_file, 
-        self.number_of_samples, parent_path=self.results_path)
-
-        float(a)
 
         # Sets the training data
 
@@ -336,6 +328,16 @@ class SurrogateModel:
 
             last_model = limit_model+0
 
+        # Initializes the class for performance testing
+
+        surrogate_evaluation_class = FEMSurrogateEvaluator(
+        self.input_data_file, self.displacement_data_file, 
+        self.number_of_samples, self.saved_model_file, "Displacement",
+        parent_path=self.results_path, 
+        maximum_number_of_models_to_be_evaluated=last_model)
+
+        float(a)
+
         # Iterates through the best models
 
         for i in range(last_model):
@@ -343,7 +345,7 @@ class SurrogateModel:
             # Loads this model
 
             loaded_model = tf.keras.models.load_model(self.results_path+
-            "//"+str(i+1)+"_best_"+self.saved_model_file+".keras")
+            "//"+str(i+1)+"_"+self.saved_model_file+".keras")
 
             # Gets the output of the loaded model
 
@@ -387,7 +389,7 @@ class SurrogateModel:
             # ment DOFs of this model
 
             displacement_output_file = (self.results_path+"//surrogate"+
-            "_best_training_samples_of_"+str(i+1)+"_best_"+
+            "_best_training_samples_of_"+str(i+1)+"_"+
             self.saved_model_file+".npy")
 
             # Recovers the name of the file with the true values of dis-
@@ -467,7 +469,7 @@ class SurrogateModel:
             # Sets the name of the screenshot file
 
             screenshot_file = ("surrogate_best_training_sample_of_"+str(
-            i+1)+"_best_"+self.saved_model_file+".png")
+            i+1)+"_"+self.saved_model_file+".png")
 
             # Sets the name of the screenshot file for the true displa-
             # cement
@@ -525,7 +527,7 @@ class SurrogateModel:
             # ment DOFs of this model
 
             displacement_output_file = (self.results_path+"//surrogate"+
-            "_best_samples_of_"+str(i+1)+"_best_"+self.saved_model_file+
+            "_best_samples_of_"+str(i+1)+"_"+self.saved_model_file+
             ".npy")
 
             # Recovers the name of the file with the true values of dis-
@@ -565,7 +567,7 @@ class SurrogateModel:
             # Sets the name of the screenshot file
 
             screenshot_file = ("surrogate_best_sample_of_"+str(i+1)+"_"+
-            "best_"+self.saved_model_file+".png")
+            self.saved_model_file+".png")
 
             # Sets the name of the screenshot file for the true displa-
             # cement
@@ -616,7 +618,7 @@ class SurrogateModel:
         # Gets the name of the screenshot file
         
         screenshot_file = ("surrogate_best_training_sample_of_"+str(
-        model_number)+"_best_"+self.saved_model_file+".png")
+        model_number)+"_"+self.saved_model_file+".png")
 
         # Sets the name of the screenshot file for the true displa-
         # cement
@@ -744,7 +746,7 @@ class SurrogateModel:
         # Loads the best gated model
         
         loaded_gated_model = tf.keras.models.load_model(
-        self.results_path+"//1_best_"+self.saved_model_file+".keras")
+        self.results_path+"//1_"+self.saved_model_file+".keras")
 
         # Gets the output of the loaded gated model
 
@@ -775,7 +777,7 @@ if __name__=="__main__":
 
     Lp_norm_exponent = 12
 
-    saved_model_file = "saved_model_lp_norm_"+str(Lp_norm_exponent)
+    saved_model_file = "best_saved_model_lp_norm_"+str(Lp_norm_exponent)
 
     saved_model_without_gate_file = ("saved_model_without_gate_lp_norm"+
     "_"+str(Lp_norm_exponent))

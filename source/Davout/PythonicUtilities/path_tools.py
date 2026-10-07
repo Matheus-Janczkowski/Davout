@@ -16,7 +16,8 @@ import unicodedata
 # rify their existence
 
 def join_path_and_verify_existence(files_list, parent_path=None, 
-path_bits_to_be_excluded=2, required_termination=None):
+path_bits_to_be_excluded=2, required_termination=None, 
+return_parent_path=False):
 
     # Verifies if files list is a string
 
@@ -61,6 +62,12 @@ path_bits_to_be_excluded=2, required_termination=None):
 
         verify_file_existence(file_name, termination=
         required_termination)
+
+    # If the parent path is to be returned
+
+    if return_parent_path:
+
+        return files_list, parent_path
 
     # Returns the list of files
 
@@ -125,23 +132,42 @@ None, do_not_raise_error=False):
 
             raise TypeError("The 'termination' must be a string to ver"+
             "ify a file existence. However, it is: "+str(termination))
+
+        # Verifies if the file has a dot, which preceeds a termination
+
+        if "." in file_path:
         
-        # Verify if the length of the file path is greater than the ter-
-        # mination
+            # Verify if the length of the file path is greater than the 
+            # termination
 
-        if len(termination)>len(file_path):
+            if len(termination)>len(file_path):
 
-            raise IndexError("The 'termination'="+str(termination)+" h"+
-            "as more characters than the 'file_path' itself. Thus, the"+
-            " file existence cannot be asserted")
-        
-        # Verifies if the termination is equal to that of the file
+                raise IndexError("The 'termination'="+str(termination)+
+                " has more characters than the 'file_path' itself. Thu"+
+                "s, the file existence cannot be asserted")
+            
+            # Verifies if the termination is equal to that of the file
 
-        if file_path[-len(termination):len(file_path)]!=termination:
+            if file_path[-len(termination):len(file_path)]!=termination:
 
-            raise NameError("The termination="+str(termination)+" is n"+
-            "ot the same as the 'file_path':\n"+str(file_path)+"\n\nTh"+
-            "us, the file existence cannot be asserted")
+                raise NameError("The termination="+str(termination)+" "+
+                "is not the same as the 'file_path':\n"+str(file_path)+
+                "\n\nThus, the file existence cannot be asserted")
+
+        # Otherwise, just plainly adds the termination
+
+        else: 
+
+            # Verifies if the termination does not have a dot, then adds
+            # it
+
+            if not ("." in termination):
+
+                termination = "."+termination
+
+            # Adds the termination to the file path
+
+            file_path = file_path+termination
 
     if not os.path.exists(file_path):
 
