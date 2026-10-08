@@ -23,14 +23,18 @@ from ...GraphUtilities.paraview_tools import frozen_snapshots
 class FEMSurrogateEvaluator:
 
     def __init__(self, input_data_file_name, output_true_data_file_name, 
-    indices_of_training_samples, saved_model_file_name, field_name,
+    indices_of_dataset_samples, saved_model_file_name, field_name,
     maximum_number_of_models_to_be_evaluated=None, parent_path=None, 
     subdofs_to_learn=None, loss_metric="MeanAbsoluteError", verbose=
-    False, number_of_best_samples=None):
+    False, number_of_best_samples=None, take_snapshots=False, 
+    number_of_samples_to_be_snapshot=1, mesh_file_name=None, 
+    field_component_to_plot=None, screenshots_path=None, 
+    representation_type="Surface With Edges", warp_by_vector=False,
+    set_camera_interactively=False, color_bar_min_value=None, 
+    color_bar_max_value=None, field_type=None, polynomial_degree=None,
+    interpolation_function=None):
 
         self.verbose = verbose
-
-        self.field_name = field_name
 
         # Checks whether the file paths exist and returns the file paths
         # updated with the parent path. Additionally, the given files 
@@ -69,11 +73,11 @@ class FEMSurrogateEvaluator:
             self.output_true_data.shape[0])+" rows. They must have the"+
             " same number of samples")
 
-        # Verifies and saves the indices of the training samples into 
+        # Verifies and saves the indices of the dataset samples into 
         # the class
 
-        self.indices_of_training_samples = self.check_sample_indices(
-        indices_of_training_samples, indices_name="indices_of_training"+
+        self.indices_of_dataset_samples = self.check_sample_indices(
+        indices_of_dataset_samples, indices_name="indices_of_dataset"+
         "_samples")
 
         # Verifies and saves the subdofs to be learned in the class
@@ -95,15 +99,9 @@ class FEMSurrogateEvaluator:
 
         if maximum_number_of_models_to_be_evaluated is not None:
 
-            # Verifies if this number is an integer
-
-            if not isinstance(maximum_number_of_models_to_be_evaluated,
-            int):
-
-                raise TypeError("'maximum_number_of_models_to_be_evalu"+
-                "ated' in 'FEMSurrogateEvaluator' is not None, instead"+
-                " it is: "+str(maximum_number_of_models_to_be_evaluated
-                )+". It must be an integer")
+            verify_type(maximum_number_of_models_to_be_evaluated, "max"+
+            "imum_number_of_models_to_be_evaluated", int, "'FEMSurroga"+
+            "teEvaluator' is not None, thus it")
 
             # Checks if the maximum model number is available with the
             # template of model file
@@ -135,39 +133,165 @@ class FEMSurrogateEvaluator:
         # Verifies if the numebr of best samples to which each model 
         # will be assessed is an integer or if it was no provided
 
-        if number_of_best_samples is not None:
+        self.number_of_best_samples = verify_type(number_of_best_samples, 
+        "number_of_best_samples", int, "'FEMSurrogateEvaluator'", 
+        default_in_case_of_none=1)
 
-            if not isinstance(number_of_best_samples, int):
+        # If a mesh file has been given
 
-                raise TypeError("'number_of_best_samples' in 'FEMSurro"+
-                "gateEvaluator' must be an integer. Currently, it is "+
-                str(number_of_best_samples)+", and its type is "+str(
-                type(number_of_best_samples)))
+        if mesh_file_name is not None:
 
-        # If it is indeed None, makes it 1
+            mesh_file_name = join_path_and_verify_existence(
+            mesh_file_name, parent_path=parent_path, 
+            path_bits_to_be_excluded=3, required_termination="msh")
 
-        else:
+        self.mesh_file_name = mesh_file_name
 
-            number_of_best_samples = 1
+        # Saves the flag to take snapshots or not and the number of sam-
+        # ples to be shot
 
-        self.number_of_best_samples = number_of_best_samples
+        self.take_snapshots = take_snapshots
+
+        self.number_of_samples_to_be_snapshot = verify_type(
+        number_of_samples_to_be_snapshot, "number_of_samples_to_be_sna"+
+        "pshot", int, "'FEMSurrogateEvaluator'")
+
+        # Saves functional data information. But, if snapshots are re-
+        # quired, the functional data must be given
+
+        if self.take_snapshots:
+
+            field_type = verify_type(field_type, "field_type", str, "'"+
+            "FEMSurrogateEvaluator'", description="a string with the t"+
+            "ype of the field, such as 'scalar', 'vector', and 'tensor"+
+            "'")
+
+            polynomial_degree = verify_type(polynomial_degree, "polyno"+
+            "mial_degree", int, "'FEMSurrogateEvaluator'", description=
+            "an integer with the order of the polynomial that interpol"+
+            "ates the field in a finite-element space. Such as 1 and 2")
+
+            interpolation_function = verify_type(interpolation_function, 
+            "interpolation_function", str, "'FEMSurrogateEvaluator'", 
+            description="a string with the type of the interpolation f"+
+            "unction, such as 'CG' and 'DG'")
+
+            mesh_file_name = verify_type(mesh_file_name, "mesh_file_na"+
+            "me", str, "'FEMSurrogateEvaluator'", description="a strin"+
+            "g with the path to the mesh where the field will be inter"+
+            "polated upon")
+
+        self.field_name = field_name
+
+        self.field_type = field_type
+        
+        self.polynomial_degree = polynomial_degree
+
+        self.interpolation_function = interpolation_function
+
+        # Verifies if there are a larger number of best samples than the
+        # number of samples in the list of indices of samples of the da-
+        # taset. Then, checks if the number of best samples to be shot
+        # in ParaView is larger than the number of best samples that 
+        # were actually recorded
+
+        self.check_numbers_of_best_samples(
+        self.indices_of_dataset_samples)
+
+        # Checks if the number of samples to be shot is less than the
+        # number of best samples
+
+        # Stores the component to plot in the screenshot 
+
+        self.field_component_to_plot = field_component_to_plot
+
+        # If no path to save the screenshots was given, reuses the pa-
+        # rent path
+
+        if screenshots_path is None:
+
+            screenshots_path = str(self.parent_path)
+
+        self.screenshots_path = screenshots_path
+
+        # Checks if the given representation type is a string and stores
+        # it
+
+        self.representation_type = verify_type(representation_type, "r"+
+        "epresentation_type", str, "'FEMSurrogateEvaluator'")
+
+        # Checks if the warp by vector flag is boolean and stores it
+
+        self.warp_by_vector = verify_type(warp_by_vector, "warp_by_vec"+
+        "tor", bool, "'FEMSurrogateEvaluator'")
+
+        # Checks if the flag for setting the snapshot camera iteratively
+        # has been set 
+
+        self.set_camera_interactively = verify_type(
+        set_camera_interactively, "set_camera_interactively", bool, "'"+
+        "FEMSurrogateEvaluator'")
+
+        # Checks if the color bounds of the legend of the snapshot were
+        # given (not None) and if they are float values
+
+        self.color_bar_min_value = verify_type(color_bar_min_value, "c"+
+        "olor_bar_min_value", float, "'FEMSurrogateEvaluator", 
+        ignore_none_value=True)
+
+        self.color_bar_max_value = verify_type(color_bar_max_value, "c"+
+        "olor_bar_max_value", float, "'FEMSurrogateEvaluator",
+        ignore_none_value=True)
 
     ####################################################################
     #                   Evaluation of common datasets                  #
     ####################################################################
 
     # Defines a function to get the whole dataset, take the samples used
-    # for training, and, then, evaluate the model there
+    # for this dataset, and, then, evaluate the model there
 
-    def evaluate_model_on_training_set(self):
+    def evaluate_model_on_dataset(self, indices_of_dataset_samples=None, 
+    dataset_name="training"):
 
-        # Gets the training data set
+        # Initializes the dataset values
 
-        training_input_set = self.input_data[
-        self.indices_of_training_samples,:]
+        dataset_input_matrix = None 
 
-        training_true_output_set = self.output_true_data[
-        self.indices_of_training_samples,:]
+        dataset_true_output_matrix = None
+
+        # Checks if indices of dataset samples were provided
+
+        if indices_of_dataset_samples is not None:
+
+            # Checks the indices of samples against the available whole
+            # dataset
+
+            checked_indices_of_dataset_samples = self.check_sample_indices(
+            indices_of_dataset_samples, indices_name="indices_of_datas"+
+            "et_samples")
+
+            # Checks if they are compatible with the numbers of best 
+            # samples asked during the instantiation of the class
+
+            self.check_numbers_of_best_samples(
+            checked_indices_of_dataset_samples)
+
+            dataset_input_matrix = self.input_data[
+            checked_indices_of_dataset_samples,:]
+
+            dataset_true_output_matrix = self.output_true_data[
+            checked_indices_of_dataset_samples,:]
+
+        # Otherwise, uses the indices that were stored and tested during
+        # instantiation of this class
+
+        else:
+
+            dataset_input_matrix = self.input_data[
+            self.indices_of_dataset_samples,:]
+
+            dataset_true_output_matrix = self.output_true_data[
+            self.indices_of_dataset_samples,:]
 
         # Checks whether a single model was trained 
 
@@ -177,8 +301,8 @@ class FEMSurrogateEvaluator:
             # model
 
             self.evaluate_single_model(self.saved_model_file_name, 
-            training_input_set, training_true_output_set, "training", 
-            self.field_name)
+            dataset_input_matrix, dataset_true_output_matrix, 
+            dataset_name, self.field_name)
 
         # Otherwise, iterates over the different models that were trained
         # in a Monte Carlo-like procedure
@@ -195,8 +319,8 @@ class FEMSurrogateEvaluator:
                 # model
 
                 self.evaluate_single_model(model_file_name, 
-                training_input_set, training_true_output_set, "trainin"+
-                "g", self.field_name)
+                dataset_input_matrix, dataset_true_output_matrix, 
+                dataset_name, self.field_name)
 
     ####################################################################
     #                        Evaluation methods                        #
@@ -218,6 +342,11 @@ class FEMSurrogateEvaluator:
 
         model_file_name_without_termination = take_outFileNameTermination(
         model_file_name)
+
+        if self.verbose:
+
+            print("\nEvaluates the model saved at '"+self.parent_path+
+            "//"+model_file_name_without_termination+".keras'")
 
         # Checks if the number of samples is the same in the input and 
         # output data
@@ -247,6 +376,33 @@ class FEMSurrogateEvaluator:
 
         model_output = loaded_model(model_input_data)
 
+        # Checks the shape consistency between model's and true outputs
+
+        if true_output_of_subdofs.shape[0]!=tf.shape(model_output
+        ).numpy()[0]:
+
+            raise IndexError("The shape of the true output given the s"+
+            "ubdofs to learn is "+str(true_output_of_subdofs.shape)+
+            "\nwhereas the shape of the model's output is "+str(
+            tf.shape(model_output).numpy())+"\n\nThey must have the sa"+
+            "me shape. Check the number samples in the true output: "+
+            str(true_output_of_subdofs.shape[0])+"\nand the number of "+
+            "samples in the model's output: "+str(tf.shape(model_output
+            )[0]))
+
+        if true_output_of_subdofs.shape[1]!=tf.shape(model_output
+        ).numpy()[1]:
+
+            raise IndexError("The shape of the true output given the s"+
+            "ubdofs to learn is "+str(true_output_of_subdofs.shape)+
+            "\nwhereas the shape of the model's output is "+str(
+            tf.shape(model_output).numpy())+"\n\nThey must have the sa"+
+            "me shape. Check the number of DOFs in the true output: "+
+            str(true_output_of_subdofs.shape[1])+"\nand the number of "+
+            "DOFs in the model's output: "+str(tf.shape(model_output
+            ).numpy()[1])+"\nThe provided 'subdofs_to_learn' is:\n"+str(
+            self.subdofs_to_learn))
+
         # Gets the loss of the model
 
         dataset_loss = self.loss_metric(true_output_of_subdofs, 
@@ -254,7 +410,7 @@ class FEMSurrogateEvaluator:
 
         # Verifies the maximum absolute error
 
-        maximum_absolute_error = self.maximum_absolute_error_class(
+        maximum_absolute_value = self.maximum_absolute_error_class(
         true_output_of_subdofs, model_output)
 
         if self.verbose:
@@ -262,9 +418,9 @@ class FEMSurrogateEvaluator:
             print("\nLoss function on "+str(dataset_name)+":", format(
             dataset_loss.numpy(), '.5e')+"\n\nMaximum absolute error o"+
             "n "+str(dataset_name)+": "+str(format(
-            maximum_absolute_error.numpy(),'.5e'))+"\nwhereas the mini"+
+            maximum_absolute_value.numpy(),'.5e'))+"\nwhereas the mini"+
             "mum absolute error is "+str(format(
-            maximum_absolute_error.minimum_absolute_error(
+            self.maximum_absolute_error_class.minimum_absolute_error(
             true_output_of_subdofs, model_output).numpy(), '.5e')))
 
         # Gets the mean absolute error for each row
@@ -283,12 +439,12 @@ class FEMSurrogateEvaluator:
 
             loss_per_sample_string = ""
 
-            for loss_value in loss_per_sample:
+            for loss_value in loss_per_sample[best_samples_indices]:
 
-                loss_per_sample += "\n"+str(loss_value)
+                loss_per_sample_string += "\n"+str(loss_value)
 
             print("\nThe "+str(self.number_of_best_samples)+" best sam"+
-            "ples have the following mean absolute error:\n"+
+            "ples have the following mean absolute error:"+
             loss_per_sample_string)
 
         # Recovers the name of the file that contains the DOFs of the 
@@ -329,7 +485,8 @@ class FEMSurrogateEvaluator:
 
         # Flattens model_output to match indices
 
-        updates = tf.reshape(model_output, [-1])
+        updates = tf.cast(tf.reshape(model_output, [-1]), dtype=
+        model_field.dtype)
 
         # Performs scatter update to get the initially null tensor into
         # a tensor with the model output for each sample
@@ -346,91 +503,156 @@ class FEMSurrogateEvaluator:
         np.save(field_output_file, model_field.numpy()[
         best_samples_indices,:])
 
+        # Verifies if snapshots are to be taken
+
+        if self.take_snapshots:
+
+            # Iterates over the number of samples that will be snapshot
+
+            for sample_index in range(
+            self.number_of_samples_to_be_snapshot):
+
+                # Calls the function that creates the snapshot for this
+                # sample
+
+                self.get_single_snapshot_for_single_model(
+                field_output_file, true_field_output_file, sample_index)
+
+    ####################################################################
+    #             Snapshooting of the solution in ParaView             #
+    ####################################################################
+
     # Defines a function to create snapshots of the visualization of the
     # results of the models in paraview
 
-    def get_snapshots_for_single_model(self, field_output_file, 
-    true_field_output_file, field_name, field_type, ):
+    def get_single_snapshot_for_single_model(self, field_output_file, 
+    true_field_output_file, sample_index):
 
-        # Checks if field name is a string
+        # Removes the termination of the file names just in case
 
-        verify_type(field_name, "field_name", str, "'get_snapshots_for"+
-        "_single_model' at 'FEMSurrogateEvaluator'")
+        field_output_file = take_outFileNameTermination(
+        field_output_file)
+
+        true_field_output_file = take_outFileNameTermination(
+        true_field_output_file)
+
+        # Checks if all functional data are strings
+
+        verify_type(self.field_name, "'field_name'", str, "'get_snapsh"+
+        "ots_for_single_model' at 'FEMSurrogateEvaluator'", description=
+        "name of the field that must be provided to build a class of F"+
+        "EniCS functional data")
+
+        verify_type(self.field_type, "'field_type'", str, "'get_snapsh"+
+        "ots_for_single_model' at 'FEMSurrogateEvaluator'", description=
+        "type of the field that must be provided to build a class of F"+
+        "EniCS functional data. Examples: 'scalar', 'vector', 'tensor'")
+
+        verify_type(self.interpolation_function, "'interpolation_funct"+
+        "ion'", str, "'get_snapshots_for_single_model' at 'FEMSurrogat"+
+        "eEvaluator'", description="interpolation function of the fiel"+
+        "d that must be provided to build a class of FEniCS functional"+
+        " data. Examples: 'CG', 'DG'")
+
+        verify_type(self.polynomial_degree, "'polynomial_degree'", int, 
+        "'get_snapshots_for_single_model' at 'FEMSurrogateEvaluator'",
+        description="polynomial degree of the interpolation function o"+
+        "f the field that must be provided to build a class of FEniCS "+
+        "functional data. Example: 1, 2")
+
+        # Checks whether the mesh file name is None
+
+        if self.mesh_file_name is None:
+
+            raise ValueError("'mesh_file_name' in 'get_single_snapshot"+
+            "_for_single_model' at 'FEMSurrogateEvaluator' is None. A "+
+            "valid .msh mesh must be provided to make snapshots in Par"+
+            "aView")
 
         # Reads the binary file directly and converts it to a FEniCS
         # function space data class. Selects the flag 'data_matrix_has_
         # time_point_per_row' as False, since the first column of the 
         # data matrix is composed of actual displacement DOFs, not time 
         # points.
-        # On the other hand, the argument 'time_step' is set to 0 to
-        # capture the first row of the data matrix, which corresponds to 
-        # the best sample of the surrogate model. Thus, this variable 
-        # has no meaning of time in the context of the particular appli-
-        # cation of this code
+        # On the other hand, the argument 'time_step' is set to the in-
+        # dex of the sample to capture the corresponding row of the data 
+        # matrix, which corresponds to the i-th best sample of the sur-
+        # rogate model. Thus, this variable has no meaning of time in 
+        # the context of the particular application of this code
 
         _, _, xdmf_field_file = read_field_from_binary(
-        field_output_file, self.mesh_file_name, {field_name: {"field type": "vector", "interpolation function": 
-        "CG", "polynomial degree": 2}}, 
-        data_matrix_has_time_point_per_row=False, time_step=0, 
-        return_visualization_file_name=True, save_to_xdmf=True)
+        field_output_file+".npy", self.mesh_file_name, {self.field_name: 
+        {"field type": self.field_type, "interpolation function": 
+        self.interpolation_function, "polynomial degree": 
+        self.polynomial_degree}}, data_matrix_has_time_point_per_row=
+        False, time_step=sample_index, return_visualization_file_name=
+        True, save_to_xdmf=True)
 
-        # Makes a visualization copy for the true displacement as 
-        # well
+        # Makes a visualization copy for the true field as well
 
         _, _, xdmf_true_field_file = read_field_from_binary(
-        true_field_output_file, self.mesh_file_name, {"Disp"+
-        "lacement": {"field type": "vector", "interpolation functi"+
-        "on": "CG", "polynomial degree": 2}}, 
-        data_matrix_has_time_point_per_row=False, time_step=0, 
-        return_visualization_file_name=True, save_to_xdmf=True)
+        true_field_output_file+".npy", self.mesh_file_name, {
+        self.field_name: {"field type": self.field_type, "interpolatio"+
+        "n function": self.interpolation_function, "polynomial degree": 
+        self.polynomial_degree}}, data_matrix_has_time_point_per_row=
+        False, time_step=sample_index, return_visualization_file_name=
+        True, save_to_xdmf=True)
 
-        # Sets the name of the screenshot file
+        # Sets the name of the screenshot file with the sample index in
+        # it
 
-        screenshot_file = ("surrogate_best_training_sample_of_"+str(
-        i+1)+"_"+self.saved_model_file+".png")
+        screenshot_file = ("screenshot_of_"+field_output_file+"_sample_"
+        +str(sample_index+1)+".png")
 
-        # Sets the name of the screenshot file for the true displa-
-        # cement
+        # Sets the name of the screenshot file for the true field DOFs
 
-        screenshot_true_file = ("true_best_training_sample_of_"+str(
-        i+1)+"_best_model.png")
+        screenshot_true_file = ("screenshot_of_"+true_field_output_file+
+        "_sample_"+str(sample_index+1)+".png")
+
+        # If the warp by vector functionality is unavailable, makes the
+        # snapshot display the reference configuration. Otherwise, no-
+        # thing will be shown
+
+        display_reference_configuration = False
+
+        if not self.warp_by_vector:
+
+            display_reference_configuration = True
 
         # Takes a snapshot of a simulation saved in the xdmf file 
-        # whose field is called as 'Displacement' inside FEniCS. The 
-        # edges of the finite elements will be shown
+        # whose field is called by the given field name inside FEniCS. 
+        # The edges of the finite elements will be shown
         
-        frozen_snapshots(xdmf_field_file, "Displace"+
-        "ment", time=0.0, representation_type="Surface With Edges", 
-        axes_color="black", legend_bar_font="latex", zoom_factor=1.0, 
-        component_to_plot=self.displacement_component_to_plot,
-        warp_by_vector=False, resolution_ratio=10, background_color=
-        "WhiteBackground", display_reference_configuration=True, 
-        transparent_background=True, legend_bar_font_color="black", 
-        set_camera_interactively=False, 
-        #color_bar_min_value=0.1, color_bar_max_value=0.6,
-        output_imageFileName=screenshot_file, output_path=
-        self.screenshots_path, read_camera_settings_dictionary=True, 
-        legend_bar_visibility=True)
+        frozen_snapshots(xdmf_field_file, self.field_name, time=0.0, 
+        representation_type=self.representation_type, axes_color="blac"+
+        "k", legend_bar_font="latex", zoom_factor=1.0, 
+        component_to_plot=self.field_component_to_plot, warp_by_vector=
+        self.warp_by_vector, resolution_ratio=10, background_color=
+        "WhiteBackground", display_reference_configuration=
+        display_reference_configuration, transparent_background=True, 
+        legend_bar_font_color="black", set_camera_interactively=
+        self.set_camera_interactively, color_bar_min_value=
+        self.color_bar_min_value, color_bar_max_value=
+        self.color_bar_max_value, output_imageFileName=screenshot_file, 
+        output_path=self.screenshots_path, 
+        read_camera_settings_dictionary=True, legend_bar_visibility=True)
 
-        # Makes the same screenshot for the true values of displace-
-        # ment
+        # Makes the same screenshot for the true values of the field in-
+        # terpolation in a finite-element space
         
-        frozen_snapshots(xdmf_true_field_file, "Dis"+
-        "placement", time=0.0, representation_type="Surface With E"+
-        "dges", axes_color="black", legend_bar_font="latex", 
-        zoom_factor=1.0, component_to_plot=
-        self.displacement_component_to_plot, warp_by_vector=False, 
+        frozen_snapshots(xdmf_true_field_file, self.field_name, time=0.0, 
+        representation_type=self.representation_type, axes_color="black", 
+        legend_bar_font="latex", zoom_factor=1.0, component_to_plot=
+        self.field_component_to_plot, warp_by_vector=self.warp_by_vector, 
         resolution_ratio=10, background_color="WhiteBackground", 
-        display_reference_configuration=True, 
+        display_reference_configuration=display_reference_configuration, 
         transparent_background=True, legend_bar_font_color="black", 
-        set_camera_interactively=False, 
-        #color_bar_min_value=0.1, color_bar_max_value=0.6,
+        set_camera_interactively=self.set_camera_interactively, 
+        color_bar_min_value=self.color_bar_min_value, 
+        color_bar_max_value=self.color_bar_max_value,
         output_imageFileName=screenshot_true_file, output_path=
         self.screenshots_path, read_camera_settings_dictionary=True, 
         legend_bar_visibility=True)
-
-        print("\nThe input data for the "+str(i+1)+"-th model is: "+
-        str(training_data[best_samples_indices[0],:])+"\n")
 
     # Defines a function to compute the mean absolute error per sample
 
@@ -451,10 +673,10 @@ class FEMSurrogateEvaluator:
     # luated are consistent
 
     def check_sample_indices(self, samples_indices, indices_name="indi"+
-    "ces_of_training_samples"):
+    "ces_of_dataset_samples"):
 
-        # If the indices of training samples is an integer, the range is
-        # from the first sample to the given number of training samples,
+        # If the indices of dataset samples is an integer, the range is
+        # from the first sample to the given number of dataset samples,
         # as per convention
 
         if isinstance(samples_indices, int):
@@ -467,10 +689,10 @@ class FEMSurrogateEvaluator:
 
             raise TypeError("'"+str(indices_name)+"' in 'FEMSurrogateE"+
             "valuator' must be an integer or a numpy array. If it is a"+
-            "n integer, the training samples will be considered the ro"+
-            "ws of the input data from the first to the row of idex gi"+
-            "ven by the integer-1.\nCurrently, '"+str(indices_name)+"'"+
-            " is:\n"+str(samples_indices))
+            "n integer, the dataset samples will be considered the row"+
+            "s of the input data from the first to the row of idex giv"+
+            "en by the integer-1.\nCurrently, '"+str(indices_name)+"' "+
+            "is:\n"+str(samples_indices))
 
         elif len(samples_indices.shape)!=1:
 
@@ -496,6 +718,10 @@ class FEMSurrogateEvaluator:
 
     def check_subdofs_to_learn(self, subdofs_to_learn):
 
+        # Initializes the retrieved subdofs_to_learn
+
+        retrieved_subdofs_to_learn = None
+
         # If subdofs to be learned are None, all DOFs must be learned by
         # the surrogate model
 
@@ -504,13 +730,26 @@ class FEMSurrogateEvaluator:
             # Gets a range to the number of columns of the output data,
             # since each column corresponds to a DOF of the FEM data
 
-            subdofs_to_learn = np.arange(0, self.output_true_data.shape[
-            1])
+            retrieved_subdofs_to_learn = np.arange(0, 
+            self.output_true_data.shape[1])
+
+        # Checks if subdofs has an attribute .numpy, such as tensorflow
+        # tensor
+
+        elif hasattr(subdofs_to_learn, "numpy"):
+
+            # Converts it to numpy array
+
+            retrieved_subdofs_to_learn = subdofs_to_learn.numpy()
+
+        else:
+
+            retrieved_subdofs_to_learn = subdofs_to_learn
 
         # Checks if subdofs to be learned by the surrogate model is a 
         # numpy array
 
-        elif not isinstance(subdofs_to_learn, np.ndarray):
+        if not isinstance(retrieved_subdofs_to_learn, np.ndarray):
 
             raise TypeError("'subdofs_to_learn' in 'FEMSurrogateEvalua"+
             "tor' must be a numpy array with the indices of the DOFs t"+
@@ -520,21 +759,56 @@ class FEMSurrogateEvaluator:
 
         # Checks if subdofs to be learned is a flat array
 
-        elif len(subdofs_to_learn.shape)!=1:
+        elif len(retrieved_subdofs_to_learn.shape)!=1:
         
             raise IndexError("'subdofs_to_learn' in 'FEMSurrogateEvalu"+
-            "ator' is an array of shape "+str(subdofs_to_learn.shape)+
-            ". The shape must be (n_dofs) instead")
+            "ator' is an array of shape "+str(
+            retrieved_subdofs_to_learn.shape)+". The shape must be (n_"+
+            "dofs) instead")
 
         # Checks if subdofs is limited to the number of DOFs available
         # in the output data
 
-        elif subdofs_to_learn.max()>=self.output_true_data.shape[1]:
+        elif retrieved_subdofs_to_learn.max()>=(
+        self.output_true_data.shape[1]):
         
             raise IndexError("The maximum index in 'subdofs_to_learn' "+
-            "in 'FEMSurrogateEvaluator' is "+str(subdofs_to_learn.max()
-            )+" which is larger or equal to the number of columns in t"+
-            "he output true data, which is "+str(
-            self.output_true_data.shape[1]))
+            "in 'FEMSurrogateEvaluator' is "+str(
+            retrieved_subdofs_to_learn.max())+" which is larger or equ"+
+            "al to the number of columns in the output true data, whic"+
+            "h is "+str(self.output_true_data.shape[1]))
 
-        return subdofs_to_learn
+        return retrieved_subdofs_to_learn
+
+    # Defines a function to check if the numbers of best samples are
+    # consistent
+
+    def check_numbers_of_best_samples(self, indices_of_dataset_samples):
+
+        # Verifies if there are a larger number of best samples than the
+        # number of samples in the list of indices of samples of the da-
+        # taset
+
+        if self.number_of_best_samples>(
+        indices_of_dataset_samples.shape[0]):
+
+            raise IndexError("'number_of_best_samples', "+str(
+            self.number_of_best_samples)+", is larger than the number "+
+            "of samples provided by 'indices_of_dataset_samples', "+str(
+            indices_of_dataset_samples.shape[0])+", at 'FEMSurrogateEv"+
+            "aluator'. This is not allowed, for the best samples are t"+
+            "aken from this dataset")
+
+        # Checks if the number of best samples to be shot in ParaView is
+        # larger than the number of best samples that were actually re-
+        # corded
+
+        if self.number_of_samples_to_be_snapshot>(
+        self.number_of_best_samples):
+
+            raise IndexError("'number_of_samples_to_be_snapshot', "+str(
+            self.number_of_samples_to_be_snapshot)+", is larger than t"+
+            "he number of best samples provided by 'number_of_best_sam"+
+            "ples', "+str(self.number_of_best_samples)+", at 'FEMSurro"+
+            "gateEvaluator'. This is not allowed, for the samples to b"+
+            "e snapshot are taken from the best-performing samples")

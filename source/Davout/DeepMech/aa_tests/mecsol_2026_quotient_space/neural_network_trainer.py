@@ -330,13 +330,21 @@ class SurrogateModel:
 
         # Initializes the class for performance testing
 
-        surrogate_evaluation_class = FEMSurrogateEvaluator(
+        """surrogate_evaluation_class = FEMSurrogateEvaluator(
         self.input_data_file, self.displacement_data_file, 
         self.number_of_samples, self.saved_model_file, "Displacement",
-        parent_path=self.results_path, 
-        maximum_number_of_models_to_be_evaluated=last_model)
+        parent_path=self.results_path, verbose=True,
+        maximum_number_of_models_to_be_evaluated=last_model,
+        subdofs_to_learn=self.subdofs_to_learn, take_snapshots=True,
+        field_type="vector", polynomial_degree=2, 
+        interpolation_function="CG", mesh_file_name=self.mesh_file_name)
 
-        float(a)
+        # Tests on the training dataset that has been set during instan-
+        # tiation of the class
+
+        surrogate_evaluation_class.evaluate_model_on_dataset()"""
+
+        #float(a)
 
         # Iterates through the best models
 

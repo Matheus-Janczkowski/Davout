@@ -45,23 +45,21 @@ return_parent_path=False):
         parent_path = get_parent_path_of_file(
         path_bits_to_be_excluded=path_bits_to_be_excluded)
 
-    # If the parent path was given or retrieved, joins it to the o-
-    # ther paths
-
-    if parent_path:
-
-        # Iterates over the list of files to add the parent path
-
-        for i in range(len(files_list)):
-
-            files_list[i] = parent_path+"//"+files_list[i]
-
     # Iterates over the list of files to check their existence
 
     for i, file_name in enumerate(files_list):
 
-        verify_file_existence(file_name, termination=
-        required_termination)
+        # Updates the files as well as check their existence
+
+        files_list[i] = verify_file_existence(file_name, termination=
+        required_termination, parent_path=parent_path, return_file_path=
+        True)
+
+    # If the files list has length 1, retrieves only the file name
+
+    if len(files_list)==1:
+
+        files_list = files_list[0]
 
     # If the parent path is to be returned
 
@@ -113,7 +111,7 @@ def get_list_of_directories(whole_path):
 # Defines a function to verify if a file exists
 
 def verify_file_existence(file_path, saving_function=None, termination=
-None, do_not_raise_error=False):
+None, do_not_raise_error=False, parent_path=None, return_file_path=False):
 
     # Verifies is the file path is a string
 
@@ -171,14 +169,43 @@ None, do_not_raise_error=False):
 
     if not os.path.exists(file_path):
 
+        # Verifies if a parent path was given
+
+        second_attempt = None
+
+        if parent_path is not None:
+
+            # Creates a second attempt by joining the parent path to the
+            # file name
+
+            second_attempt = parent_path+"//"+file_path
+
+            # Verifies the second attempt existence
+
+            if os.path.exists(second_attempt):
+
+                if return_file_path:
+
+                    return second_attempt
+
+                return True 
+
         # If a saving function has been provided uses it to save it
 
         if saving_function is None:
 
             if not do_not_raise_error:
 
-                raise FileNotFoundError("The file at '"+str(file_path)+
-                "' was not found")
+                if second_attempt is None:
+
+                    raise FileNotFoundError("The file at '"+str(
+                    file_path)+"' was not found")
+
+                else:
+
+                    raise FileNotFoundError("The file at '"+str(
+                    file_path)+"' was not found. Nor was it found at '"+
+                    str(second_attempt)+"'")
         
         else:
 
@@ -196,6 +223,10 @@ None, do_not_raise_error=False):
                     "exception:\n"+str(error_message))
                 
         return False
+
+    if return_file_path:
+
+        return file_path
             
     return True
 
