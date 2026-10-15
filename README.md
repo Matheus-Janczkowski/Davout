@@ -48,8 +48,9 @@ such as FEniCS, TensorFlow, GMSH, ParaView, and matplotlib.
 # Installation using pip
 pip install Davout
 
-Or for a special dev version (123 for example). Check the pyproject.toml file to consult the
-latest version at the line 'version = "0.1.1.dev123"':
+Or for a special dev version (123 for example). Check the pyproject.toml 
+file (see https://github.com/Matheus-Janczkowski/Davout/blob/main/pyproject.toml
+at line 66) to consult the latest version at the line 'version = "0.1.1.dev123"':
 
 pip install Davout==0.1.1.dev123
 
