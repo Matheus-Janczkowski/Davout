@@ -32,7 +32,9 @@ class FEMSurrogateEvaluator:
     representation_type="Surface With Edges", warp_by_vector=False,
     set_camera_interactively=False, color_bar_min_value=None, 
     color_bar_max_value=None, field_type=None, polynomial_degree=None,
-    interpolation_function=None):
+    interpolation_function=None, testing_tensor=None):
+
+        self.test_tensor = testing_tensor
 
         self.verbose = verbose
 
@@ -292,7 +294,7 @@ class FEMSurrogateEvaluator:
 
             dataset_true_output_matrix = self.output_true_data[
             self.indices_of_dataset_samples,:]
-
+            
         # Checks whether a single model was trained 
 
         if self.maximum_number_of_models_to_be_evaluated is None:

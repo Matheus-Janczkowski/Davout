@@ -13,7 +13,7 @@ from .....Davout.DeepMech.tool_box.FEM_surrogate_testing_tools import FEMSurroga
 
 from .....Davout.DeepMech.tool_box.loss_assembler_classes import MaximumAbsoluteError
 
-from .....Davout.PythonicUtilities.path_tools import get_parent_path_of_file
+from .....Davout.PythonicUtilities.path_tools import get_parent_path_of_file, take_outFileNameTermination
 
 from .....Davout.MultiMech.tool_box.binary_tools import read_field_from_binary
 
@@ -130,6 +130,14 @@ class SurrogateModel:
 
         self.input_data = np.hstack((self.kinematic_input_data, 
         self.material_input_data))
+
+        # Saves the corrected input data
+
+        self.corrected_data_file = take_outFileNameTermination(
+        self.input_data_file)+"_corrected.npy"
+
+        np.save(self.results_path+"//"+self.corrected_data_file, 
+        self.input_data)
 
     # Defines a function to train the neural network model
 
@@ -330,21 +338,23 @@ class SurrogateModel:
 
         # Initializes the class for performance testing
 
-        """surrogate_evaluation_class = FEMSurrogateEvaluator(
-        self.input_data_file, self.displacement_data_file, 
-        self.number_of_samples, self.saved_model_file, "Displacement",
+        #"""
+        surrogate_evaluation_class = FEMSurrogateEvaluator(
+        self.corrected_data_file, self.displacement_data_file, 
+        self.n_training_samples, self.saved_model_file, "Displacement",
         parent_path=self.results_path, verbose=True,
         maximum_number_of_models_to_be_evaluated=last_model,
         subdofs_to_learn=self.subdofs_to_learn, take_snapshots=True,
         field_type="vector", polynomial_degree=2, 
-        interpolation_function="CG", mesh_file_name=self.mesh_file_name)
+        interpolation_function="CG", mesh_file_name=self.mesh_file_name,
+        testing_tensor=self.input_data)
 
         # Tests on the training dataset that has been set during instan-
         # tiation of the class
 
-        surrogate_evaluation_class.evaluate_model_on_dataset()"""
+        surrogate_evaluation_class.evaluate_model_on_dataset()
 
-        #float(a)
+        #float(a)#"""
 
         # Iterates through the best models
 
@@ -363,7 +373,7 @@ class SurrogateModel:
 
             test_loss = loss_metric(training_true_values, output_model)
 
-            print("Loads the "+str(i+1)+"-th best model")
+            print("\n\n\n\nLoads the "+str(i+1)+"-th best model")
 
             print("Loss function on training set:", format(
             test_loss.numpy(), '.5e'))
