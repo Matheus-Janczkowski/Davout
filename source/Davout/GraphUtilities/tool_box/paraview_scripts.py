@@ -1030,6 +1030,16 @@ None, list_of_markers=None):
         "s_dictionary.txt", parent_path=output_path, 
         txt_has_list_of_keys_and_values=False)
 
+        """settings_string = ""
+
+        for setting_name, setting_value in settings_dict.items():
+
+            settings_string += "\n'"+str(setting_name)+"': "+str(
+            setting_value)
+
+        print("The dictionary of camera settings is:"+settings_string+
+        "\n")"""
+
         # Gets the individual components, but make them strings to let
         # them compatible with the next steps
 

@@ -5,7 +5,7 @@ import tensorflow as tf
 
 import numpy as np
 
-from ...PythonicUtilities.path_tools import join_path_and_verify_existence, take_outFileNameTermination
+from ...PythonicUtilities.path_tools import join_path_and_verify_existence, take_outFileNameTermination, get_list_of_directories
 
 from ...PythonicUtilities.error_and_type_tools import verify_type
 
@@ -13,7 +13,9 @@ from ...DeepMech.tool_box.training_tools import verify_loss_metric
 
 from ...DeepMech.tool_box.loss_assembler_classes import MaximumAbsoluteError
 
-from ...MultiMech.tool_box.binary_tools import read_field_from_binary
+from ...MultiMech.tool_box.binary_tools import read_field_from_binary, get_functional_data_class
+
+from ...MultiMech.tool_box.mesh_handling_tools import read_mshMesh, dofs_per_node_finder_class
 
 from ...GraphUtilities.paraview_tools import frozen_snapshots
 
@@ -148,6 +150,10 @@ class FEMSurrogateEvaluator:
             path_bits_to_be_excluded=3, required_termination="msh")
 
         self.mesh_file_name = mesh_file_name
+
+        # Reads the mesh and ensembles the mesh data class
+
+        self.mesh_data_class = read_mshMesh(self.mesh_file_name)
 
         # Saves the flag to take snapshots or not and the number of sam-
         # ples to be shot
@@ -294,7 +300,7 @@ class FEMSurrogateEvaluator:
 
             dataset_true_output_matrix = self.output_true_data[
             self.indices_of_dataset_samples,:]
-            
+
         # Checks whether a single model was trained 
 
         if self.maximum_number_of_models_to_be_evaluated is None:
@@ -405,139 +411,6 @@ class FEMSurrogateEvaluator:
             ).numpy()[1])+"\nThe provided 'subdofs_to_learn' is:\n"+str(
             self.subdofs_to_learn))
 
-        # Gets the loss of the model
-
-        dataset_loss = self.loss_metric(true_output_of_subdofs, 
-        model_output)
-
-        # Verifies the maximum absolute error
-
-        maximum_absolute_value = self.maximum_absolute_error_class(
-        true_output_of_subdofs, model_output)
-
-        if self.verbose:
-
-            print("\nLoss function on "+str(dataset_name)+":", format(
-            dataset_loss.numpy(), '.5e')+"\n\nMaximum absolute error o"+
-            "n "+str(dataset_name)+": "+str(format(
-            maximum_absolute_value.numpy(),'.5e'))+"\nwhereas the mini"+
-            "mum absolute error is "+str(format(
-            self.maximum_absolute_error_class.minimum_absolute_error(
-            true_output_of_subdofs, model_output).numpy(), '.5e')))
-
-        # Gets the mean absolute error for each row
-
-        loss_per_sample = self.get_mean_absolute_error_per_sample(
-        true_output_of_subdofs, model_output)
-
-        # Gets the samples indices with the lowest mean absolute error.
-        # The average is evaluated across the dimensions of each output
-        # sample
-
-        best_samples_indices = np.argsort(loss_per_sample)[
-        :self.number_of_best_samples]
-
-        if self.verbose:
-
-            loss_per_sample_string = ""
-
-            for loss_value in loss_per_sample[best_samples_indices]:
-
-                loss_per_sample_string += "\n"+str(loss_value)
-
-            print("\nThe "+str(self.number_of_best_samples)+" best sam"+
-            "ples have the following mean absolute error:"+
-            loss_per_sample_string)
-
-        # Recovers the name of the file that contains the DOFs of the 
-        # field given by this model
-
-        field_output_file = (self.parent_path+"//surrogate_"+str(
-        field_name)+"_best_samples_on_"+str(dataset_name)+"_of_"+
-        model_file_name_without_termination+".npy")
-
-        # Recovers the name of the file with the true values of the DOFs
-        # of this field
-
-        true_field_output_file = (self.parent_path+"//true_"+str(
-        field_name)+"_best_samples_on_"+str(dataset_name)+"_of_"+
-        model_file_name_without_termination+".npy")
-
-        # Gets the field of the model into a null tensor. In other words,
-        # only the predicted DOFs are updated
-
-        model_field = tf.zeros_like(true_output_data)
-
-        number_of_updated_dofs = tf.shape(self.subdofs_to_learn)[0]
-
-        # Creates grid of row indices [0, 1, ... num_samples-1] ex- 
-        # panded to match subdofs
-
-        row_indices = tf.repeat(tf.range(number_of_samples)[:, None], 
-        repeats=number_of_updated_dofs, axis=1)
-
-        column_indices = tf.tile(tf.constant(self.subdofs_to_learn)[
-        None,:], multiples=[number_of_samples,1])
-
-        # Stacks into shape (number_of_samples*number_of_updated_dofs, 
-        # 2)
-
-        indices = tf.cast(tf.reshape(tf.stack([row_indices, 
-        column_indices], axis=-1), [-1, 2]), dtype=tf.int32)
-
-        # Flattens model_output to match indices
-
-        updates = tf.cast(tf.reshape(model_output, [-1]), dtype=
-        model_field.dtype)
-
-        # Performs scatter update to get the initially null tensor into
-        # a tensor with the model output for each sample
-
-        model_field = tf.tensor_scatter_nd_update(model_field, indices, 
-        updates)
-
-        # Saves as binary files the true data and the output data of 
-        # the best preserving samples
-
-        np.save(true_field_output_file, true_output_data[
-        best_samples_indices,:])
-
-        np.save(field_output_file, model_field.numpy()[
-        best_samples_indices,:])
-
-        # Verifies if snapshots are to be taken
-
-        if self.take_snapshots:
-
-            # Iterates over the number of samples that will be snapshot
-
-            for sample_index in range(
-            self.number_of_samples_to_be_snapshot):
-
-                # Calls the function that creates the snapshot for this
-                # sample
-
-                self.get_single_snapshot_for_single_model(
-                field_output_file, true_field_output_file, sample_index)
-
-    ####################################################################
-    #             Snapshooting of the solution in ParaView             #
-    ####################################################################
-
-    # Defines a function to create snapshots of the visualization of the
-    # results of the models in paraview
-
-    def get_single_snapshot_for_single_model(self, field_output_file, 
-    true_field_output_file, sample_index):
-
-        # Removes the termination of the file names just in case
-
-        field_output_file = take_outFileNameTermination(
-        field_output_file)
-
-        true_field_output_file = take_outFileNameTermination(
-        true_field_output_file)
-
         # Checks if all functional data are strings
 
         verify_type(self.field_name, "'field_name'", str, "'get_snapsh"+
@@ -562,6 +435,220 @@ class FEMSurrogateEvaluator:
         "f the field that must be provided to build a class of FEniCS "+
         "functional data. Example: 1, 2")
 
+        # Gets the function space info into a dictionary 
+
+        function_space_info = {self.field_name: {"field type": 
+        self.field_type, "interpolation function": 
+        self.interpolation_function, "polynomial degree": 
+        self.polynomial_degree}}
+
+        # Gets the functional data class for this field
+
+        functional_data_class = get_functional_data_class(
+        function_space_info, self.field_name, self.mesh_data_class)
+
+        # Gets the coordinates of the DOFs of this mesh
+
+        DOF_finder = dofs_per_node_finder_class(functional_data_class, 
+        field_name=self.field_name)
+
+        # Gets the loss of the model
+
+        dataset_loss = self.loss_metric(true_output_of_subdofs, 
+        model_output)
+
+        # Verifies the maximum absolute error
+
+        maximum_absolute_value = self.maximum_absolute_error_class(
+        true_output_of_subdofs, model_output)
+
+        if self.verbose:
+
+            print("\nLoss function on "+str(dataset_name)+":", format(
+            dataset_loss.numpy(), '.5E')+"\n\nMaximum absolute error o"+
+            "n "+str(dataset_name)+": "+str(format(
+            maximum_absolute_value.numpy(),'.5E'))+"\nwhereas the mini"+
+            "mum absolute error is "+str(format(
+            self.maximum_absolute_error_class.minimum_absolute_error(
+            true_output_of_subdofs, model_output).numpy(), '.5E')))
+
+        # Gets the mean absolute error for each row, the maximum absolute
+        # error per component in each sample, and the index of that com-
+        # ponent
+
+        (loss_per_sample, maximum_component_absolute_error_per_sample, 
+        component_with_maximum_error_per_sample
+        ) = self.get_absolute_error_info_per_sample(
+        true_output_of_subdofs, model_output)
+
+        # Gets the samples indices with the lowest mean absolute error.
+        # The average is evaluated across the dimensions of each output
+        # sample
+
+        best_samples_indices = np.argsort(loss_per_sample)[
+        :self.number_of_best_samples]
+
+        if self.verbose:
+
+            loss_per_sample_string = ""
+
+            for sample_index in best_samples_indices:
+
+                loss_value = loss_per_sample[sample_index]
+
+                maximum_component_absolute_error = (
+                maximum_component_absolute_error_per_sample[sample_index])
+
+                component_index_with_maximum_error = (
+                component_with_maximum_error_per_sample[sample_index])
+
+                loss_per_sample_string += "\n      "+str(format(
+                loss_value, '.6E'))+"      |"
+
+                loss_per_sample_string += "      "+str(format(
+                maximum_component_absolute_error, '.6E'))+"      |"
+
+                loss_per_sample_string += "      "+str(format(
+                component_index_with_maximum_error, '.6E'))
+
+                loss_per_sample_string += "      | "+str(
+                DOF_finder.get_coordinates_from_dof(
+                component_index_with_maximum_error)[0])
+
+            print("\nThe "+str(self.number_of_best_samples)+" best sam"+
+            "ples have the following absolute error characteristics\n-"+
+            "---------------------------------------------------------"+
+            "------------------------------------------\n   Mean absol"+
+            "ute error  | Maximum component-wise |   Index of componen"+
+            "t   |        Location        |\n                        |"+
+            "     absolute error     |   with maximum error   |       "+
+            "                 |\n-------------------------------------"+
+            "---------------------------------------------------------"+
+            "------"+loss_per_sample_string)
+
+        # Recovers the name of the file that contains the DOFs of the 
+        # field given by this model
+
+        field_output_file = (self.parent_path+"//surrogate_"+str(
+        field_name)+"_best_samples_on_"+str(dataset_name)+"_of_"+
+        model_file_name_without_termination+".npy")
+
+        # Recovers the name of the file with the true values of the DOFs
+        # of this field
+
+        true_field_output_file = (self.parent_path+"//true_"+str(
+        field_name)+"_best_samples_on_"+str(dataset_name)+"_of_"+
+        model_file_name_without_termination+".npy")
+
+        # Gets the field of the model into a null tensor. In other words,
+        # only the predicted DOFs are updated
+
+        model_field = self.assemble_field(model_output, true_output_data, 
+        number_of_samples)
+
+        # Saves as binary files the true data and the output data of 
+        # the best preserving samples
+
+        np.save(true_field_output_file, true_output_data[
+        best_samples_indices,:])
+
+        np.save(field_output_file, model_field.numpy()[
+        best_samples_indices,:])
+
+        # Verifies if snapshots are to be taken
+
+        if self.take_snapshots:
+
+            print("\n#################################################"+
+            "#######################\n################################"+
+            "########################################\n##             "+
+            "             Snapshot session                          ##"+
+            "\n#######################################################"+
+            "#################\n######################################"+
+            "##################################\n")
+
+            # Iterates over the number of samples that will be snapshot
+
+            for sample_index in range(
+            self.number_of_samples_to_be_snapshot):
+
+                # Calls the function that creates the snapshot for this
+                # sample
+
+                self.get_single_snapshot_for_single_model(
+                field_output_file, true_field_output_file, sample_index,
+                function_space_info)
+
+    # Defines a function to create a tensor of [n_samples, n_dofs] to 
+    # recreate n_samples fields for plotting and comparisons
+
+    def assemble_field(self, update_dofs_values, true_output_data, 
+    number_of_samples):
+
+        # Initializes the assembled field data
+
+        assembled_field_data = None 
+
+        # If the true data is in fact a shape tuple
+
+        if isinstance(true_output_data, tuple):
+
+            assembled_field_data = tf.zeros(true_output_data)
+
+        # Otherwise, if it is a tensor with data
+
+        else:
+
+            assembled_field_data = tf.zeros_like(true_output_data)
+        
+        number_of_updated_dofs = tf.shape(self.subdofs_to_learn)[0]
+
+        # Creates grid of row indices [0, 1, ... num_samples-1] ex- 
+        # panded to match subdofs
+
+        row_indices = tf.repeat(tf.range(number_of_samples)[:, None], 
+        repeats=number_of_updated_dofs, axis=1)
+
+        column_indices = tf.tile(tf.constant(self.subdofs_to_learn)[
+        None,:], multiples=[number_of_samples,1])
+
+        # Stacks into shape (number_of_samples*number_of_updated_dofs, 
+        # 2)
+
+        indices = tf.cast(tf.reshape(tf.stack([row_indices, 
+        column_indices], axis=-1), [-1, 2]), dtype=tf.int32)
+
+        # Flattens model_output to match indices
+
+        updates = tf.cast(tf.reshape(update_dofs_values, [-1]), dtype=
+        assembled_field_data.dtype)
+
+        # Performs scatter update to get the initially null tensor into
+        # a tensor with the assembled field for each sample
+
+        assembled_field_data = tf.tensor_scatter_nd_update(
+        assembled_field_data, indices, updates)
+
+        return assembled_field_data
+
+    ####################################################################
+    #             Snapshooting of the solution in ParaView             #
+    ####################################################################
+
+    # Defines a function to create snapshots of the visualization of the
+    # results of the models in paraview
+
+    def get_single_snapshot_for_single_model(self, field_output_file, 
+    true_field_output_file, sample_index, function_space_info):
+
+        # Removes the termination of the file names just in case
+
+        field_output_file = take_outFileNameTermination(
+        field_output_file)
+
+        true_field_output_file = take_outFileNameTermination(
+        true_field_output_file)
+
         # Checks whether the mesh file name is None
 
         if self.mesh_file_name is None:
@@ -583,33 +670,41 @@ class FEMSurrogateEvaluator:
         # the context of the particular application of this code
 
         _, _, xdmf_field_file = read_field_from_binary(
-        field_output_file+".npy", self.mesh_file_name, {self.field_name: 
-        {"field type": self.field_type, "interpolation function": 
-        self.interpolation_function, "polynomial degree": 
-        self.polynomial_degree}}, data_matrix_has_time_point_per_row=
-        False, time_step=sample_index, return_visualization_file_name=
-        True, save_to_xdmf=True)
+        field_output_file+".npy", self.mesh_file_name, 
+        function_space_info, data_matrix_has_time_point_per_row=False, 
+        time_step=sample_index, return_visualization_file_name=True, 
+        save_to_xdmf=True, code_given_mesh_data_class=
+        self.mesh_data_class)
 
         # Makes a visualization copy for the true field as well
 
         _, _, xdmf_true_field_file = read_field_from_binary(
-        true_field_output_file+".npy", self.mesh_file_name, {
-        self.field_name: {"field type": self.field_type, "interpolatio"+
-        "n function": self.interpolation_function, "polynomial degree": 
-        self.polynomial_degree}}, data_matrix_has_time_point_per_row=
-        False, time_step=sample_index, return_visualization_file_name=
-        True, save_to_xdmf=True)
+        true_field_output_file+".npy", self.mesh_file_name, 
+        function_space_info, data_matrix_has_time_point_per_row=False, 
+        time_step=sample_index, return_visualization_file_name=True, 
+        save_to_xdmf=True, code_given_mesh_data_class=
+        self.mesh_data_class)
+
+        # Removes all previous path to the output files
+
+        field_output_file_without_path = get_list_of_directories(
+        field_output_file)[0]
+
+        true_field_output_file_without_path = get_list_of_directories(
+        true_field_output_file)[0]
 
         # Sets the name of the screenshot file with the sample index in
         # it
 
-        screenshot_file = ("screenshot_of_"+field_output_file+"_sample_"
-        +str(sample_index+1)+".png")
+        screenshot_file = ("screenshot_of_"+
+        field_output_file_without_path+"_sample_"+str(sample_index+1)+
+        ".png")
 
         # Sets the name of the screenshot file for the true field DOFs
 
-        screenshot_true_file = ("screenshot_of_"+true_field_output_file+
-        "_sample_"+str(sample_index+1)+".png")
+        screenshot_true_file = ("screenshot_of_"+
+        true_field_output_file_without_path+"_sample_"+str(sample_index+
+        1)+".png")
 
         # If the warp by vector functionality is unavailable, makes the
         # snapshot display the reference configuration. Otherwise, no-
@@ -656,16 +751,38 @@ class FEMSurrogateEvaluator:
         self.screenshots_path, read_camera_settings_dictionary=True, 
         legend_bar_visibility=True)
 
-    # Defines a function to compute the mean absolute error per sample
+    # Defines a function to perform error analyses per sample. This
+    # function computes the mean absolute error per sample; the maximum
+    # absolute error (component-wise) per sample; and the index of the 
+    # component with the maximum absolute error
 
-    def get_mean_absolute_error_per_sample(self, true_output, 
+    def get_absolute_error_info_per_sample(self, true_output, 
     model_output):
+
+        # Gets the absolute error
+
+        absolute_error = tf.abs(true_output-model_output)
 
         # Reduces the mean alongside the axis of columns, since the rows
         # are the samples
 
-        return tf.reduce_mean(tf.abs(true_output-model_output), axis=1
-        ).numpy()
+        mean_absolute_error_per_sample = tf.reduce_mean(absolute_error, 
+        axis=1).numpy()
+
+        # Gets the maximum absolute error (component-wise) per sample
+
+        maximum_component_absolute_error_per_sample = tf.reduce_max(
+        absolute_error, axis=1).numpy()
+
+        # Gets the index of the component with the maximum absolute er-
+        # ror for each sample
+
+        component_with_maximum_error_per_sample = tf.argmax(
+        absolute_error, axis=1).numpy()
+
+        return (mean_absolute_error_per_sample, 
+        maximum_component_absolute_error_per_sample, 
+        component_with_maximum_error_per_sample)
 
     ####################################################################
     #                      Verification utilities                      #

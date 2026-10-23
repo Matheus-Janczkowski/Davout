@@ -242,7 +242,7 @@ class SurrogateModel:
             print("Loss function on test set:", format(test_loss.numpy(
             ), '.5e'))
 
-            # Verifies with the maximum absolute error
+            # Verifies with the maximum absolute error 
 
             maximum_absolute_value = maximum_absolute_error(
             test_true_values, output_model)
@@ -347,14 +347,17 @@ class SurrogateModel:
         subdofs_to_learn=self.subdofs_to_learn, take_snapshots=True,
         field_type="vector", polynomial_degree=2, 
         interpolation_function="CG", mesh_file_name=self.mesh_file_name,
-        testing_tensor=self.input_data)
+        testing_tensor=self.input_data, screenshots_path=
+        self.screenshots_path, field_component_to_plot=
+        self.displacement_component_to_plot, number_of_best_samples=
+        self.n_best_samples, number_of_samples_to_be_snapshot=1)
 
         # Tests on the training dataset that has been set during instan-
         # tiation of the class
 
         surrogate_evaluation_class.evaluate_model_on_dataset()
 
-        #float(a)#"""
+        float(a)#"""
 
         # Iterates through the best models
 
