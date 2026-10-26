@@ -35,10 +35,10 @@ class FEMSurrogateEvaluator:
     set_camera_interactively=False, color_bar_min_value=None, 
     color_bar_max_value=None, field_type=None, polynomial_degree=None,
     interpolation_function=None, build_error_field=False, 
-    maximum_absolute_error_threshold=1E-2):
+    mean_absolute_error_threshold=1E-2):
 
-        self.maximum_absolute_error_threshold = (
-        maximum_absolute_error_threshold)
+        self.mean_absolute_error_threshold = (
+        mean_absolute_error_threshold)
 
         self.verbose = verbose
 
@@ -502,7 +502,8 @@ class FEMSurrogateEvaluator:
         # error per component in each sample, and the index of that com-
         # ponent
 
-        (loss_per_sample, maximum_component_absolute_error_per_sample, 
+        (mean_absolute_error_per_sample, 
+        maximum_component_absolute_error_per_sample, 
         component_with_maximum_error_per_sample
         ) = self.get_absolute_error_info_per_sample(
         true_output_of_subdofs, model_output)
@@ -511,13 +512,13 @@ class FEMSurrogateEvaluator:
         # error lower than the threshold
 
         n_samples_below_error_threshold = np.count_nonzero(
-        loss_per_sample<self.maximum_absolute_error_threshold)
+        mean_absolute_error_per_sample<self.mean_absolute_error_threshold)
 
         # Gets the samples indices with the lowest mean absolute error.
         # The average is evaluated across the dimensions of each output
         # sample
 
-        best_samples_indices = np.argsort(loss_per_sample)[
+        best_samples_indices = np.argsort(mean_absolute_error_per_sample)[
         :self.number_of_best_samples]
 
         # Recovers the name of the file that contains the DOFs of the 
@@ -617,11 +618,11 @@ class FEMSurrogateEvaluator:
 
         if self.verbose:
         
-            loss_per_sample_string = ""
+            mean_absolute_error_per_sample_string = ""
 
             for sample_index in best_samples_indices:
 
-                loss_value = loss_per_sample[sample_index]
+                loss_value = mean_absolute_error_per_sample[sample_index]
 
                 maximum_component_absolute_error = (
                 maximum_component_absolute_error_per_sample[sample_index])
@@ -629,16 +630,16 @@ class FEMSurrogateEvaluator:
                 component_index_with_maximum_error = (
                 component_with_maximum_error_per_sample[sample_index])
 
-                loss_per_sample_string += "\n      "+str(format(
+                mean_absolute_error_per_sample_string += "\n      "+str(format(
                 loss_value, '.6E'))+"      |"
 
-                loss_per_sample_string += "      "+str(format(
+                mean_absolute_error_per_sample_string += "      "+str(format(
                 maximum_component_absolute_error, '.6E'))+"      |"
 
-                loss_per_sample_string += "      "+str(format(
+                mean_absolute_error_per_sample_string += "      "+str(format(
                 component_index_with_maximum_error, '.6E'))
 
-                loss_per_sample_string += "      | "+str(
+                mean_absolute_error_per_sample_string += "      | "+str(
                 self.DOF_finder.get_coordinates_from_dof(
                 component_index_with_maximum_error)[0])
 
@@ -651,13 +652,13 @@ class FEMSurrogateEvaluator:
             "     absolute error     |   with maximum error   |       "+
             "                 |\n-------------------------------------"+
             "---------------------------------------------------------"+
-            "------"+loss_per_sample_string)
+            "------"+mean_absolute_error_per_sample_string)
 
             print("\nThis model has "+str(n_samples_below_error_threshold
-            )+" of "+str(loss_per_sample.shape[0])+" samples in the da"+
-            "taset '"+str(dataset_name)+"' with maximum absolute error"+
-            " below the threshold of "+str(
-            self.maximum_absolute_error_threshold)+"\nThe maximum abso"+
+            )+" of "+str(mean_absolute_error_per_sample.shape[0])+" sa"+
+            "mples in the dataset '"+str(dataset_name)+"' with mean ab"+
+            "solute error below the threshold of "+str(
+            self.mean_absolute_error_threshold)+"\nThe maximum abso"+
             "lute error on "+str(dataset_name)+": "+str(format(
             maximum_absolute_value.numpy(),'.5E'))+"\nwhereas the mini"+
             "mum absolute error is "+str(format(

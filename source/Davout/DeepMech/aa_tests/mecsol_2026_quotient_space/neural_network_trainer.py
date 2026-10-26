@@ -351,7 +351,7 @@ class SurrogateModel:
         self.displacement_component_to_plot, number_of_best_samples=
         self.n_best_samples, number_of_samples_to_be_snapshot=1,
         set_camera_interactively=False, build_error_field=True,
-        maximum_absolute_error_threshold=5E-3)
+        mean_absolute_error_threshold=5E-3)
 
         # Tests on the training dataset that has been set during instan-
         # tiation of the class
