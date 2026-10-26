@@ -1260,6 +1260,10 @@ node_number, node_coordinates, set_ofNodes=None):
         # Returns the node number as it's been given
 
         return node_number, node_coordinates
+
+########################################################################
+#                              DOF finding                             #
+########################################################################
     
 # Defines a function to find a set of degrees of freedom (DOFs) in a re-
 # gion of the domain. A physical group can be given or a function that
@@ -1417,6 +1421,185 @@ physical_group_name=None, region_function=None, field_name=None):
         "n_function' is a function that receives the x, y, and z coord"+
         "inates of a point and spits out True or False, according to i"+
         "f the point is in a volumetric region or not")
+
+# Defines a function to return an array of [n_nodes, n_dofs_per_node]
+# with the indices of the DOFs within each node of the mesh
+
+def get_dofs_per_node(functional_data_class, field_name, return_as_list=
+False, node_tolerance=1E-6, dof_coordinates=None):
+
+    # Checks whether dof_coordinates was not provided
+
+    if dof_coordinates is None:
+
+        # Verifies if a field name is asked
+
+        if field_name is not None:
+
+            # Verifies if this field name belongs to the dictionary of 
+            # fields names
+
+            if not (field_name in functional_data_class.fields_names_dict):
+
+                raise ValueError("The field '"+str(field_name)+"' does"+
+                " not belong to the dictionary of fields of this probl"+
+                "em. See the available fields:\n"+str(list(
+                functional_data_class.fields_names_dict.keys())))
+            
+            # Verifies if this problem has more than one field
+
+            if len(functional_data_class.fields_names_dict.keys())>1:
+
+                # Gets the map of DOFs for the selected field only
+
+                dof_coordinates = functional_data_class.monolithic_function_space.sub(
+                functional_data_class.fields_names_dict[field_name]
+                ).tabulate_dof_coordinates()
+
+        # If the map of DOFs was not created, the field name was not 
+        # provided or the problem has only one field 
+
+        if dof_coordinates is None:
+
+            dof_coordinates = functional_data_class.monolithic_function_space.tabulate_dof_coordinates()
+
+        # Reshapes the dof coordinates according to the number of dimen-
+        # sions of the geometry, since FEniCS returns an array of size 
+        # n_DOFS*n_geometric_dimensions 
+
+        dof_coordinates = dof_coordinates.reshape((-1, 
+        functional_data_class.monolithic_function_space.mesh().geometry(
+        ).dim())) 
+
+    # Constructs a mask with available DOFs for searching
+
+    available_dofs = np.ones(dof_coordinates.shape[0], dtype=bool)
+
+    # Initializes the counter of DOFs per node
+
+    number_of_dofs_per_node = None
+
+    # Initializes a list that will become the tensor of DOFs per node
+    # [n_nodes, n_dofs_per_node] and also a list with the coordinates of
+    # each node
+
+    dofs_per_node = []
+
+    nodes_coordinates = []
+
+    # Also initializes a vector of node index per DOF as an array 
+    # [n_dofs]
+
+    node_index_per_dof = np.zeros(dof_coordinates.shape[0], dtype=
+    np.int64)
+
+    # Iterates over the DOFs. In fact, it should iterate over the nodes,
+    # but each node might have a single DOF in case of scalar fields
+
+    for i in range(dof_coordinates.shape[0]):
+
+        # Gets the DOFs indices that have not been tracked yet
+
+        untracked_dofs = np.flatnonzero(available_dofs)
+
+        # Gets the index of the first DOF that has yet not been tracked.
+        # If no DOF is left to be tracked, it will return None
+
+        untracked_dof_index = untracked_dofs[0] if (untracked_dofs.size
+        ) > 0 else None
+
+        # If no DOF is left to be tracked, breaks the loop
+
+        if untracked_dof_index is None:
+
+            break 
+
+        # Gets the coordinates of the node that contains this DOF
+
+        node_coordinates = dof_coordinates[untracked_dof_index,:]
+
+        # Calculates the distances from this node to the ones that are
+        # also still untracked
+
+        distances = np.linalg.norm(dof_coordinates[untracked_dofs,:]-
+        node_coordinates, axis=1)
+
+        # Finds the DOFs that are within the spatial tolerance
+
+        dofs_in_node = np.flatnonzero(distances<node_tolerance)
+
+        # Checks whether the number of DOFs per node was rightly found
+
+        if number_of_dofs_per_node is None:
+
+            # Automatically saves the number of recovered DOFs as the 
+            # number of DOFs per node
+
+            number_of_dofs_per_node = dofs_in_node.shape[0]
+
+        # Checks the number of found DOFs in this node with the pre-
+        # viously stored number of DOFs per node
+
+        elif dofs_in_node.shape[0]!=number_of_dofs_per_node:
+
+            raise IndexError("A number of "+str(number_of_dofs_per_node
+            )+" of DOFs per node was automatically retrieved for the f"+
+            "ield '"+str(field_name)+"'. But, now, "+str(
+            dofs_in_node.shape[0])+" DOFs seem to share the same node."+
+            " Check the field or the tolerance to consider a point a n"+
+            "ode. The current tolerance is of "+str(node_tolerance))
+
+        # Maps the found nodes back to the global numbering of DOFs
+
+        dofs_in_node = untracked_dofs[dofs_in_node]
+
+        # Appends the DOFs of this node to the list of DOFs per node
+
+        dofs_per_node.append(dofs_in_node)
+
+        # Appends the coordinates of this node
+
+        nodes_coordinates.append(node_coordinates)
+
+        # Masks those DOFs as unavailable for search
+
+        available_dofs[dofs_in_node] = False
+
+        # Saves the index of the node in the array of nodes coordinates
+        # into the array of node index per DOF
+
+        node_index_per_dof[dofs_in_node] = len(nodes_coordinates)-1
+
+    # Converts the lists of DOFs per node and node coordinates to numpy
+    # arrays
+
+    dofs_per_node = np.asarray(dofs_per_node)
+
+    nodes_coordinates = np.asarray(nodes_coordinates)
+
+    # Checks if all DOFs have been mapped
+
+    if int(dofs_per_node.shape[0]*dofs_per_node.shape[1])!=(
+    dof_coordinates.shape[0]):
+
+        raise IndexError("The number of nodes found in 'get_dofs_per_n"+
+        "ode' is "+str(dofs_per_node.shape[0])+". Additionally, it was"+
+        " automatically found that each node has "+str(
+        dofs_per_node.shape[1])+" DOFs. Thus, "+str(int(
+        dofs_per_node.shape[0]*dofs_per_node.shape[1]))+" DOFs were ma"+
+        "pped. However, the field '"+str(field_name)+"' has "+str(
+        dof_coordinates.shape[0])+" DOFs")
+
+    # If they are to be returned as lists
+
+    if return_as_list:
+    
+        return dofs_per_node.tolist(), nodes_coordinates.tolist(
+        ), node_index_per_dof.tolist()
+    
+    else:
+
+        return dofs_per_node, nodes_coordinates, node_index_per_dof
     
 # Defines a function to return all DOFs of a field, this includes DOFs
 # associated to higher order finite elements
@@ -1565,7 +1748,7 @@ class DOFsNode:
 
     def __init__(self, dof_coordinates, dofs_indices, tolerance=1E-6, 
     return_coordinates=False, do_not_throw_error=False, n_closest_nodes=
-    None):
+    None, assemble_dofs_per_node=False, field_name=None):
         
         self.dof_coordinates = dof_coordinates
 
@@ -1580,6 +1763,16 @@ class DOFsNode:
         self.do_not_throw_error = do_not_throw_error
 
         self.n_closest_nodes = n_closest_nodes
+
+        # Verifies if the matrices of DOFs per node and coordinates of 
+        # the nodes are to be evaluated
+
+        if assemble_dofs_per_node:
+
+            (self.dofs_per_node, self.nodes_coordinates, 
+            self.nodes_index_per_dof) = get_dofs_per_node(None, 
+            field_name, node_tolerance=tolerance, dof_coordinates=
+            dof_coordinates)
 
         # Verifies if the number of closest DOFs were provided if an er-
         # ror is not be raised in case of a violated tolerance
@@ -1722,7 +1915,7 @@ class DOFsNode:
 def dofs_per_node_finder_class(functional_data_class, field_name=None, 
 node_proximity_tolerance=1E-6, return_coordinates_per_dof_found=False,
 do_not_throw_error=False, n_closest_nodes=None, get_higher_order_dofs_too=
-True):
+True, assemble_dofs_per_node=False):
     
     """
     Function to construct a class that stores a tree query object that,
@@ -1746,7 +1939,8 @@ True):
     return DOFsNode(dofs_coordinates, dofs_indices, tolerance=
     node_proximity_tolerance, return_coordinates=
     return_coordinates_per_dof_found, do_not_throw_error=
-    do_not_throw_error, n_closest_nodes=n_closest_nodes)
+    do_not_throw_error, n_closest_nodes=n_closest_nodes,
+    assemble_dofs_per_node=assemble_dofs_per_node, field_name=field_name)
     
 # Defines a function to create a list of nodes indexes that lie on a
 # surface

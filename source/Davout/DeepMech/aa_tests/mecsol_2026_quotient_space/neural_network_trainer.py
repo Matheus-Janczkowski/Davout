@@ -347,18 +347,20 @@ class SurrogateModel:
         subdofs_to_learn=self.subdofs_to_learn, take_snapshots=True,
         field_type="vector", polynomial_degree=2, 
         interpolation_function="CG", mesh_file_name=self.mesh_file_name,
-        testing_tensor=self.input_data, screenshots_path=
-        self.screenshots_path, field_component_to_plot=
+        screenshots_path=self.screenshots_path, field_component_to_plot=
         self.displacement_component_to_plot, number_of_best_samples=
-        self.n_best_samples, number_of_samples_to_be_snapshot=1)
+        self.n_best_samples, number_of_samples_to_be_snapshot=1,
+        set_camera_interactively=False, build_error_field=True,
+        maximum_absolute_error_threshold=5E-3)
 
         # Tests on the training dataset that has been set during instan-
         # tiation of the class
 
         surrogate_evaluation_class.evaluate_model_on_dataset()
 
-        float(a)#"""
+        #float(a)#"""
 
+        """
         # Iterates through the best models
 
         for i in range(last_model):
@@ -533,7 +535,7 @@ class SurrogateModel:
             legend_bar_visibility=True)
 
             print("\nThe input data for the "+str(i+1)+"-th model is: "+
-            str(training_data[best_samples_indices[0],:])+"\n")
+            str(training_data[best_samples_indices[0],:])+"\n")#"""
 
     # Defines a function to insert the results into a function space and
     # plot it for the samples of the test set

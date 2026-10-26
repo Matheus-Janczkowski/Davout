@@ -34,11 +34,15 @@ class FEMSurrogateEvaluator:
     representation_type="Surface With Edges", warp_by_vector=False,
     set_camera_interactively=False, color_bar_min_value=None, 
     color_bar_max_value=None, field_type=None, polynomial_degree=None,
-    interpolation_function=None, testing_tensor=None):
+    interpolation_function=None, build_error_field=False, 
+    maximum_absolute_error_threshold=1E-2):
 
-        self.test_tensor = testing_tensor
+        self.maximum_absolute_error_threshold = (
+        maximum_absolute_error_threshold)
 
         self.verbose = verbose
+
+        self.build_error_field = build_error_field
 
         # Checks whether the file paths exist and returns the file paths
         # updated with the parent path. Additionally, the given files 
@@ -164,10 +168,10 @@ class FEMSurrogateEvaluator:
         number_of_samples_to_be_snapshot, "number_of_samples_to_be_sna"+
         "pshot", int, "'FEMSurrogateEvaluator'")
 
-        # Saves functional data information. But, if snapshots are re-
-        # quired, the functional data must be given
+        # Saves functional data information. But, if snapshots or if the
+        # error field are required, the functional data must be given
 
-        if self.take_snapshots:
+        if self.take_snapshots or self.build_error_field:
 
             field_type = verify_type(field_type, "field_type", str, "'"+
             "FEMSurrogateEvaluator'", description="a string with the t"+
@@ -188,6 +192,69 @@ class FEMSurrogateEvaluator:
             "me", str, "'FEMSurrogateEvaluator'", description="a strin"+
             "g with the path to the mesh where the field will be inter"+
             "polated upon")
+            
+            field_name = verify_type(field_name, "'field_name'", str, 
+            "'FEMSurrogateEvaluator'", description="name of the field "+
+            "that must be provided to build a class of FEniCS function"+
+            "al data")
+    
+            # Gets the function space info into a dictionary 
+    
+            self.function_space_info = {field_name: {"field type": 
+            field_type, "interpolation function": interpolation_function, 
+            "polynomial degree": polynomial_degree}}
+    
+            # Gets the functional data class for this field
+    
+            self.functional_data_class = get_functional_data_class(
+            self.function_space_info, field_name, self.mesh_data_class)
+
+            # Instantiates the class that maps DOFs to nodes and their
+            # coordinates in the mesh. The error field is used as flag 
+            # to assemble the matrices of DOFs per node, since these ma-
+            # trices will be required only if the error field is to be 
+            # evaluated
+            
+            self.DOF_finder = dofs_per_node_finder_class(
+            self.functional_data_class, field_name=field_name,
+            assemble_dofs_per_node=self.build_error_field)
+
+            # If the error field is to be plotted, creates a functional
+            # data class for the error field
+
+            if self.build_error_field:
+
+                # Gets the function space info into a dictionary. This
+                # time as a scalar field
+
+                error_field_type = "scalar"
+
+                self.error_field_name = "Maximum absolute error"
+                    
+                self.error_function_space_info = {
+                self.error_field_name: {"field type": error_field_type, 
+                "interpolation function": interpolation_function, "pol"+
+                "ynomial degree": polynomial_degree}}
+        
+                # Gets the functional data class for the error field
+        
+                self.error_functional_data_class = get_functional_data_class(
+                self.error_function_space_info, self.error_field_name, 
+                self.mesh_data_class)
+
+                # Instantiates the class of DOFs and mesh coordinates
+                # for the error field
+
+                self.error_DOF_finder = dofs_per_node_finder_class(
+                self.error_functional_data_class, field_name=
+                self.error_field_name, assemble_dofs_per_node=True)
+
+                # Saves the number of DOFs for the scalar error field
+
+                self.n_dofs_error_field = (
+                self.error_DOF_finder.dof_coordinates.shape[0])
+
+        # Saves the functional information into the class object
 
         self.field_name = field_name
 
@@ -411,47 +478,6 @@ class FEMSurrogateEvaluator:
             ).numpy()[1])+"\nThe provided 'subdofs_to_learn' is:\n"+str(
             self.subdofs_to_learn))
 
-        # Checks if all functional data are strings
-
-        verify_type(self.field_name, "'field_name'", str, "'get_snapsh"+
-        "ots_for_single_model' at 'FEMSurrogateEvaluator'", description=
-        "name of the field that must be provided to build a class of F"+
-        "EniCS functional data")
-
-        verify_type(self.field_type, "'field_type'", str, "'get_snapsh"+
-        "ots_for_single_model' at 'FEMSurrogateEvaluator'", description=
-        "type of the field that must be provided to build a class of F"+
-        "EniCS functional data. Examples: 'scalar', 'vector', 'tensor'")
-
-        verify_type(self.interpolation_function, "'interpolation_funct"+
-        "ion'", str, "'get_snapshots_for_single_model' at 'FEMSurrogat"+
-        "eEvaluator'", description="interpolation function of the fiel"+
-        "d that must be provided to build a class of FEniCS functional"+
-        " data. Examples: 'CG', 'DG'")
-
-        verify_type(self.polynomial_degree, "'polynomial_degree'", int, 
-        "'get_snapshots_for_single_model' at 'FEMSurrogateEvaluator'",
-        description="polynomial degree of the interpolation function o"+
-        "f the field that must be provided to build a class of FEniCS "+
-        "functional data. Example: 1, 2")
-
-        # Gets the function space info into a dictionary 
-
-        function_space_info = {self.field_name: {"field type": 
-        self.field_type, "interpolation function": 
-        self.interpolation_function, "polynomial degree": 
-        self.polynomial_degree}}
-
-        # Gets the functional data class for this field
-
-        functional_data_class = get_functional_data_class(
-        function_space_info, self.field_name, self.mesh_data_class)
-
-        # Gets the coordinates of the DOFs of this mesh
-
-        DOF_finder = dofs_per_node_finder_class(functional_data_class, 
-        field_name=self.field_name)
-
         # Gets the loss of the model
 
         dataset_loss = self.loss_metric(true_output_of_subdofs, 
@@ -481,50 +507,18 @@ class FEMSurrogateEvaluator:
         ) = self.get_absolute_error_info_per_sample(
         true_output_of_subdofs, model_output)
 
+        # Counts the number of samples that yielded a maximum absolute
+        # error lower than the threshold
+
+        n_samples_below_error_threshold = np.count_nonzero(
+        loss_per_sample<self.maximum_absolute_error_threshold)
+
         # Gets the samples indices with the lowest mean absolute error.
         # The average is evaluated across the dimensions of each output
         # sample
 
         best_samples_indices = np.argsort(loss_per_sample)[
         :self.number_of_best_samples]
-
-        if self.verbose:
-
-            loss_per_sample_string = ""
-
-            for sample_index in best_samples_indices:
-
-                loss_value = loss_per_sample[sample_index]
-
-                maximum_component_absolute_error = (
-                maximum_component_absolute_error_per_sample[sample_index])
-
-                component_index_with_maximum_error = (
-                component_with_maximum_error_per_sample[sample_index])
-
-                loss_per_sample_string += "\n      "+str(format(
-                loss_value, '.6E'))+"      |"
-
-                loss_per_sample_string += "      "+str(format(
-                maximum_component_absolute_error, '.6E'))+"      |"
-
-                loss_per_sample_string += "      "+str(format(
-                component_index_with_maximum_error, '.6E'))
-
-                loss_per_sample_string += "      | "+str(
-                DOF_finder.get_coordinates_from_dof(
-                component_index_with_maximum_error)[0])
-
-            print("\nThe "+str(self.number_of_best_samples)+" best sam"+
-            "ples have the following absolute error characteristics\n-"+
-            "---------------------------------------------------------"+
-            "------------------------------------------\n   Mean absol"+
-            "ute error  | Maximum component-wise |   Index of componen"+
-            "t   |        Location        |\n                        |"+
-            "     absolute error     |   with maximum error   |       "+
-            "                 |\n-------------------------------------"+
-            "---------------------------------------------------------"+
-            "------"+loss_per_sample_string)
 
         # Recovers the name of the file that contains the DOFs of the 
         # field given by this model
@@ -555,6 +549,32 @@ class FEMSurrogateEvaluator:
         np.save(field_output_file, model_field.numpy()[
         best_samples_indices,:])
 
+        # Verifies if the error field is to be calculated
+
+        error_field_data_file = None
+
+        error_minimum_color_per_sample = None
+        
+        error_maximum_color_per_sample = None
+
+        if self.build_error_field:
+                    
+            # Gets the name of the binary file with the DOF data for the
+            # error field
+    
+            error_field_data_file = (self.parent_path+"//error_field_s"+
+            "urrogate_"+str(field_name)+"_best_samples_on_"+str(
+            dataset_name)+"_of_"+model_file_name_without_termination+
+            ".npy")
+
+            # Gets the error field
+
+            (error_minimum_color_per_sample, 
+            error_maximum_color_per_sample) = self.maximum_absolute_error_field(
+            true_output_data[best_samples_indices,:], tf.gather(
+            model_field, best_samples_indices, axis=0), 
+            error_field_data_file)
+
         # Verifies if snapshots are to be taken
 
         if self.take_snapshots:
@@ -577,7 +597,151 @@ class FEMSurrogateEvaluator:
 
                 self.get_single_snapshot_for_single_model(
                 field_output_file, true_field_output_file, sample_index,
-                function_space_info)
+                self.function_space_info)
+
+                # If the error field was generated, plot it as well
+
+                if self.build_error_field:
+
+                    self.get_single_snapshot_for_single_model( 
+                    error_field_data_file, None, sample_index, 
+                    self.error_function_space_info, 
+                    display_reference_configuration=True, 
+                    component_to_plot="None", warp_by_vector=False, 
+                    color_bar_min_value=error_minimum_color_per_sample[
+                    sample_index], color_bar_max_value=
+                    error_maximum_color_per_sample[sample_index], 
+                    field_name=self.error_field_name)
+
+        # Prints information
+
+        if self.verbose:
+        
+            loss_per_sample_string = ""
+
+            for sample_index in best_samples_indices:
+
+                loss_value = loss_per_sample[sample_index]
+
+                maximum_component_absolute_error = (
+                maximum_component_absolute_error_per_sample[sample_index])
+
+                component_index_with_maximum_error = (
+                component_with_maximum_error_per_sample[sample_index])
+
+                loss_per_sample_string += "\n      "+str(format(
+                loss_value, '.6E'))+"      |"
+
+                loss_per_sample_string += "      "+str(format(
+                maximum_component_absolute_error, '.6E'))+"      |"
+
+                loss_per_sample_string += "      "+str(format(
+                component_index_with_maximum_error, '.6E'))
+
+                loss_per_sample_string += "      | "+str(
+                self.DOF_finder.get_coordinates_from_dof(
+                component_index_with_maximum_error)[0])
+
+            print("\nThe "+str(self.number_of_best_samples)+" best sam"+
+            "ples have the following absolute error characteristics\n-"+
+            "---------------------------------------------------------"+
+            "------------------------------------------\n   Mean absol"+
+            "ute error  | Maximum component-wise |   Index of componen"+
+            "t   |        Location        |\n                        |"+
+            "     absolute error     |   with maximum error   |       "+
+            "                 |\n-------------------------------------"+
+            "---------------------------------------------------------"+
+            "------"+loss_per_sample_string)
+
+            print("\nThis model has "+str(n_samples_below_error_threshold
+            )+" of "+str(loss_per_sample.shape[0])+" samples in the da"+
+            "taset '"+str(dataset_name)+"' with maximum absolute error"+
+            " below the threshold of "+str(
+            self.maximum_absolute_error_threshold)+"\nThe maximum abso"+
+            "lute error on "+str(dataset_name)+": "+str(format(
+            maximum_absolute_value.numpy(),'.5E'))+"\nwhereas the mini"+
+            "mum absolute error is "+str(format(
+            self.maximum_absolute_error_class.minimum_absolute_error(
+            true_output_of_subdofs, model_output).numpy(), '.5E')))
+
+    # Defines a function to create a scalar maximum absolute error field
+
+    def maximum_absolute_error_field(self, complete_true_output, 
+    complete_model_output, error_field_data_file):
+
+        # Initializes the [n_samples, n_dofs_error_field] array with the
+        # values of the DOFs of the error field for each sample
+
+        error_dof_data = np.zeros((complete_true_output.shape[0],
+        self.n_dofs_error_field), dtype=complete_true_output.dtype)
+
+        # Gets the absolute error in tensorflow
+        
+        absolute_error = tf.abs(complete_true_output-
+        complete_model_output)
+
+        # Iterates over the DOFs of the error field
+
+        for error_dof in range(self.n_dofs_error_field):
+
+            # Gets the index of the node corresponding to this DOF
+
+            node_index = self.error_DOF_finder.nodes_index_per_dof[
+            error_dof]
+
+            # Gets the coordinates of this node
+
+            node_coordinates = self.error_DOF_finder.nodes_coordinates[
+            node_index]
+
+            # Gets the distance of those coordinates to the nodes of the
+            # mesh of the learnt field, then sorts them. Gets the index
+            # of the closest node. This way, no DOF indexing heuristic 
+            # must be known a priori
+
+            closest_node_index = np.argsort(np.linalg.norm(
+            self.DOF_finder.nodes_coordinates-node_coordinates, axis=1)
+            )[0]
+
+            # Gets the DOFs in the learnt field that are attached to 
+            # that node
+
+            field_dofs_in_node = self.DOF_finder.dofs_per_node[
+            closest_node_index,:]
+
+            # Recovers the nodes that are in that node and that are in 
+            # the DOFs to be learnt by the surrogate models
+
+            learnt_dofs_in_node = np.intersect1d(field_dofs_in_node,
+            self.subdofs_to_learn)
+
+            # Gets the maximum absolute error of these DOFs
+
+            maximum_absolute_error_dof = tf.reduce_max(tf.gather(
+            absolute_error, learnt_dofs_in_node, axis=1), axis=1)
+
+            # Updates the error value to the corresponding DOF in the
+            # error field data matrix
+
+            error_dof_data[:,error_dof] = (
+            maximum_absolute_error_dof.numpy())
+
+        if self.verbose:
+
+            print("\nThe "+str(self.number_of_best_samples)+" best sam"+
+            "ples have the following maximum DOFs of maximum absolute "+
+            "error:\n"+str(np.max(error_dof_data, axis=1)))
+
+        # Saves the error DOF data as a binary file
+
+        np.save(error_field_data_file, error_dof_data)
+
+        # Returns the minimum and maximum values of error for each sam-
+        # ple to correctly set the extrema of the color bar in the scre-
+        # enshot
+
+        return np.min(error_dof_data, axis=1),  np.max(error_dof_data, 
+        axis=1)
 
     # Defines a function to create a tensor of [n_samples, n_dofs] to 
     # recreate n_samples fields for plotting and comparisons
@@ -639,15 +803,20 @@ class FEMSurrogateEvaluator:
     # results of the models in paraview
 
     def get_single_snapshot_for_single_model(self, field_output_file, 
-    true_field_output_file, sample_index, function_space_info):
+    true_field_output_file, sample_index, function_space_info,
+    display_reference_configuration=None, component_to_plot=None, 
+    warp_by_vector=None, color_bar_min_value=None, color_bar_max_value=
+    None, field_name=None):
 
         # Removes the termination of the file names just in case
 
         field_output_file = take_outFileNameTermination(
         field_output_file)
 
-        true_field_output_file = take_outFileNameTermination(
-        true_field_output_file)
+        if true_field_output_file is not None:
+
+            true_field_output_file = take_outFileNameTermination(
+            true_field_output_file)
 
         # Checks whether the mesh file name is None
 
@@ -678,20 +847,24 @@ class FEMSurrogateEvaluator:
 
         # Makes a visualization copy for the true field as well
 
-        _, _, xdmf_true_field_file = read_field_from_binary(
-        true_field_output_file+".npy", self.mesh_file_name, 
-        function_space_info, data_matrix_has_time_point_per_row=False, 
-        time_step=sample_index, return_visualization_file_name=True, 
-        save_to_xdmf=True, code_given_mesh_data_class=
-        self.mesh_data_class)
+        if true_field_output_file is not None:
+
+            _, _, xdmf_true_field_file = read_field_from_binary(
+            true_field_output_file+".npy", self.mesh_file_name, 
+            function_space_info, data_matrix_has_time_point_per_row=
+            False, time_step=sample_index, 
+            return_visualization_file_name=True, save_to_xdmf=True, 
+            code_given_mesh_data_class=self.mesh_data_class)
 
         # Removes all previous path to the output files
 
         field_output_file_without_path = get_list_of_directories(
         field_output_file)[0]
 
-        true_field_output_file_without_path = get_list_of_directories(
-        true_field_output_file)[0]
+        if true_field_output_file is not None:
+
+            true_field_output_file_without_path = get_list_of_directories(
+            true_field_output_file)[0]
 
         # Sets the name of the screenshot file with the sample index in
         # it
@@ -702,54 +875,105 @@ class FEMSurrogateEvaluator:
 
         # Sets the name of the screenshot file for the true field DOFs
 
-        screenshot_true_file = ("screenshot_of_"+
-        true_field_output_file_without_path+"_sample_"+str(sample_index+
-        1)+".png")
+        if true_field_output_file is not None:
 
-        # If the warp by vector functionality is unavailable, makes the
-        # snapshot display the reference configuration. Otherwise, no-
-        # thing will be shown
+            screenshot_true_file = ("screenshot_of_"+
+            true_field_output_file_without_path+"_sample_"+str(
+            sample_index+1)+".png")
 
-        display_reference_configuration = False
+        # If the flag to display the reference configuration was not
+        # provided, sets it according to the flag for warping by vector
 
-        if not self.warp_by_vector:
+        if display_reference_configuration is None:
 
-            display_reference_configuration = True
+            # If the warp by vector functionality is unavailable, makes 
+            # the snapshot display the reference configuration. Otherwi-
+            # se, nothing will be shown
+
+            display_reference_configuration = False
+
+            if not self.warp_by_vector:
+
+                display_reference_configuration = True
+
+        # If the component to plot was not provided, uses the same for
+        # the field
+
+        if component_to_plot is None:
+
+            component_to_plot = self.field_component_to_plot
+
+        elif component_to_plot=="None":
+        
+            component_to_plot = None
+
+        # Performs the same check for the warp by vector flag
+
+        if warp_by_vector is None:
+
+            warp_by_vector = self.warp_by_vector
+
+        if color_bar_min_value is None:
+
+            color_bar_min_value = self.color_bar_min_value
+
+        if color_bar_max_value is None:
+
+            color_bar_max_value = self.color_bar_max_value
+
+        # Uses the string 'None' to set the color extrema as actually
+        # None
+
+        if color_bar_min_value=="None":
+
+            color_bar_min_value = None
+
+        if color_bar_max_value=="None":
+
+            color_bar_max_value = None
+
+        # Gets the field name
+
+        if field_name is None:
+
+            field_name = self.field_name
 
         # Takes a snapshot of a simulation saved in the xdmf file 
         # whose field is called by the given field name inside FEniCS. 
         # The edges of the finite elements will be shown
         
-        frozen_snapshots(xdmf_field_file, self.field_name, time=0.0, 
+        frozen_snapshots(xdmf_field_file, field_name, time=0.0, 
         representation_type=self.representation_type, axes_color="blac"+
         "k", legend_bar_font="latex", zoom_factor=1.0, 
-        component_to_plot=self.field_component_to_plot, warp_by_vector=
-        self.warp_by_vector, resolution_ratio=10, background_color=
+        component_to_plot=component_to_plot, warp_by_vector=
+        warp_by_vector, resolution_ratio=10, background_color=
         "WhiteBackground", display_reference_configuration=
         display_reference_configuration, transparent_background=True, 
         legend_bar_font_color="black", set_camera_interactively=
         self.set_camera_interactively, color_bar_min_value=
-        self.color_bar_min_value, color_bar_max_value=
-        self.color_bar_max_value, output_imageFileName=screenshot_file, 
-        output_path=self.screenshots_path, 
-        read_camera_settings_dictionary=True, legend_bar_visibility=True)
+        color_bar_min_value, color_bar_max_value=color_bar_max_value, 
+        output_imageFileName=screenshot_file, output_path=
+        self.screenshots_path, read_camera_settings_dictionary=True, 
+        legend_bar_visibility=True)
 
         # Makes the same screenshot for the true values of the field in-
         # terpolation in a finite-element space
+
+        if true_field_output_file is not None:
         
-        frozen_snapshots(xdmf_true_field_file, self.field_name, time=0.0, 
-        representation_type=self.representation_type, axes_color="black", 
-        legend_bar_font="latex", zoom_factor=1.0, component_to_plot=
-        self.field_component_to_plot, warp_by_vector=self.warp_by_vector, 
-        resolution_ratio=10, background_color="WhiteBackground", 
-        display_reference_configuration=display_reference_configuration, 
-        transparent_background=True, legend_bar_font_color="black", 
-        set_camera_interactively=self.set_camera_interactively, 
-        color_bar_min_value=self.color_bar_min_value, 
-        color_bar_max_value=self.color_bar_max_value,
-        output_imageFileName=screenshot_true_file, output_path=
-        self.screenshots_path, read_camera_settings_dictionary=True, 
-        legend_bar_visibility=True)
+            frozen_snapshots(xdmf_true_field_file, field_name, time=0.0, 
+            representation_type=self.representation_type, axes_color=
+            "black", legend_bar_font="latex", zoom_factor=1.0, 
+            component_to_plot=component_to_plot, warp_by_vector=
+            warp_by_vector, resolution_ratio=10, background_color="Whi"+
+            "teBackground", display_reference_configuration=
+            display_reference_configuration, transparent_background=True, 
+            legend_bar_font_color="black", set_camera_interactively=
+            self.set_camera_interactively, color_bar_min_value=
+            color_bar_min_value, color_bar_max_value=color_bar_max_value, 
+            output_imageFileName=screenshot_true_file, output_path=
+            self.screenshots_path, read_camera_settings_dictionary=True, 
+            legend_bar_visibility=True)
 
     # Defines a function to perform error analyses per sample. This
     # function computes the mean absolute error per sample; the maximum
