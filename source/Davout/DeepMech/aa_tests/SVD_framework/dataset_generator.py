@@ -343,7 +343,7 @@ if __name__=="__main__":
 
     cube_size = 0.5
 
-    n_divisions = 10
+    n_divisions = 6#10
 
     E_extremum = 10E6
 
@@ -359,7 +359,8 @@ if __name__=="__main__":
 
     # Sets the paths and files names
 
-    results_path = get_parent_path_of_file()+"//results"
+    results_path = (get_parent_path_of_file()+"//results_n_divisions_"+
+    str(n_divisions))
 
     displacement_file_name = "displacement_young_modulus_field"
 
