@@ -162,16 +162,20 @@ save_snapshot_displacement=False):
             strain_energy_file_name+"_"+simulation_number+".npy")[:,1:
             ].tolist())
 
-            # Adds the Young modulus data and the displacement gradient
+            # Adds the displacement gradient and, then, the Young modulus
+            # data. The variables related to the quotient space must come
+            # first
 
-            successful_sample_data = [sample_data[variables_indices["p"+
-            "eak E"]], sample_data[variables_indices["base E"]]]
+            successful_sample_data = []
 
             successful_sample_data.extend(displacement_gradient[0])
 
             successful_sample_data.extend(displacement_gradient[1])
 
             successful_sample_data.extend(displacement_gradient[2])
+
+            successful_sample_data.extend([sample_data[variables_indices[
+            "peak E"]], sample_data[variables_indices["base E"]]])
 
             succesful_data.append(successful_sample_data)
 

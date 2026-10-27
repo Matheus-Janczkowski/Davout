@@ -22,9 +22,11 @@ class RVEKinematicsSurrogateModel:
     activations_list_auxiliar_network, quotient_space_dimension, 
     modulating_function, displacement_data_file, input_data_file, 
     results_path, loss_metric, n_training_samples, saved_model_file,
-    n_monte_carlo_realizations, n_best_models, 
+    n_monte_carlo_realizations, n_best_models, n_best_samples,
     maximum_training_iterations, verbose_delta_iterations,
-    parameters_dtype="float32", householder_epsilon=1.0, verbose=True):
+    mesh_file_name, optimizer, subdofs_to_learn, parameters_dtype="flo"+
+    "at32", householder_epsilon=1.0, verbose=True, integer_dtype="int3"+
+    "2"):
 
         # Saves the needed information
 
@@ -45,6 +47,8 @@ class RVEKinematicsSurrogateModel:
 
         self.loss_metric = loss_metric
 
+        self.optimizer = optimizer
+
         self.n_training_samples = n_training_samples
 
         self.saved_model_file = saved_model_file
@@ -53,7 +57,9 @@ class RVEKinematicsSurrogateModel:
 
         self.n_best_models = n_best_models
 
-        self.parameters_dtype = parameters_dtype
+        self.n_best_samples = n_best_samples
+
+        self.mesh_file_name = mesh_file_name
 
         self.householder_epsilon = householder_epsilon
 
@@ -63,19 +69,38 @@ class RVEKinematicsSurrogateModel:
 
         self.verbose_delta_iterations = verbose_delta_iterations
 
-    # Defines a function to train the neural network model
+        # Saves the tensorflow dtypes
 
-    def train_surrogate_model(self):
+        self.parameters_dtype = parameters_dtype
 
-        # Reads the two files
+        self.integer_dtype = integer_dtype
 
-        output_data = np.load(self.results_path+"//"+
+        # Converts the tensor of DOFs to a tensorflow integer tensor
+
+        self.subdofs_to_learn = tf.convert_to_tensor(subdofs_to_learn,
+        dtype=tf.as_dtype(self.parameters_dtype))
+
+        # Gets the number of output neurons from the tensor of the indi-
+        # ces of the DOFs that will actually be learnt
+
+        self.n_output_neurons = self.subdofs_to_learn.shape[0]
+
+        # Reads the output data 
+
+        self.output_data = np.load(self.results_path+"//"+
         self.displacement_data_file)
+
+        # Gets the numbers of samples and of total of DOFs
+
+        self.number_of_samples, self.total_number_of_dofs = (
+        self.output_data.shape)
+
+        # Gets the input data
 
         input_data = np.load(self.results_path+"//"+self.input_data_file)
 
         # Checks whether there is sufficient samples in the dataset
-
+        
         if self.n_training_samples>=input_data.shape[0]:
 
             raise IndexError(str(self.n_training_samples)+" samples we"+
@@ -83,7 +108,7 @@ class RVEKinematicsSurrogateModel:
             input_data.shape[0])+" samples in the input data matrix at"+
             ":\n"+str(self.results_path+"//"+self.input_data_file))
 
-        if self.n_training_samples>=output_data.shape[0]:
+        if self.n_training_samples>=self.output_data.shape[0]:
 
             raise IndexError(str(self.n_training_samples)+" samples we"+
             "re asked for training, but there are only "+str(
@@ -91,26 +116,32 @@ class RVEKinematicsSurrogateModel:
             "t:\n"+str(self.results_path+"//"+
             self.displacement_data_file))
 
-        if output_data.shape[0]!=input_data.shape[0]:
+        if self.output_data.shape[0]!=input_data.shape[0]:
 
             raise IndexError("The output data matrix has "+str(
-            output_data.shape[0])+" samples, whereas the input data ma"+
-            "trix has "+str(input_data.shape[0])+" samples.\n\nThe out"+
-            "put data matrix is at:\n"+str(self.results_path+"//"+
+            self.output_data.shape[0])+" samples, whereas the input da"+
+            "ta matrix has "+str(input_data.shape[0])+" samples.\n\nTh"+
+            "e output data matrix is at:\n"+str(self.results_path+"//"+
             self.displacement_data_file)+"\n\nthe input data matrix is"+
             "at:\n"+str(self.results_path+"//"+self.input_data_file))
 
+        # Saves the input data into the class
+
+        self.input_data = input_data
+
+        # Gets the number of input neurons
+
+        self.n_input_neurons = self.input_data.shape[1]
+
+    # Defines a function to train the neural network model
+
+    def train_surrogate_model(self):
+
         # Sets the training data
 
-        training_data = input_data[0:self.n_training_samples,:]
+        training_data = self.input_data[0:self.n_training_samples,:]
 
-        training_true_values = output_data[0:self.n_training_samples,:]
-
-        # Gets the number of input and output neurons
-
-        n_input_neurons = input_data.shape[1]
-
-        n_output_neurons = output_data.shape[1]
+        training_true_values = self.output_data[0:self.n_training_samples,:]
 
         # Verifies if the output layer of the main network has the same
         # number of output neurons
@@ -121,12 +152,12 @@ class RVEKinematicsSurrogateModel:
 
             n_output_neurons_main_network += value
 
-        if n_output_neurons_main_network!=n_output_neurons:
+        if n_output_neurons_main_network!=self.n_output_neurons:
 
             raise ValueError("The main network has "+str(
             n_output_neurons_main_network)+" neurons in the output lay"+
             "er; whereas the data indicate that there must be "+str(
-            n_output_neurons)+" neurons in the output layer")
+            self.n_output_neurons)+" neurons in the output layer")
 
         # Sets the architecture dictionary
     
@@ -137,7 +168,7 @@ class RVEKinematicsSurrogateModel:
 
         # Creates the class of neural network information
 
-        ANN_class = ANN_tools.MultiLayerModel(n_input_neurons,
+        ANN_class = ANN_tools.MultiLayerModel(self.n_input_neurons,
         self.activations_list_main_network, enforce_customLayers=True, 
         verbose=self.verbose, parameters_dtype=self.parameters_dtype, 
         custom_architecture=custom_architecture, input_size_main_network=
@@ -275,6 +306,10 @@ class RVEKinematicsSurrogateModel:
 
 if __name__=="__main__":
 
+    # Defines the array with the DOFs to be learnt
+
+    subdofs_to_learn = np.arange(0, 20577, 3)
+
     # Defines the number of input neurons of the main network. Remember
     # that the data matrix is a tensor [n_samples, n_input_variables]. 
     # The first quotient_space_dimension columns must be dedicated to 
@@ -307,6 +342,8 @@ if __name__=="__main__":
 
     # Sets the training information
 
+    optimizer = "Adam"
+
     n_training_samples = 10000
 
     maximum_training_iterations = 1000
@@ -316,6 +353,8 @@ if __name__=="__main__":
     n_monte_carlo_realizations = 10
 
     n_best_models = 5
+
+    n_best_samples = 10
 
     loss_metric = "MeanSquaredError"
 
@@ -331,6 +370,8 @@ if __name__=="__main__":
 
     input_data_file = "00_successful_complete_and_filtered_data_matrix.npy"
 
+    mesh_file_name = get_parent_path_of_file()+"//box_mesh_mecsol"
+
     # Instantiates the class that owns all information about training 
     # and testing models
 
@@ -339,9 +380,10 @@ if __name__=="__main__":
     quotient_space_dimension, modulating_function, 
     displacement_data_file, input_data_file, results_path, loss_metric, 
     n_training_samples, saved_model_file, n_monte_carlo_realizations, 
-    n_best_models, maximum_training_iterations, verbose_delta_iterations,
-    parameters_dtype=parameters_dtype, householder_epsilon=1.0, verbose=
-    True)
+    n_best_models, n_best_samples, maximum_training_iterations, 
+    verbose_delta_iterations, mesh_file_name, optimizer, 
+    subdofs_to_learn, parameters_dtype=parameters_dtype, 
+    householder_epsilon=1.0, verbose=True)
 
     training_flag = True
 
