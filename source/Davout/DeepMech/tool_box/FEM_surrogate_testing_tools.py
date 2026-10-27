@@ -640,14 +640,15 @@ class FEMSurrogateEvaluator:
                 component_index_with_maximum_error = (
                 component_with_maximum_error_per_sample[sample_index])
 
-                mean_absolute_error_per_sample_string += "\n      "+str(format(
-                loss_value, '.6E'))+"      |"
+                mean_absolute_error_per_sample_string += "\n      "+str(
+                format(loss_value, '.6E'))+"      |"
 
-                mean_absolute_error_per_sample_string += "      "+str(format(
-                maximum_component_absolute_error, '.6E'))+"      |"
+                mean_absolute_error_per_sample_string += ("      "+str(
+                format(maximum_component_absolute_error, '.6E'))+"    "+
+                "  |")
 
-                mean_absolute_error_per_sample_string += "      "+str(format(
-                component_index_with_maximum_error, '.6E'))
+                mean_absolute_error_per_sample_string += "      "+str(
+                format(component_index_with_maximum_error, '.6E'))
 
                 if not hasattr(self, "DOF_finder"):
 
