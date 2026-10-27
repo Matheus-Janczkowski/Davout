@@ -35,7 +35,7 @@ class FEMSurrogateEvaluator:
     set_camera_interactively=False, color_bar_min_value=None, 
     color_bar_max_value=None, field_type=None, polynomial_degree=None,
     interpolation_function=None, build_error_field=False, 
-    mean_absolute_error_threshold=1E-2):
+    mean_absolute_error_threshold=1E-2, node_proximity_tolerance=1E-6):
 
         self.mean_absolute_error_threshold = (
         mean_absolute_error_threshold)
@@ -43,6 +43,8 @@ class FEMSurrogateEvaluator:
         self.verbose = verbose
 
         self.build_error_field = build_error_field
+
+        self.node_proximity_tolerance = node_proximity_tolerance
 
         # Checks whether the file paths exist and returns the file paths
         # updated with the parent path. Additionally, the given files 
@@ -108,8 +110,8 @@ class FEMSurrogateEvaluator:
         if maximum_number_of_models_to_be_evaluated is not None:
 
             verify_type(maximum_number_of_models_to_be_evaluated, "max"+
-            "imum_number_of_models_to_be_evaluated", int, "'FEMSurroga"+
-            "teEvaluator' is not None, thus it")
+            "imum_number_of_models_to_be_evaluated", "non-negative int", 
+            "'FEMSurrogateEvaluator' is not None, thus it")
 
             # Checks if the maximum model number is available with the
             # template of model file
@@ -142,8 +144,8 @@ class FEMSurrogateEvaluator:
         # will be assessed is an integer or if it was no provided
 
         self.number_of_best_samples = verify_type(number_of_best_samples, 
-        "number_of_best_samples", int, "'FEMSurrogateEvaluator'", 
-        default_in_case_of_none=1)
+        "number_of_best_samples", "non-negative int", "'FEMSurrogateEv"+
+        "aluator'", default_in_case_of_none=1)
 
         # If a mesh file has been given
 
@@ -153,11 +155,11 @@ class FEMSurrogateEvaluator:
             mesh_file_name, parent_path=parent_path, 
             path_bits_to_be_excluded=3, required_termination="msh")
 
+            # Reads the mesh and ensembles the mesh data class
+
+            self.mesh_data_class = read_mshMesh(mesh_file_name)
+
         self.mesh_file_name = mesh_file_name
-
-        # Reads the mesh and ensembles the mesh data class
-
-        self.mesh_data_class = read_mshMesh(self.mesh_file_name)
 
         # Saves the flag to take snapshots or not and the number of sam-
         # ples to be shot
@@ -166,7 +168,7 @@ class FEMSurrogateEvaluator:
 
         self.number_of_samples_to_be_snapshot = verify_type(
         number_of_samples_to_be_snapshot, "number_of_samples_to_be_sna"+
-        "pshot", int, "'FEMSurrogateEvaluator'")
+        "pshot", "non-negative int", "'FEMSurrogateEvaluator'")
 
         # Saves functional data information. But, if snapshots or if the
         # error field are required, the functional data must be given
@@ -188,10 +190,10 @@ class FEMSurrogateEvaluator:
             description="a string with the type of the interpolation f"+
             "unction, such as 'CG' and 'DG'")
 
-            mesh_file_name = verify_type(mesh_file_name, "mesh_file_na"+
-            "me", str, "'FEMSurrogateEvaluator'", description="a strin"+
-            "g with the path to the mesh where the field will be inter"+
-            "polated upon")
+            mesh_file_name = verify_type(self.mesh_file_name, "mesh_fi"+
+            "le_name", str, "'FEMSurrogateEvaluator'", description="a "+
+            "string with the path to the mesh where the field will be "+
+            "interpolated upon")
             
             field_name = verify_type(field_name, "'field_name'", str, 
             "'FEMSurrogateEvaluator'", description="name of the field "+
@@ -217,7 +219,8 @@ class FEMSurrogateEvaluator:
             
             self.DOF_finder = dofs_per_node_finder_class(
             self.functional_data_class, field_name=field_name,
-            assemble_dofs_per_node=self.build_error_field)
+            assemble_dofs_per_node=self.build_error_field,
+            node_proximity_tolerance=self.node_proximity_tolerance)
 
             # If the error field is to be plotted, creates a functional
             # data class for the error field
@@ -247,7 +250,8 @@ class FEMSurrogateEvaluator:
 
                 self.error_DOF_finder = dofs_per_node_finder_class(
                 self.error_functional_data_class, field_name=
-                self.error_field_name, assemble_dofs_per_node=True)
+                self.error_field_name, assemble_dofs_per_node=True,
+                node_proximity_tolerance=self.node_proximity_tolerance)
 
                 # Saves the number of DOFs for the scalar error field
 
@@ -508,6 +512,12 @@ class FEMSurrogateEvaluator:
         ) = self.get_absolute_error_info_per_sample(
         true_output_of_subdofs, model_output)
 
+        # Converts the component with the maximum error to the global DOF
+        # numbering convention using the subdofs_to_learn range
+
+        component_with_maximum_error_per_sample = self.subdofs_to_learn[
+        component_with_maximum_error_per_sample]
+
         # Counts the number of samples that yielded a maximum absolute
         # error lower than the threshold
 
@@ -639,9 +649,18 @@ class FEMSurrogateEvaluator:
                 mean_absolute_error_per_sample_string += "      "+str(format(
                 component_index_with_maximum_error, '.6E'))
 
-                mean_absolute_error_per_sample_string += "      | "+str(
-                self.DOF_finder.get_coordinates_from_dof(
-                component_index_with_maximum_error)[0])
+                if not hasattr(self, "DOF_finder"):
+
+                    mean_absolute_error_per_sample_string += ("      |"+
+                    " unavailable mesh data. The functional data class"+
+                    " was not built since no error field or snapshots "+
+                    "are taken")
+
+                else:
+
+                    mean_absolute_error_per_sample_string += ("      |"+
+                    " "+str(self.DOF_finder.get_coordinates_from_dof(
+                    component_index_with_maximum_error)[0]))
 
             print("\nThe "+str(self.number_of_best_samples)+" best sam"+
             "ples have the following absolute error characteristics\n-"+
@@ -716,16 +735,24 @@ class FEMSurrogateEvaluator:
             learnt_dofs_in_node = np.intersect1d(field_dofs_in_node,
             self.subdofs_to_learn)
 
-            # Gets the maximum absolute error of these DOFs
+            # Checks whether DOFs in common were indeed found. When the
+            # surrogate model learns DOFs enclosed to a subregion in 
+            # space, there can be nodes with no result to compare a-
+            # gainst. Note that unlearnt DOFs will intentionally feature
+            # null error
 
-            maximum_absolute_error_dof = tf.reduce_max(tf.gather(
-            absolute_error, learnt_dofs_in_node, axis=1), axis=1)
+            if learnt_dofs_in_node.shape[0]>0:
 
-            # Updates the error value to the corresponding DOF in the
-            # error field data matrix
+                # Gets the maximum absolute error of these DOFs
 
-            error_dof_data[:,error_dof] = (
-            maximum_absolute_error_dof.numpy())
+                maximum_absolute_error_dof = tf.reduce_max(tf.gather(
+                absolute_error, learnt_dofs_in_node, axis=1), axis=1)
+
+                # Updates the error value to the corresponding DOF in 
+                # the error field data matrix
+
+                error_dof_data[:,error_dof] = (
+                maximum_absolute_error_dof.numpy())
 
         if self.verbose:
 
@@ -771,17 +798,17 @@ class FEMSurrogateEvaluator:
         # Creates grid of row indices [0, 1, ... num_samples-1] ex- 
         # panded to match subdofs
 
-        row_indices = tf.repeat(tf.range(number_of_samples)[:, None], 
-        repeats=number_of_updated_dofs, axis=1)
+        row_indices = tf.repeat(tf.range(number_of_samples, dtype=
+        tf.int32)[:, None], repeats=number_of_updated_dofs, axis=1)
 
-        column_indices = tf.tile(tf.constant(self.subdofs_to_learn)[
-        None,:], multiples=[number_of_samples,1])
+        column_indices = tf.tile(tf.constant(self.subdofs_to_learn, 
+        dtype=tf.int32)[None,:], multiples=[number_of_samples,1])
 
         # Stacks into shape (number_of_samples*number_of_updated_dofs, 
         # 2)
 
-        indices = tf.cast(tf.reshape(tf.stack([row_indices, 
-        column_indices], axis=-1), [-1, 2]), dtype=tf.int32)
+        indices = tf.reshape(tf.stack([row_indices, column_indices], 
+        axis=-1), [-1, 2])
 
         # Flattens model_output to match indices
 
@@ -1029,7 +1056,7 @@ class FEMSurrogateEvaluator:
 
             samples_indices = np.arange(0, samples_indices)
 
-        elif not isinstance(samples_indices, np.ndarray):
+        if not isinstance(samples_indices, np.ndarray):
 
             raise TypeError("'"+str(indices_name)+"' in 'FEMSurrogateE"+
             "valuator' must be an integer or a numpy array. If it is a"+
@@ -1037,6 +1064,15 @@ class FEMSurrogateEvaluator:
             "s of the input data from the first to the row of idex giv"+
             "en by the integer-1.\nCurrently, '"+str(indices_name)+"' "+
             "is:\n"+str(samples_indices))
+
+        elif not np.issubdtype(samples_indices.dtype, np.integer):
+
+            raise TypeError("'"+str(indices_name)+"' in 'FEMSurrogateE"+
+            "valuator' must be a numpy array of integers. If it is an "+
+            "integer, the dataset samples will be considered the rows "+
+            "of the input data from the first to the row of index give"+
+            "n by the integer-1.\nCurrently, '"+str(indices_name)+"' h"+
+            "as its type as "+str(samples_indices.dtype))
 
         elif len(samples_indices.shape)!=1:
 
@@ -1054,6 +1090,15 @@ class FEMSurrogateEvaluator:
             )+" which is larger or equal to the number of rows in the "+
             "input data and in the output data, which is "+str(
             self.input_data.shape[0]))
+
+        # Checks whether there are negative indices
+
+        elif samples_indices.min()<0:
+
+            raise ValueError("The minimum index in '"+str(indices_name)+
+            "' in 'FEMSurrogateEvaluator' is "+str(samples_indices.min()
+            )+" which is smaller than zero. Only non-negative indices "+
+            "are allowed")
 
         return samples_indices
 
@@ -1101,6 +1146,15 @@ class FEMSurrogateEvaluator:
             str(subdofs_to_learn)+"\nwhose type is "+str(type(
             subdofs_to_learn)))
 
+        # Checks whether it is an array of integers
+
+        elif not np.issubdtype(retrieved_subdofs_to_learn.dtype, np.integer):
+        
+            raise TypeError("'subdofs_to_learn' in 'FEMSurrogateEvalua"+
+            "tor' must be a numpy array of integers. \nCurrently, 'sub"+
+            "dofs_to_learn' has its type as "+str(
+            retrieved_subdofs_to_learn.dtype))
+
         # Checks if subdofs to be learned is a flat array
 
         elif len(retrieved_subdofs_to_learn.shape)!=1:
@@ -1122,12 +1176,23 @@ class FEMSurrogateEvaluator:
             "al to the number of columns in the output true data, whic"+
             "h is "+str(self.output_true_data.shape[1]))
 
+        # Checks whether there are negative indices
+        
+        elif retrieved_subdofs_to_learn.min()<0:
+
+            raise ValueError("The minimum index in 'subdofs_to_learn' "+
+            "in 'FEMSurrogateEvaluator' is "+str(
+            retrieved_subdofs_to_learn.min())+" which is smaller than "+
+            "zero. Only non-negative indices are allowed")
+
         return retrieved_subdofs_to_learn
 
     # Defines a function to check if the numbers of best samples are
     # consistent
 
     def check_numbers_of_best_samples(self, indices_of_dataset_samples):
+
+        # Checks whether
 
         # Verifies if there are a larger number of best samples than the
         # number of samples in the list of indices of samples of the da-
