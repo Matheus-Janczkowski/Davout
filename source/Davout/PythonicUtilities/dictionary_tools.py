@@ -317,11 +317,15 @@ True):
             
 # Defines a function to list the keys in a string for error messageing
 
-def list_keys(obligatory_keys, optional_keys):
+def list_keys(obligatory_keys, optional_keys, simply_list_keys=False):
 
     # Gets the list of available keys
 
-    available_keys = "\n\nObligatory keys:"
+    available_keys = "\n\n"
+
+    if not simply_list_keys:
+
+        available_keys += "Obligatory keys:"
 
     # Verifies if the obligatory keys are in fact a dictionary
 
@@ -333,18 +337,23 @@ def list_keys(obligatory_keys, optional_keys):
 
             available_keys += ("\n\n'"+str(key)+"'")
 
-            # Verifies if type is given
+            # If each key infor is a dictionary itself, it may contain 
+            # information of this particular key
 
-            if "type" in key_info:
+            if isinstance(key_info, dict):
 
-                available_keys += ("\nType: "+str(key_info["type"]))
+                # Verifies if type is given
 
-            # Verifies if a description is given
+                if "type" in key_info:
 
-            if "description" in key_info:
+                    available_keys += ("\nType: "+str(key_info["type"]))
 
-                available_keys += ("\nDescription:\n"+str(key_info["de"+
-                "scription"]))
+                # Verifies if a description is given
+
+                if "description" in key_info:
+
+                    available_keys += ("\nDescription:\n"+str(key_info[
+                    "description"]))
 
     # Otherwise, if it is a plain list
 
@@ -358,38 +367,40 @@ def list_keys(obligatory_keys, optional_keys):
 
     # Adds the optional keys
 
-    available_keys += "\n\nOptional keys:"
+    if optional_keys is not None:
 
-    if isinstance(optional_keys, dict):
+        available_keys += "\n\nOptional keys:"
 
-        for key, key_info in optional_keys.items():
+        if isinstance(optional_keys, dict):
 
-            # Adds the key name
+            for key, key_info in optional_keys.items():
 
-            available_keys += ("\n\n'"+str(key)+"'")
+                # Adds the key name
 
-            # Verifies if type is given
+                available_keys += ("\n\n'"+str(key)+"'")
 
-            if "type" in key_info:
+                # Verifies if type is given
 
-                available_keys += ("\nType: "+str(key_info["type"]))
+                if "type" in key_info:
 
-            # Verifies if a description is given
+                    available_keys += ("\nType: "+str(key_info["type"]))
 
-            if "description" in key_info:
+                # Verifies if a description is given
 
-                available_keys += ("\nDescription:\n"+str(key_info["de"+
-                "scription"]))
+                if "description" in key_info:
 
-    # Otherwise, if it is a plain list
+                    available_keys += ("\nDescription:\n"+str(key_info[
+                    "description"]))
 
-    else:
+        # Otherwise, if it is a plain list
 
-        for key in optional_keys:
+        else:
 
-            # Adds the key name and its description
+            for key in optional_keys:
 
-            available_keys += "\n'"+str(key)+"'"
+                # Adds the key name and its description
+
+                available_keys += "\n'"+str(key)+"'"
 
     # Returns the string
 

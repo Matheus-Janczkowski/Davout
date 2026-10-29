@@ -14,6 +14,8 @@ from .....Davout.DeepMech.aa_tests.mecsol_2026_quotient_space.box_with_imposed_d
 
 from .....Davout.DeepMech.aa_tests.mecsol_2026_quotient_space.young_modulus_field_generator import generate_field
 
+from input_data_filler import fill_load_steps
+
 import numpy as np
 
 import traceback
@@ -26,7 +28,8 @@ def generate_dataset(n_samples, limits_list, p_norm_list, results_path,
 displacement_file_name, young_modulus_file, mesh_file_name, cube_size,
 influence_radius, damping_factor, radius_power, mesh_data_class, 
 lagrange_multiplier_file_name, strain_energy_file_name,
-save_snapshot_displacement=False):
+displacement_matrix_file_name, strain_energy_matrix_file_name, 
+input_matrix_file_name, save_snapshot_displacement=False):
     
     # Initializes the list of samples
 
@@ -193,14 +196,14 @@ save_snapshot_displacement=False):
 
             # Saves the lists into binary and txt files
 
-            np.save(results_path+"//00_successful_displacement_matrix.n"+
-            "py", np.array(succesful_displacement))
+            np.save(results_path+"//"+displacement_matrix_file_name, 
+            np.array(succesful_displacement))
 
-            np.save(results_path+"//00_successful_strain_energy_matrix"+
-            ".npy", np.array(succesful_strain_energy))
+            np.save(results_path+"//"+strain_energy_matrix_file_name, 
+            np.array(succesful_strain_energy))
 
-            np.save(results_path+"//00_successful_data_matrix.npy", 
-            np.array(succesful_data))
+            np.save(results_path+"//"+input_matrix_file_name, np.array(
+            succesful_data))
 
             list_toTxt(completed_simulations, "00_completed_simulations", 
             parent_path=results_path)
@@ -372,6 +375,31 @@ if __name__=="__main__":
 
     mesh_file_name = "box_mesh_mecsol"
 
+    # Sets the file name of the data matrices
+
+    displacement_matrix_file_name = ("00_successful_displacement_matri"+
+    "x.npy")
+
+    strain_energy_matrix_file_name = ("00_successful_strain_energy_mat"+
+    "rix.npy")
+
+    input_matrix_file_name = "00_successful_data_matrix.npy"
+
+    # Sets the file names of the completed (filled-in with load-steps) 
+    # data matrices and the filtered counterpart
+
+    complete_data_matrix_file_name = ("00_successful_complete_data_mat"+
+    "rix.npy")
+
+    complete_and_filtered_data_matrix_file_name = ("00_successful_comp"+
+    "lete_and_filtered_data_matrix.npy")
+
+    # Sets the initial and final time points for the simulation
+
+    initial_time = 0.2
+
+    final_time = 1.0
+
     # Constructs the mesh
 
     mesh_data_class = read_mshMesh({"length x": cube_size, "length y": 
@@ -382,10 +410,31 @@ if __name__=="__main__":
     "bias x": ["Bump", bias_factor], "bias y": ["Bump", bias_factor], 
     "bias z": ["Bump", bias_factor]})
 
-    # Constructs the field
+    # Defines a flag fo generating the dataset and another flag for ge-
+    # nerating the dataset with the intermediate load steps and its fil-
+    # tered version as well
 
-    generate_dataset(n_samples, limits_list, p_norm_list, results_path,
-    displacement_file_name, young_modulus_file, mesh_file_name, cube_size,
-    influence_radius, damping_factor, radius_power, mesh_data_class,
-    lagrange_multiplier_file_name, strain_energy_file_name, 
-    save_snapshot_displacement=False)
+    flag_generate_dataset = False
+
+    flag_fill_in_load_steps = True
+
+    # Generates the dataset from skretch
+
+    if flag_generate_dataset:
+
+        generate_dataset(n_samples, limits_list, p_norm_list, 
+        results_path, displacement_file_name, young_modulus_file, 
+        mesh_file_name, cube_size, influence_radius, damping_factor, 
+        radius_power, mesh_data_class, lagrange_multiplier_file_name, 
+        strain_energy_file_name, displacement_matrix_file_name,
+        strain_energy_matrix_file_name, input_matrix_file_name,
+        save_snapshot_displacement=False)
+
+    # Fills the load-steps and generates the filtered dataset from it
+
+    if flag_fill_in_load_steps:
+
+        fill_load_steps(input_matrix_file_name, 
+        displacement_matrix_file_name, complete_data_matrix_file_name, 
+        complete_and_filtered_data_matrix_file_name, results_path, 
+        initial_time, final_time)

@@ -9,6 +9,8 @@ from time import time
 
 from .....Davout.DeepMech.tool_box import ANN_tools, training_tools
 
+from .....Davout.DeepMech.tool_box.numerical_tools import DataMatrixRegularization
+
 from .....Davout.DeepMech.tool_box.loss_assembler_classes import MaximumAbsoluteError
 
 from .....Davout.PythonicUtilities.path_tools import get_parent_path_of_file
@@ -26,9 +28,18 @@ class RVEKinematicsSurrogateModel:
     maximum_training_iterations, verbose_delta_iterations,
     mesh_file_name, optimizer, subdofs_to_learn, parameters_dtype="flo"+
     "at32", householder_epsilon=1.0, verbose=True, integer_dtype="int3"+
-    "2"):
+    "2", get_all_inputs_to_zeroth_order_of_magnitude=False, 
+    non_orthogonal_matrices=False, device_type="CPU", 
+    input_data_regularization_method=None):
 
         # Saves the needed information
+
+        self.non_orthogonal_matrices = non_orthogonal_matrices
+
+        self.device_type = device_type
+
+        self.get_all_inputs_to_zeroth_order_of_magnitude = (
+        get_all_inputs_to_zeroth_order_of_magnitude)
 
         self.activations_list_main_network = activations_list_main_network
 
@@ -125,23 +136,31 @@ class RVEKinematicsSurrogateModel:
             self.displacement_data_file)+"\n\nthe input data matrix is"+
             "at:\n"+str(self.results_path+"//"+self.input_data_file))
 
-        # Saves the input data into the class
+        # Checks if a regularization technique was requested for the in-
+        # put data matrix
 
-        self.input_data = input_data
+        if input_data_regularization_method is not None:
+
+            # Instantiates the data regularization class
+
+            data_regularization_class = DataMatrixRegularization(
+            regularization_function=input_data_regularization_method)
+
+            # Regularizes the data matrix and saves the regularization
+            # data using this input data
+
+            self.input_data, _ = data_regularization_class(input_data, 
+            True)
+
+        # Otherwise, simply saves the input data into the class
+        
+        else:
+
+            self.input_data = input_data
 
         # Gets the number of input neurons
 
         self.n_input_neurons = self.input_data.shape[1]
-
-    # Defines a function to train the neural network model
-
-    def train_surrogate_model(self):
-
-        # Sets the training data
-
-        training_data = self.input_data[0:self.n_training_samples,:]
-
-        training_true_values = self.output_data[0:self.n_training_samples,:]
 
         # Verifies if the output layer of the main network has the same
         # number of output neurons
@@ -161,23 +180,38 @@ class RVEKinematicsSurrogateModel:
 
         # Sets the architecture dictionary
     
-        custom_architecture = {"name": "SVDQuotientSpace", "weights mo"+
-        "dulating function": self.modulating_function, "Householder ep"+
-        "silon": self.householder_epsilon, "activations accessory laye"+
-        "r list": self.activations_list_auxiliar_network}
+        self.custom_architecture = {"name": "SVDQuotientSpace", "weigh"+
+        "ts modulating function": self.modulating_function, "Household"+
+        "er epsilon": self.householder_epsilon, "activations accessory"+
+        " layer list": self.activations_list_auxiliar_network, "non-or"+
+        "thogonal matrices": self.non_orthogonal_matrices, "hardware d"+
+        "evice": self.device_type, "convex with respect to quotient sp"+
+        "ace": False}
+
+    # Defines a function to train the neural network model
+
+    def train_surrogate_model(self):
+
+        # Sets the training data
+
+        training_data = self.input_data[0:self.n_training_samples,:]
+
+        training_true_values = self.output_data[0:self.n_training_samples
+        ,:]
 
         # Creates the class of neural network information
 
         ANN_class = ANN_tools.MultiLayerModel(self.n_input_neurons,
         self.activations_list_main_network, enforce_customLayers=True, 
         verbose=self.verbose, parameters_dtype=self.parameters_dtype, 
-        custom_architecture=custom_architecture, input_size_main_network=
-        self.quotient_space_dimension)
+        custom_architecture=self.custom_architecture, 
+        input_size_main_network=self.quotient_space_dimension)
 
         self.custom_model = ANN_class()
 
         # Defines the loss metric
 
+        """
         self.live_loss_metric = None
 
         if isinstance(self.loss_metric, str):
@@ -190,7 +224,9 @@ class RVEKinematicsSurrogateModel:
                 "metric by the name '"+str(self.loss_metric)+"'")
 
             self.live_loss_metric = getattr(tf.keras.losses, 
-            self.loss_metric)(dtype=tf.as_dtype(self.parameters_dtype))
+            self.loss_metric)(dtype=tf.as_dtype(self.parameters_dtype))"""
+
+        self.live_loss_metric = self.loss_metric
 
         # Sets the optimization class for training
 
@@ -200,7 +236,7 @@ class RVEKinematicsSurrogateModel:
         self.maximum_training_iterations, verbose_deltaIterations=
         self.verbose_delta_iterations, save_model_file=
         self.saved_model_file, match_data_float_type_to_trainables=True, 
-        parent_path=self.results_path)
+        parent_path=self.results_path, optimizer=self.optimizer)
 
         t_initial = time()
 
@@ -214,7 +250,8 @@ class RVEKinematicsSurrogateModel:
 
         training_class.monte_carlo_training(n_realizations=
         self.n_monte_carlo_realizations, best_models_rank_size=
-        self.n_best_models, show_reinitialization_distance=True)
+        self.n_best_models, show_reinitialization_distance=True, 
+        model_base_name=self.saved_model_file)
 
         # Checks the loss again with the best model of the Monte Carlo
         # training
@@ -306,9 +343,19 @@ class RVEKinematicsSurrogateModel:
 
 if __name__=="__main__":
 
+    # Sets the number of transfinite divisions in the RVE mesh
+
+    n_divisions = 8
+
+    # Sets a dictionary for the number of DOFs in the mesh for each num-
+    # ber of divisions
+
+    dofs_per_number_of_divisions = {6: 3993, 8: 10125, 10: 20577}
+
     # Defines the array with the DOFs to be learnt
 
-    subdofs_to_learn = np.arange(0, 20577, 3)
+    subdofs_to_learn = np.arange(0, dofs_per_number_of_divisions[
+    n_divisions], 3)
 
     # Defines the number of input neurons of the main network. Remember
     # that the data matrix is a tensor [n_samples, n_input_variables]. 
@@ -321,7 +368,8 @@ if __name__=="__main__":
     # Defines the number of neurons of the different hidden layers and of
     # the output layer
 
-    n_neurons_per_layer = [100, 1000, 20577]
+    n_neurons_per_layer = [100, 1000, int(dofs_per_number_of_divisions[
+    n_divisions]/3)]
 
     # Sets a list of layers and the activation functions
 
@@ -329,11 +377,12 @@ if __name__=="__main__":
     n_neurons_per_layer[0]}}, {"elu": {"number of neurons":
     n_neurons_per_layer[1]}}, {"linear": n_neurons_per_layer[2]}]
 
-    activations_list_auxiliar_network = [{"quadratic": {"number"+
-    " of neurons": min(quotient_space_dimension, n_neurons_per_layer[0]),
-    "a2": 1.0}}, {"quadratic":  {"number of neurons": min(
-    n_neurons_per_layer[0], n_neurons_per_layer[1]), "a2": 1.0}}, {"qu"+
-    "adratic": {"number of neurons": min(n_neurons_per_layer[1],
+    activations_list_auxiliar_network = [{"quadratic": {"number of neu"+
+    "rons": min(quotient_space_dimension, n_neurons_per_layer[0]), "a2": 
+    1.0}}, 
+    {"quadratic":  {"number of neurons": min(n_neurons_per_layer[0], 
+    n_neurons_per_layer[1]), "a2": 1.0}}, 
+    {"quadratic": {"number of neurons": min(n_neurons_per_layer[1], 
     n_neurons_per_layer[2])}}]
 
     # Sets the modulating function for the weights matrices
@@ -358,19 +407,41 @@ if __name__=="__main__":
 
     loss_metric = "MeanSquaredError"
 
+    loss_metric = {"name": "LpNormError", "p": 12, "use_stable_impleme"+
+    "ntation": True}
+
     parameters_dtype = "float32"
 
     saved_model_file = "RVE_kinematics_model.keras"
 
     # Sets the path for the data
 
-    results_path = get_parent_path_of_file()+"//results"
+    results_path = (get_parent_path_of_file()+"//results_n_divisions_"+
+    str(n_divisions))
    
     displacement_data_file = "00_successful_displacement_matrix.npy"
 
     input_data_file = "00_successful_complete_and_filtered_data_matrix.npy"
 
     mesh_file_name = get_parent_path_of_file()+"//box_mesh_mecsol"
+
+    # Sets the method to regularize the input data matrix
+
+    input_data_regularization_method = None
+
+    # Sets if the input data must be put into the same order of magnitu-
+    # de
+
+    get_all_inputs_to_zeroth_order_of_magnitude = False
+
+    # Sets the device type where the training will be performed
+
+    device_type = "GPU"
+
+    # Sets whether the constraint on orthogonality of the SVD matrices
+    # will not be enforced
+
+    non_orthogonal_matrices = False
 
     # Instantiates the class that owns all information about training 
     # and testing models
@@ -383,12 +454,20 @@ if __name__=="__main__":
     n_best_models, n_best_samples, maximum_training_iterations, 
     verbose_delta_iterations, mesh_file_name, optimizer, 
     subdofs_to_learn, parameters_dtype=parameters_dtype, 
-    householder_epsilon=1.0, verbose=True)
+    householder_epsilon=1.0, verbose=True, 
+    get_all_inputs_to_zeroth_order_of_magnitude=
+    get_all_inputs_to_zeroth_order_of_magnitude, device_type=
+    device_type, non_orthogonal_matrices=non_orthogonal_matrices,
+    input_data_regularization_method=input_data_regularization_method)
 
     training_flag = True
+
+    testing_flag = False
 
     if training_flag:
 
         modeling_class.train_surrogate_model()
 
-    modeling_class.test_surrogate_model()
+    if testing_flag:
+
+        modeling_class.test_surrogate_model()

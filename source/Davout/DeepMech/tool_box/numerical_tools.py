@@ -219,6 +219,88 @@ reorder_indices=True, block_multiplication=True, n_samples=None):
             return tf.SparseTensor(indices=non_zero_indices, values=
             sparse_matrix.data.astype(dtype), dense_shape=
             sparse_matrix.shape)
+
+########################################################################
+#                          Input normalization                         #
+########################################################################
+
+# Defines a class to regularize a numpy array [n_samples, n_variables].
+# This regularization procedure aims to map all variables to the order 
+# of magnitude of 10^0
+
+class DataMatrixRegularization:
+
+    def __init__(self, regularization_function="maximum_absolute_order"+
+    "_normalization"):
+
+        # Automatically gets a dictionary of the methods defined in this
+        # class
+
+        self.available_methods = programming_tools.get_attribute(self,
+        None, None, dictionary_of_methods=True, delete_init_key=True,
+        reserved_methods=["__call__"])
+
+        # Checks whether the required regularization technique is a va-
+        # lid regularization function
+
+        if regularization_function in self.available_methods:
+
+            # Records the regularization technique as the live method
+            # object
+
+            self.regularization_function = self.available_methods[
+            regularization_function]
+
+        # Otherwise, throws an error
+
+        else:
+
+            available_methods_string = dictionary_tools.list_keys(
+            self.available_methods, None, simply_list_keys=True)
+
+            raise ValueError("The 'regularization_function' in 'DataMa"+
+            "trixRegularization' was given as '"+str(
+            regularization_function)+"'. However, this is not an avail"+
+            "able regularization technique.\nCheck the available metho"+
+            "ds below:"+available_methods_string)
+
+    # Defines the call method to call the regularization method
+
+    def __call__(self, data_matrix, recompute_regularization_data):
+
+        numpy_data_matrix = np.asarray(data_matrix)
+
+        return self.regularization_function(numpy_data_matrix,
+        recompute_regularization_data)
+
+    ####################################################################
+    #                  List of regularization methods                  #
+    ####################################################################
+
+    # Defines a function for regularizing using the maximum absolute or-
+    # der of magnitude
+
+    def maximum_absolute_order_normalization(self, data_matrix,
+    recompute_regularization_data, non_zero_epsilon=1E-12):
+
+        # If the data for regularization is to be recomputed
+
+        if recompute_regularization_data:
+
+            # Gets the order of magnitude of the maximum absolute value 
+            # in each column
+
+            column_wise_order_of_magnitude = np.floor(np.log10(np.max(
+            np.abs(data_matrix), axis=0)+non_zero_epsilon)) 
+
+            # Multiplies each column by the inverse of its respective
+            # order of magnitude
+
+            self.multiplicative_factor = np.power(10.0, 
+            -column_wise_order_of_magnitude)
+
+        return (data_matrix*self.multiplicative_factor, 
+        self.multiplicative_factor)
         
 ########################################################################
 #                        Regularizing functions                        #

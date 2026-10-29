@@ -60,10 +60,10 @@ final_time):
 
             # Recovers the displacement gradient
 
-            displacement_gradient = np.array([[sample_data[2], 
-            sample_data[3], sample_data[4]], [sample_data[5], 
-            sample_data[6], sample_data[7]], [sample_data[8], 
-            sample_data[9], sample_data[10]]])
+            displacement_gradient = np.array([[sample_data[0], 
+            sample_data[1], sample_data[2]], [sample_data[3], 
+            sample_data[4], sample_data[5]], [sample_data[6], 
+            sample_data[7], sample_data[8]]])
 
             # Gets the corresponding deformation gradient
 
@@ -118,7 +118,7 @@ final_time):
                 new_disp_grad[0,1], new_disp_grad[0,2], new_disp_grad[
                 1,0], new_disp_grad[1,1], new_disp_grad[1,2], 
                 new_disp_grad[2,0], new_disp_grad[2,1], new_disp_grad[
-                2,2], sample_data[0], sample_data[1]])
+                2,2], sample_data[9], sample_data[10]])
 
                 # Adds this sample to the filtered input data. Inserts 
                 # the load-based data as the first columns, since this 
