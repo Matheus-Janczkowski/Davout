@@ -28,8 +28,7 @@ class RVEKinematicsSurrogateModel:
     maximum_training_iterations, verbose_delta_iterations,
     mesh_file_name, optimizer, subdofs_to_learn, parameters_dtype="flo"+
     "at32", householder_epsilon=1.0, verbose=True, integer_dtype="int3"+
-    "2", get_all_inputs_to_zeroth_order_of_magnitude=False, 
-    non_orthogonal_matrices=False, device_type="CPU", 
+    "2", non_orthogonal_matrices=False, device_type="CPU", 
     input_data_regularization_method=None):
 
         # Saves the needed information
@@ -37,9 +36,6 @@ class RVEKinematicsSurrogateModel:
         self.non_orthogonal_matrices = non_orthogonal_matrices
 
         self.device_type = device_type
-
-        self.get_all_inputs_to_zeroth_order_of_magnitude = (
-        get_all_inputs_to_zeroth_order_of_magnitude)
 
         self.activations_list_main_network = activations_list_main_network
 
@@ -89,7 +85,7 @@ class RVEKinematicsSurrogateModel:
         # Converts the tensor of DOFs to a tensorflow integer tensor
 
         self.subdofs_to_learn = tf.convert_to_tensor(subdofs_to_learn,
-        dtype=tf.as_dtype(self.parameters_dtype))
+        dtype=tf.as_dtype(self.integer_dtype))
 
         # Gets the number of output neurons from the tensor of the indi-
         # ces of the DOFs that will actually be learnt
@@ -98,13 +94,31 @@ class RVEKinematicsSurrogateModel:
 
         # Reads the output data 
 
-        self.output_data = np.load(self.results_path+"//"+
+        self.whole_output_data = np.load(self.results_path+"//"+
         self.displacement_data_file)
 
         # Gets the numbers of samples and of total of DOFs
 
         self.number_of_samples, self.total_number_of_dofs = (
-        self.output_data.shape)
+        self.whole_output_data.shape)
+
+        # Checks whether subdofs to learn has any DOF index that is lar-
+        # ger than the number of DOFs of the output data
+
+        if tf.reduce_max(self.subdofs_to_learn).numpy(
+        )>=self.total_number_of_dofs:
+
+            raise IndexError("The maximum DOF index requested by 'subd"+
+            "ofs_to_learn' is "+str(tf.reduce_max(self.subdofs_to_learn
+            ).numpy())+". But the output data at\n"+str(
+            self.results_path+"//"+self.displacement_data_file)+"\nhas"+
+            " only "+str(self.total_number_of_dofs)+" columns")
+
+        # Otherwise, uses the subdofs to learn to retrieve the needed 
+        # DOFs for training
+
+        self.output_data = self.whole_output_data[:,
+        self.subdofs_to_learn]
 
         # Gets the input data
 
@@ -345,7 +359,7 @@ if __name__=="__main__":
 
     # Sets the number of transfinite divisions in the RVE mesh
 
-    n_divisions = 8
+    n_divisions = 6
 
     # Sets a dictionary for the number of DOFs in the mesh for each num-
     # ber of divisions
@@ -427,12 +441,8 @@ if __name__=="__main__":
 
     # Sets the method to regularize the input data matrix
 
-    input_data_regularization_method = None
-
-    # Sets if the input data must be put into the same order of magnitu-
-    # de
-
-    get_all_inputs_to_zeroth_order_of_magnitude = False
+    input_data_regularization_method = ("maximum_absolute_order_normal"+
+    "ization")
 
     # Sets the device type where the training will be performed
 
@@ -441,7 +451,7 @@ if __name__=="__main__":
     # Sets whether the constraint on orthogonality of the SVD matrices
     # will not be enforced
 
-    non_orthogonal_matrices = False
+    non_orthogonal_matrices = True
 
     # Instantiates the class that owns all information about training 
     # and testing models
@@ -454,9 +464,7 @@ if __name__=="__main__":
     n_best_models, n_best_samples, maximum_training_iterations, 
     verbose_delta_iterations, mesh_file_name, optimizer, 
     subdofs_to_learn, parameters_dtype=parameters_dtype, 
-    householder_epsilon=1.0, verbose=True, 
-    get_all_inputs_to_zeroth_order_of_magnitude=
-    get_all_inputs_to_zeroth_order_of_magnitude, device_type=
+    householder_epsilon=1.0, verbose=True, device_type=
     device_type, non_orthogonal_matrices=non_orthogonal_matrices,
     input_data_regularization_method=input_data_regularization_method)
 

@@ -137,18 +137,20 @@ final_time):
         new_input_list = np.array(new_input_list)
 
         print("The new input data matrix has shape "+str(
-        new_input_list.shape)+", whereas it had "+str(input_data.shape[0
-        ])+" rows before.\nThe displacement matrix, on the other hand,"+
-        " has "+str(displacement_matrix.shape[0])+"\n")
+        new_input_list.shape)+", whereas it had the shape "+str(
+        input_data.shape)+" before.\nThe displacement matrix, on the o"+
+        "ther hand, has shape equal to "+str(displacement_matrix.shape)+
+        "\n")
 
         np.save(results_path+"//"+new_input_file, new_input_list)
 
         new_filtered_input_list = np.array(new_filtered_input_list)
 
         print("The new filtered input data matrix has shape "+str(
-        new_filtered_input_list.shape)+", whereas it had "+str(
-        input_data.shape[0])+" rows before.\nThe displacement matrix, "+
-        "on the other hand, has "+str(displacement_matrix.shape[0])+"\n")
+        new_filtered_input_list.shape)+", whereas it had the shape "+str(
+        input_data.shape)+" before.\nThe displacement matrix, on th"+
+        "e other hand, has shape equal to "+str(displacement_matrix.shape
+        )+"\n")
 
         np.save(results_path+"//"+new_filtered_input_file, 
         new_filtered_input_list)
