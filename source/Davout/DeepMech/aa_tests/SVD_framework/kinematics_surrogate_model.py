@@ -399,7 +399,7 @@ if __name__=="__main__":
     1.0}}, 
     {"quadratic":  {"number of neurons": min(n_neurons_per_layer[0], 
     n_neurons_per_layer[1]), "a2": 1.0}}, 
-    {"quadratic": {"number of neurons": min(n_neurons_per_layer[1], 
+    {"quadratic": {"number of neurons": min(n_neurons_per_layer[1],
     n_neurons_per_layer[2])}}]
 
     # Sets the modulating function for the weights matrices
@@ -416,11 +416,11 @@ if __name__=="__main__":
 
     verbose_delta_iterations = 50
 
-    n_monte_carlo_realizations = 10
+    n_monte_carlo_realizations = 1000
 
-    n_best_models = 5
+    n_best_models = 30
 
-    n_best_samples = 10
+    n_best_samples = 20
 
     loss_metric = "MeanSquaredError"
 
@@ -429,7 +429,7 @@ if __name__=="__main__":
 
     parameters_dtype = "float32"
 
-    saved_model_file = "RVE_kinematics_model.keras"
+    saved_model_file = "RVE_kinematics_model"
 
     # Sets the path for the data
 
