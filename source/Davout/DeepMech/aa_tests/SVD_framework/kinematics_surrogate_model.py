@@ -5,6 +5,10 @@ import numpy as np
 
 import tensorflow as tf
 
+from .....Davout.DeepMech.tool_box.gpu_tools import give_access_of_gpu_to_tensorflow
+
+give_access_of_gpu_to_tensorflow(True)
+
 from time import time
 
 from .....Davout.DeepMech.tool_box import ANN_tools, training_tools
@@ -382,8 +386,7 @@ if __name__=="__main__":
     # Defines the number of neurons of the different hidden layers and of
     # the output layer
 
-    n_neurons_per_layer = [100, 1000, int(dofs_per_number_of_divisions[
-    n_divisions]/3)]
+    n_neurons_per_layer = [100, 1000, subdofs_to_learn.shape[0]]
 
     # Sets a list of layers and the activation functions
 
