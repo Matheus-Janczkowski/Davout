@@ -33,6 +33,10 @@ poisson = 0.3
 
 constitutive_model = NeoHookean({"E": E, "nu": poisson})
 
+# Checks the constitutive models
+
+constitutive_model.check_model({})
+
 # Sets the function space
 
 functional_data_class = functional_tools.construct_monolithicFunctionSpace(
@@ -42,7 +46,8 @@ functional_data_class = functional_tools.construct_monolithicFunctionSpace(
 
 # Dirichlet boundary conditions
 
-bc, dirichlet_loads, functional_data_class, elements_dictionary, variational_form = (
+(bc, dirichlet_loads, functional_data_class, elements_dictionary, 
+variational_form, post_processes, post_processesSubmesh, solution_name) = (
 functional_tools.construct_DirichletBCs({"bottom": 
 {"BC case": "FixedSupportDirichletBC", "sub_fieldsToApplyBC": "Displac"+
 "ement"}}, functional_data_class, mesh_data_class))

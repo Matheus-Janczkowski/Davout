@@ -7,7 +7,7 @@ from .....Davout.PythonicUtilities.path_tools import get_parent_path_of_file
 
 from .....Davout.MultiMech.tool_box.mesh_handling_tools import read_mshMesh
 
-from .....Davout.MultiMech.constitutive_models.hyperelasticity.isotropic_hyperelasticity import NeoHookean
+from .....Davout.MultiMech.constitutive_models.hyperelasticity.infinitesimal_elasticity import LinearIsotropicElastic
 
 from .....Davout.MultiMech.tool_box import functional_tools
 
@@ -24,7 +24,11 @@ mesh_data_class = read_mshMesh({"length x": 0.3, "length y": 0.2, "len"+
 
 # Neumann boundary conditions
 
-maximum_load = 5E5
+maximum_load = 5E4
+
+# Sets the number of load steps (pseudo-time steps)
+
+n_load_steps = 5
 
 # Sets the constitutive model
 
@@ -32,15 +36,20 @@ E = 1E6
 
 poisson = 0.3
 
-constitutive_models = {"volume 1": NeoHookean({"E": E, "nu": poisson})}
+constitutive_models = {"volume 1": LinearIsotropicElastic({"E": E, "nu": 
+poisson})}
 
-# Sets the function space for the displacement field
+# Checks the constitutive models
+
+for constitutive_model in constitutive_models.values():
+
+    constitutive_model.check_model({})
+
+# Sets the function space
 
 functional_data_class = functional_tools.construct_monolithicFunctionSpace(
 {"Displacement": {"field type": "vector", "interpolation function": "C"+
-"G", "polynomial degree": 2}, "Pressure": {"field type": "scalar", "in"+
-"terpolation function": "CG", "polynomial degree": 1}}, mesh_data_class,
-verbose=True)
+"G", "polynomial degree": 2}}, mesh_data_class, verbose=True)
 
 # Sets the function space for a vector-valued internal variable and ano-
 # ther scalar-valued internal variable. They are both found in quadra-
@@ -53,3 +62,89 @@ quadrature_functional_data_class = functional_tools.construct_monolithicFunction
 "scalar internal variable": {"field type": "scalar", "interpolation fu"+
 "nction": "Quadrature", "polynomial degree": 2}}, mesh_data_class,
 verbose=True)
+
+# Dirichlet boundary conditions
+
+(bc, dirichlet_loads, functional_data_class, elements_dictionary, 
+variational_form, post_processes, post_processesSubmesh, solution_name) = (
+functional_tools.construct_DirichletBCs({"bottom": 
+{"BC case": "FixedSupportDirichletBC"}}, functional_data_class, 
+mesh_data_class))
+
+# Variational form of the exterior work using an uniform referential 
+# traction
+
+external_work, neumann_loads = variational_tools.traction_work({"top": {
+"load case": "UniformReferentialTraction", "amplitude_tractionX": 0.0, 
+"amplitude_tractionY": 0.0, "amplitude_tractionZ": maximum_load, "para"+
+"metric_load_curve": "square_root", "t": 0.0, "t_final": 1.0}}, "Displ"+
+"acement", functional_data_class, mesh_data_class, [])
+
+# Computes the elements necessary to pull-back the Cauchy stress to the
+# first Piola-Kirchhoff stress tensor using Nanson's formula
+
+I = Identity(functional_data_class.solution_fields["Displacement"
+].geometric_dimension())
+
+F = grad(functional_data_class.solution_fields["Displacement"])+I
+
+F_invT = inv(F).T
+
+J = det(F)
+
+# Gets the variational form of the inner work
+
+internal_work = 0.0
+
+for physical_group, constitutive_model in constitutive_models.items():
+
+    # Gets the Cauchy stress tensor from the linear elastic constitutive
+    # relation and pulls it back to the first Piola-Kirchhoff stress 
+    # tensor. This way, a formulation of large displacements and infini-
+    # tesimal strains can be accomplished, since the linearization of 
+    # the first Piola-Kirchhoff stress tensor will carry the geometric
+    # nonlinearities
+
+    sigma = constitutive_model.cauchy_stress(
+    functional_data_class.solution_fields["Displacement"])
+
+    P = J*sigma*F_invT
+
+    internal_work += (inner(P, grad(
+    functional_data_class.variation_fields["Displacement"]))*
+    mesh_data_class.dx(mesh_data_class.domain_physicalGroupsNameToTag[
+    physical_group]))
+    
+# Sets the Newton-Raphson solver
+
+solver = functional_tools.set_nonlinearProblem((internal_work-
+external_work), functional_data_class, bc)
+
+# Initializes the file where the solution is going to be saved
+
+xdmf_file = None
+
+# Iterates over the load steps
+
+for i in range(n_load_steps):
+
+    print("\nStarts the "+str(i+1)+"-th load step")
+
+    # Evaluates the current pseudo time
+
+    pseudo_time = (i/(n_load_steps-1))
+
+    # Update the load class
+
+    neumann_loads[0].update_load(pseudo_time)
+
+    # Calls the solver
+
+    solver.solve()
+
+    # Saves this pseudo-time step in a xdmf file
+
+    xdmf_file = write_field_to_xdmf(functional_data_class, 
+    explicit_file_name=get_parent_path_of_file()+"//displacement_finit"+
+    "e_deformation_with_infinitesimal_strain.xdmf", file=xdmf_file, time
+    =pseudo_time, time_step=i)

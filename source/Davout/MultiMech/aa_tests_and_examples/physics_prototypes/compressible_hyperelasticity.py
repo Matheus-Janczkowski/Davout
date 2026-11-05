@@ -33,19 +33,25 @@ poisson = 0.3
 
 constitutive_models = {"volume 1": NeoHookean({"E": E, "nu": poisson})}
 
+# Checks the constitutive models
+
+for constitutive_model in constitutive_models.values():
+
+    constitutive_model.check_model({})
+
 # Sets the function space
 
 functional_data_class = functional_tools.construct_monolithicFunctionSpace(
 {"Displacement": {"field type": "vector", "interpolation function": "C"+
-"G", "polynomial degree": 2}, "Pressure": {"field type": "scalar", "in"+
-"terpolation function": "CG", "polynomial degree": 1}}, mesh_data_class)
+"G", "polynomial degree": 2}}, mesh_data_class)
 
 # Dirichlet boundary conditions
 
-bc, dirichlet_loads, functional_data_class, elements_dictionary, variational_form = (
+(bc, dirichlet_loads, functional_data_class, elements_dictionary, 
+variational_form, post_processes, post_processesSubmesh, solution_name) = (
 functional_tools.construct_DirichletBCs({"bottom": 
-{"BC case": "FixedSupportDirichletBC", "sub_fieldsToApplyBC": "Displac"+
-"ement"}}, functional_data_class, mesh_data_class))
+{"BC case": "FixedSupportDirichletBC"}}, functional_data_class, 
+mesh_data_class))
 
 # Variational form of the exterior work using an uniform referential 
 # traction
