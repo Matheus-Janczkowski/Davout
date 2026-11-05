@@ -24,7 +24,7 @@ mesh_data_class = read_mshMesh({"length x": 0.3, "length y": 0.2, "len"+
 
 # Neumann boundary conditions
 
-maximum_load = 5E4
+maximum_load = 5E3
 
 # Sets the number of load steps (pseudo-time steps)
 
@@ -39,7 +39,8 @@ poisson = 0.3
 constitutive_models = {"volume 1": LinearIsotropicElastic({"E": E, "nu": 
 poisson})}
 
-# Checks the constitutive models
+# Checks the constitutive models and ensures that the supplied param-
+# eters are correct
 
 for constitutive_model in constitutive_models.values():
 
@@ -75,10 +76,10 @@ mesh_data_class))
 # traction
 
 external_work, neumann_loads = variational_tools.traction_work({"top": {
-"load case": "UniformReferentialTraction", "amplitude_tractionX": 0.0, 
-"amplitude_tractionY": 0.0, "amplitude_tractionZ": maximum_load, "para"+
-"metric_load_curve": "square_root", "t": 0.0, "t_final": 1.0}}, "Displ"+
-"acement", functional_data_class, mesh_data_class, [])
+"load case": "UniformReferentialTraction", "amplitude_tractionX": 
+maximum_load, "amplitude_tractionY": 0.0, "amplitude_tractionZ": 0.0, 
+"parametric_load_curve": "square_root", "t": 0.0, "t_final": 1.0}}, 
+"Displacement", functional_data_class, mesh_data_class, [])
 
 # Computes the elements necessary to pull-back the Cauchy stress to the
 # first Piola-Kirchhoff stress tensor using Nanson's formula
