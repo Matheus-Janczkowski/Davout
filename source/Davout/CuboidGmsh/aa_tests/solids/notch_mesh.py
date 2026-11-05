@@ -1,5 +1,7 @@
 # Routine to generate an interchangeble mesh both for thrird medium
 # contact and for notch-based crack propagation.
+#
+# Mesh made by Bianca Grahl Reyes
 
 import h5py
 
