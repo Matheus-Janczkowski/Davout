@@ -69,13 +69,13 @@ None, field_correction=None):
     
     fields_namesDict = functional_data_class.fields_names_dict
     
-    mpi_print(mesh_dataClass.comm, "\n#########################################################"+
-    "###############\n#              The Newton-Raphson scheme will be"+
-    " initiated             #\n#######################################"+
-    "#################################\n")
+    mpi_print(mesh_dataClass.comm, "\n################################"+
+    "########################################\n#              The Newt"+
+    "on-Raphson scheme will be initiated             #\n##############"+
+    "##########################################################\n")
 
-    mpi_print(mesh_dataClass.comm, "There are "+str(len(solution_field.vector()))+" degrees of "+
-    "freedom in the mesh\n")
+    mpi_print(mesh_dataClass.comm, "There are "+str(len(
+    solution_field.vector()))+" degrees of freedom in the mesh\n")
 
     # Verifies if the classes of macroscale quantities are indeed clas-
     # ses

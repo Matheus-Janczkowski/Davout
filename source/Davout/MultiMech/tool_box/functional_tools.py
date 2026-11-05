@@ -1422,7 +1422,69 @@ all_data_must_be_provided=False):
 
     if verbose:
 
-        print("Finishes creating the function spaces\n")
+        # Gets the maximum number of characters in the names of the 
+        # fields
+
+        maximum_number_of_characters = len("Field name")
+
+        for field_name in fields_names:
+
+            maximum_number_of_characters = max(len(field_name),
+            maximum_number_of_characters)
+
+        # Gets the number of DOFs
+
+        number_of_dofs_string = "\nField name "
+        
+        if maximum_number_of_characters>len("Field name"):
+
+            for _ in range(maximum_number_of_characters-len("Field name"
+            )):
+            
+                number_of_dofs_string += " "
+           
+        number_of_dofs_string += "  | Number of DOFs\n"
+
+        # If there are more than a single field
+
+        if len(fields_names)>1:
+
+            for field_index, field_name in enumerate(fields_names):
+
+                # Sets the white space
+
+                white_space = ""
+
+                for _ in range(maximum_number_of_characters-len(
+                field_name)):
+
+                    white_space += " "
+
+                # Adds the information
+            
+                number_of_dofs_string += ("'"+str(field_name)+"'"+
+                white_space+" |  "+str(monolithic_functionSpace.sub(
+                field_index).dim())+" DOFs\n")
+
+        # If there is a single field
+
+        else:
+
+            # Sets the white space
+            
+            white_space = ""
+
+            for _ in range(maximum_number_of_characters-len(
+            fields_names[0])):
+
+                white_space += " "
+            
+            number_of_dofs_string += ("'"+str(fields_names[0])+"'"+
+            white_space+" |  "+str(monolithic_functionSpace.dim())+" D"+
+            "OFs\n")
+
+        print("Finishes creating the function spaces. Check mesh infor"+
+        "mation below\n"+number_of_dofs_string)
 
     return FunctionalData(monolithic_functionSpace, monolithic_solution, 
     fields_names, solution_fields, variation_fields, trial_functions, 
@@ -1437,7 +1499,8 @@ all_data_must_be_provided=False):
 
     # Sets a list of allowed interpolation functions
 
-    allowed_interpolationFunction = ["CG", "DG", "Lagrange", "Real"]
+    allowed_interpolationFunction = ["CG", "DG", "Lagrange", "Real", 
+    "Quadrature"]
 
     # Initializes a list of names of the fields
 
@@ -1446,6 +1509,13 @@ all_data_must_be_provided=False):
     # Gets the dimension of the space
 
     space_dimension = mesh_dataClass.mesh.topology().dim()
+
+    # Recovers the quadrature degree and the quadrature scheme of the 
+    # mesh data class
+
+    quadrature_degree = mesh_dataClass.quadrature_degree
+
+    quadrature_scheme = mesh_dataClass.quadrature_scheme
 
     # Iterates through the dictionary of elements
     
@@ -1539,6 +1609,98 @@ all_data_must_be_provided=False):
 
                     interpolation_function = "CG"
 
+                # Initializes a dictionary of keyword arguments for ins-
+                # tantiating the classes of finite elements
+
+                keyword_arguments = {}
+
+                # If the interpolation function is 'Quadrature', checks
+                # some information
+
+                if interpolation_function=="Quadrature":
+
+                    # The degree must be equal to the quadrature degree
+
+                    if polynomial_degree!=quadrature_degree:
+
+                        raise ValueError("The dictionary to construct "+
+                        "the finite-element space for the field '"+str(
+                        field_name)+"' asks for a 'Quadrature' as inte"+
+                        "rpolation function. In this case 'polynomial_"+
+                        "degree' must be equal to the 'quadrature_degr"+
+                        "ee'.\nCurrently, 'polynomial_degree' is "+str(
+                        polynomial_degree)+" and 'quadrature_degree', "+
+                        "given during mesh reading, is "+str(
+                        quadrature_degree))
+
+                    # Adds the quadrature scheme to the dictionary of
+                    # keyword arguments
+
+                    keyword_arguments["quad_scheme"] = quadrature_scheme
+
+                # Checks if the dimension was given, i.e. the number of
+                # components in a vector element
+                
+                if "dimension" in element_dictionary:
+
+                    dimension = element_dictionary["dimension"]
+
+                    # Checks if the field type is 'vector'
+
+                    if ("field type" in element_dictionary) and (
+                    element_dictionary["field type"]!="vector"):
+
+                        raise ValueError("'dimension' equal to "+str(
+                        dimension)+" in the dictionary for the finite "+
+                        "element of the field '"+str(field_name)+". Bu"+
+                        "t the 'field type' of this field is '"+str(
+                        element_dictionary["field type"])+". The param"+
+                        "eter 'dimension' is allowed only when 'field "+
+                        "type' is 'vector'")
+
+                    # Adds the dimension to the dictionary of keyword
+                    # arguments
+
+                    keyword_arguments["dim"] = dimension
+
+                # Checks if the symmetry flag was given, i.e. whether a
+                # tensor interpolated by this element should be symme-
+                # tric or not
+                
+                if "symmetry" in element_dictionary:
+
+                    symmetry = element_dictionary["symmetry"]
+
+                    # Checks if the field type is 'tensor'
+
+                    if ("field type" in element_dictionary) and (
+                    element_dictionary["field type"]!="tensor"):
+
+                        raise ValueError("'symmetry' equal to "+str(
+                        symmetry)+" in the dictionary for the finite "+
+                        "element of the field '"+str(field_name)+". Bu"+
+                        "t the 'field type' of this field is '"+str(
+                        element_dictionary["field type"])+". The param"+
+                        "eter 'symmetry' is allowed only when 'field t"+
+                        "ype' is 'tensor'")
+
+                    # Adds the symmetry flag to the dictionary of key-
+                    # word arguments
+
+                    keyword_arguments["symmetry"] = symmetry
+
+                # Checks if the keyword for the distribution of the no-
+                # des of the element, 'variant', was given
+                
+                if "variant" in element_dictionary:
+
+                    variant = element_dictionary["variant"]
+
+                    # Adds the variant to the dictionary of keyword ar-
+                    # guments
+
+                    keyword_arguments["variant"] = variant
+
                 # Gets the element type (scalar, vector, tensor...)
 
                 if "field type" in element_dictionary:
@@ -1553,7 +1715,8 @@ all_data_must_be_provided=False):
 
                         elements_dictionary[field_name] = FiniteElement(
                         interpolation_function, 
-                        mesh_dataClass.mesh.ufl_cell(), polynomial_degree)
+                        mesh_dataClass.mesh.ufl_cell(), 
+                        polynomial_degree, **keyword_arguments)
 
                     # If the field is a vector-valued field
 
@@ -1563,7 +1726,8 @@ all_data_must_be_provided=False):
 
                         elements_dictionary[field_name] = VectorElement(
                         interpolation_function, 
-                        mesh_dataClass.mesh.ufl_cell(), polynomial_degree)
+                        mesh_dataClass.mesh.ufl_cell(), 
+                        polynomial_degree, **keyword_arguments)
 
                     # If the field is a tensor-valued field
 
@@ -1591,13 +1755,13 @@ all_data_must_be_provided=False):
                             dimension_tuple = [space_dimension for (
                             index) in range(tensor_order)]
 
-
                             # Creates the element
 
                             elements_dictionary[field_name] = TensorElement(
                             interpolation_function, 
                             mesh_dataClass.mesh.ufl_cell(), 
-                            polynomial_degree, tuple(dimension_tuple))
+                            polynomial_degree, tuple(dimension_tuple), 
+                            **keyword_arguments)
 
                         # Otherwise
 
@@ -1608,7 +1772,7 @@ all_data_must_be_provided=False):
                             elements_dictionary[field_name] = TensorElement(
                             interpolation_function, 
                             mesh_dataClass.mesh.ufl_cell(), 
-                            polynomial_degree)
+                            polynomial_degree, **keyword_arguments)
 
                     else:
 

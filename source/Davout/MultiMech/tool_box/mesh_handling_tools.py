@@ -29,7 +29,8 @@ class MeshData:
     def __init__(self, mesh, dx, ds, n, x, domain_meshCollection, 
     domain_meshFunction, boundary_meshCollection, boundary_meshFunction, 
     domain_physicalGroupsNameToTag, boundary_physicalGroupsNameToTag,
-    verbose, mesh_file=None, comm=None):
+    verbose, mesh_file=None, comm=None, quadrature_degree=2, 
+    quadrature_scheme="default"):
         
         # Saves the mesh parameters
 
@@ -58,6 +59,10 @@ class MeshData:
         self.verbose = verbose
 
         self.mesh_file = mesh_file
+
+        self.quadrature_degree = quadrature_degree
+
+        self.quadrature_scheme = quadrature_scheme
 
         # Stores the parallel communicator and the rank number of pro-
         # cessors only if it was really created. Since dumb instances of
@@ -589,11 +594,13 @@ lambda: dict()})
 
 def read_xdmfMesh(file_name, domain_physicalGroupsNameToTag=None, 
 boundary_physicalGroupsNameToTag=None, quadrature_degree=2, verbose=
-False, comm=None):
+False, comm=None, quadrature_scheme='default', 
+form_compiler_representation="uflacs"):
     
     # Sets the compiler parameters
 
-    parameters["form_compiler"]["representation"] = "uflacs"
+    parameters["form_compiler"]["representation"] = (
+    form_compiler_representation)
 
     parameters["allow_extrapolation"] = True
 
@@ -689,7 +696,8 @@ False, comm=None):
     # Sets the integration differentials
 
     dx = Measure("dx", domain=mesh, subdomain_data=domain_meshFunction,
-    metadata={"quadrature_degree": quadrature_degree})
+    metadata={"quadrature_degree": quadrature_degree, "quadrature_sche"+
+    "me": quadrature_scheme})
 
     ds = Measure("ds", domain=mesh, subdomain_data=boundary_meshFunction)#,
     #metadata={"quadrature_degree": quadrature_degree})
@@ -710,7 +718,8 @@ False, comm=None):
     return MeshData(mesh, dx, ds, n, x_position, domain_meshCollection, 
     domain_meshFunction, boundary_meshCollection, boundary_meshFunction, 
     domain_physicalGroupsNameToTag, boundary_physicalGroupsNameToTag,
-    verbose, mesh_file=file_name, comm=comm)
+    verbose, mesh_file=file_name, comm=comm, quadrature_degree=
+    quadrature_degree, quadrature_scheme=quadrature_scheme)
 
 ########################################################################
 #                              Submeshing                              #

@@ -6,7 +6,7 @@ from .....Davout.PythonicUtilities.path_tools import get_parent_path_of_file
 
 from .....Davout.MultiMech.tool_box.mesh_handling_tools import read_mshMesh
 
-from .....Davout.MultiMech.constitutive_models.hyperelasticity.isotropic_hyperelasticity import Neo_Hookean
+from .....Davout.MultiMech.constitutive_models.hyperelasticity.isotropic_hyperelasticity import NeoHookean
 
 from .....Davout.MultiMech.tool_box import functional_tools
 
@@ -31,7 +31,7 @@ E = 1E6
 
 poisson = 0.3
 
-constitutive_model = Neo_Hookean({"E": E, "nu": poisson})
+constitutive_model = NeoHookean({"E": E, "nu": poisson})
 
 # Sets the function space
 
