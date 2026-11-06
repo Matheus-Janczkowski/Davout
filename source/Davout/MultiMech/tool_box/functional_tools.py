@@ -522,7 +522,8 @@ post_processesSubmesh=None, solution_name=None):
 # the Gateaux derivative
 
 def set_nonlinearProblem(residual_form, functional_data_class, 
-boundary_conditions, solver_parameters=None):
+boundary_conditions, solver_parameters=None, 
+special_residual_form_for_consistent_derivation=None):
     
     # Gets the entities from the functional class
 
@@ -531,9 +532,25 @@ boundary_conditions, solver_parameters=None):
     trial_functions = functional_data_class.trial_functions
     
     # Evaluates the Gateaux derivative of the residue form
+
+    residual_derivative = None 
+
+    # If a special residual form is provided for the evaluation of the
+    # Gateaux derivative (such as in plasticity)
+
+    if special_residual_form_for_consistent_derivation is not None:
+
+        residual_derivative = derivative(
+        special_residual_form_for_consistent_derivation, 
+        monolithic_solution, trial_functions)
+
+    # Otherwise, simply uses the same residual form as the one used to
+    # compute the residual norm
+
+    else:
     
-    residual_derivative = derivative(residual_form, monolithic_solution, 
-    trial_functions)
+        residual_derivative = derivative(residual_form, monolithic_solution, 
+        trial_functions)
 
     # Sets the nonlinear variational problem
 

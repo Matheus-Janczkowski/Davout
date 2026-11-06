@@ -11,6 +11,10 @@ from dolfin import *
 
 import ufl_legacy as ufl
 
+from ufl import indices
+
+p, q, r, s = indices(4)
+
 from ....MultiMech.tool_box import constitutive_tools
 
 # Defines an abstract class to force all classes ahead to have the same
@@ -76,7 +80,8 @@ ElastoplasticMaterialModel):
 
         self.material_properties = material_properties
 
-        self.newton_raphson_tolerance = newton_raphson_tolerance
+        self.newton_raphson_tolerance_squared = (
+        newton_raphson_tolerance**2)
 
     # Defines a method to check the validity of the user-given informa-
     # tion
@@ -174,38 +179,112 @@ ElastoplasticMaterialModel):
         yield_function = self.evaluate_yield_criterion(trial_sigma,
         last_accumulated_plastic_strain, I, dimension)
 
-        return ufl.conditional(yield_function<0.0, (trial_sigma,
-        internal_variables_dictionary), self.update_plastic_strain(
-        trial_current_elastic_strain_tensor, last_plastic_strain_tensor, 
-        last_accumulated_plastic_strain, epsilon, I))
-    
-    # Defines a function to get the elasticity tensor, i.e.dsigma/db
+        if yield_function<0.0:
+        
+            return (trial_sigma, internal_variables_dictionary)
+            
+        # Otherwise, if this material point is undergoing plastic defor-
+        # mation
+        
+        else:
+            
+            return self.update_plastic_strain(
+            trial_current_elastic_strain_tensor, 
+            last_plastic_strain_tensor, last_accumulated_plastic_strain, 
+            epsilon, I)[0:2]
 
-    def elasticity_tensor(self, u):
+    # Defines a function to linearly approximate the stress tensor as a 
+    # function of the tangent modulus
 
-        # Evaluates the infinitesimal strain tensor
+    def tangent_cauchy_stress(self, u, C_fourth, sigma_0):
+
+        # Evaluates the infinitesimal strain tensor and the identity 
+        # tensor
 
         epsilon = sym(grad(u))
 
-        epsilon = ufl.variable(epsilon)
+        # Computes the linear approximation to the Cauchy stress
 
-        # Evaluates the Cauchy stress tensor directly
+        return ufl.as_tensor(C_fourth[p,q,r,s]*epsilon[r,s], (p,q)
+        )+sigma_0
+    
+    # Defines a function to get the tangent tensor, i.e.dsigma/depsilon
 
-        I = Identity(u.geometric_dimension())
+    def tangent_modulus(self, u, internal_variables_dictionary):
 
-        sigma = (2.0*self.mu*epsilon)+(self.lmbda*ufl.tr(epsilon)*I)
+        # Retrieves from the dictionary of internal variables the plas-
+        # tic strain tensor and the accumulated plastic strain. Both 
+        # from the last pseudo-time step
 
-        # Evaluates the elasticity tensor by differentiating the Cauchy 
-        # stress tensor w.r.t. the infinitesimal strain tensor
+        last_plastic_strain_tensor = internal_variables_dictionary["la"+
+        "st_plastic_strain_tensor"]
 
-        C = diff(sigma, epsilon)
-        
-        # Stores the tensors inside a dictionary so the variational form
-        # and the post-processes can distinguish between them
+        last_accumulated_plastic_strain = internal_variables_dictionary[
+        "last_accumulated_plastic_strain"]
 
-        result = {"elasticity_tensor": C}
+        # Evaluates the infinitesimal strain tensor and the identity 
+        # tensor
 
-        return result
+        epsilon = sym(grad(u))
+
+        dimension = u.geometric_dimension()
+
+        identity = Identity(dimension)
+
+        # Estimates the current elastic strain tensor
+
+        trial_current_elastic_strain_tensor = (epsilon-
+        last_plastic_strain_tensor)
+
+        # Computes the predictor-corrector algorithm with the inner New-
+        # ton-Raphson method
+
+        (sigma, dictionary_of_internal_variables, update_increment,
+        trial_update_direction, norm_trial_update_direction, 
+        trial_equivalent_stress) = self.update_plastic_strain(
+        trial_current_elastic_strain_tensor, last_plastic_strain_tensor, 
+        last_accumulated_plastic_strain, epsilon, identity)
+
+        # Computes the projector tensor
+
+        projector_tensor = ufl.as_tensor((identity[p,r]*identity[q,s
+        ])-((1.0/dimension)*identity[p,q]*identity[r,s]), (p,q,r,s))
+
+        # Computes the tensor product of the normalized trial direction
+
+        normalized_trial_update_direction = (trial_update_direction/
+        norm_trial_update_direction)
+
+        eta_tensor_eta = ufl.as_tensor((
+        normalized_trial_update_direction[p,q]*
+        normalized_trial_update_direction[r,s]), (p,q,r,s))
+
+        # Computes the tensor product of the identity tensor with itself
+
+        I_tensor_I = ufl.as_tensor((identity[p,q]*identity[r,s]), (p,q,
+        r,s))
+
+        # Evaluates the derivative of the limit stress with respect to
+        # the accumulated plastic strain
+
+        _, K = self.limit_stress_model(dictionary_of_internal_variables[
+        "last_accumulated_plastic_strain"])
+
+        # Assembles the fourth-order tangent modulus
+
+        C = (self.lmbda*I_tensor_I)+(2.0*self.mu*(1.0-(((3.0*self.mu)+
+        self.H)*(update_increment/trial_equivalent_stress)))*
+        projector_tensor)+(2.0*self.mu*((3.0*self.mu)+self.H)*(
+        (update_increment/trial_equivalent_stress)-(1.0/((3.0*self.mu)+
+        self.H+K)))*eta_tensor_eta)
+
+        # Computes the coefficient sigma_0 such that
+        # sigma = C:(delta_epsilon)+sigma = C:epsilon+(sigma-epsilon_0)
+        #       = C:epsilon+sigma_0
+
+        sigma_0 = sigma-ufl.as_tensor((C[p,q,r,s]*epsilon[r,s]), (p,q,))
+
+        return C, sigma_0, dictionary_of_internal_variables
 
     ####################################################################
     #                      Plasticity formulation                      #
@@ -275,19 +354,25 @@ ElastoplasticMaterialModel):
 
         update_increment = 0.0
 
+        # Initializes the updated accumulated plastic strain
+
+        updated_accumulated_plastic_strain = (accumulated_plastic_strain
+        +0.0)
+
         # Iterates over the number of inner Newton-Raphson iterations
 
         for _ in range(self.maximum_inner_newton_raphson_iterations):
 
             # Updates the accumulated plastic strain
 
-            accumulated_plastic_strain += update_increment
+            updated_accumulated_plastic_strain = (
+            accumulated_plastic_strain+update_increment)
 
             # Computes new limit stress and its derivative with respect
             # to the accumulated plastic strain
 
             sigma_y, K = self.limit_stress_model(
-            accumulated_plastic_strain)
+            updated_accumulated_plastic_strain)
 
             # Computes the yield function as a function of the accumula-
             # ted plastic strain
@@ -298,7 +383,7 @@ ElastoplasticMaterialModel):
 
             # Checks if the yield function is 0
 
-            if (phi**2)<self.newton_raphson_tolerance:
+            if (phi**2)<self.newton_raphson_tolerance_squared:
 
                 break 
 
@@ -321,6 +406,8 @@ ElastoplasticMaterialModel):
         # Returns the updated plastic strain tensor and the accumulated
         # plastic strain in a dictionary
 
-        return stress_tensor, {"last_plastic_strain_tensor": 
+        return (stress_tensor, {"last_plastic_strain_tensor": 
         trial_plastic_strain_tensor, "last_accumulated_plastic_strain": 
-        accumulated_plastic_strain}
+        updated_accumulated_plastic_strain}, update_increment, 
+        trial_update_direction, norm_trial_update_direction, 
+        trial_equivalent_stress)
