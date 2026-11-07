@@ -9,6 +9,8 @@ from abc import ABC, abstractmethod
 
 from dolfin import *
 
+import numpy as np
+
 import ufl_legacy as ufl
 
 from ufl import indices
@@ -16,6 +18,10 @@ from ufl import indices
 p, q, r, s = indices(4)
 
 from ....MultiMech.tool_box import constitutive_tools
+
+from ....MultiMech.tool_box.projection_tools import MultipleFieldsProjectionOntoQuadratureSpace
+
+from ....MultiMech.tool_box.functional_tools import construct_monolithicFunctionSpace
 
 # Defines an abstract class to force all classes ahead to have the same
 # methods. To enforce it, the abstract method is used before the methods.
@@ -31,7 +37,7 @@ class ElastoplasticMaterialModel(ABC):
     # The following methods have the pass argument only because they 
     # will be defined in the child classes
 
-    def check_model(self, code_given_information):
+    def check_model(self, code_given_information_dict):
 
         pass
 
@@ -80,19 +86,19 @@ ElastoplasticMaterialModel):
 
         self.material_properties = material_properties
 
-        self.newton_raphson_tolerance_squared = (
-        newton_raphson_tolerance**2)
+        self.newton_raphson_tolerance = newton_raphson_tolerance
 
     # Defines a method to check the validity of the user-given informa-
     # tion
 
-    def check_model(self, code_given_information):
+    def check_model(self, code_given_information_dict):
 
         # Checks the keys of the dictionary of material parameters
 
         self.material_properties = constitutive_tools.check_materialDictionary(
         self.material_properties, ["E", "nu", "sigma_y", "H", "K_1", 
-        "K_2", "theta"], code_given_information=code_given_information)
+        "K_2", "theta", "mesh_data_class"], code_given_information=
+        code_given_information_dict)
 
         self.E = self.material_properties["E"]
 
@@ -114,9 +120,51 @@ ElastoplasticMaterialModel):
 
         self.lmbda = self.v*self.E/((1+self.v)*(1-2*self.v))
 
+        # Retrieves the mesh data class
+
+        self.mesh_data_class = self.material_properties["mesh_data_cla"+
+        "ss"]
+
         # Empties the material properties dictionary
 
         self.material_properties = None
+
+        # Sets the function space for a vector-valued internal variable 
+        # and another scalar-valued internal variable. They are both 
+        # found in quadrature points alone. Note that 'polynomial degree' 
+        # stands for quadrature degree in the case of quadrature finite 
+        # elements
+
+        self.quadrature_functional_data_class = construct_monolithicFunctionSpace(
+        {"strain tensor": {"field type": "tensor", "interpolation func"+
+        "tion": "Quadrature", "polynomial degree": 2, "tensor order": 2}, 
+        "stress tensor": {"field type": "tensor", "interpolation funct"+
+        "ion": "Quadrature", "polynomial degree": 2, "tensor order": 2},
+        "plastic strain tensor": {"field type": "tensor", "interpolati"+
+        "on function": "Quadrature", "polynomial degree": 2, "tensor o"+
+        "rder": 2}, 
+        "normalized trial update direction": {"field type": "tensor", 
+        "interpolation function": "Quadrature", "polynomial degree": 2, 
+        "tensor order": 2},
+        "accumulated plastic strain": {"field type": "scalar", "interp"+
+        "olation function": "Quadrature", "polynomial degree": 2},
+        "update increment": {"field type": "scalar", "interpolation fu"+
+        "nction": "Quadrature", "polynomial degree": 2},
+        "trial equivalent stress": {"field type": "scalar", "interpola"+
+        "tion function": "Quadrature", "polynomial degree": 2},
+        "hardening tangent modulus": {"field type": "scalar", "interpo"+
+        "lation function": "Quadrature", "polynomial degree": 2}}, 
+        self.mesh_data_class, verbose=True)
+
+        # Instantiates the class that projects expressions from and to 
+        # quadrature spaces. This is important for the algorithmic pro-
+        # cedure within elastoplasticity 
+
+        self.quadrature_projection_class = MultipleFieldsProjectionOntoQuadratureSpace(
+        ["strain tensor", "plastic strain tensor", "accumulated plasti"+
+        "c strain", "stress tensor", "normalized trial update direction", 
+        "update increment", "trial equivalent stress", "hardening tang"+
+        "ent modulus"], self.quadrature_functional_data_class)
 
     # Defines a function to evaluate the Helmholtz free energy density
     # as a function of the elastic strain tensor
@@ -136,17 +184,23 @@ ElastoplasticMaterialModel):
     # Defines a function to evaluate the Cauchy stress tensor directly
     # from the expression. This function uses th
     
-    def cauchy_stress(self, u, internal_variables_dictionary):
+    def cauchy_stress(self, u):
 
-        # Retrieves from the dictionary of internal variables the plas-
-        # tic strain tensor and the accumulated plastic strain. Both 
-        # from the last pseudo-time step
+        # Retrieves from the class of quadrature spaces the last itera-
+        # tion of the plastic strain tensor and the accumulated plastic
+        # strain. Convert both to numpy arrays in the format 
+        # [n_quadrature_points, 3, 3] (plastic strain tensor) and 
+        # [n_quadrature_points] (accumulated plastic strain)
 
-        last_plastic_strain_tensor = internal_variables_dictionary["la"+
-        "st_plastic_strain_tensor"]
+        last_plastic_strain_tensor = self.quadrature_projection_class.convert_quadrature_values_to_numpy_array(
+        "plastic strain tensor", 
+        self.quadrature_functional_data_class.solution_fields["plastic"+
+        " strain tensor"])
 
-        last_accumulated_plastic_strain = internal_variables_dictionary[
-        "last_accumulated_plastic_strain"]
+        last_accumulated_plastic_strain = self.quadrature_projection_class.convert_quadrature_values_to_numpy_array(
+        "accumulated plastic strain", 
+        self.quadrature_functional_data_class.solution_fields["accumul"+
+        "ated plastic strain"])
 
         # Evaluates the infinitesimal strain tensor and the identity 
         # tensor
@@ -155,7 +209,16 @@ ElastoplasticMaterialModel):
 
         dimension = u.geometric_dimension()
 
-        I = Identity(dimension)
+        # Projects the strain tensor onto the quadrature space
+
+        projected_epsilon = self.quadrature_projection_class.project_expression_onto_quadrature_space(
+        "strain tensor", epsilon)
+
+        # Assembles the identity tensor in the format 
+        # [n_quadrature_points, 3, 3]
+
+        projected_identity = np.broadcast_to(np.eye(dimension, dtype=
+        projected_epsilon.dtype), projected_epsilon.shape)
 
         # Considering the trial plastic strain tensor as the last plas-
         # tic strain, computes the back stress
@@ -165,38 +228,66 @@ ElastoplasticMaterialModel):
 
         # Estimates the current elastic strain tensor
 
-        trial_current_elastic_strain_tensor = (epsilon-
+        trial_current_elastic_strain_tensor = (projected_epsilon-
         last_plastic_strain_tensor)
 
         # Computes the trial stress tensor
 
-        trial_sigma = ((2.0*self.mu*trial_current_elastic_strain_tensor
-        )+(self.lmbda*ufl.tr(trial_current_elastic_strain_tensor)*I)-
-        trial_back_stress)
+        stress_tensor = ((2.0*self.mu*trial_current_elastic_strain_tensor
+        )+(self.lmbda*np.trace(trial_current_elastic_strain_tensor, 
+        axis1=1, axis2=2)*projected_identity))
 
         # Checks whether the yield function is less than zero
 
-        yield_function = self.evaluate_yield_criterion(trial_sigma,
-        last_accumulated_plastic_strain, I, dimension)
+        yield_function = self.evaluate_yield_criterion(stress_tensor
+        -trial_back_stress, last_accumulated_plastic_strain, 
+        projected_identity, dimension)
 
-        if yield_function<0.0:
-        
-            return (trial_sigma, internal_variables_dictionary)
+        # Creates a mask for the points that are not within the yield
+        # surface
+
+        not_converged_quadrature_points_mask = ~(np.abs(yield_function
+        )<=self.newton_raphson_tolerance)
             
-        # Otherwise, if this material point is undergoing plastic defor-
-        # mation
-        
-        else:
+        # If some quadrature points are not within the yield surface,
+        # calls the predictor-corrector algorithm
+
+        if np.any(not_converged_quadrature_points_mask):
             
-            return self.update_plastic_strain(
+            (stress_tensor, last_plastic_strain_tensor,
+            last_accumulated_plastic_strain) = self.update_plastic_strain(
             trial_current_elastic_strain_tensor, 
             last_plastic_strain_tensor, last_accumulated_plastic_strain, 
-            epsilon, I)[0:2]
+            projected_epsilon, projected_identity)[0:3]
+
+        # Updates the functions of the plastic strain tensor and of the
+        # accumulated plastic strain in their corresponding quadrature
+        # spaces. Does the same for the stress tensor
+
+        self.quadrature_projection_class.update_quadrature_values_with_numpy_array(
+        "plastic strain tensor", 
+        self.quadrature_functional_data_class.solution_fields["plastic"+
+        " strain tensor"], last_plastic_strain_tensor)
+
+        self.quadrature_projection_class.update_quadrature_values_with_numpy_array(
+        "accumulated plastic strain", 
+        self.quadrature_functional_data_class.solution_fields["accumul"+
+        "ated plastic strain"], last_accumulated_plastic_strain)
+
+        self.quadrature_projection_class.update_quadrature_values_with_numpy_array(
+        "stress tensor", 
+        self.quadrature_functional_data_class.solution_fields["stress "+
+        "tensor"], stress_tensor)
+
+        # Returns the Cauchy stress
+
+        return self.quadrature_functional_data_class.solution_fields[
+        "stress tensor"]
 
     # Defines a function to linearly approximate the stress tensor as a 
     # function of the tangent modulus
 
-    def tangent_cauchy_stress(self, u, C_fourth, sigma_0):
+    def tangent_cauchy_stress(self, u):
 
         # Evaluates the infinitesimal strain tensor and the identity 
         # tensor
@@ -205,22 +296,29 @@ ElastoplasticMaterialModel):
 
         # Computes the linear approximation to the Cauchy stress
 
-        return ufl.as_tensor(C_fourth[p,q,r,s]*epsilon[r,s], (p,q)
-        )+sigma_0
+        return ufl.as_tensor(self.C_fourth[p,q,r,s]*epsilon[r,s], (p,q)
+        )+self.sigma_0
     
-    # Defines a function to get the tangent tensor, i.e.dsigma/depsilon
+    # Defines a function to update the internal variables and to get the 
+    # tangent tensor, i.e.dsigma/depsilon
 
-    def tangent_modulus(self, u, internal_variables_dictionary):
+    def update_internal_variables_and_tangent_modulus(self, u):
 
-        # Retrieves from the dictionary of internal variables the plas-
-        # tic strain tensor and the accumulated plastic strain. Both 
-        # from the last pseudo-time step
+        # Retrieves from the class of quadrature spaces the last itera-
+        # tion of the plastic strain tensor and the accumulated plastic
+        # strain. Convert both to numpy arrays in the format 
+        # [n_quadrature_points, 3, 3] (plastic strain tensor) and 
+        # [n_quadrature_points] (accumulated plastic strain)
 
-        last_plastic_strain_tensor = internal_variables_dictionary["la"+
-        "st_plastic_strain_tensor"]
+        last_plastic_strain_tensor = self.quadrature_projection_class.convert_quadrature_values_to_numpy_array(
+        "plastic strain tensor", 
+        self.quadrature_functional_data_class.solution_fields["plastic"+
+        " strain tensor"])
 
-        last_accumulated_plastic_strain = internal_variables_dictionary[
-        "last_accumulated_plastic_strain"]
+        last_accumulated_plastic_strain = self.quadrature_projection_class.convert_quadrature_values_to_numpy_array(
+        "accumulated plastic strain", 
+        self.quadrature_functional_data_class.solution_fields["accumul"+
+        "ated plastic strain"])
 
         # Evaluates the infinitesimal strain tensor and the identity 
         # tensor
@@ -229,31 +327,96 @@ ElastoplasticMaterialModel):
 
         dimension = u.geometric_dimension()
 
-        identity = Identity(dimension)
+        # Projects the strain tensor onto the quadrature space
+
+        projected_epsilon = self.quadrature_projection_class.project_expression_onto_quadrature_space(
+        "strain tensor", epsilon)
+
+        # Assembles the identity tensor in the format 
+        # [n_quadrature_points, 3, 3]
+
+        projected_identity = np.broadcast_to(np.eye(dimension, dtype=
+        projected_epsilon.dtype), projected_epsilon.shape)
+
+        # Considering the trial plastic strain tensor as the last plas-
+        # tic strain, computes the back stress
+
+        trial_back_stress = self.evaluate_back_stress(
+        last_plastic_strain_tensor)
 
         # Estimates the current elastic strain tensor
 
-        trial_current_elastic_strain_tensor = (epsilon-
+        trial_current_elastic_strain_tensor = (projected_epsilon-
         last_plastic_strain_tensor)
 
-        # Computes the predictor-corrector algorithm with the inner New-
-        # ton-Raphson method
+        # Computes the trial stress tensor
 
-        (sigma, dictionary_of_internal_variables, update_increment,
-        trial_update_direction, norm_trial_update_direction, 
-        trial_equivalent_stress) = self.update_plastic_strain(
-        trial_current_elastic_strain_tensor, last_plastic_strain_tensor, 
-        last_accumulated_plastic_strain, epsilon, identity)
+        stress_tensor = ((2.0*self.mu*trial_current_elastic_strain_tensor
+        )+(self.lmbda*np.trace(trial_current_elastic_strain_tensor, 
+        axis1=1, axis2=2)*projected_identity))
+
+        # Checks whether the yield function is less than zero
+
+        yield_function = self.evaluate_yield_criterion(stress_tensor
+        -trial_back_stress, last_accumulated_plastic_strain, 
+        projected_identity, dimension)
+
+        # Creates a mask for the points that are not within the yield
+        # surface
+
+        not_converged_quadrature_points_mask = ~(np.abs(yield_function
+        )<=self.newton_raphson_tolerance)
+            
+        # If some quadrature points are not within the yield surface,
+        # calls the predictor-corrector algorithm
+
+        if np.any(not_converged_quadrature_points_mask):
+            
+            (stress_tensor, last_plastic_strain_tensor,
+            last_accumulated_plastic_strain, update_increment, 
+            trial_update_direction, norm_trial_update_direction, 
+            trial_equivalent_stress) = self.update_plastic_strain(
+            trial_current_elastic_strain_tensor, 
+            last_plastic_strain_tensor, last_accumulated_plastic_strain, 
+            projected_epsilon, projected_identity)
+
+        # Computes the normalized trial update direction
+
+        normalized_trial_update_direction = (trial_update_direction/
+        norm_trial_update_direction)
+
+        # Updates the functions of the normalized trial update direction,
+        # update increment, and of the trial equivalent stress
+
+        self.quadrature_projection_class.update_quadrature_values_with_numpy_array(
+        "normalized trial update direction", 
+        self.quadrature_functional_data_class.solution_fields["normali"+
+        "zed trial update direction"], normalized_trial_update_direction)
+
+        normalized_trial_update_direction = self.quadrature_functional_data_class.solution_fields[
+        "normalized trial update direction"]
+
+        self.quadrature_projection_class.update_quadrature_values_with_numpy_array(
+        "update increment", 
+        self.quadrature_functional_data_class.solution_fields["update "+
+        "increment"], update_increment)
+
+        update_increment = self.quadrature_functional_data_class.solution_fields[
+        "update increment"]
+
+        self.quadrature_projection_class.update_quadrature_values_with_numpy_array(
+        "stress tensor", 
+        self.quadrature_functional_data_class.solution_fields["stress "+
+        "tensor"], stress_tensor)
 
         # Computes the projector tensor
+
+        identity = Identity(dimension)
 
         projector_tensor = ufl.as_tensor((identity[p,r]*identity[q,s
         ])-((1.0/dimension)*identity[p,q]*identity[r,s]), (p,q,r,s))
 
         # Computes the tensor product of the normalized trial direction
-
-        normalized_trial_update_direction = (trial_update_direction/
-        norm_trial_update_direction)
 
         eta_tensor_eta = ufl.as_tensor((
         normalized_trial_update_direction[p,q]*
@@ -267,8 +430,15 @@ ElastoplasticMaterialModel):
         # Evaluates the derivative of the limit stress with respect to
         # the accumulated plastic strain
 
-        _, K = self.limit_stress_model(dictionary_of_internal_variables[
-        "last_accumulated_plastic_strain"])
+        _, K = self.limit_stress_model(last_accumulated_plastic_strain)
+
+        self.quadrature_projection_class.update_quadrature_values_with_numpy_array(
+        "hardening tangent modulus", 
+        self.quadrature_functional_data_class.solution_fields["hardeni"+
+        "ng tangent modulus"], K)
+
+        K = self.quadrature_functional_data_class.solution_fields["har"+
+        "dening tangent modulus"]
 
         # Assembles the fourth-order tangent modulus
 
@@ -282,9 +452,14 @@ ElastoplasticMaterialModel):
         # sigma = C:(delta_epsilon)+sigma = C:epsilon+(sigma-epsilon_0)
         #       = C:epsilon+sigma_0
 
-        sigma_0 = sigma-ufl.as_tensor((C[p,q,r,s]*epsilon[r,s]), (p,q,))
+        sigma_0 = stress_tensor-ufl.as_tensor((C[p,q,r,s]*epsilon[r,s]), 
+        (p,q,))
 
-        return C, sigma_0, dictionary_of_internal_variables
+        # Updates these quantities into the class
+
+        self.sigma_0 = sigma_0
+
+        self.C_fourth = C
 
     ####################################################################
     #                      Plasticity formulation                      #
@@ -297,8 +472,8 @@ ElastoplasticMaterialModel):
     def limit_stress_model(self, accumulated_plastic_strain):
 
         return (self.sigma_y+(self.K_1*accumulated_plastic_strain)+(
-        self.K_2*(1.0-ufl.exp(-self.theta*accumulated_plastic_strain))),
-        self.K_1+(self.K_2*self.theta*ufl.exp(-self.theta*
+        self.K_2*(1.0-np.exp(-self.theta*accumulated_plastic_strain))),
+        self.K_1+(self.K_2*self.theta*np.exp(-self.theta*
         accumulated_plastic_strain)))
 
     # Defines a function to compute the back stress
@@ -320,20 +495,20 @@ ElastoplasticMaterialModel):
 
         # Computes the deviatoric parcel of the stress
 
-        deviatoric_stress = stress_tensor-((ufl.tr(stress_tensor)/
-        dimension)*identity_tensor)
+        deviatoric_stress = stress_tensor-((np.trace(stress_tensor,
+        axis1=1, axis2=2)/dimension)*identity_tensor)
 
         # Computes the von-Mises criterion
 
-        return ufl.sqrt((3.0/2.0)*ufl.inner(deviatoric_stress, 
-        deviatoric_stress))-limit_stress
+        return np.sqrt((3.0/2.0)*np.einsum('ijk,ijk->i', 
+        deviatoric_stress, deviatoric_stress))-limit_stress
 
     # Defines a function to update the plastic strain tensor and the ac-
     # cumulated plastic strain
 
     def update_plastic_strain(self, trial_elastic_strain_tensor, 
     trial_plastic_strain_tensor, accumulated_plastic_strain, 
-    strain_tensor, identity):
+    strain_tensor, identity, not_converged_quadrature_points_mask):
 
         # Computes the trial direction of update of the strain tensor
 
@@ -342,17 +517,18 @@ ElastoplasticMaterialModel):
 
         # Computes the norm of the trial update direction
 
-        norm_trial_update_direction = ufl.sqrt(ufl.inner(
+        norm_trial_update_direction = np.sqrt(np.einsum('ijk,ijk->i',
         trial_update_direction, trial_update_direction))
 
         # Computes the equivalent stress using the trial update direction
 
-        trial_equivalent_stress = ufl.sqrt((3.0/2.0)
+        trial_equivalent_stress = np.sqrt((3.0/2.0)
         )*norm_trial_update_direction
 
         # Initializes the plastic update increment
 
-        update_increment = 0.0
+        update_increment = np.zeros_like(accumulated_plastic_strain,
+        dtype=np.result_type(accumulated_plastic_strain, np.float64))
 
         # Initializes the updated accumulated plastic strain
 
@@ -377,23 +553,31 @@ ElastoplasticMaterialModel):
             # Computes the yield function as a function of the accumula-
             # ted plastic strain
 
-            phi = (ufl.sqrt(3.0/2.0)*(1.0-((update_increment/
+            phi = (np.sqrt(3.0/2.0)*(1.0-((update_increment/
             trial_equivalent_stress)*((3.0*self.mu)+self.H)))*
             norm_trial_update_direction)-sigma_y
 
-            # Checks if the yield function is 0
+            # Updates the mask of points that are not within the yield
+            # surface yet
 
-            if (phi**2)<self.newton_raphson_tolerance_squared:
+            not_converged_quadrature_points_mask &= np.abs(phi
+            )>self.newton_raphson_tolerance
+
+            # Checks if the yield function is 0 for all quadrature points
+
+            if not np.any(not_converged_quadrature_points_mask):
 
                 break 
 
-            # Otherwise, updates the update increment
+            # Updates only the unconverged quadrature points
 
-            update_increment += phi/((3.0*self.mu)+self.H+K)
+            update_increment[not_converged_quadrature_points_mask] += (
+            phi[not_converged_quadrature_points_mask]/((3.0*self.mu)+
+            self.H+K[not_converged_quadrature_points_mask]))
 
         # Updates the plastic strain tensor
 
-        trial_plastic_strain_tensor += (update_increment*ufl.sqrt(3.0/
+        trial_plastic_strain_tensor += (update_increment*np.sqrt(3.0/
         2.0)*(trial_update_direction/norm_trial_update_direction))
 
         # Computes the stress tensor
@@ -401,13 +585,12 @@ ElastoplasticMaterialModel):
         elastic_strain_tensor = strain_tensor-trial_plastic_strain_tensor
 
         stress_tensor = (2.0*self.mu*elastic_strain_tensor)+(self.lmbda*
-        ufl.tr(elastic_strain_tensor)*identity)
+        np.trace(elastic_strain_tensor, axis1=1, axis2=2)*identity)
 
         # Returns the updated plastic strain tensor and the accumulated
         # plastic strain in a dictionary
 
-        return (stress_tensor, {"last_plastic_strain_tensor": 
-        trial_plastic_strain_tensor, "last_accumulated_plastic_strain": 
-        updated_accumulated_plastic_strain}, update_increment, 
+        return (stress_tensor, trial_plastic_strain_tensor,
+        updated_accumulated_plastic_strain, update_increment, 
         trial_update_direction, norm_trial_update_direction, 
         trial_equivalent_stress)

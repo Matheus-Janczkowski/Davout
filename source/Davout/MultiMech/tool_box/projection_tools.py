@@ -9,6 +9,117 @@ from ...PythonicUtilities import programming_tools, dictionary_tools
 
 from ..tool_box.variational_tools import verify_physicalGroups
 
+# Defines a class to instantiate for multiple fields at once the class 
+# ExpressionProjectionOntoQuadratureSpace
+
+class MultipleFieldsProjectionOntoQuadratureSpace:
+
+    def __init__(self, field_names_list, functional_data_class, dtype=
+    np.int32, point_absolute_tolerance=1E-6, point_relative_tolerance=
+    1E-8):
+
+        # Verifies if field name is a string
+
+        if isinstance(field_names_list, str):
+
+            # Puts it into a list
+
+            field_names_list = [field_names_list]
+
+        # Checks if it is not a list
+
+        elif not isinstance(field_names_list, list):
+
+            raise TypeError("'field_names_list' at 'MultipleFieldsProj"+
+            "ectionOntoQuadratureSpace' must be a string (for a single"+
+            " field) or a list. Currently, it is: "+str(field_names_list
+            ))
+
+        # Initializes a dictionary of instances of the class for projec-
+        # tions onto quadrature spaces
+
+        self.classes_dictionary = {}
+
+        # Iterates over the fields
+
+        for field_name in field_names_list:
+
+            # Instantiates the class for projection
+
+            self.classes_dictionary[field_name] = ExpressionProjectionOntoQuadratureSpace(
+            field_name, functional_data_class, dtype=dtype, 
+            point_absolute_tolerance=point_absolute_tolerance,
+            point_relative_tolerance=point_relative_tolerance)
+
+    # Defines a function to project an ufl expression onto a quadrature
+    # space
+
+    def project_expression_onto_quadrature_space(self, field_name, 
+    expression):
+
+        # Checks if field name is in the dictionary of fields names
+
+        if not (field_name in self.classes_dictionary):
+
+            available_names = dictionary_tools.list_keys(
+            self.classes_dictionary, None, simply_list_keys=True)
+
+            raise KeyError("'field_name' in 'project_expression_onto_q"+
+            "uadrature_space' is not an available field name. Check th"+
+            "e available names:\n"+str(available_names))
+
+        # Returns that function defined in the class of this field
+        
+        return self.classes_dictionary[field_name
+        ].project_expression_onto_quadrature_space(expression)
+
+    # Defines a function to convert the quadrature finite-element inter-
+    # polation to numpy arrays [n_quadrature_points, tensor_dimension]
+
+    def convert_quadrature_values_to_numpy_array(self, field_name,
+    function_in_quadrature_space):
+
+        # Checks if field name is in the dictionary of fields names
+
+        if not (field_name in self.classes_dictionary):
+
+            available_names = dictionary_tools.list_keys(
+            self.classes_dictionary, None, simply_list_keys=True)
+
+            raise KeyError("'field_name' in 'convert_quadrature_values"+
+            "_to_numpy_array' is not an available field name. Check th"+
+            "e available names:\n"+str(available_names))
+
+        # Returns that function defined in the class of this field
+        
+        return self.classes_dictionary[field_name
+        ].convert_quadrature_values_to_numpy_array(
+        function_in_quadrature_space)
+
+    # Defines a function to update the quadrature points of a quadrature
+    # interpolation with values coming from a numpy array 
+    # [n_quadrature_points, tensor_dimension]
+
+    def update_quadrature_values_with_numpy_array(self, field_name,
+    function_in_quadrature_space, function_values_array):
+
+        # Checks if field name is in the dictionary of fields names
+
+        if not (field_name in self.classes_dictionary):
+
+            available_names = dictionary_tools.list_keys(
+            self.classes_dictionary, None, simply_list_keys=True)
+
+            raise KeyError("'field_name' in 'update_quadrature_values_"+
+            "with_numpy_array' is not an available field name. Check t"+
+            "he available names:\n"+str(available_names))
+
+        # Runs that function defined in the class of this field
+        
+        self.classes_dictionary[field_name
+        ].update_quadrature_values_with_numpy_array(
+        function_in_quadrature_space, function_values_array)
+
 # Defines a class to perform local projections from ufl expressions to 
 # quadrature finite-element spaces and back to expressions
 
@@ -121,13 +232,13 @@ class ExpressionProjectionOntoQuadratureSpace:
         number_of_elements = (
         functional_data_class.mesh_data_class.mesh.num_cells())
 
-        self.number_of_quadrature_points = (
+        self.number_of_quadrature_points = int(
         quadrature_DOFs_coordinates.shape[0]/number_of_components)
 
         # Calculates the number of quadrature points in each finite el-
         # ement
 
-        number_of_quadrature_points_per_element = (
+        number_of_quadrature_points_per_element = int(
         self.number_of_quadrature_points/number_of_elements)
 
         if np.mod(self.number_of_quadrature_points,number_of_elements
@@ -163,10 +274,11 @@ class ExpressionProjectionOntoQuadratureSpace:
             element_quadrature_DOFs_coordinates = (
             quadrature_DOFs_coordinates[element_DOFs,:])
 
-            # Initializes a list of quadrature DOFs that have already
-            # been found
+            # Initializes a boolean array of quadrature DOFs that have 
+            # already been found
 
-            found_quadrature_DOFs =  []
+            found_quadrature_DOFs = np.zeros(
+            element_quadrature_DOFs_coordinates.shape[0], dtype=bool)
 
             # Initializes a list that will hold the DOFs indices for
             # each quadrature point
@@ -180,7 +292,7 @@ class ExpressionProjectionOntoQuadratureSpace:
 
                 # If this index was already found, skips this iteration
 
-                if quadrature_dof_index in found_quadrature_DOFs:
+                if found_quadrature_DOFs[quadrature_dof_index]:
 
                     continue
 
@@ -198,6 +310,21 @@ class ExpressionProjectionOntoQuadratureSpace:
                 point_absolute_tolerance, rtol=point_relative_tolerance
                 ), axis=1))[0]
 
+                # Checks if the number of DOFs per quadrature points was
+                # found
+
+                if quadrature_point_dofs_indices.shape[0]!=(
+                number_of_components):
+
+                    raise IndexError(str(number_of_components)+" DOFs "+
+                    "are required for each quadrature point in the qua"+
+                    "drature space of the field '"+str(field_name)+"'."+
+                    " In contrast, for the quadrature point at "+str(
+                    quadrature_DOF_coordinates)+" "+str(
+                    quadrature_point_dofs_indices.shape[0])+" DOFs wer"+
+                    "e found. Check the tolerances at 'ExpressionProje"+
+                    "ctionOntoQuadratureSpace'")
+
                 # Appends these DOFs to the list of DOFs per quadrature
                 # point
 
@@ -206,8 +333,8 @@ class ExpressionProjectionOntoQuadratureSpace:
 
                 # Updates the list of found DOFs
 
-                found_quadrature_DOFs.extend(
-                quadrature_point_dofs_indices.tolist())
+                found_quadrature_DOFs[quadrature_point_dofs_indices
+                ] = True
 
             # Checks if the number of quadrature points found is the 
             # specified number of quadrature points per element
@@ -223,12 +350,18 @@ class ExpressionProjectionOntoQuadratureSpace:
                 "ied, check the tolerances supplied to 'ExpressionProj"+
                 "ectionOntoQuadratureSpace'")
 
+            # Reshapes the indices according to the tensor dimension
+
+            indices_per_quadrature_point = np.asarray(
+            DOFs_indices_per_quadrature_point, dtype=dtype).reshape((
+            number_of_quadrature_points_per_element, *tensor_dimension))
+
             # Updates the DOFs of this element into the array of indices
 
             self.numpy_array_indices[int(element_index*
             number_of_quadrature_points_per_element):int((element_index+
-            1)*number_of_quadrature_points_per_element)] = np.asarray(
-            DOFs_indices_per_quadrature_point, dtype=dtype)
+            1)*number_of_quadrature_points_per_element)
+            ] = indices_per_quadrature_point
 
     # Defines a function to project an ufl expression onto a quadrature
     # space
@@ -255,10 +388,10 @@ class ExpressionProjectionOntoQuadratureSpace:
 
         expression_values = self.expression_function.vector().get_local()
 
-        expression_values = expression_values.reshape(
-        self.numpy_array_shape)
+        # Returns the values reorganized into an array 
+        # [n_quadrature_points, tensor_dimension]
 
-        return expression_values
+        return expression_values[self.numpy_array_indices]
 
     # Defines a function to convert the quadrature finite-element inter-
     # polation to numpy arrays [n_quadrature_points, tensor_dimension]
@@ -275,8 +408,7 @@ class ExpressionProjectionOntoQuadratureSpace:
         # Reshapes these values to a numpy array according to the dimen-
         # sions automatically retrieved from the functional data class
 
-        function_values_array = function_values.reshape(
-        self.numpy_array_shape)
+        function_values_array = function_values[self.numpy_array_indices]
 
         return function_values_array
 
@@ -287,10 +419,18 @@ class ExpressionProjectionOntoQuadratureSpace:
     def update_quadrature_values_with_numpy_array(self, 
     function_in_quadrature_space, function_values_array):
 
-        # Sets the numpy array as values for the quadrature interpolation
+        # Sets the numpy array as values for the quadrature interpola-
+        # tion
 
-        function_in_quadrature_space.vector().set_local(
-        function_values_array.ravel())
+        function_vector = function_in_quadrature_space.vector(
+        ).get_local()
+
+        # Uses the indices of the DOFs per quadrature point in reverse 
+        # order
+
+        function_vector[self.numpy_array_indices] = function_values_array
+
+        function_in_quadrature_space.vector().set_local(function_vector)
 
         function_in_quadrature_space.vector().apply("insert")
 

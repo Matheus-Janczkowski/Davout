@@ -3,17 +3,19 @@
 
 from dolfin import *
 
-from .....Davout.PythonicUtilities.path_tools import get_parent_path_of_file
+from ....PythonicUtilities.path_tools import get_parent_path_of_file
 
-from .....Davout.MultiMech.tool_box.mesh_handling_tools import read_mshMesh
+from ...tool_box.mesh_handling_tools import read_mshMesh
 
-from .....Davout.MultiMech.constitutive_models.hyperelasticity.infinitesimal_elasticity import LinearIsotropicElastic
+from ...constitutive_models.plasticity.isotropic_infinitesimal_plasticity import ExponentialHardeningElastoPlasticWithBackStress
 
-from .....Davout.MultiMech.tool_box import functional_tools
+from ...tool_box import functional_tools
 
-from .....Davout.MultiMech.tool_box import variational_tools
+from ...tool_box import variational_tools
 
-from .....Davout.MultiMech.tool_box.read_write_tools import write_field_to_xdmf
+from ...tool_box.projection_tools import MultipleFieldsProjectionOntoQuadratureSpace
+
+from ...tool_box.read_write_tools import write_field_to_xdmf
 
 # Creates a box mesh using gmsh
 
@@ -36,33 +38,35 @@ E = 1E6
 
 poisson = 0.3
 
-constitutive_models = {"volume 1": LinearIsotropicElastic({"E": E, "nu": 
-poisson})}
+# Sets the coefficients of the plastic behavior
+
+sigma_y =120E6
+
+H_back_stress = 0.0
+
+K_1 = E*0.02
+
+K_2 = 0.0
+
+theta = 0.0
+
+constitutive_models = {"volume 1": 
+ExponentialHardeningElastoPlasticWithBackStress({"E": E, "nu": poisson,
+"sigma_y": sigma_y, "H": H_back_stress, "K_1": K_1, "K_2": K_2, "theta":
+theta})}
 
 # Checks the constitutive models and ensures that the supplied param-
 # eters are correct
 
 for constitutive_model in constitutive_models.values():
 
-    constitutive_model.check_model({})
+    constitutive_model.check_model({"mesh_data_class": mesh_data_class})
 
 # Sets the function space
 
 functional_data_class = functional_tools.construct_monolithicFunctionSpace(
 {"Displacement": {"field type": "vector", "interpolation function": "C"+
 "G", "polynomial degree": 2}}, mesh_data_class, verbose=True)
-
-# Sets the function space for a vector-valued internal variable and ano-
-# ther scalar-valued internal variable. They are both found in quadra-
-# ture points alone. Note that 'polynomial degree' stands for quadrature
-# degree in the case of quadrature finite elements
-
-quadrature_functional_data_class = functional_tools.construct_monolithicFunctionSpace(
-{"vector internal variable": {"field type": "vector", "interpolation f"+
-"unction": "Quadrature", "polynomial degree": 2, "dimension": 3}, 
-"scalar internal variable": {"field type": "scalar", "interpolation fu"+
-"nction": "Quadrature", "polynomial degree": 2}}, mesh_data_class,
-verbose=True)
 
 # Dirichlet boundary conditions
 
@@ -99,6 +103,11 @@ internal_work = 0.0
 
 for physical_group, constitutive_model in constitutive_models.items():
 
+    # Updates the internal variables and the tangent modulus
+
+    constitutive_model.update_internal_variables_and_tangent_modulus(
+    functional_data_class.solution_fields["Displacement"])
+
     # Gets the Cauchy stress tensor from the linear elastic constitutive
     # relation and pulls it back to the first Piola-Kirchhoff stress 
     # tensor. This way, a formulation of large displacements and infini-
@@ -106,7 +115,7 @@ for physical_group, constitutive_model in constitutive_models.items():
     # the first Piola-Kirchhoff stress tensor will carry the geometric
     # nonlinearities
 
-    sigma = constitutive_model.cauchy_stress(
+    sigma = constitutive_model.tangent_cauchy_stress(
     functional_data_class.solution_fields["Displacement"])
 
     P = J*sigma*F_invT

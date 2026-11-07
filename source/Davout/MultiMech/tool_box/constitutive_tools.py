@@ -22,6 +22,8 @@ from ..tool_box.parallelization_tools import mpi_execute_function, mpi_evaluate_
 
 from ..tool_box.read_write_tools import read_field_from_xdmf
 
+from ..tool_box.mesh_handling_tools import MeshData
+
 from ...PythonicUtilities import file_handling_tools as file_tools
 
 from ...GraphUtilities import plotting_tools
@@ -119,15 +121,32 @@ code_given_information=None):
 
         # Verifies if the key is present
 
+        corresponding_value = None
+
         if not (key in dictionary):
 
-            raise KeyError("The key '"+str(key)+"' was not found in th"+
-            "e dictionary of material parameters. See: "+str(
-            dictionary.keys()))
-        
-        # Recovers the dictionary corresponding value
+            # Checks if the dictionary of code-given information has
+            # this key
 
-        corresponding_value = dictionary[key]
+            if key in code_given_information:
+
+                corresponding_value = code_given_information[key]
+
+            # Otherwise, throws an error
+
+            else:
+
+                raise KeyError("The key '"+str(key)+"' was not found i"+
+                "n the dictionary of material parameters. See: "+str(
+                dictionary.keys())+"\n\nOn the other hand, 'code_given"+
+                "_information' has the keys: "+str(
+                code_given_information.keys()))
+
+        else:
+        
+            # Recovers the dictionary corresponding value
+
+            corresponding_value = dictionary[key]
         
         # Checks if the value is a dictionary itself, what indicates a 
         # field that must be read
@@ -198,15 +217,22 @@ code_given_information=None):
             
             new_dictionary[key] = Constant(corresponding_value)
 
+        # If the value is an instance of the MeshData class
+
+        elif isinstance(corresponding_value, MeshData):
+
+            new_dictionary[key] = corresponding_value
+
         # If the value is not a boolean, throws an error
 
-        elif not isinstance(corresponding_value, bool):
+        elif (not isinstance(corresponding_value, bool)):
 
             raise TypeError("The material property within key '"+str(key
             )+"' is not a dictionary, nor a float, nor an int, nor a n"+
-            "umpy array, nor a list, nor a boolean (True or False). It"+
-            "s current value is: "+str(corresponding_value)+". Thus, i"+
-            "t cannot be used as parameter of a constitutive model")
+            "umpy array, nor a list, nor a boolean (True or False), no"+
+            "r an instance of the class 'MeshData'. Its current value "+
+            "is: "+str(corresponding_value)+". Thus, it cannot be used"+
+            " as parameter of a constitutive model")
         
         # Saves everything else directly into the new dictionary
         

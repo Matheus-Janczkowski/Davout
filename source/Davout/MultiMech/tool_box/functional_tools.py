@@ -1511,7 +1511,8 @@ all_data_must_be_provided=False):
     fields_names, solution_fields, variation_fields, trial_functions, 
     fields_namesDict, mixed_element, mesh_file=mesh_dataClass.mesh_file,
     elements_dictionary_copy=elements_dictionary_copy,
-    fields_tensor_dimensions_dict=fields_tensor_dimensions_dict)
+    fields_tensor_dimensions_dict=fields_tensor_dimensions_dict,
+    mesh_data_class=mesh_dataClass)
 
 # Defines a function to construct a dictionary of elements from a dic-
 # tionary of finite elements' instructions
