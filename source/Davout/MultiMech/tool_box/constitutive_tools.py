@@ -16,6 +16,8 @@ from ..tool_box import functional_tools
 
 from ..tool_box import variational_tools
 
+from ..tool_box import projection_tools
+
 from ..tool_box.parallelization_tools import mpi_execute_function, mpi_evaluate_field_at_point
 
 from ..tool_box.read_write_tools import read_field_from_xdmf
@@ -585,7 +587,7 @@ pressure_correction=None):
         # Projects this piecewise continuous field of stress into a FE 
         # space
 
-        stress_fieldFunction = variational_tools.project_piecewiseField(
+        stress_fieldFunction = projection_tools.project_piecewiseField(
         integration_pairs, output_object.dx, output_object.W, 
         output_object.physical_groupsList, 
         output_object.physical_groupsNamesToTags, solution_names=
@@ -727,7 +729,7 @@ stress_method, fields_namesDict, comm, digits=3):
         # Projects this piecewise continuous field of stress into a FE 
         # space
 
-        pressure_fieldFunction = variational_tools.project_piecewiseField(
+        pressure_fieldFunction = projection_tools.project_piecewiseField(
         integration_pairs, output_object.dx, output_object.W, 
         output_object.physical_groupsList, 
         output_object.physical_groupsNamesToTags)
@@ -915,7 +917,7 @@ stress_method, fields_namesDict, pressure_correction=None):
         # Projects this piecewise continuous field of traction into a FE 
         # space
 
-        traction_fieldFunction = variational_tools.project_overBoundary(
+        traction_fieldFunction = projection_tools.project_overBoundary(
         integration_pairs, output_object.ds, output_object.W, 
         output_object.physical_groupsList, 
         output_object.physical_groupsNamesToTags, solution_names=["tra"+
@@ -945,7 +947,7 @@ stress_method, fields_namesDict, pressure_correction=None):
         # Projects the stress into a function taking the trace to get 
         # the pressure
 
-        traction_fieldFunction = variational_tools.project_overBoundary(
+        traction_fieldFunction = projection_tools.project_overBoundary(
         [[dot(stress_field,output_object.referential_normal), ""]], 
         output_object.ds, output_object.W, 
         output_object.physical_groupsList, 
@@ -1087,7 +1089,7 @@ tensor_name, fields_namesDict, comm):
 
                 # Projects the component into a FE space
 
-                elasticity_tensorFunction = variational_tools.project_piecewiseField(
+                elasticity_tensorFunction = projection_tools.project_piecewiseField(
                 index_integrationPairs, output_object.dx, 
                 output_object.W, output_object.physical_groupsList, 
                 output_object.physical_groupsNamesToTags)

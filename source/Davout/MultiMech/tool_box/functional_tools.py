@@ -1274,7 +1274,8 @@ class FunctionalData:
     def __init__(self, monolithic_functionSpace, monolithic_solution, 
     fields_names, solution_fields, variation_fields, trial_functions, 
     fields_namesDict, mixed_element, mesh_file=None, mesh_data_class=
-    None, elements_dictionary_copy=None):
+    None, elements_dictionary_copy=None, fields_tensor_dimensions_dict=
+    None):
         
         # Saves the parameters of finite elements and function spaces
 
@@ -1299,6 +1300,8 @@ class FunctionalData:
         self.mesh_data_class = mesh_data_class
 
         self.elements_dictionary_copy = elements_dictionary_copy
+
+        self.fields_tensor_dimensions_dict = fields_tensor_dimensions_dict
 
 # Defines a function to select a field from a list of fields
 
@@ -1356,9 +1359,10 @@ all_data_must_be_provided=False):
     # Transforms the dictionary of instructions into real finite elements
     # and get the names of the fields
 
-    elements_dictionary, fields_names = construct_elementsDictionary(
-    elements_dictionary, mesh_dataClass, all_data_must_be_provided=
-    all_data_must_be_provided)
+    (elements_dictionary, fields_names, fields_tensor_dimensions_dict
+    ) = construct_elementsDictionary(elements_dictionary, mesh_dataClass, 
+    all_data_must_be_provided=all_data_must_be_provided, 
+    get_dimension_of_each_field=True)
 
     # Constructs the mixed element
 
@@ -1506,13 +1510,14 @@ all_data_must_be_provided=False):
     return FunctionalData(monolithic_functionSpace, monolithic_solution, 
     fields_names, solution_fields, variation_fields, trial_functions, 
     fields_namesDict, mixed_element, mesh_file=mesh_dataClass.mesh_file,
-    elements_dictionary_copy=elements_dictionary_copy)
+    elements_dictionary_copy=elements_dictionary_copy,
+    fields_tensor_dimensions_dict=fields_tensor_dimensions_dict)
 
 # Defines a function to construct a dictionary of elements from a dic-
 # tionary of finite elements' instructions
 
 def construct_elementsDictionary(elements_dictionary, mesh_dataClass,
-all_data_must_be_provided=False):
+all_data_must_be_provided=False, get_dimension_of_each_field=False):
 
     # Sets a list of allowed interpolation functions
 
@@ -1522,6 +1527,12 @@ all_data_must_be_provided=False):
     # Initializes a list of names of the fields
 
     fields_names = []
+
+    # Initializes a dictionary of field names and their corresponding
+    # tensor dimension. Example, if the field is a second-order tensor
+    # in 3D space, the tensor dimension will be (3,3)
+
+    fields_tensor_dimensions_dict = {}
 
     # Gets the dimension of the space
 
@@ -1560,6 +1571,9 @@ all_data_must_be_provided=False):
 
                 elements_dictionary[field_name] = (
                 element_dictionary.ufl_element())
+
+                fields_tensor_dimensions_dict[field_name] = (
+                elements_dictionary[field_name].value_shape())
 
             # Otherwise, creates the element
 
@@ -1735,6 +1749,10 @@ all_data_must_be_provided=False):
                         mesh_dataClass.mesh.ufl_cell(), 
                         polynomial_degree, **keyword_arguments)
 
+                        # Adds the dimension as an empty tuple
+
+                        fields_tensor_dimensions_dict[field_name] = ()
+
                     # If the field is a vector-valued field
 
                     elif element_type=="vector":
@@ -1745,6 +1763,18 @@ all_data_must_be_provided=False):
                         interpolation_function, 
                         mesh_dataClass.mesh.ufl_cell(), 
                         polynomial_degree, **keyword_arguments)
+
+                        # Adds the dimension as a single tuple
+
+                        if "dim" in keyword_arguments:
+
+                            fields_tensor_dimensions_dict[field_name] = (
+                            keyword_arguments["dim"],)
+
+                        else:
+
+                            fields_tensor_dimensions_dict[field_name] = (
+                            space_dimension,)
 
                     # If the field is a tensor-valued field
 
@@ -1780,6 +1810,11 @@ all_data_must_be_provided=False):
                             polynomial_degree, tuple(dimension_tuple), 
                             **keyword_arguments)
 
+                            # Adds the dimension as the dimension tuple
+
+                            fields_tensor_dimensions_dict[field_name] = tuple(
+                            dimension_tuple)
+
                         # Otherwise
 
                         else:
@@ -1790,6 +1825,12 @@ all_data_must_be_provided=False):
                             interpolation_function, 
                             mesh_dataClass.mesh.ufl_cell(), 
                             polynomial_degree, **keyword_arguments)
+
+                            # Adds the dimension as the default second-
+                            # order tensor
+
+                            fields_tensor_dimensions_dict[field_name] = (
+                            space_dimension, space_dimension)
 
                     else:
 
@@ -1808,6 +1849,11 @@ all_data_must_be_provided=False):
             fields_names.append(field_name)
         
     # Returns the finite elements dictionary
+
+    if get_dimension_of_each_field:
+
+        return (elements_dictionary, fields_names, 
+        fields_tensor_dimensions_dict)
 
     return elements_dictionary, fields_names
 
