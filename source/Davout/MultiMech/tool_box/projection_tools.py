@@ -14,7 +14,8 @@ from ..tool_box.variational_tools import verify_physicalGroups
 
 class ExpressionProjectionOntoQuadratureSpace:
 
-    def __init__(self, field_name, functional_data_class):
+    def __init__(self, field_name, functional_data_class, dtype=np.int32,
+    point_absolute_tolerance=1E-6, point_relative_tolerance=1E-8):
 
         # Retrieves the function space, the dictionary of fields names,
         # and the integration measure object
@@ -101,29 +102,133 @@ class ExpressionProjectionOntoQuadratureSpace:
         # Gets the number of DOFs in each finite element of the quadra-
         # ture space
 
-        number_of_element_dofs = len(field_function_space.dofmap(
-        ).cell_dofs(0))
+        map_of_DOFs = field_function_space.dofmap()
 
-        # Calculates the number of quadrature points in each finite el-
-        # ement
+        # Gets the coordinates of each quadrature DOF and reshapes them
+        # to a [n_quadrature_DOFs, space_dimension]
 
-        number_of_quadrature_points_per_element = (
-        number_of_element_dofs//number_of_components)
+        space_dimension = (
+        functional_data_class.mesh_data_class.mesh.geometry().dim())
+
+        quadrature_DOFs_coordinates = (
+        field_function_space.tabulate_dof_coordinates())
+
+        quadrature_DOFs_coordinates = quadrature_DOFs_coordinates.reshape(
+        (-1, space_dimension))
 
         # Gets the total number of quadrature points in the mesh
 
         number_of_elements = (
         functional_data_class.mesh_data_class.mesh.num_cells())
 
-        self.number_of_quadrature_points = (number_of_elements*
-        number_of_quadrature_points_per_element)
+        self.number_of_quadrature_points = (
+        quadrature_DOFs_coordinates.shape[0]/number_of_components)
 
-        # Assembles the shape of the numpy array that will convey the
-        # values of this field for each quadrature point
+        # Calculates the number of quadrature points in each finite el-
+        # ement
 
-        self.numpy_array_shape = [self.number_of_quadrature_points]
+        number_of_quadrature_points_per_element = (
+        self.number_of_quadrature_points/number_of_elements)
 
-        self.numpy_array_shape.extend(list(tensor_dimension))
+        if np.mod(self.number_of_quadrature_points,number_of_elements
+        )!=0:
+
+            raise IndexError("The number of finite elements in the qua"+
+            "drature space of the field '"+str(field_name)+"' is "+str(
+            number_of_elements)+", whereas the number of quadrature po"+
+            "ints is "+str(self.number_of_quadrature_points)+". Thus, "+
+            "there is no integer number of quadrature points per eleme"+
+            "nt. Check the mesh or the quadrature space")
+
+        # Constructs a numpy array of integer indices to get the quadra-
+        # ture values from and to the fields in correct order
+
+        self.numpy_array_indices = np.empty((
+        self.number_of_quadrature_points, *tensor_dimension), dtype=
+        dtype)
+
+        # Iterates over the finite elements of the quadrature mesh
+
+        for element_index in range(number_of_elements):
+
+            # Gets the indices of the DOFs (quadrature points) of this
+            # element
+
+            element_DOFs = map_of_DOFs.cell_dofs(element_index)
+
+            # Retrieves the coordinates of the quadrature DOFs within
+            # this element, and reshapes them to an array [
+            # n_quadrature_DOFs_per_element, space_dimension]
+
+            element_quadrature_DOFs_coordinates = (
+            quadrature_DOFs_coordinates[element_DOFs,:])
+
+            # Initializes a list of quadrature DOFs that have already
+            # been found
+
+            found_quadrature_DOFs =  []
+
+            # Initializes a list that will hold the DOFs indices for
+            # each quadrature point
+
+            DOFs_indices_per_quadrature_point = []
+
+            # Iterates through the quadrature DOFs of the element
+
+            for quadrature_dof_index in range(
+            element_quadrature_DOFs_coordinates.shape[0]):
+
+                # If this index was already found, skips this iteration
+
+                if quadrature_dof_index in found_quadrature_DOFs:
+
+                    continue
+
+                # Gets the coordinates of this quadrature DOF
+
+                quadrature_DOF_coordinates = (
+                element_quadrature_DOFs_coordinates[quadrature_dof_index])
+
+                # Gets the DOFs indices of this element that are close 
+                # to that coordinates
+
+                quadrature_point_dofs_indices = np.where(np.all(
+                np.isclose(element_quadrature_DOFs_coordinates, 
+                quadrature_DOF_coordinates, atol=
+                point_absolute_tolerance, rtol=point_relative_tolerance
+                ), axis=1))[0]
+
+                # Appends these DOFs to the list of DOFs per quadrature
+                # point
+
+                DOFs_indices_per_quadrature_point.append(element_DOFs[
+                quadrature_point_dofs_indices])
+
+                # Updates the list of found DOFs
+
+                found_quadrature_DOFs.extend(
+                quadrature_point_dofs_indices.tolist())
+
+            # Checks if the number of quadrature points found is the 
+            # specified number of quadrature points per element
+
+            if len(DOFs_indices_per_quadrature_point
+            )!=number_of_quadrature_points_per_element:
+
+                raise IndexError("In some quadrature element of the fi"+
+                "eld '"+str(field_name)+"', "+str(len(
+                DOFs_indices_per_quadrature_point))+" quadrature point"+
+                "s were found, but "+str(
+                number_of_quadrature_points_per_element)+" were specif"+
+                "ied, check the tolerances supplied to 'ExpressionProj"+
+                "ectionOntoQuadratureSpace'")
+
+            # Updates the DOFs of this element into the array of indices
+
+            self.numpy_array_indices[int(element_index*
+            number_of_quadrature_points_per_element):int((element_index+
+            1)*number_of_quadrature_points_per_element)] = np.asarray(
+            DOFs_indices_per_quadrature_point, dtype=dtype)
 
     # Defines a function to project an ufl expression onto a quadrature
     # space
