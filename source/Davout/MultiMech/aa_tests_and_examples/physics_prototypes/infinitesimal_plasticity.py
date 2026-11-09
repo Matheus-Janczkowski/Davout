@@ -105,7 +105,7 @@ for physical_group, constitutive_model in constitutive_models.items():
 
     # Updates the internal variables and the tangent modulus
 
-    constitutive_model.update_internal_variables_and_tangent_modulus(
+    constitutive_model.update_internal_variables(
     functional_data_class.solution_fields["Displacement"])
 
     # Gets the Cauchy stress tensor from the linear elastic constitutive
@@ -115,7 +115,7 @@ for physical_group, constitutive_model in constitutive_models.items():
     # the first Piola-Kirchhoff stress tensor will carry the geometric
     # nonlinearities
 
-    sigma = constitutive_model.tangent_cauchy_stress(
+    sigma = constitutive_model.cauchy_stress(
     functional_data_class.solution_fields["Displacement"])
 
     P = J*sigma*F_invT

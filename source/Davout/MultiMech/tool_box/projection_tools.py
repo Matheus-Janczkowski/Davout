@@ -9,6 +9,14 @@ from ...PythonicUtilities import programming_tools, dictionary_tools
 
 from ..tool_box.variational_tools import verify_physicalGroups
 
+import warnings
+
+from ffc.quadrature.deprecation import (
+QuadratureRepresentationDeprecationWarning)
+
+warnings.simplefilter("ignore",
+QuadratureRepresentationDeprecationWarning)
+
 # Defines a class to instantiate for multiple fields at once the class 
 # ExpressionProjectionOntoQuadratureSpace
 
@@ -175,6 +183,12 @@ class ExpressionProjectionOntoQuadratureSpace:
             field_function_space = monolithic_function_space.sub(
             fields_names_dict[field_name]).collapse()
 
+        print("\nTreats "+str(field_name))
+
+        # Sets the form compilation to quadrature
+
+        self.form_compiler_parameters = {"representation": "quadrature"}
+
         # Defines the bilinear form of the local projection problem
         
         projection_trial = TrialFunction(field_function_space)
@@ -183,6 +197,14 @@ class ExpressionProjectionOntoQuadratureSpace:
 
         self.projection_bilinear_form = inner(projection_trial, 
         self.project_test)*self.dx_object
+
+        print("\nAssembles the bilinear form for the projection of fie"+
+        "ld '"+str(field_name)+"', which was defined in a quadrature s"+
+        "pace")
+
+        self.assembled_bilinear_form = assemble(
+        self.projection_bilinear_form, form_compiler_parameters=
+        self.form_compiler_parameters)
 
         # Creates the output function for the projected expression
 
@@ -373,16 +395,16 @@ class ExpressionProjectionOntoQuadratureSpace:
         projection_linear_form = inner(expression, self.project_test
         )*self.dx_object
 
-        # Constructs and factorizes the local solver
+        # Asselmbles the linear form
 
-        self.projection_solver = LocalSolver(
-        self.projection_bilinear_form, projection_linear_form)
+        assembled_linear_form = assemble(projection_linear_form, 
+        form_compiler_parameters=self.form_compiler_parameters)
 
-        self.projection_solver.factorize()
+        # Solves the system of linear algebraic equations of the projec-
+        # tion
 
-        # Projects the expression to the quadrature function space
-
-        self.projection_solver.solve_local_rhs(self.expression_function)
+        solve(self.assembled_bilinear_form, 
+        self.expression_function.vector(), assembled_linear_form)
 
         # Retrieves the numerical values
 

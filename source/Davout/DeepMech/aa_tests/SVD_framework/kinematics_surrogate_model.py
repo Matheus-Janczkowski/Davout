@@ -361,9 +361,13 @@ class RVEKinematicsSurrogateModel:
 
 if __name__=="__main__":
 
-    # Sets the number of transfinite divisions in the RVE mesh
+     # Sets the number of transfinite divisions in the RVE mesh
 
-    n_divisions = 6
+    n_divisions = 10
+
+    # Sets component to be learnt
+
+    component_to_be_learnt = "Y"
 
     # Sets a dictionary for the number of DOFs in the mesh for each num-
     # ber of divisions
@@ -372,8 +376,11 @@ if __name__=="__main__":
 
     # Defines the array with the DOFs to be learnt
 
-    subdofs_to_learn = np.arange(0, dofs_per_number_of_divisions[
-    n_divisions], 3)
+    components_dictionary = {"X": 0, "Y": 1, "Z": 2}
+
+    subdofs_to_learn = np.arange(components_dictionary[
+    component_to_be_learnt], dofs_per_number_of_divisions[n_divisions], 
+    3)
 
     # Defines the number of input neurons of the main network. Remember
     # that the data matrix is a tensor [n_samples, n_input_variables]. 
@@ -429,7 +436,7 @@ if __name__=="__main__":
 
     parameters_dtype = "float32"
 
-    saved_model_file = "RVE_kinematics_model"
+    saved_model_file = "RVE_kinematics_model_"+str(component_to_be_learnt)
 
     # Sets the path for the data
 

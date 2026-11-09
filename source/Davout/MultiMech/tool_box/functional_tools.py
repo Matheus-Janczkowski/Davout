@@ -1350,7 +1350,7 @@ fields_namesDict):
 
 def construct_monolithicFunctionSpace(elements_dictionary, 
 mesh_dataClass, verbose=False, function_only=False, 
-all_data_must_be_provided=False):
+all_data_must_be_provided=False, use_fenics_split_method=True):
     
     # Makes a copy of the dictionary of elements
 
@@ -1403,7 +1403,23 @@ all_data_must_be_provided=False):
 
     if len(fields_names)>1:
 
-        solution_functions = split(monolithic_solution)
+        # If the monolithic solution is to be split using conventional
+        # fenics's split method
+
+        if use_fenics_split_method:
+
+            solution_functions = split(monolithic_solution)
+
+        # Otherwise
+
+        else:
+
+            # Gets each individual field as a function with a view to
+            # the parent monolithic function. This is important to modi-
+            # fy DOFs values of a particular field
+
+            solution_functions = [monolithic_solution.sub(i, deepcopy=
+            False) for i in range(len(fields_names))]
 
         if not function_only:
 
