@@ -21,16 +21,21 @@ from .....Davout.MultiMech.tool_box.read_write_tools import write_field_to_xdmf
 
 # Creates a box mesh using gmsh
 
+shape_function_degree = 3
+
+quadrature_degree = 4
+
 mesh_data_class = read_mshMesh({"length x": 0.3, "length y": 0.2, "len"+
 "gth z": 3.0, "number of divisions in x": 5, "number of divisions in y":
 5, "number of divisions in z": 40, "verbose": False, "mesh file name": 
-"box_mesh", "mesh file directory": get_parent_path_of_file()})
+"box_mesh", "mesh file directory": get_parent_path_of_file()}, 
+quadrature_degree=quadrature_degree)
 
 # Neumann boundary conditions
 
-maximum_load = 3.0E3
+maximum_load = 1.5E3
 
-plastic_material = True
+plastic_material = False
 
 # Sets the number of load steps (pseudo-time steps)
 
@@ -79,7 +84,8 @@ for constitutive_model in constitutive_models.values():
 
 functional_data_class = functional_tools.construct_monolithicFunctionSpace(
 {"Displacement": {"field type": "vector", "interpolation function": "C"+
-"G", "polynomial degree": 2}}, mesh_data_class, verbose=True)
+"G", "polynomial degree": shape_function_degree}}, mesh_data_class, 
+verbose=True)
 
 # Dirichlet boundary conditions
 
