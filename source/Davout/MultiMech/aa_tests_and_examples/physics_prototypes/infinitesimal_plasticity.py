@@ -23,7 +23,7 @@ from .....Davout.MultiMech.tool_box.read_write_tools import write_field_to_xdmf
 
 shape_function_degree = 3
 
-quadrature_degree = 4
+quadrature_degree = int(2*(shape_function_degree-1))
 
 mesh_data_class = read_mshMesh({"length x": 0.3, "length y": 0.2, "len"+
 "gth z": 3.0, "number of divisions in x": 5, "number of divisions in y":
@@ -185,20 +185,37 @@ flag_newton_raphson_iteration, verbose=verbose):
 
 class PostProcesses:
 
-    def __init__(self):
+    def __init__(self, visualization_copy):
 
         self.xdmf_file = None
+
+        self.visualization_copy_file = None
+
+        self.visualization_copy = visualization_copy
 
     def __call__(self, pseudo_time, time_step):
 
         # Saves this pseudo-time step in a xdmf file
 
-        self.xdmf_file = write_field_to_xdmf(functional_data_class, 
-        explicit_file_name=get_parent_path_of_file()+"//displacement_f"+
-        "inite_deformation_with_infinitesimal_strain.xdmf", file=
-        self.xdmf_file, time=pseudo_time, time_step=time_step)
+        if self.visualization_copy:
 
-post_processes = PostProcesses()
+            self.xdmf_file, self.visualization_copy_file = write_field_to_xdmf(
+            functional_data_class, explicit_file_name=
+            get_parent_path_of_file()+"//displacement_finite_deformat"+
+            "ion_with_infinitesimal_strain.xdmf", file=self.xdmf_file, 
+            time=pseudo_time, time_step=time_step, visualization_copy=
+            self.visualization_copy, visualization_copy_file=
+            self.visualization_copy_file,
+            flag_read_copy=True, close_file=False)
+
+        else:
+
+            self.xdmf_file = write_field_to_xdmf(functional_data_class, 
+            explicit_file_name=get_parent_path_of_file()+"//displaceme"+
+            "nt_finite_deformation_with_infinitesimal_strain.xdmf", 
+            file=self.xdmf_file, time=pseudo_time, time_step=time_step)
+
+post_processes = PostProcesses(True)
     
 # Sets the Newton-Raphson solver
 

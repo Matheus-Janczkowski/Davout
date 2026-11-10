@@ -24,7 +24,8 @@ def write_field_to_xdmf(functional_data_class, time=0.0, field_name=None,
 directory_path=None, visualization_copy=False, close_file=True, file=
 None, visualization_copy_file=None, time_step=0, explicit_file_name=None,
 code_given_mesh_data_class=None, field_type=None, interpolation_function=
-None, polynomial_degree=None, comm_object=None, verbose=True):
+None, polynomial_degree=None, comm_object=None, verbose=True,
+flag_read_copy=True):
     
     """
     Function for writing a FEniCS function to xdmf files.
@@ -164,7 +165,11 @@ None, polynomial_degree=None, comm_object=None, verbose=True):
     
     # Initializes the object for the individual field (FEniCS function)
 
-    individual_field = None
+    individual_field = {}
+
+    # Initializes a dictionary of flags to read for all fields
+
+    read_copy_flags_dict = {}
 
     # Verifies if there are multiple fields
 
@@ -191,19 +196,52 @@ None, polynomial_degree=None, comm_object=None, verbose=True):
                     decapitalize_and_insert_underline(str(field_name))+
                     ".xdmf")
 
-                if verbose:
-
-                    mpi_print(comm_object, "Saves the field '"+str(
-                    field_name)+"' at "+explicit_file_name)
-
-                    mpi_print(comm_object, "")
-
                 # Gets the individual field and renames it
 
-                individual_field = split_fields[fields_names_dict[
-                field_name]]
+                individual_field[field_name] = split_fields[
+                fields_names_dict[field_name]]
 
-                individual_field.rename(field_name, "DNS")
+                individual_field[field_name].rename(field_name, "DNS")
+
+                # Gets the polynomial degree of the element of this field
+
+                field_element_degree = 2
+                
+                if ("polynomial degree" in (
+                functional_data_class.elements_dictionary_copy[
+                field_name])):
+                    
+                    field_element_degree = (
+                    functional_data_class.elements_dictionary_copy[
+                    field_name]["polynomial degree"])
+
+                # If the degree is higher than two, forces the flag to
+                # read the checkpoint file to be false and switches the
+                # visualization copy to true. Legacy fenics does not work
+                # well with higher-order polynomials during visualization
+
+                flag_check_point = True
+
+                if not flag_read_copy:
+
+                    read_copy_flags_dict[field_name] = False
+
+                elif field_element_degree>2:
+
+                    print("\nThe field '"+str(field_name)+"' cannot be"+
+                    " saved using check-point, because the\npolynomial "+
+                    "degree is higher than 2. A visualization copy wil"+
+                    "l be\nautomatically created")
+
+                    read_copy_flags_dict[field_name] = False
+
+                    visualization_copy = True 
+
+                    flag_check_point = False
+
+                else:
+
+                    read_copy_flags_dict[field_name] = True
 
                 # Verifies if this file has already been created. If 
                 # not, creates it
@@ -217,8 +255,9 @@ None, polynomial_degree=None, comm_object=None, verbose=True):
                         mpi_print(comm_object, "Creates a new XDMFFile"+
                         " instance\n")
 
-                    file = XDMFFile(individual_field.function_space(
-                    ).mesh().mpi_comm(), explicit_file_name)
+                    file = XDMFFile(individual_field[field_name
+                    ].function_space().mesh().mpi_comm(), 
+                    explicit_file_name)
 
                     # If the file was not provided, the append flag must
                     # must be false to not append a new checkpoint if no
@@ -228,14 +267,24 @@ None, polynomial_degree=None, comm_object=None, verbose=True):
 
                 # Writes the function
 
-                file.write_checkpoint(individual_field, 
-                individual_field.name(), time, append=append_flag)
+                if flag_check_point:
 
-                # Closes the file
+                    if verbose:
 
-                if close_file:
+                        mpi_print(comm_object, "Saves the field '"+str(
+                        field_name)+"' at "+explicit_file_name)
 
-                    file.close()
+                        mpi_print(comm_object, "")
+
+                    file.write_checkpoint(individual_field[field_name], 
+                    individual_field[field_name].name(), time, append=
+                    append_flag)
+
+                    # Closes the file
+
+                    if close_file:
+
+                        file.close()
 
             else:
 
@@ -248,29 +297,91 @@ None, polynomial_degree=None, comm_object=None, verbose=True):
 
         else:
 
-            for field_name in fields_names_dict.keys():
+            # Makes field name a list
+
+            field_name = []
+
+            # Initializes a list of file names
+
+            files_names_list = []
+
+            # Iterates over all available fields
+
+            for current_field_name in fields_names_dict.keys():
+
+                # Appends the name of this field
+
+                field_name.append(current_field_name)
 
                 # Gets the automatic file name
 
+                current_file_name = ""
+
                 if explicit_file_name is None:
 
-                    explicit_file_name = (directory_path+"//"+
-                    decapitalize_and_insert_underline(str(field_name
-                    ))+".xdmf")
+                    current_file_name = (directory_path+"//"+
+                    decapitalize_and_insert_underline(str(
+                    current_field_name))+".xdmf")
 
-                if verbose:
+                # Otherwise, appends the name of the field
 
-                    mpi_print(comm_object, "Saves the field '"+str(
-                    field_name)+"' at "+explicit_file_name)
+                else:
 
-                    mpi_print(comm_object, "")
+                    current_file_name = take_outFileNameTermination(
+                    explicit_file_name)+"_"+str(current_field_name
+                    )+".xdmf"
+
+                # Appends the name of the file
+
+                files_names_list.append(current_file_name)
 
                 # Gets the individual field and renames it
 
-                individual_field = split_fields[fields_names_dict[
-                field_name]]
+                individual_field[current_field_name] = split_fields[
+                fields_names_dict[current_field_name]]
 
-                individual_field.rename(field_name, "DNS")
+                individual_field[current_field_name].rename(
+                current_field_name, "DNS")
+
+                # Gets the polynomial degree of the element of this field
+                
+                field_element_degree = 2
+                
+                if ("polynomial degree" in (
+                functional_data_class.elements_dictionary_copy[
+                current_field_name])):
+                    
+                    field_element_degree = (
+                    functional_data_class.elements_dictionary_copy[
+                    current_field_name]["polynomial degree"])
+
+                # If the degree is higher than two, forces the flag to
+                # read the checkpoint file to be false and switches the
+                # visualization copy to true. Legacy fenics does not work
+                # well with higher-order polynomials during visualization
+
+                flag_check_point = True
+
+                if not flag_read_copy:
+
+                    read_copy_flags_dict[current_field_name] = False
+
+                elif field_element_degree>2:
+
+                    print("\nThe field '"+str(field_name)+"' cannot be"+
+                    " saved using check-point, because the\npolynomial "+
+                    "degree is higher than 2. A visualization copy wil"+
+                    "l be\nautomatically created")
+
+                    read_copy_flags_dict[current_field_name] = False
+
+                    visualization_copy = True 
+
+                    flag_check_point = False
+
+                else:
+
+                    read_copy_flags_dict[current_field_name] = True
                 
                 # Verifies if this file has already been created. If 
                 # not, creates it
@@ -284,8 +395,9 @@ None, polynomial_degree=None, comm_object=None, verbose=True):
                         mpi_print(comm_object, "Creates a new XDMFFile"+
                         " instance\n")
 
-                    file = XDMFFile(individual_field.function_space(
-                    ).mesh().mpi_comm(), explicit_file_name)
+                    file = XDMFFile(individual_field[current_field_name
+                    ].function_space().mesh().mpi_comm(), 
+                    current_file_name)
 
                     # If the file was not provided, the append flag
                     # must be false to not append a new checkpoint
@@ -295,14 +407,28 @@ None, polynomial_degree=None, comm_object=None, verbose=True):
                 
                 # Writes the field
 
-                file.write_checkpoint(individual_field, 
-                individual_field.name(), time, append=append_flag)
+                if flag_check_point:
 
-                # Closes the file
+                    if verbose:
 
-                if close_file:
+                        mpi_print(comm_object, "Saves the field '"+str(
+                        current_field_name)+"' at "+current_file_name)
 
-                    file.close()
+                        mpi_print(comm_object, "")
+
+                    file.write_checkpoint(individual_field[
+                    current_field_name], individual_field[
+                    current_field_name].name(), time, append=append_flag)
+
+                    # Closes the file
+
+                    if close_file:
+
+                        file.close()
+
+            # Makes the list of files the explicit file name
+
+            explicit_file_name = files_names_list
 
     # For single field problems
 
@@ -322,18 +448,50 @@ None, polynomial_degree=None, comm_object=None, verbose=True):
                     decapitalize_and_insert_underline(str(field_name
                     ))+".xdmf")
 
-                if verbose:
-
-                    mpi_print(comm_object, "Saves the field '"+str(
-                    field_name)+"' at "+explicit_file_name)
-
-                    mpi_print(comm_object, "")
-
                 # Gets the individual field and renames it
 
-                individual_field = monolithic_solution
+                individual_field[field_name] = monolithic_solution
 
-                individual_field.rename(field_name, "DNS")
+                individual_field[field_name].rename(field_name, "DNS")
+
+                # Gets the polynomial degree of the element of this field
+                
+                field_element_degree = 2
+                
+                if ("polynomial degree" in (
+                functional_data_class.elements_dictionary_copy[field_name])):
+                    
+                    field_element_degree = (
+                    functional_data_class.elements_dictionary_copy[
+                    field_name]["polynomial degree"])
+
+                # If the degree is higher than two, forces the flag to
+                # read the checkpoint file to be false and switches the
+                # visualization copy to true. Legacy fenics does not work
+                # well with higher-order polynomials during visualization
+
+                flag_check_point = True
+
+                if not flag_read_copy:
+
+                    read_copy_flags_dict[field_name] = False
+
+                elif field_element_degree>2:
+
+                    print("\nThe field '"+str(field_name)+"' cannot be"+
+                    " saved using check-point, because the\npolynomial "+
+                    "degree is higher than 2. A visualization copy wil"+
+                    "l be\nautomatically created")
+
+                    read_copy_flags_dict[field_name] = False
+
+                    visualization_copy = True 
+
+                    flag_check_point = False
+
+                else:
+
+                    read_copy_flags_dict[field_name] = True
 
                 # Verifies if this file has already been created. If 
                 # not, creates it
@@ -347,8 +505,9 @@ None, polynomial_degree=None, comm_object=None, verbose=True):
                         mpi_print(comm_object, "Creates a new XDMFFile"+
                         " instance\n")
 
-                    file = XDMFFile(individual_field.function_space(
-                    ).mesh().mpi_comm(), explicit_file_name)
+                    file = XDMFFile(individual_field[field_name
+                    ].function_space().mesh().mpi_comm(), 
+                    explicit_file_name)
 
                     # If the file was not provided, the append flag
                     # must be false to not append a new checkpoint
@@ -358,14 +517,24 @@ None, polynomial_degree=None, comm_object=None, verbose=True):
 
                 # Writes the function
 
-                file.write_checkpoint(individual_field, 
-                individual_field.name(), time, append=append_flag)
+                if flag_check_point:
 
-                # Closes the file
+                    if verbose:
 
-                if close_file:
+                        mpi_print(comm_object, "Saves the field '"+str(
+                        field_name)+"' at "+explicit_file_name)
 
-                    file.close()
+                        mpi_print(comm_object, "")
+
+                    file.write_checkpoint(individual_field[field_name], 
+                    individual_field[field_name].name(), time, append=
+                    append_flag)
+
+                    # Closes the file
+
+                    if close_file:
+
+                        file.close()
 
             else:
 
@@ -390,18 +559,48 @@ None, polynomial_degree=None, comm_object=None, verbose=True):
                 decapitalize_and_insert_underline(str(field_name))+
                 ".xdmf")
 
-            if verbose:
-
-                mpi_print(comm_object, "Saves the field '"+str(
-                field_name)+"' at "+explicit_file_name)
-
-                mpi_print(comm_object, "")
-
             # Gets the individual field and renames it
 
-            individual_field = monolithic_solution
+            individual_field[field_name] = monolithic_solution
 
-            individual_field.rename(field_name, "DNS")
+            individual_field[field_name].rename(field_name, "DNS")
+
+            # If the degree is higher than two, forces the flag to
+            # read the checkpoint file to be false and switches the
+            # visualization copy to true. Legacy fenics does not work
+            # well with higher-order polynomials during visualization
+
+            field_element_degree = 2
+                            
+            if ("polynomial degree" in (
+            functional_data_class.elements_dictionary_copy[field_name])):
+                
+                field_element_degree = (
+                functional_data_class.elements_dictionary_copy[
+                field_name]["polynomial degree"])
+
+            flag_check_point = True
+
+            if not flag_read_copy:
+
+                read_copy_flags_dict[field_name] = False
+
+            elif field_element_degree>2:
+
+                print("\nThe field '"+str(field_name)+"' cannot be sav"+
+                "ed using check-point, because the\npolynomial degree i"+
+                "s higher than 2. A visualization copy will be\nautomat"+
+                "ically created")
+
+                read_copy_flags_dict[field_name] = False
+
+                visualization_copy = True 
+
+                flag_check_point = False
+
+            else:
+
+                read_copy_flags_dict[field_name] = True
 
             # Verifies if this file has already been created. If not,
             # creates it
@@ -415,8 +614,8 @@ None, polynomial_degree=None, comm_object=None, verbose=True):
                     mpi_print(comm_object, "Creates a new XDMFFile ins"+
                     "tance\n")
 
-                file = XDMFFile(individual_field.function_space(
-                ).mesh().mpi_comm(), explicit_file_name)
+                file = XDMFFile(individual_field[field_name
+                ].function_space().mesh().mpi_comm(), explicit_file_name)
 
                 # If the file was not provided, the append flag must
                 # be false to not append a new checkpoint if no pre-
@@ -426,8 +625,18 @@ None, polynomial_degree=None, comm_object=None, verbose=True):
             
             # Writes the field
 
-            file.write_checkpoint(individual_field, 
-            individual_field.name(), time, append=append_flag)
+            if flag_check_point:
+
+                if verbose:
+
+                    mpi_print(comm_object, "Saves the field '"+str(
+                    field_name)+"' at "+explicit_file_name)
+
+                    mpi_print(comm_object, "")
+
+                file.write_checkpoint(individual_field[field_name], 
+                individual_field[field_name].name(), time, append=
+                append_flag)
 
             # Closes the file
 
@@ -445,37 +654,29 @@ None, polynomial_degree=None, comm_object=None, verbose=True):
 
         functional_data_dictionary = dict()
 
-        if field_type is None:
-
-            raise ValueError("'visualization_copy' in 'write_field_to_"+
-            "xdmf' is True, but 'field_type' was not given. It must be"+
-            " 'scalar', or 'vector', or 'tensor'")
-        
-        else:
+        if field_type is not None:
 
             functional_data_dictionary["field type"] = field_type
 
-        if interpolation_function is None:
-
-            raise ValueError("'visualization_copy' in 'write_field_to_"+
-            "xdmf' is True, but 'interpolation_function' was not given"+
-            ". It must be 'CG', or 'Lagrange', or 'DG'")
-        
-        else:
+        if interpolation_function is not None:
 
             functional_data_dictionary["interpolation function"] = (
             interpolation_function)
 
-        if polynomial_degree is None:
-
-            raise ValueError("'visualization_copy' in 'write_field_to_"+
-            "xdmf' is True, but 'polynomial_degree' was not given. It "+
-            "must be an 1, 2, 3...'")
-        
-        else:
+        if polynomial_degree is not None:
 
             functional_data_dictionary["polynomial degree"] = (
             polynomial_degree)
+
+        # If those information were not available, reuses the same
+        # functional data class. But assures that a copy is made
+
+        if len(functional_data_dictionary.keys())==0:
+
+            functional_data_dictionary = construct_monolithicFunctionSpace(
+            functional_data_class.elements_dictionary_copy, 
+            functional_data_class.mesh_data_class, function_only=True,
+            verbose=verbose, do_not_modify_dictionary_in_place=True)
 
         # Calls the function to create the visualization copy
         
@@ -485,7 +686,8 @@ None, polynomial_degree=None, comm_object=None, verbose=True):
         visualization_copy_file=visualization_copy_file, close_file=
         close_file, code_given_mesh_data_class=
         code_given_mesh_data_class, comm_object=comm_object,
-        original_function=individual_field, verbose=verbose)
+        original_function=individual_field, verbose=verbose,
+        flag_read_copy=read_copy_flags_dict)
 
         # Synchonizes all processors
 
@@ -504,58 +706,114 @@ def write_visualization_copy(functional_data_dictionary, file_name,
 mesh_file, code_given_field_name, time=0.0, time_step=0, 
 visualization_copy_file=None, close_file=True, 
 code_given_mesh_data_class=None, comm_object=None, original_function=
-None, verbose=True):
+None, verbose=True, flag_read_copy=True):
+
+    # Verifies if the name of the field is not a list
+
+    if not isinstance(code_given_field_name, list):
+
+        file_name = [file_name]
+
+        code_given_field_name = [code_given_field_name]
+
+        # If the visualization copy file is not None nor a dictionary,
+        # makes it a dictionary with that given field name
+
+        if (visualization_copy_file is not None) and (not isinstance(
+        visualization_copy_file, dict)):
+
+            visualization_copy_file = {code_given_field_name[0]:
+            visualization_copy_file}
+
+    # If the visualization copy file is None, makes it a dictionary
+
+    if visualization_copy_file is None:
+
+        visualization_copy_file = {field_name: None for field_name in (
+        code_given_field_name)}
+
+    # Iterates over the fields
+
+    for field_name, individual_file_name in zip(code_given_field_name, 
+    file_name):
     
-    if verbose:
-    
-        mpi_print(comm_object, "Creates a visualization copy for the f"+
-        "ield '"+str(code_given_field_name)+"'\n")
+        if verbose:
+        
+            mpi_print(comm_object, "Creates a visualization copy for t"+
+            "he field '"+str(field_name)+"'\n")
 
-    # Reads the file back only if the code is not being run in parallel
+        # Reads the file back only if the code is not being run in pa-
+        # rallel
 
-    read_function = None 
+        read_function = None 
 
-    if comm_object is None:
+        if (comm_object is None) and flag_read_copy[field_name]:
 
-        read_function = read_field_from_xdmf(file_name, mesh_file,
-        functional_data_dictionary, time_step=time_step, rename_function=
-        True, code_given_mesh_data_class=code_given_mesh_data_class,
-        code_given_field_name=code_given_field_name, comm_object=
-        comm_object)
+            if verbose:
 
-    else:
+                print("\nReads the field to be copied from '"+str(
+                individual_file_name)+"'")
 
-        read_function = original_function
+            read_function = read_field_from_xdmf(individual_file_name, 
+            mesh_file, functional_data_dictionary, time_step=time_step, 
+            rename_function=True, code_given_mesh_data_class=
+            code_given_mesh_data_class, code_given_field_name=
+            field_name, comm_object=comm_object)
 
-    # Writes it using simple write
+        else:
 
-    copy_file_name = (take_outFileNameTermination(file_name)+"_visuali"+
-    "zation_copy.xdmf")
+            if verbose:
 
-    if verbose:
+                print("\nUses the original function to copy it ")
 
-        mpi_print(comm_object, "Saves the visualization copy at file '"+
-        str(copy_file_name)+"'\n")
+            read_function = original_function[field_name]
 
-    # Verifies if this file has already been created. If not, creates it
+        # Writes it using simple write
 
-    if not isinstance(visualization_copy_file, XDMFFile):
+        copy_file_name = (take_outFileNameTermination(
+        individual_file_name)+"_visualization_copy.xdmf")
 
         if verbose:
 
-            mpi_print(comm_object, "Creates a new XDMFFile instance fo"+
-            "r the visualization copy file\n")
+            mpi_print(comm_object, "Saves the visualization copy at fi"+
+            "le '"+str(copy_file_name)+"'\n")
 
-        visualization_copy_file = XDMFFile(read_function.function_space(
-        ).mesh().mpi_comm(), copy_file_name)
+        # Gets the visualization copy file from the dictionary
 
-    visualization_copy_file.write(read_function, time)
+        visualization_field_copy = visualization_copy_file[field_name]
 
-    # Closes the file
+        # Verifies if this file has already been created. If not, crea-
+        # tes it
 
-    if close_file:
+        if not isinstance(visualization_field_copy, XDMFFile):
 
-        visualization_copy_file.close()
+            if verbose:
+
+                mpi_print(comm_object, "Creates a new XDMFFile instance fo"+
+                "r the visualization copy file\n")
+
+            visualization_field_copy = XDMFFile(read_function.function_space(
+            ).mesh().mpi_comm(), copy_file_name)
+
+        visualization_field_copy.write(read_function, time)
+
+        if verbose:
+
+            print("\nFinishes saving the visualization copy")
+
+        # Gets back to the dictionary
+
+        visualization_copy_file[field_name] = visualization_field_copy
+
+        # Closes the file
+
+        if close_file:
+
+            if verbose:
+
+                print("\nCloses the xdmf file")
+
+            visualization_field_copy.close()
 
     return visualization_copy_file
 

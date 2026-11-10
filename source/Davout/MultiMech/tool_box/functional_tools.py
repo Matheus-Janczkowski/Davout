@@ -1348,13 +1348,24 @@ fields_namesDict):
 # Defines a function to construct a function space given a dictionary of
 # instructions to create finite elements
 
-def construct_monolithicFunctionSpace(elements_dictionary, 
+def construct_monolithicFunctionSpace(original_elements_dictionary, 
 mesh_dataClass, verbose=False, function_only=False, 
-all_data_must_be_provided=False, use_fenics_split_method=True):
+all_data_must_be_provided=False, use_fenics_split_method=True,
+do_not_modify_dictionary_in_place=False):
     
-    # Makes a copy of the dictionary of elements
+    # Makes a copy of the dictionary of elements or not
 
-    elements_dictionary_copy = deepcopy(elements_dictionary)
+    elements_dictionary = None 
+
+    elements_dictionary_copy = deepcopy(original_elements_dictionary)
+
+    if do_not_modify_dictionary_in_place:
+
+        elements_dictionary = deepcopy(original_elements_dictionary)
+
+    else:
+
+        elements_dictionary = original_elements_dictionary
     
     # Transforms the dictionary of instructions into real finite elements
     # and get the names of the fields
