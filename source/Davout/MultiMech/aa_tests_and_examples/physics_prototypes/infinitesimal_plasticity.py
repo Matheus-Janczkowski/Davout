@@ -3,30 +3,34 @@
 
 from dolfin import *
 
-from ....PythonicUtilities.path_tools import get_parent_path_of_file
+from .....Davout.PythonicUtilities.path_tools import get_parent_path_of_file
 
-from ...tool_box.mesh_handling_tools import read_mshMesh
+from .....Davout.MultiMech.tool_box.mesh_handling_tools import read_mshMesh
 
-from ...constitutive_models.plasticity.isotropic_infinitesimal_plasticity import ExponentialHardeningElastoPlasticWithBackStress
+from .....Davout.MultiMech.constitutive_models.plasticity.isotropic_infinitesimal_plasticity import ExponentialHardeningElastoPlasticWithBackStress
 
-from ...tool_box import functional_tools
+from .....Davout.MultiMech.constitutive_models.hyperelasticity.infinitesimal_elasticity import LinearIsotropicElastic
 
-from ...tool_box import variational_tools
+from .....Davout.MultiMech.tool_box import functional_tools
 
-from ...tool_box.projection_tools import MultipleFieldsProjectionOntoQuadratureSpace
+from .....Davout.MultiMech.tool_box import variational_tools
 
-from ...tool_box.read_write_tools import write_field_to_xdmf
+from .....Davout.MultiMech.tool_box.newton_raphson_tools import NewtonRaphson
+
+from .....Davout.MultiMech.tool_box.read_write_tools import write_field_to_xdmf
 
 # Creates a box mesh using gmsh
 
 mesh_data_class = read_mshMesh({"length x": 0.3, "length y": 0.2, "len"+
-"gth z": 1.0, "number of divisions in x": 5, "number of divisions in y":
-5, "number of divisions in z": 25, "verbose": False, "mesh file name": 
+"gth z": 3.0, "number of divisions in x": 5, "number of divisions in y":
+5, "number of divisions in z": 40, "verbose": False, "mesh file name": 
 "box_mesh", "mesh file directory": get_parent_path_of_file()})
 
 # Neumann boundary conditions
 
-maximum_load = 5E3
+maximum_load = 3.0E3
+
+plastic_material = True
 
 # Sets the number of load steps (pseudo-time steps)
 
@@ -40,7 +44,7 @@ poisson = 0.3
 
 # Sets the coefficients of the plastic behavior
 
-sigma_y =120E6
+sigma_y = 2E3
 
 H_back_stress = 0.0
 
@@ -50,10 +54,19 @@ K_2 = 0.0
 
 theta = 0.0
 
-constitutive_models = {"volume 1": 
-ExponentialHardeningElastoPlasticWithBackStress({"E": E, "nu": poisson,
-"sigma_y": sigma_y, "H": H_back_stress, "K_1": K_1, "K_2": K_2, "theta":
-theta})}
+constitutive_models = None 
+
+if plastic_material:
+
+    constitutive_models = {"volume 1": 
+    ExponentialHardeningElastoPlasticWithBackStress({"E": E, "nu": 
+    poisson, "sigma_y": sigma_y, "H": H_back_stress, "K_1": K_1, "K_2": 
+    K_2, "theta": theta}, newton_raphson_tolerance=1E-4)}
+
+else:
+
+    constitutive_models = {"volume 1": LinearIsotropicElastic({"E": E, 
+    "nu": poisson})}
 
 # Checks the constitutive models and ensures that the supplied param-
 # eters are correct
@@ -72,17 +85,20 @@ functional_data_class = functional_tools.construct_monolithicFunctionSpace(
 
 (bc, dirichlet_loads, functional_data_class, elements_dictionary, 
 variational_form, post_processes, post_processesSubmesh, solution_name) = (
-functional_tools.construct_DirichletBCs({"bottom": 
-{"BC case": "FixedSupportDirichletBC"}}, functional_data_class, 
-mesh_data_class))
+functional_tools.construct_DirichletBCs({"bottom": {"BC case": "Simple"+
+"SupportDirichletBC", "bc_informationsDict": {"list_of_constrained_dofs": 
+[2]}}, "right": {"BC case": "SimpleSupportDirichletBC", "bc_information"+
+"sDict": {"list_of_constrained_dofs": [1]}}, "back": {"BC case": "Simp"+
+"leSupportDirichletBC", "bc_informationsDict": {"list_of_constrained_d"+
+"ofs": [0]}}}, functional_data_class, mesh_data_class))
 
 # Variational form of the exterior work using an uniform referential 
 # traction
 
 external_work, neumann_loads = variational_tools.traction_work({"top": {
 "load case": "UniformReferentialTraction", "amplitude_tractionX": 
-maximum_load, "amplitude_tractionY": 0.0, "amplitude_tractionZ": 0.0, 
-"parametric_load_curve": "square_root", "t": 0.0, "t_final": 1.0}}, 
+0.0, "amplitude_tractionY": 0.0, "amplitude_tractionZ": maximum_load, 
+"parametric_load_curve": "linear", "t": 0.0, "t_final": 1.0}}, 
 "Displacement", functional_data_class, mesh_data_class, [])
 
 # Computes the elements necessary to pull-back the Cauchy stress to the
@@ -103,10 +119,18 @@ internal_work = 0.0
 
 for physical_group, constitutive_model in constitutive_models.items():
 
-    # Updates the internal variables and the tangent modulus
+    print("\nUpdates the constitutive model at '"+str(physical_group)+
+    "'")
 
-    constitutive_model.update_internal_variables(
-    functional_data_class.solution_fields["Displacement"])
+    # Updates the internal variables and the tangent modulus. The second
+    # argument is false, because this update is not inside a Newton-
+    # Raphson iteration
+
+    if plastic_material:
+
+        constitutive_model.update_internal_variables(
+        functional_data_class.solution_fields["Displacement"], 
+        flag_newton_raphson_iteration=False)
 
     # Gets the Cauchy stress tensor from the linear elastic constitutive
     # relation and pulls it back to the first Piola-Kirchhoff stress 
@@ -120,41 +144,73 @@ for physical_group, constitutive_model in constitutive_models.items():
 
     P = J*sigma*F_invT
 
-    internal_work += (inner(P, grad(
-    functional_data_class.variation_fields["Displacement"]))*
+    internal_work += (inner(P, (grad(
+    functional_data_class.variation_fields["Displacement"])))*
     mesh_data_class.dx(mesh_data_class.domain_physicalGroupsNameToTag[
     physical_group]))
+
+# Defines a function to update the variational form
+
+verbose = True
+
+def variational_form_update_function(pseudo_time, 
+flag_newton_raphson_iteration, verbose=verbose):
+
+    # Update the load class
+    
+    neumann_loads[0].update_load(pseudo_time, verbose=verbose)
+
+    if verbose:
+
+        print("\nUpdates the constitutive model at '"+str(physical_group
+        )+"'")
+
+    # Updates the internal variables and the tangent modulus
+
+    if plastic_material:
+
+        constitutive_models["volume 1"].update_internal_variables(
+        functional_data_class.solution_fields["Displacement"],
+        flag_newton_raphson_iteration=flag_newton_raphson_iteration, 
+        verbose=verbose)
+
+# Defines a class to perform post-processes. In this case, simply sa-
+# ving the output field
+
+class PostProcesses:
+
+    def __init__(self):
+
+        self.xdmf_file = None
+
+    def __call__(self, pseudo_time, time_step):
+
+        # Saves this pseudo-time step in a xdmf file
+
+        self.xdmf_file = write_field_to_xdmf(functional_data_class, 
+        explicit_file_name=get_parent_path_of_file()+"//displacement_f"+
+        "inite_deformation_with_infinitesimal_strain.xdmf", file=
+        self.xdmf_file, time=pseudo_time, time_step=time_step)
+
+post_processes = PostProcesses()
     
 # Sets the Newton-Raphson solver
 
-solver = functional_tools.set_nonlinearProblem((internal_work-
-external_work), functional_data_class, bc)
+newton_raphson_class = NewtonRaphson(n_load_steps, variational_form=(
+internal_work-external_work), functional_data_class=
+functional_data_class, boundary_conditions_list=bc, 
+variational_form_update_function=variational_form_update_function,
+post_processing_function=post_processes, use_custom_newton=True)
 
-# Initializes the file where the solution is going to be saved
+# Calls the loading procedure
 
-xdmf_file = None
+newton_raphson_class()
 
-# Iterates over the load steps
+if plastic_material:
 
-for i in range(n_load_steps):
+    print("\nEvaluates the internal variables after the full load hist"+
+    "ory")
 
-    print("\nStarts the "+str(i+1)+"-th load step")
-
-    # Evaluates the current pseudo time
-
-    pseudo_time = (i/(n_load_steps-1))
-
-    # Update the load class
-
-    neumann_loads[0].update_load(pseudo_time)
-
-    # Calls the solver
-
-    solver.solve()
-
-    # Saves this pseudo-time step in a xdmf file
-
-    xdmf_file = write_field_to_xdmf(functional_data_class, 
-    explicit_file_name=get_parent_path_of_file()+"//displacement_finit"+
-    "e_deformation_with_infinitesimal_strain.xdmf", file=xdmf_file, time
-    =pseudo_time, time_step=i)
+    constitutive_models["volume 1"].update_internal_variables(
+    functional_data_class.solution_fields["Displacement"], 
+    flag_newton_raphson_iteration=False, verbose=True)

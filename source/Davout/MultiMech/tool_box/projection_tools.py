@@ -57,7 +57,9 @@ class MultipleFieldsProjectionOntoQuadratureSpace:
             self.classes_dictionary[field_name] = ExpressionProjectionOntoQuadratureSpace(
             field_name, functional_data_class, dtype=dtype, 
             point_absolute_tolerance=point_absolute_tolerance,
-            point_relative_tolerance=point_relative_tolerance)
+            point_relative_tolerance=point_relative_tolerance,
+            expression_function=functional_data_class.solution_fields[
+            field_name])
 
     # Defines a function to project an ufl expression onto a quadrature
     # space
@@ -134,7 +136,8 @@ class MultipleFieldsProjectionOntoQuadratureSpace:
 class ExpressionProjectionOntoQuadratureSpace:
 
     def __init__(self, field_name, functional_data_class, dtype=np.int32,
-    point_absolute_tolerance=1E-6, point_relative_tolerance=1E-8):
+    point_absolute_tolerance=1E-6, point_relative_tolerance=1E-8,
+    expression_function=None):
 
         # Retrieves the function space, the dictionary of fields names,
         # and the integration measure object
@@ -208,7 +211,15 @@ class ExpressionProjectionOntoQuadratureSpace:
 
         # Creates the output function for the projected expression
 
-        self.expression_function = Function(field_function_space)
+        if expression_function is not None:
+
+            self.expression_function = expression_function
+
+        # Otherwise, creates it new
+
+        else:
+
+            self.expression_function = Function(field_function_space)
 
         # Gets the tuple of dimensions of this field. It will be () if
         # scalar; (dim) if vector; (dim, dim, ..., dim) if tensor
@@ -279,6 +290,9 @@ class ExpressionProjectionOntoQuadratureSpace:
         self.numpy_array_indices = np.empty((
         self.number_of_quadrature_points, *tensor_dimension), dtype=
         dtype)
+
+        print("\nStarts building the array of indices for the quadratu"+
+        "re field '"+str(field_name)+"'")
 
         # Iterates over the finite elements of the quadrature mesh
 
@@ -384,6 +398,9 @@ class ExpressionProjectionOntoQuadratureSpace:
             number_of_quadrature_points_per_element):int((element_index+
             1)*number_of_quadrature_points_per_element)
             ] = indices_per_quadrature_point
+
+        print("\Finishes building the array of indices for the quadrat"+
+        "ure field '"+str(field_name)+"'")
 
     # Defines a function to project an ufl expression onto a quadrature
     # space

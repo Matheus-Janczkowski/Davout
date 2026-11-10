@@ -51,7 +51,7 @@ parametric_load_curve="linear"):
 
             self.T = T
 
-        def update_load(self, t):
+        def update_load(self, t, verbose=True):
 
             self.t.assign(Constant(t))
 
@@ -68,9 +68,15 @@ parametric_load_curve="linear"):
 
             # Annuntiates the corrections
 
-            print("\nUniform referential traction at physical group '"+
-            str(physical_group)+"':\n"+str(load_value*100)+"% of the "+
-            "final load is applied using the parametric load curve\n")
+            if verbose:
+
+                print("\nUniform referential traction at physical grou"+
+                "p '"+str(physical_group)+"':\n"+str(load_value*100)+
+                "% of the final load is applied using the parametric l"+
+                "oad curve,\nwhich amounts to the following traction v"+
+                "ector: "+str([load_value*amplitude_tractionX, 
+                load_value*amplitude_tractionY, (load_value*
+                amplitude_tractionZ)])+"\n")
 
     time_update = TimeUpdate()
 

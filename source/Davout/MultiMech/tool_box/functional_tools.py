@@ -1419,7 +1419,7 @@ all_data_must_be_provided=False, use_fenics_split_method=True):
             # fy DOFs values of a particular field
 
             solution_functions = [monolithic_solution.sub(i, deepcopy=
-            False) for i in range(len(fields_names))]
+            True) for i in range(len(fields_names))]
 
         if not function_only:
 
@@ -1566,6 +1566,10 @@ all_data_must_be_provided=False, get_dimension_of_each_field=False):
     
     for field_name, element_dictionary in elements_dictionary.items():
 
+        # Updated the tensor dimension to the space dimension
+
+        tensor_dimension = int(space_dimension)
+
         # Verifies if this is already a fenics element. Tests by veri-
         # fying if has a cell attribute
 
@@ -1696,20 +1700,32 @@ all_data_must_be_provided=False, get_dimension_of_each_field=False):
                     # Checks if the field type is 'vector'
 
                     if ("field type" in element_dictionary) and (
-                    element_dictionary["field type"]!="vector"):
+                    element_dictionary["field type"]!="vector") and (
+                    element_dictionary["field type"]!="tensor"):
 
                         raise ValueError("'dimension' equal to "+str(
                         dimension)+" in the dictionary for the finite "+
-                        "element of the field '"+str(field_name)+". Bu"+
+                        "element of the field '"+str(field_name)+"'. Bu"+
                         "t the 'field type' of this field is '"+str(
-                        element_dictionary["field type"])+". The param"+
+                        element_dictionary["field type"])+"'. The param"+
                         "eter 'dimension' is allowed only when 'field "+
-                        "type' is 'vector'")
+                        "type' is 'vector' or 'tensor'")
 
-                    # Adds the dimension to the dictionary of keyword
-                    # arguments
+                    # If the field type is vector
 
-                    keyword_arguments["dim"] = dimension
+                    if element_dictionary["field type"]=="vector":
+
+                        # Adds the dimension to the dictionary of keyword
+                        # arguments
+
+                        keyword_arguments["dim"] = dimension
+
+                    # Otherwise, it will be a tensor and, thus, the di-
+                    # mension will be inserted into the space dimension
+
+                    else: 
+
+                        tensor_dimension = int(dimension)
 
                 # Checks if the symmetry flag was given, i.e. whether a
                 # tensor interpolated by this element should be symme-
@@ -1816,7 +1832,7 @@ all_data_must_be_provided=False, get_dimension_of_each_field=False):
                             
                             # Creates the dimension tuple
 
-                            dimension_tuple = [space_dimension for (
+                            dimension_tuple = [tensor_dimension for (
                             index) in range(tensor_order)]
 
                             # Creates the element
@@ -1847,7 +1863,7 @@ all_data_must_be_provided=False, get_dimension_of_each_field=False):
                             # order tensor
 
                             fields_tensor_dimensions_dict[field_name] = (
-                            space_dimension, space_dimension)
+                            tensor_dimension, tensor_dimension)
 
                     else:
 

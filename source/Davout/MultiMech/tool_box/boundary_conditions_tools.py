@@ -887,8 +887,8 @@ boundary_conditions=None, boundary_physicalGroups=None):
                     
                     else:
 
-                        bc_informationsDict[boundary_physicalGroups] = (
-                        bc_informationsDict)
+                        bc_informationsDict = {boundary_physicalGroups:
+                        bc_informationsDict}
 
                     break
 
@@ -904,11 +904,12 @@ boundary_conditions=None, boundary_physicalGroups=None):
 
     if len(list(bc_informationsDict.keys()))==0:
 
-        if mesh_dataClass.verbose:
-
-            print("Creates no simple support boundary condition.\n")
-
-        return boundary_conditions
+        raise ValueError("The dictionary 'bc_informationsDict' in 'Sim"+
+        "pleSupportDirichletBC' is empty. At least, the key 'list_of_c"+
+        "onstrained_dofs' should be provided. Remember that this funct"+
+        "ion works with integer indices for the components of the fiel"+
+        "d. Thus, the X component is the 0-th integer; Y, the 1st; Z, "+
+        "the 2nd")
     
     # If subfields are required, use the dictionary of fields to convert
     # the names to the numbers
@@ -937,7 +938,49 @@ boundary_conditions=None, boundary_physicalGroups=None):
         # Verifies if the physical group is a string
 
         physical_group = verify_stringPhysicalGroup(physical_group, 
-        mesh_dataClass.boundary_physicalGroupsDictNameToTag)
+        mesh_dataClass.boundary_physicalGroupsNameToTag)
+
+        # Checks if list of constrained dofs is a dictionary
+
+        if isinstance(list_constrainedDOFs, dict):
+
+            # Checks if it has the key 'list_of_constrained_dofs'
+
+            if "list_of_constrained_dofs" in list_constrainedDOFs:
+
+                list_constrainedDOFs = list_constrainedDOFs["list_of_c"+
+                "onstrained_dofs"]
+
+            # Otherwise, throws an error
+
+            else:
+
+                raise ValueError("For the 'SimpleSupportDirichletBC' a"+
+                "t '"+str(physical_group)+"', the information provided"+
+                " was a dictionary, but it does not have the key 'list"+
+                "_of_constrained_dofs'. This key must be a list of int"+
+                "eger indices for the components to be fixed")
+
+        elif not isinstance(list_constrainedDOFs, list):
+
+            raise TypeError("For the 'SimpleSupportDirichletBC' at '"+
+            str(physical_group)+"', the information provided must be a"+
+            " dictionary or a list of integer indices for the componen"+
+            "ts to be fixed. Currently, it is:\n"+str(
+            list_constrainedDOFs))
+
+        # Checks if all elements of the list of constrained DOFs are in-
+        # tegers
+
+        for constraint_index, constrained_dof in enumerate(
+        list_constrainedDOFs):
+
+            if not isinstance(constrained_dof, int):
+
+                raise TypeError("The "+str(constraint_index+1)+"-th el"+
+                "ement of the list of constrained DOFs in 'SimpleSuppo"+
+                "rtDirichletBC' is "+str(constrained_dof)+". This list"
+                " can only contain integers")
 
         # Verifies if there is only one field
 

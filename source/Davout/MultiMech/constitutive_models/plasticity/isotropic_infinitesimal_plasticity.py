@@ -75,7 +75,7 @@ ElastoplasticMaterialModel):
     """
 
     def __init__(self, material_properties, newton_raphson_tolerance=
-    1E-6, maximum_inner_newton_raphson_iterations=100):
+    1E-5, maximum_inner_newton_raphson_iterations=100):
 
         # Sets the names of the fields that are necessary to compute 
         # this model
@@ -121,7 +121,7 @@ ElastoplasticMaterialModel):
 
         self.lmbda = self.v*self.E/((1+self.v)*(1-2*self.v))
 
-        self.bulk_modulus = float(self.lmbda+((2.0/3.0)*self.mu))
+        self.bulk_modulus = self.lmbda+((2.0/3.0)*self.mu)
 
         self.numpy_lmbda = float(self.lmbda)
 
@@ -189,32 +189,27 @@ ElastoplasticMaterialModel):
         return (self.mu*frobenius_norm_sqquared)+(0.5*self.lmbda*(
         I1_epsilon**2))
     
-    # Defines a function to evaluate the Cauchy stress tensor directly
-    # from the expression. This function uses th
-    
+    # Defines a function to evaluate the Cauchy stress tensor as the ex-
+    # pression that was defined in the method for updating the internal
+    # variables. The object must be defined there, since it will be 
+    # changed accordingly to the build up of the variational form or not
+
     def cauchy_stress(self, u):
 
-        # Evaluates the infinitesimal strain tensor and the identity 
-        # tensor
-
         epsilon = sym(grad(u))
-
-        # Updates the internal variables and evaluates the tangent mo-
-        # lus
-
-        self.update_internal_variables(u)
-
-        # Returns the Cauchy stress as a linearization of the func-
-        # tional. This procedure ensures that the Fenics's nonlinear 
-        # solver will see the actual consistent tangent modulus
-
+        
         return ufl.as_tensor(self.C_fourth[p,q,r,s]*epsilon[r,s], (p,q)
         )+self.sigma_0
     
     # Defines a function to update the internal variables and to get the 
     # tangent tensor, i.e.dsigma/depsilon
 
-    def update_internal_variables(self, u):
+    def update_internal_variables(self, u, 
+    flag_newton_raphson_iteration=True, verbose=False):
+
+        if verbose:
+
+            print("\nUpdate internal variables")
 
         # Retrieves from the class of quadrature spaces the last itera-
         # tion of the plastic strain tensor and the accumulated plastic
@@ -231,6 +226,13 @@ ElastoplasticMaterialModel):
         "accumulated plastic strain", 
         self.quadrature_functional_data_class.solution_fields["accumul"+
         "ated plastic strain"])
+
+        if verbose:
+
+            print("\nThe accumulated plastic strain before the return-"+
+            "mapping algorithm lies in the interval ["+str(np.min(
+            last_accumulated_plastic_strain))+", "+str(np.max(
+            last_accumulated_plastic_strain))+"]")
 
         # Evaluates the infinitesimal strain tensor and the identity 
         # tensor
@@ -271,7 +273,7 @@ ElastoplasticMaterialModel):
 
         yield_function = self.evaluate_yield_criterion(stress_tensor
         -trial_back_stress, last_accumulated_plastic_strain, 
-        projected_identity, dimension)
+        projected_identity, dimension, verbose=verbose)
 
         # Creates a mask for the points that are not within the yield
         # surface
@@ -283,12 +285,27 @@ ElastoplasticMaterialModel):
         # calls the predictor-corrector algorithm
 
         if np.any(not_converged_quadrature_points_mask):
+
+            if verbose:
+
+                print("\nThere are points undergoing plastic deformati"+
+                "on")
             
-            last_plastic_strain_tensor = self.update_plastic_strain(
+            (last_plastic_strain_tensor, last_accumulated_plastic_strain
+            ) = self.update_plastic_strain(
             trial_current_elastic_strain_tensor, 
             last_plastic_strain_tensor, last_accumulated_plastic_strain, 
             projected_epsilon, projected_identity,
-            not_converged_quadrature_points_mask)[2]
+            not_converged_quadrature_points_mask,
+            flag_newton_raphson_iteration, verbose)[1:3]
+
+        else:
+
+            # Updates the function with the stress
+
+            self.quadrature_projection_class.project_expression_onto_quadrature_space(
+            "stress tensor", (2.0*self.mu*epsilon)+(self.lmbda*ufl.tr(
+            epsilon)*Identity(dimension)))
 
         # Gets the functions of the normalized trial update direction 
         # and the update increment as ufl expressions
@@ -301,9 +318,6 @@ ElastoplasticMaterialModel):
 
         trial_equivalent_stress_reciprocal = self.quadrature_functional_data_class.solution_fields[
         "trial equivalent stress reciprocal"]
-
-        stress_tensor = self.quadrature_functional_data_class.solution_fields[
-        "stress tensor"]
 
         # Computes the projector tensor
 
@@ -326,7 +340,12 @@ ElastoplasticMaterialModel):
         # Evaluates the derivative of the limit stress with respect to
         # the accumulated plastic strain
 
-        _, K = self.limit_stress_model(last_plastic_strain_tensor)
+        sigma_y, K = self.limit_stress_model(last_accumulated_plastic_strain)
+
+        if verbose:
+
+            print("\nThe updated limit stress lies in the interval ["+str(
+            np.min(sigma_y))+", "+str(np.max(sigma_y))+"]\n")
 
         self.quadrature_projection_class.update_quadrature_values_with_numpy_array(
         "hardening tangent modulus", 
@@ -349,14 +368,19 @@ ElastoplasticMaterialModel):
         # sigma = C:(delta_epsilon)+sigma = C:epsilon+(sigma-epsilon_0)
         #       = C:epsilon+sigma_0
 
-        sigma_0 = stress_tensor-ufl.as_tensor((C[p,q,r,s]*
-        projected_epsilon[r,s]), (p,q,))
-
-        # Updates these quantities into the class
-
-        self.sigma_0 = sigma_0
-
         self.C_fourth = C
+
+        self.quadrature_projection_class.project_expression_onto_quadrature_space(
+        "strain tensor", epsilon)
+
+        strain_tensor = self.quadrature_functional_data_class.solution_fields[
+        "strain tensor"]
+
+        self.stress_tensor = self.quadrature_functional_data_class.solution_fields[
+        "stress tensor"]
+
+        self.sigma_0 = self.stress_tensor-ufl.as_tensor((C[p,q,r,s]*
+        strain_tensor[r,s]), (p,q))
 
     ####################################################################
     #                      Plasticity formulation                      #
@@ -383,7 +407,7 @@ ElastoplasticMaterialModel):
     # Mises criterion
 
     def evaluate_yield_criterion(self, stress_tensor, 
-    accumulated_plastic_strain, identity_tensor, dimension):
+    accumulated_plastic_strain, identity_tensor, dimension, verbose):
 
         # Computes the limit stress
 
@@ -395,17 +419,30 @@ ElastoplasticMaterialModel):
         deviatoric_stress = stress_tensor-((np.trace(stress_tensor,
         axis1=1, axis2=2)/dimension)[:, None, None]*identity_tensor)
 
+        von_mises_stress = np.sqrt((3.0/2.0)*np.einsum('ijk,ijk->i', 
+        deviatoric_stress, deviatoric_stress))
+
+        if verbose:
+
+            print("\nThe von-Mises stress in the whole mesh lies in th"+
+            "e following interval: ["+str(np.min(von_mises_stress))+","+
+            " "+str(np.max(von_mises_stress))+"]\nwhereas the limit st"+
+            "ress is an element of the interval ["+str(np.min(
+            limit_stress))+", "+str(np.max(limit_stress))+"]")
+
         # Computes the von-Mises criterion
 
-        return np.sqrt(3.0/2.0)*np.einsum('ijk,ijk->i', 
-        deviatoric_stress, deviatoric_stress)-limit_stress
+        phi = von_mises_stress-limit_stress
+
+        return phi
 
     # Defines a function to update the plastic strain tensor and the ac-
     # cumulated plastic strain
 
     def update_plastic_strain(self, trial_elastic_strain_tensor, 
     trial_plastic_strain_tensor, accumulated_plastic_strain, 
-    strain_tensor, identity, not_converged_quadrature_points_mask):
+    strain_tensor, identity, not_converged_quadrature_points_mask,
+    flag_newton_raphson_iteration, verbose):
 
         # Computes the deviatoric part of the trial elastic strain tensor
 
@@ -429,6 +466,15 @@ ElastoplasticMaterialModel):
         trial_equivalent_stress = np.sqrt((3.0/2.0)
         )*norm_trial_update_direction
 
+        # Computes the reciprocal of the equivalent trial stress, but
+        # makes sure the result is zero then the equivalent stress is 
+        # zero
+
+        reciprocal_trial_equivalent_stress = np.divide(1.0, 
+        trial_equivalent_stress, out=np.zeros_like(
+        trial_equivalent_stress, dtype=trial_equivalent_stress.dtype), 
+        where=(trial_equivalent_stress!=0.0))
+
         # Initializes the plastic update increment
 
         update_increment = np.zeros_like(accumulated_plastic_strain,
@@ -445,6 +491,10 @@ ElastoplasticMaterialModel):
         # tutive Newton-Raphson
 
         plastic_points_mask = not_converged_quadrature_points_mask.copy()
+
+        # Initializes the yield function
+
+        phi = None
 
         # Iterates over the number of inner Newton-Raphson iterations
 
@@ -464,9 +514,14 @@ ElastoplasticMaterialModel):
             # Computes the yield function as a function of the accumula-
             # ted plastic strain
 
-            phi = (np.sqrt(3.0/2.0)*(1.0-((update_increment/
-            trial_equivalent_stress)*((3.0*self.numpy_mu)+self.H)))*
-            norm_trial_update_direction)-sigma_y
+            phi = (np.sqrt(3.0/2.0)*(1.0-((update_increment*
+            reciprocal_trial_equivalent_stress)*((3.0*self.numpy_mu)+
+            self.H)))*norm_trial_update_direction)-sigma_y
+
+            if verbose:
+
+                print("phi during correction lies in the interval ["+str(
+                np.min(phi))+", "+str(np.max(phi))+"]")
 
             # Updates the mask of points that are not within the yield
             # surface yet
@@ -492,9 +547,10 @@ ElastoplasticMaterialModel):
         if np.any(not_converged_quadrature_points_mask):
 
             raise RuntimeError("The Newton-Raphson procedure to correc"+
-            "t all quadrature points undergoing plastic deformation ha"+
-            "s not converged for all of them. Check the required toler"+
-            "ances") 
+            "t all quadrature points\nundergoing plastic deformation h"+
+            "as not converged for all of them. Check the\nrequired tol"+
+            "erances. The maximum value of the yield function is "+str(
+            np.max(phi))) 
 
         # Initializes the normalized update direction as a zero array. 
         # Thus, points that are plastified receive no update
@@ -525,19 +581,11 @@ ElastoplasticMaterialModel):
         self.numpy_lmbda*np.trace(elastic_strain_tensor, axis1=1, axis2=
         2)[:, None, None]*identity)
 
-        # Updates the functions of the plastic strain tensor and of the
-        # accumulated plastic strain in their corresponding quadrature
-        # spaces. Does the same for the stress tensor
+        self.evaluate_yield_criterion(stress_tensor-self.evaluate_back_stress(
+        trial_plastic_strain_tensor), updated_accumulated_plastic_strain, 
+        identity, identity.shape[2], False)
 
-        self.quadrature_projection_class.update_quadrature_values_with_numpy_array(
-        "plastic strain tensor", 
-        self.quadrature_functional_data_class.solution_fields["plastic"+
-        " strain tensor"], trial_plastic_strain_tensor)
-
-        self.quadrature_projection_class.update_quadrature_values_with_numpy_array(
-        "accumulated plastic strain", 
-        self.quadrature_functional_data_class.solution_fields["accumul"+
-        "ated plastic strain"], updated_accumulated_plastic_strain)
+        # Updates the functions of all intermediate quantities
 
         self.quadrature_projection_class.update_quadrature_values_with_numpy_array(
         "stress tensor", 
@@ -554,15 +602,6 @@ ElastoplasticMaterialModel):
         self.quadrature_functional_data_class.solution_fields["update "+
         "increment"], update_increment)
 
-        # Computes the reciprocal of the equivalent trial stress, but
-        # makes sure the result is zero then the equivalent stress is 
-        # zero
-
-        reciprocal_trial_equivalent_stress = np.divide(1.0, 
-        trial_equivalent_stress, out=np.zeros_like(
-        trial_equivalent_stress, dtype=trial_equivalent_stress.dtype), 
-        where=(trial_equivalent_stress!=0.0))
-
         # Saves the reciprocal of the equivalent stress
 
         self.quadrature_projection_class.update_quadrature_values_with_numpy_array(
@@ -570,6 +609,24 @@ ElastoplasticMaterialModel):
         self.quadrature_functional_data_class.solution_fields["trial e"+
         "quivalent stress reciprocal"], 
         reciprocal_trial_equivalent_stress)
+
+        # Updates the functions of plastic strain tensor and of the ac-
+        # cumulated plastic strain only if this is a truly updating ite-
+        # ration (Newton-Raphson iterations must have the same internal
+        # variables)
+
+        if not flag_newton_raphson_iteration:
+
+            self.quadrature_projection_class.update_quadrature_values_with_numpy_array(
+            "plastic strain tensor", 
+            self.quadrature_functional_data_class.solution_fields["pla"+
+            "stic strain tensor"], trial_plastic_strain_tensor)
+
+            self.quadrature_projection_class.update_quadrature_values_with_numpy_array(
+            "accumulated plastic strain", 
+            self.quadrature_functional_data_class.solution_fields["acc"+
+            "umulated plastic strain"], 
+            updated_accumulated_plastic_strain)
 
         # Returns the updated plastic strain tensor and the accumulated
         # plastic strain in a dictionary
