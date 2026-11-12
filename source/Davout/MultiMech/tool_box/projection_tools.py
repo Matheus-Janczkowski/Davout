@@ -126,7 +126,7 @@ class MultipleFieldsProjectionOntoQuadratureSpace:
 
         # Runs that function defined in the class of this field
         
-        self.classes_dictionary[field_name
+        return self.classes_dictionary[field_name
         ].update_quadrature_values_with_numpy_array(
         function_in_quadrature_space, function_values_array)
 
@@ -430,7 +430,8 @@ class ExpressionProjectionOntoQuadratureSpace:
         # Returns the values reorganized into an array 
         # [n_quadrature_points, tensor_dimension]
 
-        return expression_values[self.numpy_array_indices]
+        return (expression_values[self.numpy_array_indices], 
+        self.expression_function)
 
     # Defines a function to convert the quadrature finite-element inter-
     # polation to numpy arrays [n_quadrature_points, tensor_dimension]
@@ -472,6 +473,8 @@ class ExpressionProjectionOntoQuadratureSpace:
         function_in_quadrature_space.vector().set_local(function_vector)
 
         function_in_quadrature_space.vector().apply("insert")
+
+        return function_in_quadrature_space
 
 # Defines a function to project a field that is piecewise continuous in-
 # to a finite element space. The field is given by a list of lists, whe-

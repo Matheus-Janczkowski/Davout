@@ -132,6 +132,11 @@ ElastoplasticMaterialModel):
         self.mesh_data_class = self.material_properties["mesh_data_cla"+
         "ss"]
 
+        # Recovers the quadrature degree and uses it as polynomial de-
+        # gree for the quadrature function spaces
+
+        self.quadrature_degree = self.mesh_data_class.quadrature_degree
+
         # Empties the material properties dictionary
 
         self.material_properties = None
@@ -144,25 +149,30 @@ ElastoplasticMaterialModel):
 
         self.quadrature_functional_data_class = construct_monolithicFunctionSpace(
         {"accumulated plastic strain": {"field type": "scalar", "interp"+
-        "olation function": "Quadrature", "polynomial degree": 2},
+        "olation function": "Quadrature", "polynomial degree": 
+        self.quadrature_degree},
         "strain tensor": {"field type": "tensor", "interpolation func"+
-        "tion": "Quadrature", "polynomial degree": 2, "tensor order": 2}, 
+        "tion": "Quadrature", "polynomial degree": 
+        self.quadrature_degree, "tensor order": 2}, 
         "stress tensor": {"field type": "tensor", "interpolation funct"+
-        "ion": "Quadrature", "polynomial degree": 2, "tensor order": 2},
-        "plastic strain tensor": {"field type": "tensor", "interpolati"+
-        "on function": "Quadrature", "polynomial degree": 2, "tensor o"+
-        "rder": 2}, 
-        "normalized trial update direction": {"field type": "tensor", 
-        "interpolation function": "Quadrature", "polynomial degree": 2, 
+        "ion": "Quadrature", "polynomial degree": self.quadrature_degree, 
         "tensor order": 2},
+        "plastic strain tensor": {"field type": "tensor", "interpolati"+
+        "on function": "Quadrature", "polynomial degree": 
+        self.quadrature_degree, "tensor order": 2}, 
+        "normalized trial update direction": {"field type": "tensor", 
+        "interpolation function": "Quadrature", "polynomial degree": 
+        self.quadrature_degree, "tensor order": 2},
         "update increment": {"field type": "scalar", "interpolation fu"+
-        "nction": "Quadrature", "polynomial degree": 2},
+        "nction": "Quadrature", "polynomial degree": 
+        self.quadrature_degree},
         "trial equivalent stress reciprocal": {"field type": "scalar", 
-        "interpolation function": "Quadrature", "polynomial degree": 2},
+        "interpolation function": "Quadrature", "polynomial degree": 
+        self.quadrature_degree},
         "hardening tangent modulus": {"field type": "scalar", "interpo"+
-        "lation function": "Quadrature", "polynomial degree": 2}}, 
-        self.mesh_data_class, verbose=True, use_fenics_split_method=
-        False)
+        "lation function": "Quadrature", "polynomial degree": 
+        self.quadrature_degree}}, self.mesh_data_class, verbose=True, 
+        use_fenics_split_method=False)
 
         # Instantiates the class that projects expressions from and to 
         # quadrature spaces. This is important for the algorithmic pro-
@@ -241,9 +251,10 @@ ElastoplasticMaterialModel):
 
         dimension = u.geometric_dimension()
 
-        # Projects the strain tensor onto the quadrature space
+        # Projects the strain tensor onto the quadrature space and re-
+        # trieves a numpy array in format [n_quadrature_points, 3, 3]
 
-        projected_epsilon = self.quadrature_projection_class.project_expression_onto_quadrature_space(
+        projected_epsilon, _ = self.quadrature_projection_class.project_expression_onto_quadrature_space(
         "strain tensor", epsilon)
 
         # Assembles the identity tensor in the format 
@@ -301,9 +312,10 @@ ElastoplasticMaterialModel):
 
         else:
 
-            # Updates the function with the stress
+            # Updates the function with the stress and retrieves a FEniCs
+            # function object with the updated quadrature values
 
-            self.quadrature_projection_class.project_expression_onto_quadrature_space(
+            _, self.stress_tensor = self.quadrature_projection_class.project_expression_onto_quadrature_space(
             "stress tensor", (2.0*self.mu*epsilon)+(self.lmbda*ufl.tr(
             epsilon)*Identity(dimension)))
 
@@ -347,13 +359,10 @@ ElastoplasticMaterialModel):
             print("\nThe updated limit stress lies in the interval ["+str(
             np.min(sigma_y))+", "+str(np.max(sigma_y))+"]\n")
 
-        self.quadrature_projection_class.update_quadrature_values_with_numpy_array(
+        K = self.quadrature_projection_class.update_quadrature_values_with_numpy_array(
         "hardening tangent modulus", 
         self.quadrature_functional_data_class.solution_fields["hardeni"+
         "ng tangent modulus"], K)
-
-        K = self.quadrature_functional_data_class.solution_fields["har"+
-        "dening tangent modulus"]
 
         # Assembles the fourth-order tangent modulus
 
@@ -370,14 +379,12 @@ ElastoplasticMaterialModel):
 
         self.C_fourth = C
 
-        self.quadrature_projection_class.project_expression_onto_quadrature_space(
+        # Projects the strain tensor onto a quadrature space so that
+        # FEniCS' differentiation engine cannot see the dependency with
+        # the displacement field
+
+        _, strain_tensor = self.quadrature_projection_class.project_expression_onto_quadrature_space(
         "strain tensor", epsilon)
-
-        strain_tensor = self.quadrature_functional_data_class.solution_fields[
-        "strain tensor"]
-
-        self.stress_tensor = self.quadrature_functional_data_class.solution_fields[
-        "stress tensor"]
 
         self.sigma_0 = self.stress_tensor-ufl.as_tensor((C[p,q,r,s]*
         strain_tensor[r,s]), (p,q))
@@ -587,7 +594,7 @@ ElastoplasticMaterialModel):
 
         # Updates the functions of all intermediate quantities
 
-        self.quadrature_projection_class.update_quadrature_values_with_numpy_array(
+        self.stress_tensor = self.quadrature_projection_class.update_quadrature_values_with_numpy_array(
         "stress tensor", 
         self.quadrature_functional_data_class.solution_fields["stress "+
         "tensor"], stress_tensor)

@@ -21,7 +21,7 @@ from .....Davout.MultiMech.tool_box.read_write_tools import write_field_to_xdmf
 
 # Creates a box mesh using gmsh
 
-shape_function_degree = 3
+shape_function_degree = 2
 
 quadrature_degree = int(2*(shape_function_degree-1))
 
@@ -33,9 +33,9 @@ quadrature_degree=quadrature_degree)
 
 # Neumann boundary conditions
 
-maximum_load = 1.5E3
+maximum_load = 2.2E3
 
-plastic_material = False
+plastic_material = True
 
 # Sets the number of load steps (pseudo-time steps)
 
