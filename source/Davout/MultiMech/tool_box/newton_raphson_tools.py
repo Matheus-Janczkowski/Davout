@@ -8,6 +8,8 @@ from ...MultiMech.tool_box.functional_tools import set_nonlinearProblem
 
 from ...PythonicUtilities.dictionary_tools import verify_obligatory_and_optional_keys
 
+from ...PythonicUtilities.programming_tools import TerminalColor
+
 # Defines a class to perform the classical Newton-Raphson procedure
 
 class NewtonRaphson:
@@ -24,6 +26,10 @@ class NewtonRaphson:
         variational_form_update_function)
 
         self.post_processing_function = post_processing_function
+
+        # Instantiates the class of colors in the terminal
+
+        self.terminal_colors_class = TerminalColor()
 
         # If no solver parameters were given, just put default values
 
@@ -276,14 +282,41 @@ class NewtonRaphson:
 
             relative_residual = residual_norm/initial_residual_norm
 
-            # Prints convergence information
+            # Saves the maximum residual yet
 
-            print("Newton iteration "+str(i)+": r (abs) = "+str(format(
-            residual_norm, '.3e'))+" (tol = "+str(format(
+            self.maximum_residual_norm = np.maximum(float(initial_residual_norm), 
+            residual_norm)
+
+            # Gets the magnitude orders of the maximum residual norm,
+            # the absolute tolerance, and of the current residual norm
+
+            maximum_residual_magnitude_order = self.get_magnitude_order(
+            self.maximum_residual_norm)
+
+            absolute_tolerance_magnitude_order = self.get_magnitude_order(
+            self.solver_parameters["newton_absolute_tolerance"])
+
+            current_residual_magnitude_order = self.get_magnitude_order(
+            residual_norm)
+
+            # Prints convergence information. Prints the residual on the
+            # terminal using a cool-warm tint. The color value is a li-
+            # near interpolation between the order of magnitude in the
+            # interval [-1,1]
+
+            color_value = ((2.0*((current_residual_magnitude_order-
+            absolute_tolerance_magnitude_order)/max(
+            maximum_residual_magnitude_order-
+            absolute_tolerance_magnitude_order, 1.0)))-1.0)
+
+            print("Newton iteration "+str(i)+": "+
+            self.terminal_colors_class.coolwarm("r (abs) = "+str(format(
+            residual_norm, '.3e')), color_value)+" (tol = "+str(format(
             self.solver_parameters["newton_absolute_tolerance"], '.3e'))
-            +") r (rel) = "+str(format(relative_residual, '.3e'))+" (t"+
-            "ol = "+str(format(self.solver_parameters["newton_relative"+
-            "_tolerance"], '.3e'))+")")
+            +") "+self.terminal_colors_class.coolwarm("r (rel) = "+str(
+            format(relative_residual, '.3e')), color_value)+" (tol = "+
+            str(format(self.solver_parameters["newton_relative_toleran"+
+            "ce"], '.3e'))+")")
 
             # Checks convergence
 
@@ -308,3 +341,13 @@ class NewtonRaphson:
         raise ValueError("The custom Newton-Raphson solver tried to mi"+
         "nimize the residual for "+str(self.solver_parameters["newton_"+
         "maximum_iterations"])+" iterations to no avail")
+
+    # Defines a function to compute the magnitude order
+
+    def get_magnitude_order(self, value):
+
+        value_in_log_scale = np.log10(np.abs(value))
+
+        # Eliminates what is above the order of magnitude
+
+        return np.floor(value_in_log_scale)

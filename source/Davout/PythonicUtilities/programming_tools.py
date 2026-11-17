@@ -92,6 +92,65 @@ class TerminalColor:
         return (self.color_dictionary[color_name]+str(text)+
         self.color_dictionary["reset"])
 
+    # Defines a method to generate an RGB terminal color
+
+    def rgb(self, text, red, green, blue):
+
+        # Sets the string with the color
+
+        color_code = ("\033[38;2;"+str(int(red))+";"+str(int(green))+";"+
+        str(int(blue))+"m")
+
+        # Concatenates the color code, the text string and the resetting
+        # string together, then returns everything
+
+        return color_code+str(text)+self.color_dictionary["reset"]
+
+    # Defines a method to color a text excerpt using a cool-warm color
+    # scheme
+
+    def coolwarm(self, text, value):
+
+        # Makes sure the value is between -1 and 1
+
+        value = max(-1.0, value)
+
+        value = min(1.0, value)
+
+        # Defines the endpoint colors in RGB
+
+        blue = (59, 76, 192)
+
+        white = (221, 221, 221)
+
+        red = (180, 4, 38)
+
+        # Initializes the RGB tuple of colors
+
+        rbg_tuple = None
+
+        # f the value is in the blueish section of the interval
+
+        if value<0:
+
+            # Sets the initial and end colors as blue and white, respec-
+            # tively, then interpolates them for all components
+
+            rgb = tuple((blue[i]+((value+1.0)*(white[i]-blue[i]))) for (
+            i) in range(3))
+
+        else:
+
+            # Sets the initial and end colors as white and red, respec-
+            # tively, then interpolates them for all components
+
+            rgb = tuple((white[i]+(value*(red[i]-white[i]))) for (
+            i) in range(3))
+
+        # Paints the text
+
+        return self.rgb(text, *rgb)
+
 # Defines a function to create a progress bar
 
 def progress_bar(iteration_set, message=None, colorful_bar=True):
