@@ -207,7 +207,8 @@ flag_read_copy=True):
 
                 field_element_degree = 2
                 
-                if ("polynomial degree" in (
+                if ((functional_data_class.elements_dictionary_copy
+                ) is not None) and ("polynomial degree" in (
                 functional_data_class.elements_dictionary_copy[
                 field_name])):
                     
@@ -347,7 +348,8 @@ flag_read_copy=True):
                 
                 field_element_degree = 2
                 
-                if ("polynomial degree" in (
+                if ((functional_data_class.elements_dictionary_copy
+                ) is not None) and ("polynomial degree" in (
                 functional_data_class.elements_dictionary_copy[
                 current_field_name])):
                     
@@ -458,7 +460,8 @@ flag_read_copy=True):
                 
                 field_element_degree = 2
                 
-                if ("polynomial degree" in (
+                if ((functional_data_class.elements_dictionary_copy
+                ) is not None) and ("polynomial degree" in (
                 functional_data_class.elements_dictionary_copy[field_name])):
                     
                     field_element_degree = (
@@ -572,7 +575,8 @@ flag_read_copy=True):
 
             field_element_degree = 2
                             
-            if ("polynomial degree" in (
+            if ((functional_data_class.elements_dictionary_copy
+            ) is not None) and ("polynomial degree" in (
             functional_data_class.elements_dictionary_copy[field_name])):
                 
                 field_element_degree = (

@@ -7,9 +7,7 @@ from .....Davout.MultiMech.constitutive_models.hyperelasticity import isotropic_
 
 from .....Davout.MultiMech.physics import hyperelastic_incompressible_cauchy_continuum as variational_framework
 
-from .....Davout.GraphUtilities.paraview_tools import frozen_snapshots
-
-from .....Davout.GraphUtilities.collage_tools import create_box_collage
+from .....Davout.PythonicUtilities.path_tools import get_parent_path_of_file
 
 from time import time
 
@@ -215,22 +213,26 @@ maximum_loadingSteps=None, intermediate_saving=False):
 
 if __name__=="__main__":
 
-    displacement_file_name = ("/home/grante_maximus/rafael_prado_ic/TCC_rafael_prado/"+
-    "IntervertebralDiscANN/simulations/results/displacement_test")
+    # Gets the parent path
 
-    pressure_file_name = ("/home/grante_maximus/rafael_prado_ic/TCC_rafael_prado/"+
-    "IntervertebralDiscANN/simulations/results/pressure_test")
+    parent_path = get_parent_path_of_file()
 
-    volume_ratio_file_name = ("/home/grante_maximus/rafael_prado_ic/TCC_rafael_prado/"+
-    "IntervertebralDiscANN/simulations/results/volume_ratio_test")
+    # Sets the mesh file name
 
-    mesh_file_name = ("/media/grante_maximus/Dados/data_set_tcc/material_properties_test/intervertebral_disc_mesh")
+    mesh_file_name = parent_path+"//intervertebral_disc_mesh"
 
-    strain_energy_file_name = ("/home/grante_maximus/rafael_prado_ic/TCC_rafael_prado/"+
-    "IntervertebralDiscANN/simulations/results/strain_energy_test")
+    # Assembles the names of the result files
 
-    forces_and_moments_file_name = ("/home/grante_maximus/rafael_prado_ic/TCC_rafael_prado/"+
-    "IntervertebralDiscANN/simulations/results/forces_and_moments_test")
+    displacement_file_name = parent_path+"//displacement_test"
+
+    pressure_file_name = parent_path+"//pressure_test"
+
+    volume_ratio_file_name = parent_path+"//volume_ratio_test"
+
+    strain_energy_file_name = parent_path+"///strain_energy_test"
+
+    forces_and_moments_file_name = (parent_path+"//forces_and_moments_"+
+    "test")
 
     # Options for linear solver: "cg", "gmres", "minres", "mumps"
 
@@ -258,15 +260,16 @@ if __name__=="__main__":
 
     # Files of the material properties
 
-    axial_direction_file_name  = ("/media/grante_maximus/Dados/data_set_tcc/material_properties_test/axial_direction_000")
+    axial_direction_file_name  = parent_path+"//axial_direction_000"
 
-    circumferential_direction_file_name = ("/media/grante_maximus/Dados/data_set_tcc/material_properties_test/circumferential_direction_000")
+    circumferential_direction_file_name = (parent_path+"//circumferent"+
+    "ial_direction_000")
 
-    k1_file_name = ("/media/grante_maximus/Dados/data_set_tcc/material_properties_test/k1_2")
+    k1_file_name = parent_path+"//k1_2"
 
-    k2_file_name = ("/media/grante_maximus/Dados/data_set_tcc/material_properties_test/k2_2")
+    k2_file_name = parent_path+"//k2_2"
 
-    gamma_file_name = ("/media/grante_maximus/Dados/data_set_tcc/material_properties_test/gamma_2")
+    gamma_file_name = parent_path+"//gamma_2"
 
     # Boundary conditions prescribed Dirichlet displacement
     #
