@@ -240,11 +240,11 @@ if __name__=="__main__":
 
     # c for HGO
 
-    c_HGO = 193585.00450953623
+    c_HGO = 0.195E6
 
     # kappa value
 
-    kappa = 0.05062319106629252
+    kappa = 0.07
 
     # Bulk modulus 
 
@@ -256,7 +256,7 @@ if __name__=="__main__":
 
     # c1 = c10 for Mooney Rivlin 
 
-    c1_mooney = 172188.9100613357
+    c1_mooney = 0.16E6
 
     # Files of the material properties
 
@@ -265,11 +265,11 @@ if __name__=="__main__":
     circumferential_direction_file_name = (parent_path+"//circumferent"+
     "ial_direction_000")
 
-    k1_file_name = parent_path+"//k1_2"
+    k1_file_name = parent_path+"//k1_0"
 
-    k2_file_name = parent_path+"//k2_2"
+    k2_file_name = parent_path+"//k2_0"
 
-    gamma_file_name = parent_path+"//gamma_2"
+    gamma_file_name = parent_path+"//gamma_0"
 
     # Boundary conditions prescribed Dirichlet displacement
     #
