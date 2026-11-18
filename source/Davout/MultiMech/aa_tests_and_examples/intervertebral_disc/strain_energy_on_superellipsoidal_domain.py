@@ -20,9 +20,25 @@ from .....Davout.MultiMech.tool_box.functional_tools import construct_monolithic
 
 from .....Davout.MultiMech.tool_box.read_write_tools import write_field_to_xdmf
 
-#from .local_coordinate_system_generation import 
-
 from .disc_HGO import simulation_disc
+
+# Defines a function to get the strain energy evaluated onto multiple 
+# ellipsoids
+
+def get_strain_energy_onto_multiple_ellipsoids(p_exponent_list, 
+mapping_matrix, centroid_position, n_points_on_surface, parent_path, 
+IVD_lambda_function, strain_energy_file_name, verbose=True):
+
+    # Iterates over the list of exponents p
+
+    for p_exponent in p_exponent_list:
+
+        # Calls the function to get the strain energy evaluated on the
+        # ellipsoidal domain
+
+        get_strain_energy_onto_ellipsoid(p_exponent, mapping_matrix, 
+        centroid_position, n_points_on_surface, parent_path, 
+        IVD_lambda_function, strain_energy_file_name, verbose=verbose)
 
 # Defines a function to generate the superellipsoidal domain in 3D space.
 # Each point of the surface of the ellipsoid is a load vector. The strain
@@ -179,7 +195,7 @@ strain_energy_file_name, verbose=True):
 
     write_field_to_xdmf(functional_data_class, explicit_file_name=
     get_parent_path_of_file()+"//strain_energy_on_boundary_p_"+str(
-    p_exponent)+".xdmf", close_file=False)
+    p_exponent)+".xdmf", close_file=False, visualization_copy=True)
 
 # Testing block
 
@@ -189,10 +205,11 @@ if __name__=="__main__":
     #                   Ellipsoidal domain settings                    #
     ####################################################################
 
-    # Sets the p exponent, the mapping matrix, and the centroid of the
-    # ellipsoidal domain
+    # Sets a list of p exponents to test with a set of ellipsoids. Then,
+    # sets the mapping matrix, and the centroid of the ellipsoidal do-
+    # main, too
 
-    p_exponent = 4
+    p_exponent_list = [2, 4, 8, 16]
 
     # Critical translations:
     # x: [-, 3.1] mm
@@ -285,8 +302,8 @@ if __name__=="__main__":
     volume_ratio_file_name, strain_energy_file_name, 
     forces_and_moments_file_name)
 
-    # Calls the function to get the ellipsoidal 3D domain
+    # Calls the function to get the ellipsoidal 3D domains
 
-    get_strain_energy_onto_ellipsoid(p_exponent, mapping_matrix,
-    centroid_position, n_points_on_surface, parent_path, 
+    get_strain_energy_onto_multiple_ellipsoids(p_exponent_list, 
+    mapping_matrix, centroid_position, n_points_on_surface, parent_path, 
     IVD_lambda_function, strain_energy_file_name, verbose=False)

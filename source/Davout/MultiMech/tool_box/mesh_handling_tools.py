@@ -10,8 +10,6 @@ from copy import copy, deepcopy
 
 from scipy.spatial import KDTree
 
-from ..tool_box.functional_tools import FunctionalData
-
 from ...PythonicUtilities import programming_tools
 
 from ...PythonicUtilities.dictionary_tools import sort_dictionary_by_values, get_first_key_from_value
@@ -1152,7 +1150,8 @@ def get_dofmap(functional_data_class, field_name=None):
     # Checks if the functional data class is not an instance of the 
     # FunctionalData
 
-    if not isinstance(functional_data_class, FunctionalData):
+    if not all(hasattr(functional_data_class, attribute) for (attribute
+    ) in ("monolithic_function_space", "fields_names_dict")):
 
         # Gets the dofmap directly from the given object, supposing that
         # it is a function space object
@@ -1435,7 +1434,8 @@ dof_coordinates):
     # Checks if functional data class is an instance of the Functional-
     # Data
 
-    if not isinstance(functional_data_class, FunctionalData):
+    if not all(hasattr(functional_data_class, attribute) for (attribute
+    ) in ("monolithic_function_space", "fields_names_dict")):
 
         raise TypeError("'functional_data_class' in 'get_dofs_coordina"+
         "tes' is not an instance of the class 'FunctionalData'. Its cu"+

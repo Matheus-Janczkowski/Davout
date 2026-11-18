@@ -283,9 +283,9 @@ if __name__=="__main__":
     # y: [-, ] degrees
     # z: [-, ] degrees
 
-    translation = [-0.0018501445426034196,-0.0009263909321998073,-0.00012300453951900352]
+    translation = [0.0, 0.0, 0.003]#[-0.0018501445426034196,-0.0009263909321998073,-0.00012300453951900352]
 
-    axle_vector = [1.94471325855789, -4.349424294172992, 2.813952923034023]
+    axle_vector = [0.0, 0.0, 0.0]#[1.94471325855789, -4.349424294172992, 2.813952923034023]
 
     simulation_disc(linear_solver, c_HGO, kappa, bulk_modulus, 
     c2_mooney, c1_mooney, mesh_file_name, k1_file_name, k2_file_name, 
