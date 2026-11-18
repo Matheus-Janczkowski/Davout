@@ -30,8 +30,13 @@ from .disc_HGO import simulation_disc
 # the ellipsoid using a fenics field
 
 def get_strain_energy_onto_ellipsoid(p_exponent, mapping_matrix, 
-centroid_position, n_points_on_surface, ellipsoidal_mesh_file_name, 
-IVD_lambda_function, strain_energy_file_name, verbose=True):
+centroid_position, n_points_on_surface, parent_path, IVD_lambda_function, 
+strain_energy_file_name, verbose=True):
+
+    # Sets the file name for the ellipsoidal mesh
+
+    ellipsoidal_mesh_file_name = parent_path+"//ellipsoid_p_"+str(
+    p_exponent)
 
     # Gets the number of transfinite divisions based on the number of
     # points on the surface of the whole ellipsoid. Each facet of the
@@ -67,6 +72,14 @@ IVD_lambda_function, strain_energy_file_name, verbose=True):
     mesh_data_class, functional_data_class, field_name="strain energy",
     get_dofs_coordinates_too=True, get_higher_order_dofs_too=True, 
     get_array_with_all_dofs_of_the_boundary=True)
+
+    # Saves the information about the DOFs
+
+    np.save(parent_path+"//dofs_coordinates_p_"+str(p_exponent)+".npy",
+    dofs_coordinates)
+
+    np.save(parent_path+"//boundary_dofs_p_"+str(p_exponent)+".npy",
+    boundary_dofs)
 
     # Initializes a numpy array to store the strain energy evaluated for
     # each point on the surface of the ellipsoidal domain
@@ -108,7 +121,8 @@ IVD_lambda_function, strain_energy_file_name, verbose=True):
             unsuccessful_translations.append(DOF_coordinate)
 
             np.save(get_parent_path_of_file()+"//unsuccessful_translat"+
-            "ions.npy", np.array(unsuccessful_translations))
+            "ions_p_"+str(p_exponent)+".npy", np.array(
+            unsuccessful_translations))
 
             # Prints the traceback on the terminal
 
@@ -127,8 +141,8 @@ IVD_lambda_function, strain_energy_file_name, verbose=True):
 
         # Saves the strain energy values
 
-        np.save(get_parent_path_of_file()+"//boundary_strain_energy.npy",
-        boundary_strain_energy)
+        np.save(get_parent_path_of_file()+"//boundary_strain_energy_p_"+
+        str(p_exponent)+".npy", boundary_strain_energy)
 
         print("\n#####################################################"+
         "###################\n#         Information on assessment of t"+
@@ -178,17 +192,17 @@ if __name__=="__main__":
     # Sets the p exponent, the mapping matrix, and the centroid of the
     # ellipsoidal domain
 
-    p_exponent = 2
+    p_exponent = 4
 
     # Critical translations:
     # x: [-, 3.1] mm
     # y: [-3.7, 3.7] mm
     # z: [-2.1, 1.5] mm
 
-    mapping_matrix = np.array([[0.0031, 0.0, 0.0], [0.0, 0.0037, 0.0], 
-    [0.0, 0.0, 0.0018]])
+    mapping_matrix = np.array([[0.0031, 0.0, 0.0], [0.0, 0.0034, 0.0], 
+    [0.0, 0.0, 0.0015]])
 
-    centroid_position = np.array([0.0, 0.0, -0.0003])
+    centroid_position = np.array([0.0, 0.0, -0.00035])
 
     # Sets the number of points on the surface 
 
@@ -197,9 +211,6 @@ if __name__=="__main__":
     # Sets the parent path and the mesh file name
 
     parent_path = get_parent_path_of_file()
-
-    ellipsoidal_mesh_file_name = parent_path+"//ellipsoid_p_"+str(
-    p_exponent)
 
     ####################################################################
     #                   Intervertebral disc settings                   #
@@ -277,5 +288,5 @@ if __name__=="__main__":
     # Calls the function to get the ellipsoidal 3D domain
 
     get_strain_energy_onto_ellipsoid(p_exponent, mapping_matrix,
-    centroid_position, n_points_on_surface, ellipsoidal_mesh_file_name, 
+    centroid_position, n_points_on_surface, parent_path, 
     IVD_lambda_function, strain_energy_file_name, verbose=False)
