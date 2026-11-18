@@ -483,10 +483,11 @@ None, field_correction=None):
 
     final_time_simulation = time.time()
 
-    mpi_print(mesh_dataClass.comm, "\n#########################################################"+
-    "###############\nThe whole simulation took: "+str(
-    final_time_simulation-start_time_simulation)+" seconds\n##########"+
-    "##############################################################\n")
+    mpi_print(mesh_dataClass.comm, "\n################################"+
+    "########################################\nThe whole simulation to"+
+    "ok: "+str(final_time_simulation-start_time_simulation)+" seconds"+
+    "\n###############################################################"+
+    "#########\n")
 
 # Defines a function to iterate through a Newton-Raphson loop of a vari-
 # ational problem of multiple fields

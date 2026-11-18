@@ -10,6 +10,8 @@ from copy import copy, deepcopy
 
 from scipy.spatial import KDTree
 
+from ..tool_box.functional_tools import FunctionalData
+
 from ...PythonicUtilities import programming_tools
 
 from ...PythonicUtilities.dictionary_tools import sort_dictionary_by_values, get_first_key_from_value
@@ -1109,39 +1111,8 @@ get_vertex_nodes_indices=False, get_vertex_nodes_coordinates=False):
 
         # Gets the map of DOFs
 
-        monolithic_dofmap = None 
-
-        # Verifies if a field name is asked
-
-        if field_name is not None:
-
-            # Verifies if this field name belongs to the dictionary of 
-            # fields names
-
-            if not (field_name in (
-            functional_data_class.fields_names_dict)):
-
-                raise ValueError("The field '"+str(field_name)+"' does"+
-                " not belong to the dictionary of fields of this probl"+
-                "em. See the available fields:\n"+str(list(
-                functional_data_class.fields_names_dict.keys())))
-            
-            # Verifies if this problem has more than one field
-
-            if len(functional_data_class.fields_names_dict.keys())>1:
-
-                # Gets the map of DOFs for the selected field only
-
-                monolithic_dofmap = functional_data_class.monolithic_function_space.sub(
-                functional_data_class.fields_names_dict[field_name]
-                ).dofmap()
-
-        # If the map of DOFs was not created, the field name was not 
-        # provided or the problem has only one field 
-
-        if monolithic_dofmap is None:
-
-            monolithic_dofmap = functional_data_class.monolithic_function_space.dofmap()
+        monolithic_dofmap = get_dofmap(functional_data_class, field_name=
+        field_name)
         
         # Gets the list of DOFs of this element
 
@@ -1172,6 +1143,59 @@ get_vertex_nodes_indices=False, get_vertex_nodes_coordinates=False):
     # Returns the dictionary
 
     return result
+
+# Defines a function to retrieve the map of DOFs for any functional data
+# class, independently whether the function space is mixed or not
+
+def get_dofmap(functional_data_class, field_name=None):
+
+    # Checks if the functional data class is not an instance of the 
+    # FunctionalData
+
+    if not isinstance(functional_data_class, FunctionalData):
+
+        # Gets the dofmap directly from the given object, supposing that
+        # it is a function space object
+
+        return functional_data_class.dofmap()
+
+    # Gets the map of DOFs
+    
+    monolithic_dofmap = None 
+
+    # Verifies if a field name is asked
+
+    if field_name is not None:
+
+        # Verifies if this field name belongs to the dictionary of 
+        # fields names
+
+        if not (field_name in (
+        functional_data_class.fields_names_dict)):
+
+            raise ValueError("The field '"+str(field_name)+"' does not"+
+            " belong to the dictionary of fields of this problem. See "+
+            "the available fields:\n"+str(list(
+            functional_data_class.fields_names_dict.keys())))
+        
+        # Verifies if this problem has more than one field
+
+        if len(functional_data_class.fields_names_dict.keys())>1:
+
+            # Gets the map of DOFs for the selected field only
+
+            monolithic_dofmap = functional_data_class.monolithic_function_space.sub(
+            functional_data_class.fields_names_dict[field_name]
+            ).dofmap()
+
+    # If the map of DOFs was not created, the field name was not 
+    # provided or the problem has only one field 
+
+    if monolithic_dofmap is None:
+
+        monolithic_dofmap = functional_data_class.monolithic_function_space.dofmap()
+
+    return monolithic_dofmap
         
 ########################################################################
 #                             Node finding                             #
@@ -1283,37 +1307,8 @@ physical_group_name=None, region_function=None, field_name=None):
 
     # Gets the map of DOFs
 
-    monolithic_dofmap = None 
-
-    # Verifies if a field name is asked
-
-    if field_name is not None:
-
-        # Verifies if this field name belongs to the dictionary of fields
-        # names
-
-        if not (field_name in functional_data_class.fields_names_dict):
-
-            raise ValueError("The field '"+str(field_name)+"' does not"+
-            " belong to the dictionary of fields of this problem. See "+
-            "the available fields:\n"+str(list(
-            functional_data_class.fields_names_dict.keys())))
-        
-        # Verifies if this problem has more than one field
-
-        if len(functional_data_class.fields_names_dict.keys())>1:
-
-            # Gets the map of DOFs for the selected field only
-
-            monolithic_dofmap = functional_data_class.monolithic_function_space.sub(
-            functional_data_class.fields_names_dict[field_name]).dofmap()
-
-    # If the map of DOFs was not created, the field name was not provided
-    # or the problem has only one field 
-
-    if monolithic_dofmap is None:
-
-        monolithic_dofmap = functional_data_class.monolithic_function_space.dofmap()
+    monolithic_dofmap = get_dofmap(functional_data_class, field_name=
+    field_name)
 
     # If a physical group and a region function are given
 
@@ -1431,14 +1426,25 @@ physical_group_name=None, region_function=None, field_name=None):
         "inates of a point and spits out True or False, according to i"+
         "f the point is in a volumetric region or not")
 
-# Defines a function to return an array of [n_nodes, n_dofs_per_node]
-# with the indices of the DOFs within each node of the mesh
+# Defines a function to get the coordinates of all DOFs in the mesh. Re-
+# turns an array [n_dofs, domain_dimension]
 
-def get_dofs_per_node(functional_data_class, field_name, return_as_list=
-False, node_tolerance=1E-6, dof_coordinates=None):
+def get_dofs_coordinates(functional_data_class, field_name, 
+dof_coordinates):
+
+    # Checks if functional data class is an instance of the Functional-
+    # Data
+
+    if not isinstance(functional_data_class, FunctionalData):
+
+        raise TypeError("'functional_data_class' in 'get_dofs_coordina"+
+        "tes' is not an instance of the class 'FunctionalData'. Its cu"+
+        "rrent value is:\n"+str(functional_data_class)+"\n\nThis objec"+
+        "t must be an instance of that class for the coordinates of th"+
+        "e DOFs to be found")
 
     # Checks whether dof_coordinates was not provided
-
+    
     if dof_coordinates is None:
 
         # Verifies if a field name is asked
@@ -1478,7 +1484,20 @@ False, node_tolerance=1E-6, dof_coordinates=None):
 
         dof_coordinates = dof_coordinates.reshape((-1, 
         functional_data_class.monolithic_function_space.mesh().geometry(
-        ).dim())) 
+        ).dim()))
+
+    return dof_coordinates
+
+# Defines a function to return an array of [n_nodes, n_dofs_per_node]
+# with the indices of the DOFs within each node of the mesh
+
+def get_dofs_per_node(functional_data_class, field_name, return_as_list=
+False, node_tolerance=1E-6, dof_coordinates=None):
+
+    # Checks whether dof_coordinates was not provided
+
+    dof_coordinates = get_dofs_coordinates(functional_data_class, 
+    field_name, dof_coordinates)
 
     # Constructs a mask with available DOFs for searching
 
@@ -1618,48 +1637,10 @@ get_higher_order_dofs_too=True, return_as_list=False):
 
     # Gets the of coordinates for each DOF and a list of DOFs indices
 
-    dof_coordinates = None 
+    dof_coordinates = get_dofs_coordinates(functional_data_class, 
+    field_name, None)
 
     dofs_indices = None 
-
-    # Verifies if a field name is asked
-
-    if field_name is not None:
-
-        # Verifies if this field name belongs to the dictionary of fields
-        # names
-
-        if not (field_name in functional_data_class.fields_names_dict):
-
-            raise ValueError("The field '"+str(field_name)+"' does not"+
-            " belong to the dictionary of fields of this problem. See "+
-            "the available fields:\n"+str(list(
-            functional_data_class.fields_names_dict.keys())))
-        
-        # Verifies if this problem has more than one field
-
-        if len(functional_data_class.fields_names_dict.keys())>1:
-
-            # Gets the map of DOFs for the selected field only
-
-            dof_coordinates = functional_data_class.monolithic_function_space.sub(
-            functional_data_class.fields_names_dict[field_name]
-            ).tabulate_dof_coordinates()
-
-    # If the map of DOFs was not created, the field name was not provided
-    # or the problem has only one field 
-
-    if dof_coordinates is None:
-
-        dof_coordinates = functional_data_class.monolithic_function_space.tabulate_dof_coordinates()
-
-    # Reshapes the dof coordinates according to the number of dimensions
-    # of the geometry, since FEniCS returns an array of size n_DOFS*
-    # n_geometric_dimensions 
-
-    dof_coordinates = dof_coordinates.reshape((-1, 
-    functional_data_class.monolithic_function_space.mesh().geometry(
-    ).dim()))
 
     # If the DOFs of the nodes related to higher order shape functions 
     # are to be retrieved
@@ -1677,38 +1658,8 @@ get_higher_order_dofs_too=True, return_as_list=False):
 
         # Initializes the dof map of the monolithic function space
 
-        monolithic_dofmap = None
-
-        # Verifies if a field name is asked
-
-        if field_name is not None:
-
-            # Verifies if this field name belongs to the dictionary of 
-            # fields names
-
-            if not (field_name in functional_data_class.fields_names_dict):
-
-                raise ValueError("The field '"+str(field_name)+"' does"+
-                " not belong to the dictionary of fields of this probl"+
-                "em. See the available fields:\n"+str(list(
-                functional_data_class.fields_names_dict.keys())))
-            
-            # Verifies if this problem has more than one field
-
-            if len(functional_data_class.fields_names_dict.keys())>1:
-
-                # Gets the map of DOFs for the selected field only
-
-                monolithic_dofmap = functional_data_class.monolithic_function_space.sub(
-                functional_data_class.fields_names_dict[field_name]
-                ).dofmap()
-
-        # If the map of DOFs was not created, the field name was not 
-        # provided or the problem has only one field 
-
-        if monolithic_dofmap is None:
-
-            monolithic_dofmap = functional_data_class.monolithic_function_space.dofmap()
+        monolithic_dofmap = get_dofmap(functional_data_class, field_name=
+        field_name)
 
         # Initializes a set of DOFs
 
@@ -2240,7 +2191,10 @@ node_number=None, node_coordinates=None):
 # Defines a function to get the degrees of freedom that belongs to each
 # boundary physical group. Gives a dictionary of sets
 
-def get_boundary_dofs_to_physical_group(mesh_data_class, function_space):
+def get_boundary_dofs_to_physical_group(mesh_data_class, function_space,
+get_higher_order_dofs_too=False, field_name=None, 
+get_dofs_coordinates_too=False, get_array_with_all_dofs_of_the_boundary=
+False):
 
     # Initializes the dictionary of sets
 
@@ -2248,7 +2202,30 @@ def get_boundary_dofs_to_physical_group(mesh_data_class, function_space):
 
     # Gets the DOFs map for this function space
 
-    dof_map = function_space.dofmap()
+    dof_map = get_dofmap(function_space, field_name=field_name)
+
+    # Sets the function that retrieves the node object according to the
+    # flag to include higher-order DOFs. If the flag is false, recovers
+    # only the vertex nodes; otherwise, gets also the nodes associated
+    # with higher-order DOFs
+
+    entity_dimensions = None
+
+    if get_higher_order_dofs_too:
+
+        # Sets the entity dimensions to be searched as all possible ones
+
+        entity_dimensions = (0,1,2)
+
+    else:
+
+        # Sets the entity dimensions to be searched as only vertices
+
+        entity_dimensions = (0,)
+
+    # Initializes a set with all DOFs of the boundary
+
+    all_dofs_set = set()
 
     # Iterates through the boundary physical groups
 
@@ -2267,26 +2244,75 @@ def get_boundary_dofs_to_physical_group(mesh_data_class, function_space):
 
             if mesh_data_class.boundary_meshFunction[facet]==(
             physical_tag):
-                
-                # Iterates through the nodes of this facet
-                
-                for node in vertices(facet):
-                    
-                    dofs_set.update(dof_map.entity_dofs(
-                    mesh_data_class.mesh, 0, [node.index()]))
+
+                # Iterates through the entity dimensions
+
+                for entity_dimension in entity_dimensions:
+
+                    # Gets the corresponding mesh entities
+
+                    # Vertices
+
+                    if entity_dimension==0:
+
+                        entities = vertices(facet)
+
+                    # Edges (higher-order DOFs in the edges)
+
+                    elif entity_dimension==1:
+
+                        entities = edges(facet)
+
+                    # Facets (higher-order DOFs inside a facet)
+
+                    elif entity_dimension==2:
+
+                        entities = [facet]
+
+                    # Iterates through the entities
+
+                    for entity in entities:
+
+                        dofs_set.update(dof_map.entity_dofs(
+                        mesh_data_class.mesh, entity_dimension,
+                        [entity.index()]))
 
         # Adds to the dictionary
 
         dofs_dictionary[physical_name] = dofs_set
 
-    # Returns the dictionary
+        # If all DOFs are to be compiled in a single set, too
 
-    return dofs_dictionary
+        if get_array_with_all_dofs_of_the_boundary:
+
+            all_dofs_set.update(dofs_set)
+
+    # Initializes the return tuple
+
+    return_tuple = [dofs_dictionary]
+
+    # If the DOFs' coordinates are also to be retrieved
+
+    if get_dofs_coordinates_too:
+
+        return_tuple.append(get_dofs_coordinates(function_space, 
+        field_name, None))
+
+    # If the set of all DOFs is also to be returned
+
+    if get_array_with_all_dofs_of_the_boundary:
+
+        return_tuple.append(np.array(sorted(all_dofs_set), dtype=int))
+
+    # Returns the tuple
+
+    return tuple(return_tuple)
 
 # Defines a function to get the degrees of freedom that belongs to each
 # domain physical group. Gives a dictionary of sets
 
-def get_domain_dofs_to_physical_group(mesh_data_class, function_space):
+def get_domain_dofs_to_physical_group(mesh_data_class, function_space,
+field_name=None):
 
     # Initializes the dictionary of sets
 
@@ -2294,7 +2320,7 @@ def get_domain_dofs_to_physical_group(mesh_data_class, function_space):
 
     # Gets the DOFs map for this function space
 
-    dof_map = function_space.dofmap()
+    dof_map = get_dofmap(function_space, field_name=field_name)
 
     # Iterates through the doamin physical groups
 
