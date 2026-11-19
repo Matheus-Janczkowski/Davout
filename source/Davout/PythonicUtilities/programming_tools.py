@@ -316,7 +316,11 @@ False, LIBGL_ALWAYS_SOFTWARE=False, extra_execution_arguments=None):
             "it to the function '"+str(function_name)+"' and run it ex"+
             "ternally")
 
-        exe_arguments.extend(arguments_list)
+        # Iterates over all individual arguments to make them strings
+
+        for individual_argument in arguments_list:
+
+            exe_arguments.append(str(individual_argument))
 
         # Saves the arguments for printing
 

@@ -9,6 +9,8 @@ from .....Davout.MultiMech.physics import hyperelastic_incompressible_cauchy_con
 
 from .....Davout.PythonicUtilities.path_tools import get_parent_path_of_file
 
+from .....Davout.GraphUtilities.paraview_tools import frozen_snapshots
+
 from time import time
 
 def simulation_disc(linear_solver:str, c_HGO:float,
@@ -179,7 +181,8 @@ maximum_loadingSteps=None, intermediate_saving=False):
     # group and each value is another dictionary or a list of dictionaries 
     # with the boundary conditions' information. Each of these dictionaries
     # must have the key "BC case", which carries the name of the function 
-    # that builds this boundary condition
+    # that builds this boundary condition. The rotations are given in 
+    # degrees
 
     traction_dictionary = dict()
 
@@ -287,9 +290,22 @@ if __name__=="__main__":
 
     axle_vector = [0.0, 0.0, 0.0]#[1.94471325855789, -4.349424294172992, 2.813952923034023]
 
-    simulation_disc(linear_solver, c_HGO, kappa, bulk_modulus, 
+    """simulation_disc(linear_solver, c_HGO, kappa, bulk_modulus, 
     c2_mooney, c1_mooney, mesh_file_name, k1_file_name, k2_file_name, 
     gamma_file_name, axial_direction_file_name,
     circumferential_direction_file_name, translation, axle_vector,
     displacement_file_name, pressure_file_name, volume_ratio_file_name,
-    strain_energy_file_name, forces_and_moments_file_name)
+    strain_energy_file_name, forces_and_moments_file_name)"""
+
+    frozen_snapshots([parent_path+"//displacement_incompressible_box_visualization_copy"],#[displacement_file_name+"_visualization_copy"],
+    #pressure_file_name+"_visualization_copy"], 
+    "Displacement", time=1.0, representation_type="Surface With Edges", 
+    axes_color="black", zoom_factor=1.0, component_to_plot="Magnitude", 
+    warp_by_vector=True, resolution_ratio=10, clip=True, 
+    clip_plane_origin=[0.1, 0.1, 0.009], clip_plane_normal_vector=[-0.5, 
+    -1.0, 0.0], background_color="WhiteBackground", 
+    display_reference_configuration=False, transparent_background=True, 
+    legend_bar_font_color="black", set_camera_interactively=False, 
+    output_imageFileName="warp_and_clip.png", output_path=parent_path,
+    read_camera_settings_dictionary=True, clip_marker_size=0.002, 
+    clip_marker_color="black", extract_surface=True)

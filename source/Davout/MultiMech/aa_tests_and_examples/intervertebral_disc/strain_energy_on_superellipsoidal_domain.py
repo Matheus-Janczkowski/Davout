@@ -27,7 +27,8 @@ from .disc_HGO import simulation_disc
 
 def get_strain_energy_onto_multiple_ellipsoids(p_exponent_list, 
 mapping_matrix, centroid_position, n_points_on_surface, parent_path, 
-IVD_lambda_function, strain_energy_file_name, verbose=True):
+IVD_lambda_function, strain_energy_file_name, verbose=True, 
+file_name_additive=""):
 
     # Iterates over the list of exponents p
 
@@ -38,7 +39,8 @@ IVD_lambda_function, strain_energy_file_name, verbose=True):
 
         get_strain_energy_onto_ellipsoid(p_exponent, mapping_matrix, 
         centroid_position, n_points_on_surface, parent_path, 
-        IVD_lambda_function, strain_energy_file_name, verbose=verbose)
+        IVD_lambda_function, strain_energy_file_name, verbose=verbose,
+        file_name_additive=file_name_additive)
 
 # Defines a function to generate the superellipsoidal domain in 3D space.
 # Each point of the surface of the ellipsoid is a load vector. The strain
@@ -47,7 +49,7 @@ IVD_lambda_function, strain_energy_file_name, verbose=True):
 
 def get_strain_energy_onto_ellipsoid(p_exponent, mapping_matrix, 
 centroid_position, n_points_on_surface, parent_path, IVD_lambda_function, 
-strain_energy_file_name, verbose=True):
+strain_energy_file_name, verbose=True, file_name_additive=""):
 
     # Sets the file name for the ellipsoidal mesh
 
@@ -91,11 +93,11 @@ strain_energy_file_name, verbose=True):
 
     # Saves the information about the DOFs
 
-    np.save(parent_path+"//dofs_coordinates_p_"+str(p_exponent)+".npy",
-    dofs_coordinates)
+    np.save(parent_path+"//dofs_coordinates_p_"+str(p_exponent
+    )+file_name_additive+".npy", dofs_coordinates)
 
-    np.save(parent_path+"//boundary_dofs_p_"+str(p_exponent)+".npy",
-    boundary_dofs)
+    np.save(parent_path+"//boundary_dofs_p_"+str(p_exponent
+    )+file_name_additive+".npy", boundary_dofs)
 
     # Initializes a numpy array to store the strain energy evaluated for
     # each point on the surface of the ellipsoidal domain
@@ -137,8 +139,8 @@ strain_energy_file_name, verbose=True):
             unsuccessful_translations.append(DOF_coordinate)
 
             np.save(get_parent_path_of_file()+"//unsuccessful_translat"+
-            "ions_p_"+str(p_exponent)+".npy", np.array(
-            unsuccessful_translations))
+            "ions_p_"+str(p_exponent)+file_name_additive+".npy", 
+            np.array(unsuccessful_translations))
 
             # Prints the traceback on the terminal
 
@@ -158,7 +160,8 @@ strain_energy_file_name, verbose=True):
         # Saves the strain energy values
 
         np.save(get_parent_path_of_file()+"//boundary_strain_energy_p_"+
-        str(p_exponent)+".npy", boundary_strain_energy)
+        str(p_exponent)+file_name_additive+".npy", 
+        boundary_strain_energy)
 
         print("\n#####################################################"+
         "###################\n#         Information on assessment of t"+
@@ -195,43 +198,20 @@ strain_energy_file_name, verbose=True):
 
     write_field_to_xdmf(functional_data_class, explicit_file_name=
     get_parent_path_of_file()+"//strain_energy_on_boundary_p_"+str(
-    p_exponent)+".xdmf", close_file=False, visualization_copy=True)
+    p_exponent)+file_name_additive+".xdmf", close_file=False, 
+    visualization_copy=True)
 
 # Testing block
 
 if __name__=="__main__":
 
     ####################################################################
-    #                   Ellipsoidal domain settings                    #
+    #                   Intervertebral disc settings                   #
     ####################################################################
-
-    # Sets a list of p exponents to test with a set of ellipsoids. Then,
-    # sets the mapping matrix, and the centroid of the ellipsoidal do-
-    # main, too
-
-    p_exponent_list = [2, 4, 8, 16]
-
-    # Critical translations:
-    # x: [-, 3.1] mm
-    # y: [-3.7, 3.7] mm
-    # z: [-2.1, 1.5] mm
-
-    mapping_matrix = np.array([[0.0031, 0.0, 0.0], [0.0, 0.0034, 0.0], 
-    [0.0, 0.0, 0.0015]])
-
-    centroid_position = np.array([0.0, 0.0, -0.00035])
-
-    # Sets the number of points on the surface 
-
-    n_points_on_surface = 40
 
     # Sets the parent path and the mesh file name
 
     parent_path = get_parent_path_of_file()
-
-    ####################################################################
-    #                   Intervertebral disc settings                   #
-    ####################################################################
 
     # Sets the mesh file name
     
@@ -287,23 +267,112 @@ if __name__=="__main__":
 
     gamma_file_name = parent_path+"//gamma_0"
 
-    # Sets the axle vector to no rotation at all
+    ####################################################################
+    #                   Ellipsoidal domain settings                    #
+    ####################################################################
 
-    axle_vector = [0.0, 0.0, 0.0]
+    # Initializes a variable with the lambda function to compute the IVD
+    # simulation as a function of the translation or of the axle vectors
+    # only
 
-    # Sets a lambda function for the disc to be a function of the trans-
-    # lation vector only
+    IVD_lambda_function = None
 
-    IVD_lambda_function = lambda translation: simulation_disc(
-    linear_solver, c_HGO, kappa, bulk_modulus, c2_mooney, c1_mooney, 
-    IVD_mesh_file_name, k1_file_name, k2_file_name, gamma_file_name, 
-    axial_direction_file_name, circumferential_direction_file_name, 
-    translation, axle_vector, displacement_file_name, pressure_file_name, 
-    volume_ratio_file_name, strain_energy_file_name, 
-    forces_and_moments_file_name)
+    # Initializes a variable for the mapping matrix and another for the
+    # centroid of the ellipsoidal domain
+
+    mapping_matrix = None
+    
+    centroid_position = None
+
+    # Sets the number of points on the surface of the ellipsoidal domain
+
+    n_points_on_surface = 40
+
+    # Sets a flag that tells if the simulations will be controlled by
+    # translation or by rotation
+
+    flag_load_translation = False 
+
+    file_name_additive = None
+
+    # Sets a list of p exponents to test with a set of ellipsoids. Then,
+    # sets the mapping matrix, and the centroid of the ellipsoidal do-
+    # main, too
+
+    p_exponent_list = [2]
+
+    # If this set of simulation is to be controlled by translation only
+
+    if flag_load_translation:
+
+        # Critical translations:
+        # x: [-, 3.1] mm
+        # y: [-3.7, 3.7] mm
+        # z: [-2.1, 1.5] mm
+
+        mapping_matrix = np.array([[0.0031, 0.0, 0.0], [0.0, 0.0034, 0.0], 
+        [0.0, 0.0, 0.0016]])
+
+        centroid_position = [np.array([0.0, 0.0, -0.0004]), 
+        np.array([0.0, 0.0, -0.0003])]
+
+        # Sets the axle vector to no rotation at all
+
+        axle_vector = [0.0, 0.0, 0.0]
+
+        # Updates the file name additive 
+
+        file_name_additive = "_translation_"
+
+        # Sets a lambda function for the disc to be a function of the 
+        # translation vector only
+
+        IVD_lambda_function = lambda translation: simulation_disc(
+        linear_solver, c_HGO, kappa, bulk_modulus, c2_mooney, c1_mooney, 
+        IVD_mesh_file_name, k1_file_name, k2_file_name, gamma_file_name, 
+        axial_direction_file_name, circumferential_direction_file_name, 
+        translation, axle_vector, displacement_file_name, 
+        pressure_file_name, volume_ratio_file_name, 
+        strain_energy_file_name, forces_and_moments_file_name)
+
+    # Otherwise, if it is a rotation-controlled simulation
+
+    else:
+
+        # Critical rotations:
+        # x: [-15, 15] degrees
+        # y: [-10, 10] degrees
+        # z: [-10, 10] degrees
+
+        mapping_matrix = np.array([[15.0, 0.0, 0.0], [0.0, 10.0, 0.0], 
+        [0.0, 0.0, 10.0]])
+
+        centroid_position = [np.array([0.0, 0.0, 0.0])]
+
+        # Sets the translation vector to zero
+
+        translation = [0.0, 0.0, 0.0]
+
+        # Updates the file name additive 
+
+        file_name_additive = "_rotation_"
+
+        # Sets a lambda function for the disc to be a function of the 
+        # axle vector only
+
+        IVD_lambda_function = lambda axle_vector: simulation_disc(
+        linear_solver, c_HGO, kappa, bulk_modulus, c2_mooney, c1_mooney, 
+        IVD_mesh_file_name, k1_file_name, k2_file_name, gamma_file_name, 
+        axial_direction_file_name, circumferential_direction_file_name, 
+        translation, axle_vector, displacement_file_name, 
+        pressure_file_name, volume_ratio_file_name, 
+        strain_energy_file_name, forces_and_moments_file_name)
 
     # Calls the function to get the ellipsoidal 3D domains
 
-    get_strain_energy_onto_multiple_ellipsoids(p_exponent_list, 
-    mapping_matrix, centroid_position, n_points_on_surface, parent_path, 
-    IVD_lambda_function, strain_energy_file_name, verbose=False)
+    for centroid_index, individual_centroid in enumerate(centroid_position):
+
+        get_strain_energy_onto_multiple_ellipsoids(p_exponent_list, 
+        mapping_matrix, individual_centroid, n_points_on_surface, parent_path, 
+        IVD_lambda_function, strain_energy_file_name, verbose=False,
+        file_name_additive=file_name_additive+str(centroid_index+1))

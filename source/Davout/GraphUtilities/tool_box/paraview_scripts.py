@@ -65,6 +65,17 @@ sys.modules["collage_classes"] = collage_classes
 
 specifications.loader.exec_module(collage_classes)
 
+# Imports paraview filters
+
+specifications = util.spec_from_file_location("paraview_filters", 
+broken_path[1]/"tool_box"/"paraview_filters.py")
+
+paraview_filters = util.module_from_spec(specifications)
+
+sys.modules["paraview_filters"] = paraview_filters
+
+specifications.loader.exec_module(paraview_filters)
+
 ########################################################################
 #                              Fonts class                             #
 ########################################################################
@@ -101,12 +112,29 @@ class FontsClass:
 
         return self.font_dictionary[font_name]
 
+# Defines a class to store data read of each XDMF file
+
+class XDMFData:
+
+    def __init__(self, data, info, available_fields, array_info,
+    individual_input_file_name):
+
+        self.data = data 
+
+        self.info = info
+
+        self.available_fields = available_fields
+
+        self.array_info = array_info
+
+        self.individual_input_file_name = individual_input_file_name
+
 ########################################################################
 #                           Frozen snapshots                           #
 ########################################################################
 
 # Defines a function to control paraview to take a single or a set of
-# frozen snapshots
+# frozen snapshots 
 
 def LOCAL_frozenSnapshots(input_fileName, field_name, input_path=None,
 output_path=None, camera_position=None, color_map="Cool to Warm", 
@@ -124,7 +152,7 @@ set_camera_interactively=None, background_color=None,
 legend_bar_font_color=None, color_bar_min_value=None, 
 color_bar_max_value=None, read_camera_settings_dictionary=None,
 clip_marker_size=None, clip_marker_color=None, legend_bar_visibility=
-None, list_of_markers=None):
+None, list_of_markers=None, extract_surface=None):
     
     # Instantiates the class of fonts
 
@@ -138,12 +166,31 @@ None, list_of_markers=None):
 
     ResetSession()
 
+    # Checks if the first character of the input file name is a bracket,
+    # which indicates that it is in fact a list
+
+    if input_fileName[0]=="[":
+
+        # Converts to a list of strings
+
+        input_fileName = string_tools.string_toList(input_fileName)
+
+    # Otherwise, just puts the given string into a list
+    
+    else:
+
+        # Puts it into a list to make it automatically consistent with
+        # multiple inputs
+
+        input_fileName = [input_fileName]
+
     # Verifies the input and output paths
 
     if input_path:
 
-        input_fileName = path_tools.verify_path(input_path, 
-        input_fileName)
+        input_fileName = [path_tools.verify_path(input_path, 
+        individual_input_fileName) for individual_input_fileName in (
+        input_fileName)] 
 
     if output_path:
 
@@ -162,72 +209,91 @@ None, list_of_markers=None):
 
     # Makes sure the file ends with xdmf
 
-    input_fileName = path_tools.take_outFileNameTermination(
-    input_fileName)+".xdmf"
+    input_fileName = [path_tools.take_outFileNameTermination(
+    individual_input_fileName)+".xdmf" for individual_input_fileName in (
+    input_fileName)]
+
+    # Initializes a list of data objects
+
+    list_of_xdmf_classes = []
 
     # Verify the file existence
 
-    path_tools.verify_file_existence(input_fileName)
+    for individual_input_fileName in input_fileName:
+
+        path_tools.verify_file_existence(individual_input_fileName)
     
-    # Loads the simulation output data
+        # Loads the simulation output data
 
-    data = XDMFReader(FileNames=[input_fileName])
+        data = XDMFReader(FileNames=[individual_input_fileName])
 
-    #data.UpdatePipeline()
+        # Gets the components of the data
 
-    # Gets the components of the data
+        data.UpdatePipeline()
 
-    data.UpdatePipeline()
+        info = data.GetPointDataInformation()
 
-    info = data.GetPointDataInformation()
+        # Gets the available fields
 
-    # Gets the available fields
-
-    available_fields = [info.GetArray(i).GetName() for i in range(
-    info.GetNumberOfArrays())]
-
-    # Checks if the field name is one of the available fields
-
-    if not (field_name in available_fields):
+        available_fields = [info.GetArray(i).GetName() for i in range(
+        info.GetNumberOfArrays())]
 
         available_fields_names = ""
-
+        
         for name in available_fields:
 
             available_fields_names += "\n'"+str(name)+"'"
 
-        raise NameError("The given 'field_name' is '"+str(field_name)+
-        "', but it is not an available field name in '"+str(
-        input_fileName)+"'.\nCheck the available field names:"+
-        available_fields_names)
+        # Checks if the field name is one of the available fields
+
+        if not (field_name in available_fields):
+
+            raise NameError("The given 'field_name' is '"+str(field_name
+            )+"', but it is not an available field name in '"+str(
+            individual_input_fileName)+"'.\nCheck the available field "+
+            "names:"+available_fields_names)
+
+        else:
+
+            print("\nThe available fields for the input file at\n'"+str(
+            individual_input_fileName)+"'\n are:"+available_fields_names)
     
-    # Selects the data for this field only
+        # Selects the data for this field only
 
-    data.PointArrayStatus = [field_name]
+        data.PointArrayStatus = [field_name]
 
-    data.UpdatePipeline()
+        data.UpdatePipeline()
 
-    # Gets an array of info for this field
+        # Gets an array of info for this field
 
-    array_info = info.GetArray(field_name)
+        array_info = info.GetArray(field_name)
 
-    number_of_components = 1
+        number_of_components = 1
 
-    if hasattr(array_info, "GetNumberOfComponents"):
+        if hasattr(array_info, "GetNumberOfComponents"):
 
-        number_of_components = array_info.GetNumberOfComponents()
+            number_of_components = array_info.GetNumberOfComponents()
 
-        print(str(number_of_components)+" components of the field were"+
-        " recovered\n", flush=True)
+            print(str(number_of_components)+" components of the field "+
+            "were recovered\n", flush=True)
 
-    else:
+        else:
 
-        print("It was not possible to get components. The field must b"+
-        "e a scalar\n", flush=True)
+            print("It was not possible to get components. The field mu"+
+            "st be a scalar\n", flush=True)
 
-        # Makes the component to plot automatically magnitude
+            # Makes the component to plot automatically magnitude
 
-        component_to_plot = "Magnitude"
+            component_to_plot = "Magnitude"
+
+        # Instantiates the class of objects recovered from the XDMF file
+
+        xdmf_class = XDMFData(data, info, available_fields, array_info,
+        individual_input_fileName)
+
+        # Updates the list of data objects
+
+        list_of_xdmf_classes.append(xdmf_class)
 
     # Selects the time step
 
@@ -331,252 +397,26 @@ None, list_of_markers=None):
         representation_type = "Surface"
 
     ####################################################################
-    #                       Substitutive filters                       #
+    #                 Application of ParaView filters                  #
     ####################################################################
 
-    # Creates a variable to store the data, especially if it was warped
-
-    active_data = data
-
-    # Otherwise displays the raw data only
-
-    if display_reference_configuration=="True":
-
-        # Displays the rendered data
-
-        display = Show(active_data, renderView)
-
-        # Adds this display object to the dictionary of displays
-
-        display_dictionary["reference"] = {"object": display, "number "+
-        "of components": number_of_components, "representation":
-        representation_type, "get scalar bar from": True}
-
-    # Verifies if a warped by vector object must be created
-
-    if warp_by_vector=="True":
-
-        # Verifies if the data has at least 3 components
-
-        if number_of_components<2:
-
-            raise TypeError("The data provided to snapshot '"+str(
-            field_name)+"' field in '"+str(input_fileName)+"' has "+str(
-            number_of_components)+" components. Thus, it is not possib"+
-            "le to warp it by vector. The user asked to plot component"+
-            " '"+str(component_to_plot)+"' over the deformed configura"+
-            "tion")
-
-        # Creates the warped object
-
-        warp_object = WarpByVector(Input=data)
-
-        warp_object.Vectors = ['POINTS', field_name]
-
-        # Verifies if the scale of the warped mesh was given
-
-        if warp_scale:
-
-            # Tries to convert the warp scale to a float
-
-            try:
-
-                warp_scale = float(warp_scale)
-
-            except:
-
-                raise ValueError("Could not convert 'warp_scale' to fl"+
-                "oat in 'frozen_snapshots'. The current value is: "+str(
-                warp_scale))
-            
-        # Otherwise, uses 1 as default
-
-        else:
-
-            warp_scale = 1.0
-
-        # Scales it
-
-        warp_object.ScaleFactor = warp_scale
-
-        # Hides the previously plotted data
-
-        Hide(active_data, renderView)
-
-        # Saves the warped data as the active data
-
-        active_data = warp_object
-
-        # Displays the warped object
-
-        display = Show(warp_object, renderView)
-
-        # Adds this display object to the dictionary of displays
-
-        display_dictionary["warp"] = {"object": display, "number of co"+
-        "mponents": number_of_components, "representation":
-        representation_type, "get scalar bar from": True}
-
-    # Verifies if a clip object must be created
-
-    if clip=="True":
-
-        # Creates the clip object as a clip using a plane
-
-        clip_object = Clip(Input=active_data)
-
-        clip_object.ClipType = 'Plane'
-
-        # Verifies if the origin point of the clip plane was given
-
-        if clip_plane_origin:
-
-            # Verifies if it is a list
-
-            if (clip_plane_origin[0]!="[" or clip_plane_origin[-1]!="]"):
-
-                raise TypeError("'clip_plane_origin' in 'frozen_snapsh"+
-                "ots' must be a list of 3 components with the (x,y,z) "+
-                "coordinates of the origin of the clip plane. Currentl"+
-                "y, it is: "+str(clip_plane_origin)+"; whose type is: "+
-                str(type(clip_plane_origin)))
-            
-            # Converts the argument to a list and sets the parameter
-
-            clip_plane_origin = string_tools.string_toList(
-            clip_plane_origin)
-            
-        # Otherwise, throws an error
-
-        else:
-
-            raise ValueError("'clip_plane_origin' in 'frozen_snapshots"+
-            "' must be a list of 3 components with the (x,y,z) coordin"+
-            "ates of the origin of the clip plane. Currently, it was n"+
-            "ot provided")
-
-        # Verifies if the normal vector of the clip plane was given
-
-        if clip_plane_normal_vector:
-
-            # Verifies if it is a list
-
-            if (clip_plane_normal_vector[0]!="[" or (
-            clip_plane_normal_vector[-1]!="]")):
-
-                raise TypeError("'clip_plane_normal_vector' in 'frozen"+
-                "_snapshots' must be a list of 3 components with the ("+
-                "x,y,z) values of the normal plane of the clip plane. "+
-                "Currently, it is: "+str(clip_plane_normal_vector)+"; "+
-                "whose type is: "+str(type(clip_plane_normal_vector)))
-            
-            # Converts the argument to a list and sets the parameter
-
-            clip_plane_normal_vector = string_tools.string_toList(
-            clip_plane_normal_vector)
-            
-        # Otherwise, throws an error
-
-        else:
-
-            raise ValueError("'clip_plane_normal_vector' in 'frozen_sn"+
-            "apshots' must be a list of 3 components with the (x,y,z) "+
-            "values of the normal vector of the clip plane. Currently,"+
-            " it was not provided")
-
-        # Sets the plane parameters
-
-        clip_object.ClipType.Origin = clip_plane_origin
-
-        clip_object.ClipType.Normal = clip_plane_normal_vector
-
-        # Hides the previously plotted data
-
-        Hide(active_data, renderView)
-
-        # Saves the clipped data as the active data
-
-        active_data = clip_object
-
-        # Displays the clipped object
-
-        display = Show(clip_object, renderView)
-
-        # Adds this display object to the dictionary of displays
-
-        display_dictionary["clip"] = {"object": display, "number of co"+
-        "mponents": number_of_components, "representation":
-        representation_type, "get scalar bar from": True}
-
-        # Creates a point to highlight the plane origin point
-
-        spheric_marker(clip_plane_origin, active_data, renderView, 
-        colors_class, clip_marker_color, clip_marker_size)
-
-    ####################################################################
-    #                         Additive filters                         #
-    ####################################################################
-
-    # Displays glyph to show vector field
-
-    if glyph=="True":
-
-        # Verifies if the data has at least 3 components
-
-        if number_of_components<2:
-
-            raise TypeError("The data provided to snapshot '"+str(
-            field_name)+"' field in '"+str(input_fileName)+"' has "+str(
-            number_of_components)+" components. Thus, it is not possib"+
-            "le to create a glyph")
-
-        # Creates the glyph object
-
-        glyph_object = Glyph(Input=active_data)
-
-        glyph_object.OrientationArray = ['POINTS', field_name]
-
-        glyph_object.ScaleArray = ['POINTS', field_name]
-
-        # Verifies if the scale of the glyph was given
-
-        if glyph_scale:
-
-            # Tries to convert the glyph scale to a float
-
-            try:
-
-                glyph_scale = float(glyph_scale)
-
-            except:
-
-                raise ValueError("Could not convert 'glyph_scale' to f"+
-                "loat in 'frozen_snapshots'. The current value is: "+
-                str(glyph_scale))
-            
-        # Otherwise, uses 1 as default
-
-        else:
-
-            glyph_scale = 1.0
-
-        # Applies the scale factor
-
-        glyph_object.ScaleFactor = glyph_scale
-
-        # Defines the type of the glyph
-
-        glyph_object.GlyphType = 'Arrow'
-
-        # Displays the rendered data
-
-        display = Show(glyph_object, renderView)
-
-        # Adds this display object to the dictionary of displays
-
-        display_dictionary["glyph"] = {"object": display, "number of c"+
-        "omponents": 1, "representation": "Surface", "get scalar bar f"+
-        "rom": False}
+    # Initializes a list with active data objects
+
+    list_of_active_data_objects = []
+
+    # Iterates over the list of XDMF classes to apply the paraview fil-
+    # ters individually
+
+    for xdmf_class in list_of_xdmf_classes:
+
+        display_dictionary, list_of_active_data_objects = paraview_filters.apply_paraview_filters(
+        xdmf_class, renderView, display_dictionary, 
+        list_of_active_data_objects, field_name, component_to_plot, 
+        number_of_components, representation_type, colors_class, 
+        display_reference_configuration, warp_by_vector, warp_scale, 
+        glyph, glyph_scale, clip, clip_plane_origin, 
+        clip_plane_normal_vector, clip_marker_color, clip_marker_size,
+        extract_surface)
 
     # Verifies if a list of point markers to plot has been given
 
@@ -601,8 +441,9 @@ None, list_of_markers=None):
 
         for marker_coordinates in list_of_markers:
 
-            spheric_marker(marker_coordinates, active_data, renderView, 
-            colors_class, clip_marker_color, clip_marker_size)
+            paraview_filters.spheric_marker(marker_coordinates, 
+            list_of_active_data_objects, renderView, colors_class, 
+            clip_marker_color, clip_marker_size)
 
     # Verifies if the color of the coordinate system triad is given
 
@@ -780,9 +621,9 @@ None, list_of_markers=None):
         if len(list(display_dictionary.keys()))==0:
 
             raise ValueError("There is no substitutive filter (display"+
-            "_reference_configuration, warp_by_vector, or clip) nor ad"+
-            "ditive filters (such as glyph). The user must select some"+
-            "thing")
+            "_reference_configuration, warp_by_vector, extract_surface"+
+            ", or clip) nor additive filters (such as glyph). The user"+
+            " must select something")
         
         # Gets the first display
 
@@ -1434,129 +1275,6 @@ None, list_of_markers=None):
 
         print("\nThe attributes of the RenderView are:\n"+str(
         renderView.ListProperties()))
-
-########################################################################
-#
-########################################################################
-
-# Defines a function to plot a sphere as a marker
-
-def spheric_marker(marker_position, active_data, renderView, 
-colors_class, clip_marker_color, clip_marker_size):
-
-    # Verifies if marker position is a dictionary
-
-    if isinstance(marker_position, dict):
-
-        # Verifies if it has the color key
-
-        if "color" in marker_position:
-
-            # Overrides the color option
-
-            clip_marker_color = marker_position["color"]
-
-        # Verifies if it has the size key
-
-        if "size" in marker_position:
-
-            # Overrides the size option
-
-            clip_marker_size = marker_position["size"]
-
-        # Verifies if it has the position option
-
-        if not ("position" in marker_position):
-
-            raise KeyError("The key 'position' is not available in the"+
-            " dictionary in the list of markers. This key must contain"+
-            " a list of the coordinates of the marker. See the current"+
-            " dictionary: "+str(marker_position))
-        
-        # Overrides the dictionary with the position
-
-        marker_position = marker_position["position"]
-
-    # Creates a point to highlight the plane origin point
-
-    point = PointSource()
-
-    point.Center = marker_position
-
-    point.NumberOfPoints = 1
-
-    # Applies a glyph filter to highlight it as a large sphere
-
-    glyph = Glyph(Input=point)
-
-    glyph.GlyphType = 'Sphere'
-
-    # Verifies if the marker size has been given by the user
-
-    if clip_marker_size:
-
-        # Tries to convert the to a float
-
-        try:
-
-            clip_marker_size = float(clip_marker_size)
-
-        except:
-
-            raise ValueError("Could not convert 'clip_marker_size'"+
-            " to float in 'frozen_snapshots'. The current value is"+
-            ": "+str(clip_marker_size))
-        
-    else:
-
-        # Gets the size from the bounding box
-
-        bounds = active_data.GetDataInformation().GetBounds()
-        
-        length = max(bounds[1]-bounds[0], bounds[3]-bounds[2], 
-        bounds[5]-bounds[4])
-
-        clip_marker_size = 0.1*length
-
-    # Adjust the sphere size
-
-    glyph.GlyphType.Radius = clip_marker_size
-
-    # Displays it
-
-    display = Show(glyph, renderView)
-
-    # Verifies if the color of the marker has been given
-
-    if clip_marker_color:
-
-        # Gets the RGB value from the colors class
-
-        clip_marker_color = colors_class(clip_marker_color)
-
-    else:
-
-        # Makes it red per default
-
-        clip_marker_color = [1.0, 0.0, 0.0]
-
-    print("The color of the marker is: "+str(clip_marker_color))
-
-    # Sets the color to the sphere
-
-    display.DiffuseColor = clip_marker_color
-
-    display.AmbientColor = clip_marker_color
-
-    # Diminishes the shade influence
-
-    display.Ambient = 0.5
-
-    display.Diffuse = 0.5
-
-    display.Specular = 0.1
-    
-    display.SpecularPower = 10
 
 ########################################################################
 #                         Functions dispatching                        #
