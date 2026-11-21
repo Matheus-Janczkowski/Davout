@@ -20,6 +20,8 @@ from .....Davout.MultiMech.tool_box.functional_tools import construct_monolithic
 
 from .....Davout.MultiMech.tool_box.read_write_tools import write_field_to_xdmf
 
+from .....Davout.GraphUtilities.paraview_tools import frozen_snapshots
+
 from .disc_HGO import simulation_disc
 
 # Defines a function to get the strain energy evaluated onto multiple 
@@ -176,6 +178,10 @@ strain_energy_file_name, verbose=True, file_name_additive=""):
 
     # Shows the unsuccessful translations
 
+    np.save(get_parent_path_of_file()+"//unsuccessful_translations_p_"+
+    str(p_exponent)+file_name_additive+".npy", np.array(
+    unsuccessful_translations))
+
     unsuccessful_translations_string = "\n"
 
     for unsuccessful_translation in unsuccessful_translations:
@@ -289,9 +295,10 @@ if __name__=="__main__":
     n_points_on_surface = 40
 
     # Sets a flag that tells if the simulations will be controlled by
-    # translation or by rotation
+    # translation or by rotation, or if it is time to generate the snap-
+    # shots
 
-    flag_load_translation = False 
+    flag_activity = "snapshot" 
 
     file_name_additive = None
 
@@ -303,7 +310,7 @@ if __name__=="__main__":
 
     # If this set of simulation is to be controlled by translation only
 
-    if flag_load_translation:
+    if flag_activity=="translation":
 
         # Critical translations:
         # x: [-, 3.1] mm
@@ -337,23 +344,50 @@ if __name__=="__main__":
 
     # Otherwise, if it is a rotation-controlled simulation
 
-    else:
+    elif flag_activity=="rotation":
 
         # Critical rotations:
         # x: [-15, 15] degrees
         # y: [-10, 10] degrees
         # z: [-10, 10] degrees
 
-        mapping_matrix = np.array([[15.0, 0.0, 0.0], [0.0, 10.0, 0.0], 
-        [0.0, 0.0, 10.0]])
+        # Sets the eigenvectors of the mapping matrix and their eigen-
+        # values
 
-        centroid_position = [np.array([0.0, 0.0, 0.0])]
+        eigenvector_1 = np.array([1.0, 0.0, 0.0])
+
+        eigenvalue_1 = 9.5
+
+        eigenvector_2 = np.array([0.0, 1.0, 1.0])
+
+        eigenvalue_2 = 11.0
+
+        eigenvector_3 = np.array([0.0, -1.0, 1.0])
+
+        eigenvalue_3 = 10.0
+
+        # Normalizes the eigenvectors
+
+        eigenvector_1 = (1.0/np.linalg.norm(eigenvector_1))*eigenvector_1
+
+        eigenvector_2 = (1.0/np.linalg.norm(eigenvector_2))*eigenvector_2
+
+        eigenvector_3 = (1.0/np.linalg.norm(eigenvector_3))*eigenvector_3
+
+        # Assembles the mapping matrix using the outer product
+
+        mapping_matrix = (eigenvalue_1*np.einsum('i,j->ij', 
+        eigenvector_1, eigenvector_1))+(eigenvalue_2*np.einsum('i,j->ij', 
+        eigenvector_2, eigenvector_2))+(eigenvalue_3*np.einsum('i,j->ij', 
+        eigenvector_3, eigenvector_3))
+
+        centroid_position = [np.array([4.7, 0.0, 0.0])]
 
         # Sets the translation vector to zero
 
         translation = [0.0, 0.0, 0.0]
 
-        # Updates the file name additive 
+        # Updates the file name additive ,
 
         file_name_additive = "_rotation_"
 
@@ -368,11 +402,39 @@ if __name__=="__main__":
         pressure_file_name, volume_ratio_file_name, 
         strain_energy_file_name, forces_and_moments_file_name)
 
+    elif flag_activity=="snapshot":
+
+        results_path = parent_path+"//lagrange_results"
+
+        frozen_snapshots([results_path+"//strain_energy_on_boundary_p_"+
+        "2_translation_1_visualization_copy", results_path+"//strain_e"+
+        "nergy_on_boundary_p_4_translation_1_visualization_copy"],
+        "strain energy", representation_type="Surface With Edges", 
+        axes_color="black", zoom_factor=1.0, resolution_ratio=10,
+        extract_surface=True, clip=True, clip_plane_origin=[0.0, 0.0, 
+        -0.0004], clip_plane_normal_vector=[1.0, 0.0, 0.0], 
+        background_color="WhiteBackground", 
+        display_reference_configuration=False, transparent_background=
+        True, legend_bar_font_color="black", set_camera_interactively=
+        False, output_imageFileName="strain_energy_translation.png", 
+        output_path=parent_path, read_camera_settings_dictionary=True, 
+        clip_marker_size=0.0001, clip_marker_color="black", edges_color=
+        "black", edge_thickness=10.0)
+
+    else:
+
+        raise ValueError("'flag_activity' can be 'translation', 'rotat"+
+        "ion', or 'snapshot'. Currently, it is '"+str(flag_activity))
+
     # Calls the function to get the ellipsoidal 3D domains
 
-    for centroid_index, individual_centroid in enumerate(centroid_position):
+    if flag_activity!="snapshot":
 
-        get_strain_energy_onto_multiple_ellipsoids(p_exponent_list, 
-        mapping_matrix, individual_centroid, n_points_on_surface, parent_path, 
-        IVD_lambda_function, strain_energy_file_name, verbose=False,
-        file_name_additive=file_name_additive+str(centroid_index+1))
+        for centroid_index, individual_centroid in enumerate(
+        centroid_position):
+
+            get_strain_energy_onto_multiple_ellipsoids(p_exponent_list, 
+            mapping_matrix, individual_centroid, n_points_on_surface, 
+            parent_path, IVD_lambda_function, strain_energy_file_name, 
+            verbose=False, file_name_additive=file_name_additive+str(
+            centroid_index+1))

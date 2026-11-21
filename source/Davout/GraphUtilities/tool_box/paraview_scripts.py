@@ -152,7 +152,8 @@ set_camera_interactively=None, background_color=None,
 legend_bar_font_color=None, color_bar_min_value=None, 
 color_bar_max_value=None, read_camera_settings_dictionary=None,
 clip_marker_size=None, clip_marker_color=None, legend_bar_visibility=
-None, list_of_markers=None, extract_surface=None):
+None, list_of_markers=None, extract_surface=None, edges_color=None,
+edge_thickness=None):
     
     # Instantiates the class of fonts
 
@@ -274,13 +275,13 @@ None, list_of_markers=None, extract_surface=None):
 
             number_of_components = array_info.GetNumberOfComponents()
 
-            print(str(number_of_components)+" components of the field "+
-            "were recovered\n", flush=True)
+            print("\n"+str(number_of_components)+" components of the f"+
+            "ield were recovered\n", flush=True)
 
         else:
 
-            print("It was not possible to get components. The field mu"+
-            "st be a scalar\n", flush=True)
+            print("\nIt was not possible to get components. The field "+
+            "must be a scalar\n", flush=True)
 
             # Makes the component to plot automatically magnitude
 
@@ -396,6 +397,40 @@ None, list_of_markers=None, extract_surface=None):
 
         representation_type = "Surface"
 
+    # Checks if the color of the edges is given 
+
+    if edges_color is not None:
+
+        # Verifies if it is a list
+        
+        if (edges_color[0]=="[" and edges_color[-1]=="]"):
+
+            # Transforms into a list
+
+            edges_color = string_tools.string_toList(edges_color)
+
+        else:
+
+            # Gets the values from the class of colors
+
+            edges_color = colors_class(edges_color)
+
+    # Verifies if the edge thickness is given
+
+    if edge_thickness is not None:
+
+        # Verifies if it is a float
+        
+        try:
+
+            edge_thickness = float(edge_thickness)
+
+        except:
+
+            raise ValueError("Could not convert 'edge_thickness' to a "+
+            "float in 'frozen_snapshots'. The current value is: "+str(
+            edge_thickness))
+
     ####################################################################
     #                 Application of ParaView filters                  #
     ####################################################################
@@ -501,10 +536,25 @@ None, list_of_markers=None, extract_surface=None):
         
     # Sets the representation
 
-    for display_object_dict in display_dictionary.values():
+    for key, display_object_dict in display_dictionary.items():
+
+        print("\nApplies representation '"+str(display_object_dict["re"+
+        "presentation"])+"' to object '"+str(key)+"'")
 
         display_object_dict["object"].Representation = (
         display_object_dict["representation"])
+
+        # Applies color to the edges if needed
+
+        if edges_color is not None:
+
+            display_object_dict["object"].EdgeColor = edges_color
+
+        # If the thickness of the edge is also needed
+
+        if edge_thickness is not None:
+
+            display_object_dict["object"].LineWidth = edge_thickness
 
     # Verifies the component to plot
 
@@ -862,7 +912,7 @@ None, list_of_markers=None, extract_surface=None):
             "raview_tools creates it automatically by setting\nset_cam"+
             "era_interactively=True")
         
-        print("Reads the dictionary of camera settings at '"+str(
+        print("\nReads the dictionary of camera settings at '"+str(
         output_path)+"//paraview_camera_settings_dictionary.txt'\n")
         
         # Gets the dictionary from the txt file

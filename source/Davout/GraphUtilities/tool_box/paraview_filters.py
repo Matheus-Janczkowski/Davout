@@ -71,11 +71,18 @@ clip_marker_color, clip_marker_size, extract_surface):
 
         display = Show(active_data, renderView)
 
+        # Gets the number of occurences of the key for this object in
+        # the dictionary of objects to be displayed
+
+        n_occurrences = string_tools.get_strings_in_list_given_prefix(
+        display_dictionary, "reference", 
+        just_count_the_number_of_occurrences=True)
+
         # Adds this display object to the dictionary of displays
 
-        display_dictionary["reference"] = {"object": display, "number "+
-        "of components": number_of_components, "representation":
-        representation_type, "get scalar bar from": True}
+        display_dictionary["reference_"+str(n_occurrences)] = {"object": 
+        display, "number of components": number_of_components, "repres"+
+        "entation": representation_type, "get scalar bar from": True}
 
     # Verifies if a warped by vector object must be created
 
@@ -136,11 +143,18 @@ clip_marker_color, clip_marker_size, extract_surface):
 
         display = Show(warp_object, renderView)
 
+        # Gets the number of occurences of the key for this object in
+        # the dictionary of objects to be displayed
+
+        n_occurrences = string_tools.get_strings_in_list_given_prefix(
+        display_dictionary, "warp", just_count_the_number_of_occurrences=
+        True)
+
         # Adds this display object to the dictionary of displays
 
-        display_dictionary["warp"] = {"object": display, "number of co"+
-        "mponents": number_of_components, "representation":
-        representation_type, "get scalar bar from": True}
+        display_dictionary["warp_"+str(n_occurrences)] = {"object": 
+        display, "number of components": number_of_components, "repres"+
+        "entation": representation_type, "get scalar bar from": True}
 
     # Verifies if a clip object must be created
 
@@ -227,11 +241,18 @@ clip_marker_color, clip_marker_size, extract_surface):
 
         display = Show(clip_object, renderView)
 
+        # Gets the number of occurences of the key for this object in
+        # the dictionary of objects to be displayed
+
+        n_occurrences = string_tools.get_strings_in_list_given_prefix(
+        display_dictionary, "clip", just_count_the_number_of_occurrences=
+        True)
+
         # Adds this display object to the dictionary of displays
 
-        display_dictionary["clip"] = {"object": display, "number of co"+
-        "mponents": number_of_components, "representation":
-        representation_type, "get scalar bar from": True}
+        display_dictionary["clip_"+str(n_occurrences)] = {"object": 
+        display, "number of components": number_of_components, "repres"+
+        "entation": representation_type, "get scalar bar from": True}
 
         # Creates a point to highlight the plane origin point
 
@@ -297,11 +318,18 @@ clip_marker_color, clip_marker_size, extract_surface):
 
         display = Show(glyph_object, renderView)
 
+        # Gets the number of occurences of the key for this object in
+        # the dictionary of objects to be displayed
+
+        n_occurrences = string_tools.get_strings_in_list_given_prefix(
+        display_dictionary, "glyph", 
+        just_count_the_number_of_occurrences=True)
+
         # Adds this display object to the dictionary of displays
 
-        display_dictionary["glyph"] = {"object": display, "number of c"+
-        "omponents": 1, "representation": "Surface", "get scalar bar f"+
-        "rom": False}
+        display_dictionary["glyph_"+str(n_occurrences)] = {"object": 
+        display, "number of components": 1, "representation": "Surface", 
+        "get scalar bar from": False}
 
     # Appends the current active data to the list of active data objects
 

@@ -644,6 +644,79 @@ def float_to_scientific_notation(number, decimal_places=5, ten_notation=
     return front_number+str(ten_notation)+power_of_ten
 
 ########################################################################
+#                           Sorting strings                            #
+########################################################################
+
+# Defines a function to get all strings that appear in a list with the
+# sane prefix
+
+def get_strings_in_list_given_prefix(strings_list, prefix, 
+just_count_the_number_of_occurrences=False):
+
+    # Makes sure the prefix is a string
+
+    string_prefix = str(prefix)
+
+    # Initializes a copy of the list of strings
+
+    list_of_strings = None
+
+    # If strings list is a dictionary, gets the keys
+
+    if isinstance(strings_list, dict):
+
+        list_of_strings = list(strings_list.keys())
+
+    # Checks if strings list is not a list
+
+    elif not isinstance(strings_list, list):
+
+        raise TypeError("'strings_list' in 'get_strings_in_list_with_g"+
+        "iven_prefix' must be a list or a dictionary (whose keys will "+
+        "be listed). Currently, it is:\n"+str(strings_list))
+
+    # Otherwise, just recovers the strings list
+
+    else:
+
+        list_of_strings = strings_list
+
+    # Initializes a list of strings that met the required prefix
+
+    found_strings = []
+
+    # Iterates over the list of strings
+
+    for index, string in enumerate(list_of_strings):
+
+        # Checks if this is really a string
+
+        if not isinstance(string, str):
+
+            raise TypeError("The "+str(index+1)+"-th element of the 's"+
+            "trings_list' in 'get_strings_in_list_given_prefix' is not"+
+            " a string. Currently, it is:\n"+str(string))
+
+        # If this string has the required length of the prefix, and if
+        # the first few characters are equal to those of the prefix
+
+        if (len(string)>=len(prefix)) and string[0:len(prefix)]==prefix:
+
+            # Appends this string to the list of found strings
+
+            found_strings.append(string)
+
+    # If only the number of occurrences is to be counted
+
+    if just_count_the_number_of_occurrences:
+
+        return len(found_strings)
+
+    # Otherwise, returns the list of found strings
+
+    return found_strings
+
+########################################################################
 #                               Testing                                #
 ########################################################################
 
