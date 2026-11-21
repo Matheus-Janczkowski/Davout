@@ -151,9 +151,11 @@ clip=None, clip_plane_origin=None, clip_plane_normal_vector=None,
 set_camera_interactively=None, background_color=None, 
 legend_bar_font_color=None, color_bar_min_value=None, 
 color_bar_max_value=None, read_camera_settings_dictionary=None,
-clip_marker_size=None, clip_marker_color=None, legend_bar_visibility=
-None, list_of_markers=None, extract_surface=None, edges_color=None,
-edge_thickness=None):
+clip_marker_size=None, clip_marker_color=None, clip_type=None, 
+legend_bar_visibility=None, list_of_markers=None, extract_surface=None, 
+edges_color=None, edge_thickness=None, clip_box_origin=None, 
+clip_box_lengths_vector=None, clip_keep_outside_of_box=None, 
+clip_sphere_center=None, clip_sphere_radius=None):
     
     # Instantiates the class of fonts
 
@@ -373,33 +375,71 @@ edge_thickness=None):
 
     if representation_type:
 
+        # Verifies if it is a list (one representation for each input
+        # file)
+        
+        if (representation_type[0]=="[" and representation_type[-1]=="]"):
+
+            # Transforms into a list
+
+            representation_type = string_tools.string_toList(
+            representation_type)
+
+            # Checks if it has the same length as the list of input files
+
+            if len(representation_type)!=len(list_of_xdmf_classes):
+
+                raise IndexError("'representation_type' in 'frozen_sna"+
+                "pshots' has "+str(len(representation_type))+" element"+
+                "s. But there are "+str(len(list_of_xdmf_classes))+" i"+
+                "ndividual input files")
+
+        else:
+
+            # Assembles a list with the same value for each input file
+
+            representation_type = [representation_type for _ in range(
+            len(list_of_xdmf_classes))]
+
         # Sets a list of allowed representation options
 
         available_representations = ['Surface', 'Surface With Edges', 
         'Wireframe', 'Points', 'Volume', 'Outline', 'Feature Edges', 
         'Slice', 'Point Gaussian']
 
-        # Verifies if it is an available representation type
+        # Iterates over the individual representation types
 
-        if not (representation_type in available_representations):
+        for individual_representation_type in representation_type:
 
-            available_names = ""
+            # Verifies if it is an available representation type
 
-            for name in available_representations:
+            if not (individual_representation_type in (
+            available_representations)):
 
-                available_names += "\n"+name
+                available_names = ""
 
-            raise ValueError("The provided 'representation_type' is '"+
-            str(representation_type)+"'. But the available options are:"+
-            available_names)
+                for name in available_representations:
+
+                    available_names += "\n"+name
+
+                raise ValueError("The provided 'representation_type' i"+
+                "s '"+str(individual_representation_type)+"'. But the "+
+                "available options are:"+available_names)
         
     else:
 
-        representation_type = "Surface"
+        # Assembles a list with the same value for each input file
+        
+        representation_type = ["Surface" for _ in range(len(
+        list_of_xdmf_classes))]
 
     # Checks if the color of the edges is given 
 
     if edges_color is not None:
+
+        # Sets a flag to tell if just one color was given
+
+        single_edge_color = True
 
         # Verifies if it is a list
         
@@ -409,11 +449,48 @@ edge_thickness=None):
 
             edges_color = string_tools.string_toList(edges_color)
 
+            # Verifies if it is a single list or a list of lists, or if
+            # it is a list of string colors
+
+            if isinstance(edges_color[0], list):
+
+                # Updates the flag
+
+                single_edge_color = False
+
+            elif isinstance(edges_color[0], str):
+
+                # Updates the flag
+
+                single_edge_color = False
+
+                # Iterates over the different colors to convert them to
+                # lists of RGB values
+
+                for edge_color_index in range(len(edges_color)):
+
+                    edges_color[edge_color_index] = colors_class(
+                    edges_color[edge_color_index])
+
         else:
 
             # Gets the values from the class of colors
 
             edges_color = colors_class(edges_color)
+
+        # If just one color was provided, makes a list with the same co-
+        # lor for all input files
+
+        if single_edge_color:
+
+            edges_color = [edges_color for _ in range(len(
+            list_of_xdmf_classes))]
+
+    else:
+    
+        # Assembles a list with the same value for each input file
+        
+        edges_color = [None for _ in range(len(list_of_xdmf_classes))]
 
     # Verifies if the edge thickness is given
 
@@ -442,16 +519,18 @@ edge_thickness=None):
     # Iterates over the list of XDMF classes to apply the paraview fil-
     # ters individually
 
-    for xdmf_class in list_of_xdmf_classes:
+    for input_file_index, xdmf_class in enumerate(list_of_xdmf_classes):
 
         display_dictionary, list_of_active_data_objects = paraview_filters.apply_paraview_filters(
         xdmf_class, renderView, display_dictionary, 
         list_of_active_data_objects, field_name, component_to_plot, 
-        number_of_components, representation_type, colors_class, 
-        display_reference_configuration, warp_by_vector, warp_scale, 
-        glyph, glyph_scale, clip, clip_plane_origin, 
+        number_of_components, representation_type[input_file_index], 
+        colors_class, display_reference_configuration, warp_by_vector, 
+        warp_scale, glyph, glyph_scale, clip, clip_plane_origin, 
         clip_plane_normal_vector, clip_marker_color, clip_marker_size,
-        extract_surface)
+        clip_type, clip_box_origin, clip_box_lengths_vector, 
+        clip_keep_outside_of_box, clip_sphere_center, clip_sphere_radius, 
+        extract_surface, edges_color[input_file_index])
 
     # Verifies if a list of point markers to plot has been given
 
@@ -544,11 +623,12 @@ edge_thickness=None):
         display_object_dict["object"].Representation = (
         display_object_dict["representation"])
 
-        # Applies color to the edges if needed
+        # Applies color to the edges if needed 
 
-        if edges_color is not None:
+        if display_object_dict["edges_color"] is not None:
 
-            display_object_dict["object"].EdgeColor = edges_color
+            display_object_dict["object"].EdgeColor = (
+            display_object_dict["edges_color"])
 
         # If the thickness of the edge is also needed
 

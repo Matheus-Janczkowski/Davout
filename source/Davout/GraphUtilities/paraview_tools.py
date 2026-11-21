@@ -30,8 +30,10 @@ set_camera_interactively=None, background_color=None,
 legend_bar_font_color=None, color_bar_min_value=None, 
 color_bar_max_value=None, read_camera_settings_dictionary=None, 
 clip_marker_size=None, legend_bar_visibility=None, clip_marker_color=
-None, list_of_markers=None, extract_surface=None, edges_color=None,
-edge_thickness=None):
+None, clip_type=None, list_of_markers=None, extract_surface=None, 
+edges_color=None, edge_thickness=None,clip_box_origin=None, 
+clip_box_lengths_vector=None, clip_keep_outside_of_box=None, 
+clip_sphere_center=None, clip_sphere_radius=None):
     
     # Gets the path to the module where function LOCAL_frozenSnapshots is
 
@@ -70,7 +72,11 @@ edge_thickness=None):
     clip_marker_size, "legend_bar_visibility": legend_bar_visibility,
     "clip_marker_color": clip_marker_color, "list_of_markers":
     list_of_markers, "extract_surface": extract_surface, "edges_color":
-    edges_color, "edge_thickness": edge_thickness},
+    edges_color, "edge_thickness": edge_thickness, "clip_type": 
+    clip_type, "clip_box_origin": clip_box_origin, "clip_box_lengths_v"+
+    "ector": clip_box_lengths_vector, "clip_keep_outside_of_box":
+    clip_keep_outside_of_box, "clip_sphere_center": clip_sphere_center, 
+    "clip_sphere_radius": clip_sphere_radius},
     execution_rootPath=execution_rootPath, run_as_module=False,
     LIBGL_ALWAYS_SOFTWARE=LIBGL_ALWAYS_SOFTWARE, 
     extra_execution_arguments=extra_execution_arguments)

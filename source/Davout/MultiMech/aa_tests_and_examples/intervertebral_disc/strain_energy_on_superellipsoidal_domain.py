@@ -114,6 +114,17 @@ strain_energy_file_name, verbose=True, file_name_additive=""):
 
     average_simulation_time = 0.0
 
+    # Saves the points on the boundary
+
+    np.save(parent_path+"//boundary_points_p_"+str(p_exponent)+
+    file_name_additive+".npy", np.array([dofs_coordinates[boundary_dof,:
+    ] for boundary_dof in boundary_dofs]))
+
+    # Initializes a list to save only the strain energy values really on
+    # the boundary
+
+    boundary_only_energy_values = []
+
     # Iterates over the boundary DOFs
 
     for simulation_index, boundary_dof in enumerate(boundary_dofs):
@@ -159,11 +170,20 @@ strain_energy_file_name, verbose=True, file_name_additive=""):
 
         boundary_strain_energy[boundary_dof] = strain_energy_list[-1][1]
 
+        # Appends the strain energy to the list that captures values on 
+        # the boundary only
+
+        boundary_only_energy_values.append(strain_energy_list[-1][1])
+
         # Saves the strain energy values
 
         np.save(get_parent_path_of_file()+"//boundary_strain_energy_p_"+
         str(p_exponent)+file_name_additive+".npy", 
         boundary_strain_energy)
+
+        np.save(get_parent_path_of_file()+"//boundary_only_strain_ener"+
+        "gy_p_"+str(p_exponent)+file_name_additive+".npy", np.array(
+        boundary_only_energy_values))
 
         print("\n#####################################################"+
         "###################\n#         Information on assessment of t"+
@@ -381,6 +401,8 @@ if __name__=="__main__":
         eigenvector_2, eigenvector_2))+(eigenvalue_3*np.einsum('i,j->ij', 
         eigenvector_3, eigenvector_3))
 
+        # Sets the centroid of the ellipsoidal domain
+
         centroid_position = [np.array([4.7, 0.0, 0.0])]
 
         # Sets the translation vector to zero
@@ -411,15 +433,15 @@ if __name__=="__main__":
         "nergy_on_boundary_p_4_translation_1_visualization_copy"],
         "strain energy", representation_type="Surface With Edges", 
         axes_color="black", zoom_factor=1.0, resolution_ratio=10,
-        extract_surface=True, clip=True, clip_plane_origin=[0.0, 0.0, 
-        -0.0004], clip_plane_normal_vector=[1.0, 0.0, 0.0], 
-        background_color="WhiteBackground", 
+        extract_surface=True, clip=True, background_color="WhiteBackground", 
         display_reference_configuration=False, transparent_background=
         True, legend_bar_font_color="black", set_camera_interactively=
         False, output_imageFileName="strain_energy_translation.png", 
         output_path=parent_path, read_camera_settings_dictionary=True, 
         clip_marker_size=0.0001, clip_marker_color="black", edges_color=
-        "black", edge_thickness=10.0)
+        ["white", "black"], edge_thickness=10.0, clip_type="Box",
+        clip_box_origin=[0.0, 0.0, -10.0], clip_box_lengths_vector=
+        [10.0, -10.0, 15.0])
 
     else:
 
