@@ -10,7 +10,8 @@ import numpy as np
 # pse
 
 def get_random_point_on_elipsoid_surface(limits, return_as_list=True,
-p_norm_value=2, number_of_samples=1):
+p_norm_value=2, number_of_samples=1, mapping_matrix_rotation_matrix=None, 
+mapping_matrix_eigenvalues=None, centroid_vector=None):
 
     """
     Get a random point on the surface of a n-dimensional elipsoid to 
@@ -32,7 +33,10 @@ p_norm_value=2, number_of_samples=1):
     if number_of_samples==1:
 
         return get_single_point_on_ellipsoid(limits, return_as_list=
-        return_as_list, p_norm_value=p_norm_value)
+        return_as_list, p_norm_value=p_norm_value, 
+        mapping_matrix_rotation_matrix=mapping_matrix_rotation_matrix, 
+        mapping_matrix_eigenvalues=mapping_matrix_eigenvalues, 
+        centroid_vector=centroid_vector)
     
     # Otherwise, if multiple samples are to be generated, generates them
     # iteratively
@@ -50,7 +54,10 @@ p_norm_value=2, number_of_samples=1):
             # Creates the sample and appends to the list of samples
 
             samples_list.append(get_single_point_on_ellipsoid(limits, 
-            return_as_list=True, p_norm_value=p_norm_value))
+            return_as_list=True, p_norm_value=p_norm_value,
+            mapping_matrix_rotation_matrix=
+            mapping_matrix_rotation_matrix, mapping_matrix_eigenvalues=
+            mapping_matrix_eigenvalues, centroid_vector=centroid_vector))
 
         # If it not to return as a list
 
@@ -66,15 +73,30 @@ p_norm_value=2, number_of_samples=1):
 # nal ellipse
 
 def get_single_point_on_ellipsoid(limits, return_as_list=True,
-p_norm_value=2):
+p_norm_value=2, mapping_matrix_rotation_matrix=None, 
+mapping_matrix_eigenvalues=None, centroid_vector=None):
 
     # Verifies if limits is a list
 
-    if not isinstance(limits, list):
+    if (not isinstance(limits, list)) and (
+    mapping_matrix_rotation_matrix is None) and (
+    mapping_matrix_eigenvalues is None) and (centroid_vector is None):
 
         raise TypeError("'limits' in 'get_random_point_on_elipsoid_sur"+
         "face' must be a list of lists, such as [[x_inf, x_sup], [y_in"+
         "f, y_sup], [z_inf, z_sup]]. Currently, it is:\n"+str(limits))
+
+    # Gets the input dimension
+
+    input_dimension = None
+
+    if limits is None:
+
+        input_dimension = centroid_vector.shape[0]
+
+    else:
+
+        input_dimension = len(limits)
     
     # Creates a list with the centroid coordinates
 
@@ -96,18 +118,18 @@ p_norm_value=2):
 
     if abs(p_norm_value-2)<1E-5:
         
-        direction_vector = np.random.normal(size=len(limits))
+        direction_vector = np.random.normal(size=input_dimension)
 
     else:
 
         # Gets the amplitude 
 
         amplitude = np.random.gamma(shape=1.0/p_norm_value, scale=1.0,
-        size=len(limits))
+        size=input_dimension)
 
         # Gets signs
 
-        signs = np.random.choice([-1, 1], size=len(limits))
+        signs = np.random.choice([-1, 1], size=input_dimension)
 
         # Multiplies everything
 
@@ -116,35 +138,58 @@ p_norm_value=2):
     direction_vector = ((1.0/np.linalg.norm(direction_vector, ord=
     p_norm_value))*direction_vector)
 
-    # Iterates through the dimensions
+    # Checks whether the mapping matrix and the centroid information we-
+    # re given
 
-    for i in range(len(limits)):
+    if (mapping_matrix_rotation_matrix is not None) and (
+    mapping_matrix_eigenvalues is not None) and (
+    centroid_vector is not None):
 
-        dimension_limits = limits[i]
+        # Multiplies the direction vector by the eigenvalues and, then,
+        # rotates it using the rotation matrix whose columns are the ei-
+        # genvectors of the mapping matrix. Thus, this operations deforms
+        # and then rotates
 
-        # Verifies if dimension limits is a list
+        direction_vector = np.einsum('ij,j,j->i', 
+        mapping_matrix_rotation_matrix, mapping_matrix_eigenvalues,
+        direction_vector)
 
-        if (not isinstance(dimension_limits, list)) or (len(
-        dimension_limits)!=2):
+        # Makes the centroid the given value
 
-            raise TypeError("Each component in the list 'limits' in 'g"+
-            "et_random_point_on_elipsoid_surface' must be another list"+
-            " of length 2, such as [x_inf, x_sup]. Currently, it is:\n"+
-            str(dimension_limits))
-        
-        # Evaluates the centroid and the semiaxis
+        centroid = centroid_vector
 
-        centroid.append(0.5*(dimension_limits[0]+dimension_limits[1]))
+    else:
 
-        semiaxis = abs(0.5*(dimension_limits[1]-dimension_limits[0]))
+        # Iterates through the dimensions
 
-        # Updates the direction vector according to the semiaxis
+        for i in range(input_dimension):
 
-        direction_vector[i] = direction_vector[i]*semiaxis
+            dimension_limits = limits[i]
+
+            # Verifies if dimension limits is a list
+
+            if (not isinstance(dimension_limits, list)) or (len(
+            dimension_limits)!=2):
+
+                raise TypeError("Each component in the list 'limits' i"+
+                "n 'get_random_point_on_elipsoid_surface' must be anot"+
+                "her list of length 2, such as [x_inf, x_sup]. Current"+
+                "ly, it is:\n"+str(dimension_limits))
+            
+            # Evaluates the centroid and the semiaxis
+
+            centroid.append(0.5*(dimension_limits[0]+dimension_limits[1]
+            ))
+
+            semiaxis = abs(0.5*(dimension_limits[1]-dimension_limits[0]))
+
+            # Updates the direction vector according to the semiaxis
+
+            direction_vector[i] = direction_vector[i]*semiaxis
 
     # Updates the direction vector by the length and adds the centroid
 
-    direction_vector += np.array(centroid)
+    direction_vector += np.asarray(centroid)
 
     # Returns a list if it is asked as so
 

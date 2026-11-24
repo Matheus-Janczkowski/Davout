@@ -23,7 +23,8 @@ class FindSuperellipsoidalParameterization:
     def __init__(self, energy_level, simulation_class, 
     n_sampling_domain_updates, results_path, initial_mapping_matrix, 
     initial_centroid_vector, loss_function=None, dtype="float32",
-    plot_loss_history=False, verbose=True):
+    plot_loss_history=False, verbose=True, n_warm_up_samples=None, 
+    n_samples_per_update_cycle=1):
 
         self.simulation_class = simulation_class
 
@@ -38,6 +39,8 @@ class FindSuperellipsoidalParameterization:
         self.plot_loss_history = plot_loss_history
 
         self.verbose = verbose
+
+        self.n_samples_per_update_cycle = n_samples_per_update_cycle
 
         # Saves the desired energy level as a tensorflow constant
 
@@ -77,6 +80,22 @@ class FindSuperellipsoidalParameterization:
 
         self.frobenius_norm_consecutive_mapping_matrices = []
 
+        # If the number of samples to be used in the warm-up cycle of 
+        # updating the superellipsoidal parameterization, makes that 
+        # number equal to the number of degrees of freedom in the qua-
+        # dratic approximation
+
+        if n_warm_up_samples is None:
+
+            input_dimension = initial_mapping_matrix.shape[0]
+
+            self.n_warm_up_samples = int((0.5*input_dimension*(
+            input_dimension+1))+input_dimension+1)
+
+        else:
+
+            self.n_warm_up_samples = n_warm_up_samples
+
     # Defines the method that creates data points and fits the parameters
     # of the superellipsoidal sampling domain automatically
 
@@ -86,6 +105,22 @@ class FindSuperellipsoidalParameterization:
 
         for update_iteration_index in range(
         self.n_sampling_domain_updates):
+
+            # If this is the first iteration, uses the warm-up number of
+            # samples
+
+            if update_iteration_index==0:
+
+                self.simulation_class.n_points_on_surface = (
+                self.n_warm_up_samples)
+
+            # Otherwise, uses the number of samples of an ordinary upda-
+            # te cycle
+
+            else:
+
+                self.simulation_class.n_points_on_surface = (
+                self.n_samples_per_update_cycle)
 
             # Updates the names of the files
 
@@ -194,6 +229,8 @@ class FindSuperellipsoidalParameterization:
         # mapping matrix
 
         self.quadratic_approximation_class.get_eigenvectors_of_coefficient_matrix()
+
+        # Evaluates the eigenvalues of the mapping matrix so that the
         # desired energy level is reached
 
         mapping_matrix_eigenvalues = tf.sqrt(tf.abs(self.energy_level-
@@ -204,8 +241,6 @@ class FindSuperellipsoidalParameterization:
 
             print("\nThe eigenvalues of the mapping matrix are:\n"+str(
             mapping_matrix_eigenvalues.numpy().tolist()))
-
-        # Evaluates the eigenvalues of the mapping matrix so that the
 
         # Assembles the mapping matrix using the spectral decomposition
 
@@ -441,7 +476,8 @@ if __name__=="__main__":
 
         IVD_class = IVDSimulationClass(p_exponent_list, 
         get_parent_path_of_file(), n_points_on_surface, 
-        IVD_lambda_function, strain_energy_file_name, verbose=False)
+        IVD_lambda_function, strain_energy_file_name, verbose=False,
+        get_points_onto_3D_meshed_ellipsoid=False)
 
         # Instantiates the class to find the parameterization of the su-
         # perellipsoidal domain

@@ -22,6 +22,8 @@ from .....Davout.MultiMech.tool_box.read_write_tools import write_field_to_xdmf
 
 from .....Davout.GraphUtilities.paraview_tools import frozen_snapshots
 
+from .....Davout.StochasticUtilities.tool_box.sampling_tools import get_random_point_on_elipsoid_surface
+
 from .disc_HGO import simulation_disc
 
 # Defines a class to simulate the intervertebral disc for points on the
@@ -30,7 +32,8 @@ from .disc_HGO import simulation_disc
 class IVDSimulationClass:
 
     def __init__(self, p_exponent, parent_path, n_points_on_surface,
-    simulation_function, output_result_file, verbose=True):
+    simulation_function, output_result_file, verbose=True, 
+    get_points_onto_3D_meshed_ellipsoid=False):
 
         # If multiple exponents p are to be evaluated
 
@@ -77,6 +80,21 @@ class IVDSimulationClass:
         
         self.output_result_file = output_result_file
 
+        # If the sample points are to be mapped onto a meshed 3D ellip-
+        # soid, uses the corresponding method
+
+        if get_points_onto_3D_meshed_ellipsoid:
+
+            self.sampling_and_running_method = (
+            self.get_strain_energy_onto_3D_meshed_ellipsoid)
+
+        # Otherwise, uses conventional sampling
+
+        else:
+
+            self.sampling_and_running_method = (
+            self.get_strain_energy_onto_ellipsoid)
+
     # Defines a function to get the strain energy evaluated onto multi-
     # ple ellipsoids
 
@@ -116,8 +134,8 @@ class IVDSimulationClass:
             # Calls the function to get the strain energy evaluated on 
             # the ellipsoidal domain
 
-            self.get_strain_energy_onto_ellipsoid(p_exponent, 
-            mapping_matrix, centroid_position, 
+            self.sampling_and_running_method(p_exponent, mapping_matrix, 
+            centroid_position, 
             current_boundary_input_parameters_file_name, 
             current_boundary_values_file_name, 
             current_boundary_values_xdmf_file_name, verbose=self.verbose)
@@ -126,15 +144,139 @@ class IVDSimulationClass:
 
         return input_file_names, output_file_names
 
+    # Defines a function to generate the superellipsoidal domain in the
+    # n-dimensional space without using any mesh. Each point of the sur-
+    # face of the ellipsoid is a load vector. The strain energy stored 
+    # in the IVD is evaluated for all points generated through 
+    # StochasticTools
+
+    def get_strain_energy_onto_ellipsoid(self, p_exponent, 
+    mapping_matrix, centroid_position, 
+    boundary_input_parameters_file_name, boundary_values_file_name, 
+    boundary_values_xdmf_file_name, verbose=True):
+
+        # Gets the eigenvectors and eigenvalues of the mapping matrix
+
+        (mapping_matrix_eigenvalues, mapping_matrix_eigenvectors
+        ) = np.linalg.eig(mapping_matrix)
+
+        # Gets the points on the surface as an array [n_surface_points,
+        # input_dimension]
+
+        sample_points = get_random_point_on_elipsoid_surface(None,
+        p_norm_value=p_exponent, number_of_samples=
+        self.n_points_on_surface, mapping_matrix_rotation_matrix=
+        mapping_matrix_eigenvectors, mapping_matrix_eigenvalues=
+        mapping_matrix_eigenvalues, centroid_vector=centroid_position,
+        return_as_list=False)
+
+        # Initializes an array of unsuccessful translation vectors
+
+        unsuccessful_samples = []
+
+        # Initializes the average simulation time
+
+        average_simulation_time = 0.0
+
+        # Initializes a list of successful boundary points
+
+        boundary_points = []
+
+        # Initializes a list to save only the strain energy values real-
+        # ly on the boundary
+
+        boundary_only_energy_values = []
+
+        # Iterates over the boundary DOFs
+
+        for simulation_index, sample_point in enumerate(sample_points):
+
+            try:
+
+                # Uses this coordinate as the translation vector for the 
+                # IVD
+
+                initial_time = time()
+
+                self.simulation_function(sample_point.tolist())
+
+                # Updates the time average
+
+                average_simulation_time += time()-initial_time
+
+                # Updates the list of successful boundary points
+
+                boundary_points.append(sample_point.tolist())
+
+            except Exception as error:
+
+                # Updates the list of unsuccessful samples
+
+                unsuccessful_samples.append(sample_point.tolist())
+
+                np.save(self.parent_path+"//unsuccessful_samples_p_"+
+                str(p_exponent)+".npy", np.array(unsuccessful_samples))
+
+                # Prints the traceback on the terminal
+
+                traceback.print_exc()
+
+                continue
+
+            # Reads the txt with the strain energy as a function of time
+
+            strain_energy_list = txt_toList(self.output_result_file)
+
+            # Appends the strain energy to the list that captures values 
+            # on the boundary only
+
+            boundary_only_energy_values.append(strain_energy_list[-1][1])
+
+            np.save(boundary_values_file_name+".npy", np.array(
+            boundary_only_energy_values))
+
+            # Saves the successful boundary points
+
+            np.save(boundary_input_parameters_file_name+".npy", np.array(
+            boundary_points))
+
+            print("\n#################################################"+
+            "#######################\n#         Information on assessm"+
+            "ent of the ellipsoid boundary          #\n###############"+
+            "#########################################################"+
+            "\n")
+
+            print("Finished the "+str(simulation_index+1)+"-th simulat"+
+            "ion\n"+str(len(unsuccessful_samples))+" simulations out o"+
+            "f "+str(sample_points.shape[0])+" were unsuccessful\nThe "+
+            "average time per simulation is "+str(
+            average_simulation_time/max(1.0, simulation_index+1-len(
+            unsuccessful_samples)))+"\n")
+
+        # Shows the unsuccessful samples
+
+        np.save(self.parent_path+"//unsuccessful_samples_p_"+str(
+        p_exponent)+".npy", np.array(unsuccessful_samples))
+
+        unsuccessful_samples_string = "\n"
+
+        for unsuccessful_translation in unsuccessful_samples:
+
+            unsuccessful_samples_string += "\n"+str(
+            unsuccessful_translation)
+
+        print("The unsuccessful samples are:"+
+        unsuccessful_samples_string)
+
     # Defines a function to generate the superellipsoidal domain in 3D 
     # space. Each point of the surface of the ellipsoid is a load vector. 
     # The strain energy stored in the IVD is evaluated and plotted onto 
     # the surface of the ellipsoid using a fenics field
 
-    def get_strain_energy_onto_ellipsoid(self, p_exponent, 
+    def get_strain_energy_onto_3D_meshed_ellipsoid(self, p_exponent, 
     mapping_matrix, centroid_position, 
     boundary_input_parameters_file_name, boundary_values_file_name, 
-    boundary_values_xdmf_file_name, verbose=True,):
+    boundary_values_xdmf_file_name, verbose=True):
 
         # Sets the file name for the ellipsoidal mesh
 
