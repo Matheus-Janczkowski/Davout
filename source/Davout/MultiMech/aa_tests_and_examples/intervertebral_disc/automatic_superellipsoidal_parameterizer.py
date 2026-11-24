@@ -170,14 +170,14 @@ class FindSuperellipsoidalParameterization:
             for row_index in range(self.mapping_matrix.shape[0]):
 
                 mapping_matrix_string += "\n"+str(self.mapping_matrix[
-                row_index,:].numpy().tolist())
+                row_index,:].tolist())
 
             print("\nFinishes computing the "+str(update_iteration_index
             +1)+" iteration to update the superellipsoidal parameteriz"+
             "ation\nThe new mapping matrix is:"+mapping_matrix_string)
 
             print("\nThe centroid vector is:\n"+str(
-            self.centroid_vector.numpy().tolist()))
+            self.centroid_vector.tolist()))
 
     # Defines a method to get the mapping matrix and the centroid vector
     # from the eigenvectors evaluated during the fitting scheme of the
