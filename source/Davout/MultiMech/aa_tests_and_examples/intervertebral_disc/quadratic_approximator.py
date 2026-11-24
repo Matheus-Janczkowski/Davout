@@ -359,7 +359,8 @@ class QuadraticApproximationOfScalarFunction:
             y_data=self.loss_history, parent_path=self.results_path)
 
         print("\nThe initial loss was "+str(self.loss_history[0])+"\nT"+
-        "he final loss was "+str(self.loss_history[-1]))
+        "he final loss was "+str(self.loss_history[-1])+"\n"+str(
+        self.n_training_samples)+" samples were used for training")
 
         # Unpacks the fit trainable parameters into the individual ten-
         # sors

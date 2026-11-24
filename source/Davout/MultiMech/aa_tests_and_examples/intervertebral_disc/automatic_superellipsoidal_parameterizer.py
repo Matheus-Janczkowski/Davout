@@ -23,7 +23,7 @@ class FindSuperellipsoidalParameterization:
     def __init__(self, energy_level, simulation_class, 
     n_sampling_domain_updates, results_path, initial_mapping_matrix, 
     initial_centroid_vector, loss_function=None, dtype="float32",
-    plot_loss_history=False):
+    plot_loss_history=False, verbose=True):
 
         self.simulation_class = simulation_class
 
@@ -36,6 +36,8 @@ class FindSuperellipsoidalParameterization:
         self.dtype = dtype
 
         self.plot_loss_history = plot_loss_history
+
+        self.verbose = verbose
 
         # Saves the desired energy level as a tensorflow constant
 
@@ -165,19 +167,22 @@ class FindSuperellipsoidalParameterization:
             "ers were successfully updated         #\n################"+
             "########################################################")
 
-            mapping_matrix_string = ""
+            if self.verbose:
 
-            for row_index in range(self.mapping_matrix.shape[0]):
+                mapping_matrix_string = ""
 
-                mapping_matrix_string += "\n"+str(self.mapping_matrix[
-                row_index,:].tolist())
+                for row_index in range(self.mapping_matrix.shape[0]):
 
-            print("\nFinishes computing the "+str(update_iteration_index
-            +1)+" iteration to update the superellipsoidal parameteriz"+
-            "ation\nThe new mapping matrix is:"+mapping_matrix_string)
+                    mapping_matrix_string += "\n"+str(
+                    self.mapping_matrix[row_index,:].tolist())
 
-            print("\nThe centroid vector is:\n"+str(
-            self.centroid_vector.tolist()))
+                print("\nFinishes computing the "+str(
+                update_iteration_index+1)+"-th iteration to update the"+
+                " superellipsoidal parameterization\nThe new mapping m"+
+                "atrix is:"+mapping_matrix_string)
+
+                print("\nThe centroid vector is:\n"+str(
+                self.centroid_vector.tolist()))
 
     # Defines a method to get the mapping matrix and the centroid vector
     # from the eigenvectors evaluated during the fitting scheme of the
@@ -189,13 +194,18 @@ class FindSuperellipsoidalParameterization:
         # mapping matrix
 
         self.quadratic_approximation_class.get_eigenvectors_of_coefficient_matrix()
-
-        # Evaluates the eigenvalues of the mapping matrix so that the
         # desired energy level is reached
 
         mapping_matrix_eigenvalues = tf.sqrt(tf.abs(self.energy_level-
         self.quadratic_approximation_class.scalar_coefficient)/
         self.quadratic_approximation_class.eigenvalues)
+
+        if self.verbose:
+
+            print("\nThe eigenvalues of the mapping matrix are:\n"+str(
+            mapping_matrix_eigenvalues.numpy().tolist()))
+
+        # Evaluates the eigenvalues of the mapping matrix so that the
 
         # Assembles the mapping matrix using the spectral decomposition
 
