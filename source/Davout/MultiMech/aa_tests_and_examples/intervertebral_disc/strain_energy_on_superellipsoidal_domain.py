@@ -24,208 +24,302 @@ from .....Davout.GraphUtilities.paraview_tools import frozen_snapshots
 
 from .disc_HGO import simulation_disc
 
-# Defines a function to get the strain energy evaluated onto multiple 
-# ellipsoids
+# Defines a class to simulate the intervertebral disc for points on the
+# boundary of a ellipsoidal domin
 
-def get_strain_energy_onto_multiple_ellipsoids(p_exponent_list, 
-mapping_matrix, centroid_position, n_points_on_surface, parent_path, 
-IVD_lambda_function, strain_energy_file_name, verbose=True, 
-file_name_additive=""):
+class IVDSimulationClass:
 
-    # Iterates over the list of exponents p
+    def __init__(self, p_exponent, parent_path, n_points_on_surface,
+    simulation_function, output_result_file, verbose=True):
 
-    for p_exponent in p_exponent_list:
+        # If multiple exponents p are to be evaluated
 
-        # Calls the function to get the strain energy evaluated on the
-        # ellipsoidal domain
+        if isinstance(p_exponent, list):
 
-        get_strain_energy_onto_ellipsoid(p_exponent, mapping_matrix, 
-        centroid_position, n_points_on_surface, parent_path, 
-        IVD_lambda_function, strain_energy_file_name, verbose=verbose,
-        file_name_additive=file_name_additive)
+            self.p_exponent = p_exponent
 
-# Defines a function to generate the superellipsoidal domain in 3D space.
-# Each point of the surface of the ellipsoid is a load vector. The strain
-# energy stored in the IVD is evaluated and plotted onto the surface of
-# the ellipsoid using a fenics field
+        # Otherwise, saves it as a list with a single element
 
-def get_strain_energy_onto_ellipsoid(p_exponent, mapping_matrix, 
-centroid_position, n_points_on_surface, parent_path, IVD_lambda_function, 
-strain_energy_file_name, verbose=True, file_name_additive=""):
+        else:
 
-    # Sets the file name for the ellipsoidal mesh
+            self.p_exponent = [p_exponent]
 
-    ellipsoidal_mesh_file_name = parent_path+"//ellipsoid_p_"+str(
-    p_exponent)
+        # Saves some parameters that will be fixed
 
-    # Gets the number of transfinite divisions based on the number of
-    # points on the surface of the whole ellipsoid. Each facet of the
-    # ellipsoid will have the same number of transfinite divisions
+        self.parent_path = parent_path
 
-    n_transfinite = int(np.round(np.sqrt((n_points_on_surface-2)/24.0))
-    )+1
+        self.n_points_on_surface = n_points_on_surface
 
-    # Builds the mesh of the ellipsoidal domain
+        self.verbose = verbose
 
-    sphere_geometry_RVE(1.0, 0.5, ellipsoidal_mesh_file_name, 
-    n_points_per_edge=100, transfinite_radial=n_transfinite, 
-    transfinite_x=n_transfinite, transfinite_y=n_transfinite, 
-    transfinite_z=n_transfinite, mapping_matrix=mapping_matrix, 
-    p_exponent=p_exponent, centroid_position=centroid_position, verbose=
-    verbose)
+        # Defines the bases for the names of the files with the input 
+        # values to the operator (values of external parameters, rota-
+        # tions or translations in this case); and with the output va-
+        # lues, strain energy. Bases because these names will be repli-
+        # cated for different sets of simulations
 
-    # Reads the created mesh
+        self.input_parameters_base_file_name = (parent_path+"//boundar"+
+        "y_points_rotation")
 
-    mesh_data_class = read_mshMesh(ellipsoidal_mesh_file_name)
+        self.output_parameters_base_file_name = (parent_path+"//bounda"+
+        "ry_strain_energy_rotation")
 
-    # Creates the functional data class for the strain energy field
+        # Defines a base name also for the xdmf file with the 
+        # visualization result
 
-    functional_data_class = construct_monolithicFunctionSpace({
-    "strain energy": {"field type": "scalar", "interpolation function": 
-    "CG", "polynomial degree": 1}}, mesh_data_class, verbose=True)
+        self.output_visualization_base_file_name = (parent_path+"//str"+
+        "ain_energy_on_boundary_rotation_visualization_copy")
 
-    # Gets an array of indices of the DOFs in the boundary physical 
-    # group and another array with coordinates of all DOFs in the mesh 
-    # as [n_dofs, 3]
+        # Saves the function that computes the actual simulation and the
+        # name of the file that stores the result with the output value
 
-    _, dofs_coordinates, boundary_dofs = get_boundary_dofs_to_physical_group(
-    mesh_data_class, functional_data_class, field_name="strain energy",
-    get_dofs_coordinates_too=True, get_higher_order_dofs_too=True, 
-    get_array_with_all_dofs_of_the_boundary=True)
+        self.simulation_function = simulation_function
+        
+        self.output_result_file = output_result_file
 
-    # Saves the information about the DOFs
+    # Defines a function to get the strain energy evaluated onto multi-
+    # ple ellipsoids
 
-    np.save(parent_path+"//dofs_coordinates_p_"+str(p_exponent
-    )+file_name_additive+".npy", dofs_coordinates)
+    def __call__(self, mapping_matrix, centroid_position, 
+    boundary_input_parameters_file_name, boundary_values_file_name, 
+    boundary_values_xdmf_file_name):
 
-    np.save(parent_path+"//boundary_dofs_p_"+str(p_exponent
-    )+file_name_additive+".npy", boundary_dofs)
+        # Initializes a list with the input file names and another for
+        # the output files
 
-    # Initializes a numpy array to store the strain energy evaluated for
-    # each point on the surface of the ellipsoidal domain
+        input_file_names = []
 
-    boundary_strain_energy = np.zeros(dofs_coordinates.shape[0])
+        output_file_names = []
 
-    # Initializes an array of unsuccessful translation vectors
+        # Iterates over the list of exponents p
 
-    unsuccessful_translations = []
+        for p_exponent in self.p_exponent:
 
-    # Initializes the average simulation time
+            # Adds the p exponent indication to the file names
 
-    average_simulation_time = 0.0
+            current_boundary_values_file_name = (
+            boundary_values_file_name+"_p_"+str(p_exponent))
+    
+            current_boundary_input_parameters_file_name = (
+            boundary_input_parameters_file_name+"_p_"+str(p_exponent))
+            
+            current_boundary_values_xdmf_file_name = (
+            boundary_values_xdmf_file_name+"_p_"+str(p_exponent))
 
-    # Saves the points on the boundary
+            # Updates the lists of file names
 
-    np.save(parent_path+"//boundary_points_p_"+str(p_exponent)+
-    file_name_additive+".npy", np.array([dofs_coordinates[boundary_dof,:
-    ] for boundary_dof in boundary_dofs]))
+            input_file_names.append(
+            current_boundary_input_parameters_file_name)
 
-    # Initializes a list to save only the strain energy values really on
-    # the boundary
+            output_file_names.append(current_boundary_values_file_name)
 
-    boundary_only_energy_values = []
+            # Calls the function to get the strain energy evaluated on 
+            # the ellipsoidal domain
 
-    # Iterates over the boundary DOFs
+            self.get_strain_energy_onto_ellipsoid(p_exponent, 
+            mapping_matrix, centroid_position, 
+            current_boundary_input_parameters_file_name, 
+            current_boundary_values_file_name, 
+            current_boundary_values_xdmf_file_name, verbose=self.verbose)
 
-    for simulation_index, boundary_dof in enumerate(boundary_dofs):
+        # Returns the lists of files names
 
-        # Gets the coordinates of this boundary DOF
+        return input_file_names, output_file_names
 
-        DOF_coordinate = dofs_coordinates[boundary_dof,:].tolist()
+    # Defines a function to generate the superellipsoidal domain in 3D 
+    # space. Each point of the surface of the ellipsoid is a load vector. 
+    # The strain energy stored in the IVD is evaluated and plotted onto 
+    # the surface of the ellipsoid using a fenics field
 
-        try:
+    def get_strain_energy_onto_ellipsoid(self, p_exponent, 
+    mapping_matrix, centroid_position, 
+    boundary_input_parameters_file_name, boundary_values_file_name, 
+    boundary_values_xdmf_file_name, verbose=True,):
 
-            # Uses this coordinate as the translation vector for the IVD
+        # Sets the file name for the ellipsoidal mesh
 
-            initial_time = time()
+        ellipsoidal_mesh_file_name = (self.parent_path+"//ellipsoid_p_"+
+        str(p_exponent))
 
-            IVD_lambda_function(DOF_coordinate)
+        # Gets the number of transfinite divisions based on the number 
+        # of points on the surface of the whole ellipsoid. Each facet of
+        # the ellipsoid will have the same number of transfinite divi-
+        # sions
 
-            # Updates the time average
+        n_transfinite = int(np.round(np.sqrt((self.n_points_on_surface-2
+        )/24.0)))+1
 
-            average_simulation_time += time()-initial_time
+        # Builds the mesh of the ellipsoidal domain
 
-        except Exception as error:
+        sphere_geometry_RVE(1.0, 0.5, ellipsoidal_mesh_file_name, 
+        n_points_per_edge=100, transfinite_radial=n_transfinite, 
+        transfinite_x=n_transfinite, transfinite_y=n_transfinite, 
+        transfinite_z=n_transfinite, mapping_matrix=mapping_matrix, 
+        p_exponent=p_exponent, centroid_position=centroid_position, 
+        verbose=verbose)
 
-            # Updates the list of unsuccessful translation vectors
+        # Reads the created mesh
 
-            unsuccessful_translations.append(DOF_coordinate)
+        mesh_data_class = read_mshMesh(ellipsoidal_mesh_file_name)
 
-            np.save(get_parent_path_of_file()+"//unsuccessful_translat"+
-            "ions_p_"+str(p_exponent)+file_name_additive+".npy", 
-            np.array(unsuccessful_translations))
+        # Creates the functional data class for the strain energy field
 
-            # Prints the traceback on the terminal
+        functional_data_class = construct_monolithicFunctionSpace({
+        "strain energy": {"field type": "scalar", "interpolation funct"+
+        "ion": "CG", "polynomial degree": 1}}, mesh_data_class, verbose=
+        True)
 
-            traceback.print_exc()
+        # Gets an array of indices of the DOFs in the boundary physical 
+        # group and another array with coordinates of all DOFs in the 
+        # mesh as [n_dofs, 3]
 
-            continue
+        _, dofs_coordinates, boundary_dofs = get_boundary_dofs_to_physical_group(
+        mesh_data_class, functional_data_class, field_name="strain ene"+
+        "rgy", get_dofs_coordinates_too=True, get_higher_order_dofs_too=
+        True, get_array_with_all_dofs_of_the_boundary=True)
 
-        # Reads the txt with the strain energy as a function of time
+        # Saves the information about the DOFs
 
-        strain_energy_list = txt_toList(strain_energy_file_name)
+        np.save(self.parent_path+"//dofs_coordinates_p_"+str(p_exponent
+        )+".npy", dofs_coordinates)
 
-        # Gets the last value and updates it into the array of strain e-
-        # nergy evaluated at the boundary of the superellipsoidal domain
+        np.save(self.parent_path+"//boundary_dofs_p_"+str(p_exponent
+        )+".npy", boundary_dofs)
 
-        boundary_strain_energy[boundary_dof] = strain_energy_list[-1][1]
+        # Initializes a numpy array to store the strain energy evaluated 
+        # for each point on the surface of the ellipsoidal domain
 
-        # Appends the strain energy to the list that captures values on 
-        # the boundary only
+        boundary_strain_energy = np.zeros(dofs_coordinates.shape[0])
 
-        boundary_only_energy_values.append(strain_energy_list[-1][1])
+        # Initializes an array of unsuccessful translation vectors
 
-        # Saves the strain energy values
+        unsuccessful_samples = []
 
-        np.save(get_parent_path_of_file()+"//boundary_strain_energy_p_"+
-        str(p_exponent)+file_name_additive+".npy", 
-        boundary_strain_energy)
+        # Initializes the average simulation time
 
-        np.save(get_parent_path_of_file()+"//boundary_only_strain_ener"+
-        "gy_p_"+str(p_exponent)+file_name_additive+".npy", np.array(
-        boundary_only_energy_values))
+        average_simulation_time = 0.0
 
-        print("\n#####################################################"+
-        "###################\n#         Information on assessment of t"+
-        "he ellipsoid boundary          #\n###########################"+
-        "#############################################\n")
+        # Initializes a list of points on the boundary
 
-        print("Finished the "+str(simulation_index+1)+"-th simulation\n"+
-        str(len(unsuccessful_translations))+" simulations out of "+str(
-        boundary_dofs.shape[0])+" were unsuccessful\nThe average time "+
-        "per simulation is "+str(average_simulation_time/max(1.0,
-        simulation_index+1-len(unsuccessful_translations)))+"\n")
+        boundary_points = []
 
-    # Shows the unsuccessful translations
+        # Initializes a list to save only the strain energy values real-
+        # ly on the boundary
 
-    np.save(get_parent_path_of_file()+"//unsuccessful_translations_p_"+
-    str(p_exponent)+file_name_additive+".npy", np.array(
-    unsuccessful_translations))
+        boundary_only_energy_values = []
 
-    unsuccessful_translations_string = "\n"
+        # Iterates over the boundary DOFs
 
-    for unsuccessful_translation in unsuccessful_translations:
+        for simulation_index, boundary_dof in enumerate(boundary_dofs):
 
-        unsuccessful_translations_string += "\n"+str(
-        unsuccessful_translation)
+            # Gets the coordinates of this boundary DOF
 
-    print("The unsuccessful translations are:"+
-    unsuccessful_translations_string)
+            DOF_coordinate = dofs_coordinates[boundary_dof,:].tolist()
 
-    # Updates the vector of parameters of the strain energy field
+            try:
 
-    functional_data_class.solution_fields["strain energy"].vector(
-    ).set_local(boundary_strain_energy)
+                # Uses this coordinate as the translation vector for the 
+                # IVD
 
-    functional_data_class.solution_fields["strain energy"].vector(
-    ).apply("insert")
+                initial_time = time()
 
-    # Saves the strain energy field to a xdmf file
+                self.simulation_function(DOF_coordinate)
 
-    write_field_to_xdmf(functional_data_class, explicit_file_name=
-    get_parent_path_of_file()+"//strain_energy_on_boundary_p_"+str(
-    p_exponent)+file_name_additive+".xdmf", close_file=False, 
-    visualization_copy=True)
+                # Updates the time average
+
+                average_simulation_time += time()-initial_time
+
+                # Updates the list of successful boundary points
+
+                boundary_points.append(dofs_coordinates[boundary_dof,:
+                ].tolist())
+
+            except Exception as error:
+
+                # Updates the list of unsuccessful samples
+
+                unsuccessful_samples.append(DOF_coordinate)
+
+                np.save(self.parent_path+"//unsuccessful_samples_p_"+
+                str(p_exponent)+".npy", np.array(unsuccessful_samples))
+
+                # Prints the traceback on the terminal
+
+                traceback.print_exc()
+
+                continue
+
+            # Reads the txt with the strain energy as a function of time
+
+            strain_energy_list = txt_toList(self.output_result_file)
+
+            # Gets the last value and updates it into the array of strain 
+            # energy evaluated at the boundary of the superellipsoidal 
+            # domain
+
+            boundary_strain_energy[boundary_dof] = strain_energy_list[-1
+            ][1]
+
+            # Appends the strain energy to the list that captures values 
+            # on the boundary only
+
+            boundary_only_energy_values.append(strain_energy_list[-1][1])
+
+            # Saves the strain energy values
+
+            np.save(self.parent_path+"//boundary_strain_energy_includi"+
+            "ng_interior_dofs_p_"+str(p_exponent)+".npy", 
+            boundary_strain_energy)
+
+            np.save(boundary_values_file_name+".npy", np.array(
+            boundary_only_energy_values))
+
+            # Saves the successful boundary points
+
+            np.save(boundary_input_parameters_file_name+".npy", np.array(
+            boundary_points))
+
+            print("\n#################################################"+
+            "#######################\n#         Information on assessm"+
+            "ent of the ellipsoid boundary          #\n###############"+
+            "#########################################################"+
+            "\n")
+
+            print("Finished the "+str(simulation_index+1)+"-th simulat"+
+            "ion\n"+str(len(unsuccessful_samples))+" simulations out o"+
+            "f "+str(boundary_dofs.shape[0])+" were unsuccessful\nThe "+
+            "average time per simulation is "+str(
+            average_simulation_time/max(1.0, simulation_index+1-len(
+            unsuccessful_samples)))+"\n")
+
+        # Shows the unsuccessful samples
+
+        np.save(self.parent_path+"//unsuccessful_samples_p_"+str(
+        p_exponent)+".npy", np.array(unsuccessful_samples))
+
+        unsuccessful_samples_string = "\n"
+
+        for unsuccessful_translation in unsuccessful_samples:
+
+            unsuccessful_samples_string += "\n"+str(
+            unsuccessful_translation)
+
+        print("The unsuccessful samples are:"+
+        unsuccessful_samples_string)
+
+        # Updates the vector of parameters of the strain energy field
+
+        functional_data_class.solution_fields["strain energy"].vector(
+        ).set_local(boundary_strain_energy)
+
+        functional_data_class.solution_fields["strain energy"].vector(
+        ).apply("insert")
+
+        # Saves the strain energy field to a xdmf file
+
+        write_field_to_xdmf(functional_data_class, explicit_file_name=
+        boundary_values_xdmf_file_name, close_file=False, 
+        visualization_copy=True)
 
 # Testing block
 
@@ -318,7 +412,7 @@ if __name__=="__main__":
     # translation or by rotation, or if it is time to generate the snap-
     # shots
 
-    flag_activity = "snapshot" 
+    flag_activity = "rotation" 
 
     file_name_additive = None
 
@@ -452,11 +546,19 @@ if __name__=="__main__":
 
     if flag_activity!="snapshot":
 
+        # Instantiates the class to simulate the IVD
+
+        IVD_class = IVDSimulationClass(p_exponent_list, 
+        get_parent_path_of_file(), n_points_on_surface, 
+        IVD_lambda_function, strain_energy_file_name, verbose=False)
+
         for centroid_index, individual_centroid in enumerate(
         centroid_position):
 
-            get_strain_energy_onto_multiple_ellipsoids(p_exponent_list, 
-            mapping_matrix, individual_centroid, n_points_on_surface, 
-            parent_path, IVD_lambda_function, strain_energy_file_name, 
-            verbose=False, file_name_additive=file_name_additive+str(
-            centroid_index+1))
+            IVD_class(mapping_matrix, individual_centroid, 
+            IVD_class.input_parameters_base_file_name+
+            file_name_additive+str(centroid_index+1), 
+            IVD_class.output_parameters_base_file_name+
+            file_name_additive+str(centroid_index+1), 
+            IVD_class.output_visualization_base_file_name+
+            file_name_additive+str(centroid_index+1))

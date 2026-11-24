@@ -5,7 +5,11 @@ import numpy as np
 
 import tensorflow as tf
 
-from ....PythonicUtilities.path_tools import get_parent_path_of_file
+from ....PythonicUtilities.path_tools import get_parent_path_of_file, take_outFileNameTermination
+
+from ....GraphUtilities.plotting_tools import plane_plot
+
+from ....DeepMech.tool_box.loss_assembler_classes import LpNormError
 
 # Defines a class to store the quadratic approximation and the optimiza-
 # tion process relative to the fitting procedure
@@ -14,11 +18,139 @@ class QuadraticApproximationOfScalarFunction:
 
     def __init__(self, training_input_data, training_output_data, dtype=
     "float32", optimizer=None, n_iterations=1000, gradient_tolerance=
-    1E-3, gradient_maximum_component_tolerance=1E-5, learning_rate=1E-2):
+    1E-3, gradient_maximum_component_tolerance=1E-5, learning_rate=1E-2,
+    results_path=get_parent_path_of_file(path_bits_to_be_excluded=2),
+    loss_function=None, plot_loss_history=True, 
+    accumulate_data_samples_to_preexisting_samples=False):
+
+        self.results_path = results_path
+
+        self.accumulate_data_samples_to_preexisting_samples = (
+        accumulate_data_samples_to_preexisting_samples)
 
         # Sets the given data into the class
 
         self.dtype = tf.as_dtype(dtype)
+
+        # Loads the training arrays of data into the class
+
+        self.update_data_arrays(training_input_data, 
+        training_output_data)
+
+        # Gets the dimension of the input space
+
+        self.input_dimensionality = self.training_input_data.shape[1]
+
+        # Counts the number of degrees of freedom of the upper triangular
+        # factor of the symmetric coefficient matrix
+
+        self.n_dofs_L_matrix = int(0.5*self.input_dimensionality*(
+        self.input_dimensionality+1))
+
+        # Gets the tensor of indices to build the [input_dimensionality,
+        # input_dimensionality] coefficient matrix from a flat tensor of
+        # its DOFs. The result is a tensor [n_dofs_L_matrix, 2]
+
+        self.indices_flat_to_square = tf.where(tf.linalg.band_part(
+        tf.ones((self.input_dimensionality, self.input_dimensionality), 
+        dtype=self.dtype), 0, -1))
+
+        # Computes the first trial of the L factor of the symmetric coef-
+        # ficient matrix
+
+        L_trial = tf.eye(self.input_dimensionality, 
+        self.input_dimensionality, dtype=self.dtype)
+
+        # The first trial of the centroid vector and of the scalar coef-
+        # ficients are zero. Thus, initializes the parameters as a zero
+        # variable with just the L trial different than zero
+
+        self.trainable_flat_parameters = tf.concat([tf.gather_nd(
+        L_trial, self.indices_flat_to_square), tf.zeros((
+        self.input_dimensionality+1,), dtype=self.dtype)], axis=0)
+
+        self.trainable_flat_parameters = tf.Variable(
+        self.trainable_flat_parameters)
+
+        # Sets the optimizer
+
+        if optimizer is None:
+
+            self.optimizer = tf.keras.optimizers.Adam(learning_rate=
+            learning_rate)
+
+        else:
+
+            self.optimizer = optimizer
+
+        self.n_iterations = n_iterations
+
+        self.gradient_tolerance = gradient_tolerance 
+
+        self.gradient_maximum_component_tolerance = (
+        gradient_maximum_component_tolerance)
+
+        # Sets the loss function
+
+        if loss_function is None:
+
+            # Sets the mean quadratic error as per default
+
+            self.loss_function = self.mean_quadratic_error
+
+        # Otherwise, uses what has been given
+
+        else:
+
+            self.loss_function = loss_function
+
+        # Sets the flag to plot the loss history or not
+
+        self.plot_loss_history = plot_loss_history
+
+    # Defines the call method as a call of the approximation with the
+    # trained coefficients
+
+    def __call__(self, input_tensor):
+
+        return self.evaluate_approximation(input_tensor, 
+        self.L_coefficient, self.centroid_vector, 
+        self.scalar_coefficient)
+
+    # Defines a function to update the data arrays
+
+    def update_data_arrays(self, training_input_data, 
+    training_output_data):
+
+        # Verifies if the training data is a string, which means that it
+        # is a path. Does the same for the output data
+
+        if isinstance(training_input_data, str):
+
+            training_input_data = np.load(take_outFileNameTermination(
+            training_input_data)+".npy")
+
+        if isinstance(training_output_data, str):
+
+            training_output_data = np.load(take_outFileNameTermination(
+            training_output_data)+".npy")
+
+        # Checks if the given data samples are to be appended to the 
+        # samples that were already within the current input and output
+        # data arrays owned by this class
+
+        if self.accumulate_data_samples_to_preexisting_samples and (
+        hasattr(self, 'training_input_data')):
+
+            training_input_data = np.concatenate((
+            self.training_input_data.numpy(),training_input_data), axis=
+            0)
+
+            training_output_data = np.concatenate((
+            self.training_output_data.numpy(),training_output_data), 
+            axis=0)
+
+        # Converts all data to tensorflow tensors
 
         self.training_input_data = tf.convert_to_tensor(
         training_input_data, dtype=self.dtype)
@@ -46,71 +178,9 @@ class QuadraticApproximationOfScalarFunction:
             "g_input_data' has "+str(training_input_data.shape[0])+" s"+
             "amples. They must have the same number of samples")
 
-        # Gets the dimension of the input space and the number of samples
-
-        self.input_dimensionality = self.training_input_data.shape[1]
+        # Gets the number of samples
 
         self.n_training_samples = self.training_input_data.shape[0]
-
-        # Counts the number of degrees of freedom of the upper triangular
-        # factor of the symmetric coefficient matrix
-
-        self.n_dofs_L_matrix = int(0.5*self.input_dimensionality*(
-        self.input_dimensionality+1))
-
-        # Gets the tensor of indices to build the [input_dimensionality,
-        # input_dimensionality] coefficient matrix from a flat tensor of
-        # its DOFs. The result is a tensor [n_dofs_L_matrix, 2]
-
-        self.indices_flat_to_square = tf.where(tf.linalg.band_part(
-        tf.ones((self.input_dimensionality, self.input_dimensionality), 
-        dtype=self.dtype), 0, -1))
-
-        # Computes the first trial of the L factor of the symmetric coef-
-        # ficient matrix
-
-        L_trial = tf.eye(self.input_dimensionality, 
-        self.input_dimensionality, dtype=self.dtype)
-
-        # The first trial of the centroid vector and of the scalar coef-
-        # ficients are zero. Thus, initializes the parameters as a zero
-        # variable with just the L trial different than zero
-
-        self.trainable_flat_parameters = tf.zeros((self.n_dofs_L_matrix+
-        self.input_dimensionality+1,), dtype=self.dtype)
-
-        self.trainable_flat_parameters[:self.n_dofs_L_matrix] = tf.gather_nd(
-        L_trial, self.indices_flat_to_square)
-
-        self.trainable_flat_parameters = tf.Variable(
-        self.trainable_flat_parameters)
-
-        # Sets the optimizer
-
-        if optimizer is None:
-
-            self.optimizer = tf.keras.optimizers.Adam(learning_rate=
-            learning_rate)
-
-        else:
-
-            self.optimizer = optimizer
-
-        self.n_iterations = n_iterations
-
-        self.gradient_tolerance = gradient_tolerance 
-
-        self.gradient_maximum_component_tolerance = (
-        gradient_maximum_component_tolerance)
-
-    # Defines the call method as a call of the approximation with the
-    # trained coefficients
-
-    def __call__(self, input_tensor):
-
-        return self.evaluate_approximation(input_tensor, 
-        self.L_coefficient, self.centroid_vector, 
-        self.scalar_coefficient)
 
     # Defines a function to build the quadratic approximation. The input
     # tensor is [n_samples, input_dimensionality]; the L_coefficient,
@@ -135,10 +205,18 @@ class QuadraticApproximationOfScalarFunction:
         return (tf.einsum('si,si->s', upper_triangular_multiplication, 
         upper_triangular_multiplication)+scalar_coefficient)
 
-    # Defines a function to compute the mean quadratic error between the
-    # quadratic approximation and the true data
+    # Defines a function to the mean quadratic error
 
-    def evaluate_mean_squared_error(self, L_coefficient, centroid_vector, 
+    def mean_quadratic_error(self, y_true, y_approximation):
+
+        # Evaluates the error
+
+        return tf.reduce_mean(tf.square(y_approximation-y_true))
+
+    # Defines a function to compute the loss function between the qua-
+    # dratic approximation and the true data
+
+    def evaluate_loss(self, L_coefficient, centroid_vector, 
     scalar_coefficient):
 
         # Evaluates the approximation
@@ -149,8 +227,8 @@ class QuadraticApproximationOfScalarFunction:
 
         # Evaluates the error
 
-        return tf.reduce_mean(tf.square(y_approximation-
-        self.training_output_data))
+        return self.loss_function(self.training_output_data, 
+        y_approximation)
 
     # Defines a function to compute the gradient given a flat tensor of
     # parameters and the loss function
@@ -184,8 +262,8 @@ class QuadraticApproximationOfScalarFunction:
 
             # Computes the loss function
 
-            loss = self.evaluate_mean_squared_error(L_coefficient,
-            centroid_vector, scalar_coefficient)
+            loss = self.evaluate_loss(L_coefficient, centroid_vector, 
+            scalar_coefficient)
 
         # Computes the gradients
 
@@ -200,8 +278,8 @@ class QuadraticApproximationOfScalarFunction:
 
         # Applies the gradient vector to the optimizer
 
-        self.optimizer.apply_gradients((flat_gradient, 
-        self.trainable_flat_parameters))
+        self.optimizer.apply_gradients([(flat_gradient, 
+        self.trainable_flat_parameters)])
 
         return loss, flat_gradient
 
@@ -237,7 +315,7 @@ class QuadraticApproximationOfScalarFunction:
 
             # Checks the gradient tolerances
 
-            gradient_norm = tf.linalg.global_norm(gradient).numpy()
+            gradient_norm = tf.linalg.norm(gradient).numpy()
 
             gradient_maximum_component = tf.reduce_max(tf.abs(gradient)
             ).numpy()
@@ -246,7 +324,7 @@ class QuadraticApproximationOfScalarFunction:
             gradient_maximum_component<(
             self.gradient_maximum_component_tolerance)):
 
-                converged_optimization = True
+                converged_optimization = i+1
 
                 print("\nThe parameters of the quadratic approximation"+
                 " were fit in "+str(i+1)+" iterations. The gradient no"+
@@ -258,13 +336,30 @@ class QuadraticApproximationOfScalarFunction:
 
         # If the maximum number of iterations was used
 
-        if not converged_optimization:
+        if converged_optimization==False:
         
             print("\nThe parameters of the quadratic approximation wer"+
-            "e fit in "+str(self.n_iterations)+" iterations. The gradi"+
-            "ent norm is "+str(gradient_norm)+"; whereas the maximum c"+
-            "omponent of the gradient is "+str(
-            gradient_maximum_component)+"\nNeither tolerances were met")
+            "e fit using the maximum number of iterations, "+str(
+            self.n_iterations)+".\nThe gradient norm is "+str(
+            gradient_norm)+"; whereas the maximum omponent of the grad"+
+            "ient is "+str(gradient_maximum_component)+"\nNeither tole"+
+            "rances were met")
+
+            # Updates thes converged optimization to the maximum number 
+            # of iterations
+
+            converged_optimization = self.n_iterations
+
+        # Plots the loss history
+
+        if self.plot_loss_history:
+
+            plane_plot("quadratic_approximation_loss_history.png", 
+            x_data=np.arange(start=1, stop=converged_optimization+1), 
+            y_data=self.loss_history, parent_path=self.results_path)
+
+        print("\nThe initial loss was "+str(self.loss_history[0])+"\nT"+
+        "he final loss was "+str(self.loss_history[-1]))
 
         # Unpacks the fit trainable parameters into the individual ten-
         # sors
@@ -294,31 +389,49 @@ class QuadraticApproximationOfScalarFunction:
         self.eigenvalues, self.eigenvectors = tf.linalg.eigh(tf.einsum(
         'ik,jk->ij', self.L_coefficient, self.L_coefficient))
 
+        # Normalizes the eigenvectors
+
+        self.eigenvectors, _ = tf.linalg.normalize(self.eigenvectors, 
+        axis=0)
+
         print("\nThe eigenvalues and eigenvectors are:")
 
         for i in range(self.input_dimensionality):
 
             print(format(self.eigenvalues[i].numpy(), '.5e')+" and "+
-            str(self.eigenvectors[:,i].numpy()))
+            str(self.eigenvectors[:,i].numpy().tolist()))
+
+        print("\nThe centroid vector is: "+str(
+        self.centroid_vector.numpy())+"\nand the scalar coefficient: "+
+        str(self.scalar_coefficient.numpy()))
 
 # Testing block
 
 if __name__=="__main__":
 
+    # Gets the file numerical identifier
+
+    identifier = 12
+
     # Loads the data
 
-    parent_path = get_parent_path_of_file()
+    parent_path = get_parent_path_of_file()+"//lagrange_results"
 
     training_input = np.load(parent_path+"//boundary_points_p_2_rotati"+
-    "on_11.npy")
+    "on_"+str(identifier)+".npy")
 
     training_output = np.load(parent_path+"//boundary_only_strain_ener"+
-    "gy_p_2_rotation_11.npy")
+    "gy_p_2_rotation_"+str(identifier)+".npy")
+
+    # Sets the loss function
+
+    loss_function = LpNormError(p=12, use_stable_implementation=True)
 
     # Instantiates the class of the quadratic approximation
 
     strain_energy_quadratic_class = QuadraticApproximationOfScalarFunction(
-    training_input, training_output)
+    training_input, training_output, results_path=parent_path,
+    loss_function=loss_function)
 
     # Fits the trainable parameters
 
@@ -327,3 +440,33 @@ if __name__=="__main__":
     # Gets the eigenvalues and eigenvectors of the coefficient matrix
 
     strain_energy_quadratic_class.get_eigenvectors_of_coefficient_matrix()
+
+    # Sets a level of energy that must be got in each principal direction
+
+    energy_level = 2.0
+
+    # Gets an array of the coefficients mu that will be multiplied by 
+    # each eigenvector to get the principal directions of the mapping
+    # matrix of the superellipsoidal sampling technique
+
+    energy_level = tf.constant(energy_level, dtype=
+    strain_energy_quadratic_class.dtype)
+
+    mapping_mtrix_eigenvalues = tf.sqrt(tf.abs(energy_level-
+    strain_energy_quadratic_class.scalar_coefficient)/
+    strain_energy_quadratic_class.eigenvalues)
+
+    print("\nThe eigenvalues of the mapping matrix are:\n"+str(
+    mapping_mtrix_eigenvalues.numpy().tolist()))
+
+    # Prints everything as code directly
+
+    for i in range(strain_energy_quadratic_class.input_dimensionality):
+
+        print("\neigenvector_"+str(i+1)+" = np.array("+str(
+        strain_energy_quadratic_class.eigenvectors[:,i].numpy().tolist()
+        )+")\n\neigenvalue_"+str(i+1)+" = "+str(
+        mapping_mtrix_eigenvalues.numpy().tolist()[i]))
+
+    print("\ncentroid_position = [np.array("+str(
+    strain_energy_quadratic_class.centroid_vector.numpy().tolist())+")]")

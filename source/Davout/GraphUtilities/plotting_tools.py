@@ -420,7 +420,9 @@ None):
         elif len(x_data)!=len(y_data):
 
             raise IndexError("The x data and y data are lists of diffe"+
-            "rent sizes. Thus, cannot be used for plotting")
+            "rent sizes. Thus, cannot be used for plotting. x_data has"+
+            " length equal to "+str(len(x_data))+"; whereas y_data, "+
+            str(len(y_data)))
         
         # If the plot type is scatter, treats each point as a separate 
         # curve
