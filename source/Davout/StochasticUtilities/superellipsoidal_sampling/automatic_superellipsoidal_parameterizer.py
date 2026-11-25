@@ -5,15 +5,13 @@ import numpy as np
 
 import tensorflow as tf
 
-from .strain_energy_on_superellipsoidal_domain import IVDSimulationClass
-
 from .quadratic_approximator import QuadraticApproximationOfScalarFunction
 
-from ....PythonicUtilities.path_tools import get_parent_path_of_file
+from ...PythonicUtilities.path_tools import get_parent_path_of_file
 
-from ....DeepMech.tool_box.loss_assembler_classes import LpNormError
+from ...DeepMech.tool_box.loss_assembler_classes import LpNormError
 
-from .disc_HGO import simulation_disc
+from ...GraphUtilities.plotting_tools import plane_plot
 
 # Defines a class that finds the mapping matrix for a dataset as the da-
 # taset is built
@@ -23,8 +21,10 @@ class FindSuperellipsoidalParameterization:
     def __init__(self, energy_level, simulation_class, 
     n_sampling_domain_updates, results_path, initial_mapping_matrix, 
     initial_centroid_vector, loss_function=None, dtype="float32",
-    plot_loss_history=False, verbose=True, n_warm_up_samples=None, 
-    n_samples_per_update_cycle=1):
+    plot_results=False, verbose=True, n_warm_up_samples=None, 
+    n_samples_per_update_cycle=1, null_eigenvalue_tolerance=1E-5,
+    shrink_coefficient=0.95, check_inverse_condition_number=False,
+    shifted_approximation_flag=False):
 
         self.simulation_class = simulation_class
 
@@ -36,11 +36,20 @@ class FindSuperellipsoidalParameterization:
 
         self.dtype = dtype
 
-        self.plot_loss_history = plot_loss_history
+        self.plot_results = plot_results
 
         self.verbose = verbose
 
         self.n_samples_per_update_cycle = n_samples_per_update_cycle
+
+        self.null_eigenvalue_tolerance = null_eigenvalue_tolerance
+
+        self.shrink_coefficient = shrink_coefficient
+
+        self.check_inverse_condition_number = (
+        check_inverse_condition_number)
+
+        self.shifted_approximation_flag = shifted_approximation_flag
 
         # Saves the desired energy level as a tensorflow constant
 
@@ -143,37 +152,49 @@ class FindSuperellipsoidalParameterization:
             boundary_input_parameters_file_name, 
             boundary_values_file_name, boundary_values_xdmf_file_name)
 
-            # If the class for the quadratic approximation of the output
-            # given the input samples is None, instantiates the class
+            # If there are converged simulations
 
-            if self.quadratic_approximation_class is None:
+            flag_converged_simulation = len(input_file_names_list)>0
 
-                # Takes only the first file name of each list
+            if flag_converged_simulation:
 
-                self.quadratic_approximation_class = QuadraticApproximationOfScalarFunction(
-                input_file_names_list[0], output_file_names_list[0], 
-                results_path=self.results_path, loss_function=
-                self.loss_function, dtype=self.dtype, plot_loss_history=
-                self.plot_loss_history, 
-                accumulate_data_samples_to_preexisting_samples=True)
+                # If the class for the quadratic approximation of the 
+                # output given the input samples is None, instantiates 
+                # the class
 
-            # Otherwise, updates the training data
+                if self.quadratic_approximation_class is None:
 
-            else:
+                    # Takes only the first file name of each list
 
-                # Takes only the first file name of each list
+                    self.quadratic_approximation_class = QuadraticApproximationOfScalarFunction(
+                    input_file_names_list[0], output_file_names_list[0], 
+                    results_path=self.results_path, loss_function=
+                    self.loss_function, dtype=self.dtype, 
+                    plot_loss_history=self.plot_results, 
+                    accumulate_data_samples_to_preexisting_samples=True,
+                    check_inverse_condition_number=
+                    self.check_inverse_condition_number,
+                    shifted_approximation_flag=
+                    self.shifted_approximation_flag)
 
-                self.quadratic_approximation_class.update_data_arrays(
-                input_file_names_list[0], output_file_names_list[0])
+                # Otherwise, updates the training data
 
-            # Fits the parameters. Thus, finds the mapping matrix and
-            # the centroid vector
+                else:
 
-            self.quadratic_approximation_class.fit_parameters()
+                    # Takes only the first file name of each list
+
+                    self.quadratic_approximation_class.update_data_arrays(
+                    input_file_names_list[0], output_file_names_list[0])
+
+                # Fits the parameters. Thus, finds the mapping matrix 
+                # and the centroid vector
+
+                self.quadratic_approximation_class.fit_parameters()
 
             # Updates the mapping matrix and the centroid vector
 
-            self.get_mapping_matrix_and_centroid()
+            self.get_mapping_matrix_and_centroid(
+            flag_converged_simulation)
 
             # Updates the history lists
 
@@ -195,6 +216,17 @@ class FindSuperellipsoidalParameterization:
             np.save(self.results_path+"//history_centroid_vectors.npy", 
             np.asarray(self.centroid_vector_history))
 
+            # Plots the Frobenius norm of the difference between 
+            # consecutive mapping matrices
+
+            if self.plot_results:
+
+                plane_plot(self.results_path+"//frobenius_norm_of_"+
+                "consecutive_mapping_matrices.png", x_data=np.arange(
+                len(self.frobenius_norm_consecutive_mapping_matrices
+                )), y_data=np.asarray(
+                self.frobenius_norm_consecutive_mapping_matrices))
+
             # Prints the result
 
             print("\n#################################################"+
@@ -204,12 +236,18 @@ class FindSuperellipsoidalParameterization:
 
             if self.verbose:
 
-                mapping_matrix_string = ""
+                mapping_matrix_string = "\n["
 
                 for row_index in range(self.mapping_matrix.shape[0]):
 
-                    mapping_matrix_string += "\n"+str(
-                    self.mapping_matrix[row_index,:].tolist())
+                    final_character = ",\n"
+
+                    if row_index==(self.mapping_matrix.shape[0]-1):
+
+                        final_character = "]"
+
+                    mapping_matrix_string += str(self.mapping_matrix[
+                    row_index,:].tolist())+final_character
 
                 print("\nFinishes computing the "+str(
                 update_iteration_index+1)+"-th iteration to update the"+
@@ -217,42 +255,80 @@ class FindSuperellipsoidalParameterization:
                 "atrix is:"+mapping_matrix_string)
 
                 print("\nThe centroid vector is:\n"+str(
-                self.centroid_vector.tolist()))
+                self.centroid_vector.tolist())+"\n\n"+str(
+                self.quadratic_approximation_class.n_training_samples)+
+                " converged samples were used to fit these set of mapp"+
+                "ing matrix and centroid vector")
 
     # Defines a method to get the mapping matrix and the centroid vector
     # from the eigenvectors evaluated during the fitting scheme of the
     # quadratic approximation
 
-    def get_mapping_matrix_and_centroid(self):
+    def get_mapping_matrix_and_centroid(self, flag_converged_simulation):
+
+        # If the flag was not converged, simply multiplies the mapping 
+        # matrix by a coefficient equal or less than one to isotropical-
+        # ly shrink the sampling domain
+
+        if not flag_converged_simulation:
+
+            self.mapping_matrix = (self.shrink_coefficient*
+            self.mapping_matrix)
+
+            # Uses the return statement to stop the update here
+
+            return None
 
         # Gets the eigenvectors and eigenvalues of the corresponding
         # mapping matrix
 
         self.quadratic_approximation_class.get_eigenvectors_of_coefficient_matrix()
 
-        # Evaluates the eigenvalues of the mapping matrix so that the
-        # desired energy level is reached
+        # Gets the minimum eigenvalue and compares to the tolerance
 
-        mapping_matrix_eigenvalues = tf.sqrt(tf.abs(self.energy_level-
-        self.quadratic_approximation_class.scalar_coefficient)/
+        minimum_eigenvalue = tf.reduce_min(
         self.quadratic_approximation_class.eigenvalues)
 
-        if self.verbose:
+        # Checks that the energy level is higher than the scalar coeffi-
+        # cient of the quadratic approximation
 
-            print("\nThe eigenvalues of the mapping matrix are:\n"+str(
-            mapping_matrix_eigenvalues.numpy().tolist()))
+        energy_difference = (self.energy_level-
+        self.quadratic_approximation_class.scalar_coefficient)
 
-        # Assembles the mapping matrix using the spectral decomposition
+        minimum_energy_difference = tf.reduce_min(energy_difference)
 
-        self.mapping_matrix = tf.einsum('ik,k,jk->ij', 
-        self.quadratic_approximation_class.eigenvectors, 
-        mapping_matrix_eigenvalues,
-        self.quadratic_approximation_class.eigenvectors).numpy()
+        # If it is less than the tolerance, does not update the mapping
+        # matrix. If the energy difference is negative, the mapping ma-
+        # trix cannot be updated, because the fitted quadratic approxi-
+        # mation is above the desired energy level
 
-        # Simply gets the centroid
+        if (minimum_eigenvalue.numpy()>self.null_eigenvalue_tolerance
+        ) and minimum_energy_difference.numpy(
+        )>self.null_eigenvalue_tolerance:
 
-        self.centroid_vector = (
-        self.quadratic_approximation_class.centroid_vector.numpy())
+            # Evaluates the eigenvalues of the mapping matrix so that 
+            # the desired energy level is reached
+
+            mapping_matrix_eigenvalues = tf.sqrt(energy_difference/
+            self.quadratic_approximation_class.eigenvalues)
+
+            if self.verbose:
+
+                print("\nThe eigenvalues of the mapping matrix are:\n"+
+                str(mapping_matrix_eigenvalues.numpy().tolist()))
+
+            # Assembles the mapping matrix using the spectral decomposi-
+            # tion
+
+            self.mapping_matrix = tf.einsum('ik,k,jk->ij', 
+            self.quadratic_approximation_class.eigenvectors, 
+            mapping_matrix_eigenvalues,
+            self.quadratic_approximation_class.eigenvectors).numpy()
+
+            # Simply gets the centroid
+
+            self.centroid_vector = (
+            self.quadratic_approximation_class.centroid_vector.numpy())
 
 # Testing block
 
@@ -386,7 +462,8 @@ if __name__=="__main__":
         axial_direction_file_name, circumferential_direction_file_name, 
         translation, axle_vector, displacement_file_name, 
         pressure_file_name, volume_ratio_file_name, 
-        strain_energy_file_name, forces_and_moments_file_name)
+        strain_energy_file_name, forces_and_moments_file_name,
+        results_path=parent_path)
 
     # Otherwise, if it is a rotation-controlled simulation
 
@@ -402,13 +479,13 @@ if __name__=="__main__":
 
         eigenvector_1 = np.array([1.0, 0.0, 0.0])
 
-        eigenvalue_1 = 9.5
+        eigenvalue_1 = 15.0
 
-        eigenvector_2 = np.array([0.0, 1.0, 1.0])
+        eigenvector_2 = np.array([0.0, 1.0, 0.0])
 
-        eigenvalue_2 = 11.0
+        eigenvalue_2 = 10.0
 
-        eigenvector_3 = np.array([0.0, -1.0, 1.0])
+        eigenvector_3 = np.array([0.0, 0.0, 1.0])
 
         eigenvalue_3 = 10.0
 
@@ -429,7 +506,7 @@ if __name__=="__main__":
 
         # Sets the centroid of the ellipsoidal domain
 
-        centroid_position = np.array([4.7, 0.0, 0.0])
+        centroid_position = np.array([0.0, 0.0, 0.0])
 
         # Sets the translation vector to zero
 
@@ -448,7 +525,8 @@ if __name__=="__main__":
         axial_direction_file_name, circumferential_direction_file_name, 
         translation, axle_vector, displacement_file_name, 
         pressure_file_name, volume_ratio_file_name, 
-        strain_energy_file_name, forces_and_moments_file_name)
+        strain_energy_file_name, forces_and_moments_file_name,
+        results_path=parent_path)
 
     else:
 
@@ -466,25 +544,29 @@ if __name__=="__main__":
 
         # Sets the number of times to update the sampling domain
 
-        n_sampling_domain_updates = 5
+        n_sampling_domain_updates = 21
 
         # Sets the loss function as the Lp norm
 
-        loss_function = LpNormError(p=12, use_stable_implementation=True)
+        loss_function = LpNormError(p=2, use_stable_implementation=True)
+
+        loss_function = None
 
         # Instantiates the class to simulate the IVD
 
         IVD_class = IVDSimulationClass(p_exponent_list, 
         get_parent_path_of_file(), n_points_on_surface, 
         IVD_lambda_function, strain_energy_file_name, verbose=False,
-        get_points_onto_3D_meshed_ellipsoid=False)
+        get_points_onto_3D_meshed_ellipsoid=False, 
+        include_interior_samples=True)
 
         # Instantiates the class to find the parameterization of the su-
         # perellipsoidal domain
 
         find_parameterization_class = FindSuperellipsoidalParameterization(
         energy_level, IVD_class, n_sampling_domain_updates, parent_path, 
-        mapping_matrix, centroid_position, loss_function)
+        mapping_matrix, centroid_position, loss_function, 
+        n_warm_up_samples=2, check_inverse_condition_number=True)
 
         # Calls the procedure to generate the dataset and update the pa-
         # rameterization of the sampling domain

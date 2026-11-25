@@ -5,11 +5,13 @@ import numpy as np
 
 import tensorflow as tf
 
-from ....PythonicUtilities.path_tools import get_parent_path_of_file, take_outFileNameTermination
+from time import time
 
-from ....GraphUtilities.plotting_tools import plane_plot
+from ...PythonicUtilities.path_tools import get_parent_path_of_file, take_outFileNameTermination
 
-from ....DeepMech.tool_box.loss_assembler_classes import LpNormError
+from ...GraphUtilities.plotting_tools import plane_plot
+
+from ...DeepMech.tool_box.loss_assembler_classes import LpNormError
 
 # Defines a class to store the quadratic approximation and the optimiza-
 # tion process relative to the fitting procedure
@@ -17,16 +19,24 @@ from ....DeepMech.tool_box.loss_assembler_classes import LpNormError
 class QuadraticApproximationOfScalarFunction:
 
     def __init__(self, training_input_data, training_output_data, dtype=
-    "float32", optimizer=None, n_iterations=1000, gradient_tolerance=
-    1E-3, gradient_maximum_component_tolerance=1E-5, learning_rate=1E-2,
+    "float32", optimizer=None, n_iterations=10000, gradient_tolerance=
+    1E-3, gradient_maximum_component_tolerance=1E-5, learning_rate=1E-4,
     results_path=get_parent_path_of_file(path_bits_to_be_excluded=2),
     loss_function=None, plot_loss_history=True, 
-    accumulate_data_samples_to_preexisting_samples=False):
+    accumulate_data_samples_to_preexisting_samples=False, 
+    shifted_approximation_flag=False, check_inverse_condition_number=
+    False, reinitialize_trainable_parameters=False):
 
         self.results_path = results_path
 
         self.accumulate_data_samples_to_preexisting_samples = (
         accumulate_data_samples_to_preexisting_samples)
+
+        self.check_inverse_condition_number = (
+        check_inverse_condition_number)
+
+        self.reinitialize_trainable_parameters = (
+        reinitialize_trainable_parameters)
 
         # Sets the given data into the class
 
@@ -35,42 +45,15 @@ class QuadraticApproximationOfScalarFunction:
         # Loads the training arrays of data into the class
 
         self.update_data_arrays(training_input_data, 
-        training_output_data)
+        training_output_data, build_indices=True)
 
-        # Gets the dimension of the input space
+        # Initializes the trainable parameters
 
-        self.input_dimensionality = self.training_input_data.shape[1]
+        self.trainable_flat_parameters = tf.Variable(tf.zeros((
+        self.n_dofs_L_matrix+self.input_dimensionality+1), dtype=
+        self.dtype))
 
-        # Counts the number of degrees of freedom of the upper triangular
-        # factor of the symmetric coefficient matrix
-
-        self.n_dofs_L_matrix = int(0.5*self.input_dimensionality*(
-        self.input_dimensionality+1))
-
-        # Gets the tensor of indices to build the [input_dimensionality,
-        # input_dimensionality] coefficient matrix from a flat tensor of
-        # its DOFs. The result is a tensor [n_dofs_L_matrix, 2]
-
-        self.indices_flat_to_square = tf.where(tf.linalg.band_part(
-        tf.ones((self.input_dimensionality, self.input_dimensionality), 
-        dtype=self.dtype), 0, -1))
-
-        # Computes the first trial of the L factor of the symmetric coef-
-        # ficient matrix
-
-        L_trial = tf.eye(self.input_dimensionality, 
-        self.input_dimensionality, dtype=self.dtype)
-
-        # The first trial of the centroid vector and of the scalar coef-
-        # ficients are zero. Thus, initializes the parameters as a zero
-        # variable with just the L trial different than zero
-
-        self.trainable_flat_parameters = tf.concat([tf.gather_nd(
-        L_trial, self.indices_flat_to_square), tf.zeros((
-        self.input_dimensionality+1,), dtype=self.dtype)], axis=0)
-
-        self.trainable_flat_parameters = tf.Variable(
-        self.trainable_flat_parameters)
+        self.initialize_trainable_parameters()
 
         # Sets the optimizer
 
@@ -108,19 +91,34 @@ class QuadraticApproximationOfScalarFunction:
 
         self.plot_loss_history = plot_loss_history
 
+        # Sets the quadratic approximation. There are two options: (i)
+        # the shifted approximation, where the input vector is shifted
+        # by a centroid vector before the quadratic form; (ii) complete
+        # approximation, where there is a linear term
+
+        self.shifted_approximation_flag = shifted_approximation_flag
+
+        if self.shifted_approximation_flag:
+
+            self.evaluate_approximation = self.shifted_approximation
+
+        else:
+
+            self.evaluate_approximation = self.complete_approximation
+
     # Defines the call method as a call of the approximation with the
-    # trained coefficients
+    # trained coefficients. But always use the shifted approximation
 
     def __call__(self, input_tensor):
 
-        return self.evaluate_approximation(input_tensor, 
+        return self.shifted_approximation(input_tensor, 
         self.L_coefficient, self.centroid_vector, 
         self.scalar_coefficient)
 
     # Defines a function to update the data arrays
 
     def update_data_arrays(self, training_input_data, 
-    training_output_data):
+    training_output_data, build_indices=False):
 
         # Verifies if the training data is a string, which means that it
         # is a path. Does the same for the output data
@@ -182,12 +180,122 @@ class QuadraticApproximationOfScalarFunction:
 
         self.n_training_samples = self.training_input_data.shape[0]
 
+        # Gets the dimension of the input space
+
+        self.input_dimensionality = self.training_input_data.shape[1]
+
+        # If the indices of the trainable parameters are to be built
+
+        if build_indices:
+
+            # Counts the number of degrees of freedom of the upper tri-
+            # angular factor of the symmetric coefficient matrix
+
+            self.n_dofs_L_matrix = int(0.5*self.input_dimensionality*(
+            self.input_dimensionality+1))
+
+            # Gets the tensor of indices to build the [input_dimensiona-
+            # lity, input_dimensionality] coefficient matrix from a flat 
+            # tensor of its DOFs. The result is a tensor 
+            # [n_dofs_L_matrix, 2]
+
+            self.indices_flat_to_square = tf.where(tf.linalg.band_part(
+            tf.ones((self.input_dimensionality, 
+            self.input_dimensionality), dtype=self.dtype), 0, -1))
+
+        # If the inverse of the condition number is to be checked
+
+        if self.check_inverse_condition_number:
+
+            self.get_inverse_condition_number()
+
+    # Defines a function to get the rank and the inverse of the condi-
+    # tion number of the state matrix of the corresponding least-square
+    # problem
+
+    def get_inverse_condition_number(self):
+
+        # Computes the outer product of each input vector
+
+        quadratic_terms = tf.einsum('si,sj->sij',
+        self.training_input_data, self.training_input_data)
+
+        # Flattens the last two dimensions
+
+        quadratic_terms = tf.reshape(quadratic_terms, [
+        self.n_training_samples, -1])
+
+        # Converts the matrix indices into flattened indices
+
+        flat_indices = ((self.indices_flat_to_square[:,0]*
+        self.input_dimensionality)+self.indices_flat_to_square[:,1])
+
+        # Extracts the upper triangular quadratic terms
+
+        quadratic_terms = tf.gather(quadratic_terms, flat_indices, axis=
+        1)
+
+        # Assembles the state matrix with the quadratic terms, the li-
+        # near terms, and the constant ones
+
+        state_matrix = tf.concat([quadratic_terms,
+        self.training_input_data, tf.ones([self.n_training_samples, 1], 
+        dtype=self.dtype)], axis=1)
+        
+        # Computes the Euclidean norm of each column of the state matrix
+
+        column_norms = tf.linalg.norm(state_matrix, axis=0)
+
+        # Normalizes the columns
+
+        normalized_state_matrix = tf.math.divide_no_nan(state_matrix, 
+        column_norms[None, :])
+
+        # Gets the inverse condition number
+
+        singular_values = tf.linalg.svd(state_matrix, compute_uv=False)
+
+        normalized_singular_values = tf.linalg.svd(
+        normalized_state_matrix, compute_uv=False)
+
+        inverse_condition_number = tf.math.divide_no_nan(
+        singular_values[-1], singular_values[0])
+
+        normalized_inverse_condition_number = tf.math.divide_no_nan(
+        normalized_singular_values[-1], normalized_singular_values[0])
+
+        print("\nThe inverse of the condition number for this set of t"+
+        "raining data is: "+str(inverse_condition_number.numpy())+"\nw"+
+        "hereas the inverse condition number for the normalized state "+
+        "matrix is: "+str(normalized_inverse_condition_number.numpy())+
+        "\nThese values approach zero when the data is ill-conditioned"+
+        " and linearly dependent;\nin contrast, they approach 1 when t"+
+        "he data is not rank-defficient")
+
+    # Defines a function to initialize the trainable parameters
+
+    def initialize_trainable_parameters(self):
+
+        # Computes the first trial of the L factor of the symmetric coef-
+        # ficient matrix
+
+        L_trial = tf.eye(self.input_dimensionality, 
+        self.input_dimensionality, dtype=self.dtype)
+
+        # The first trial of the centroid vector and of the scalar coef-
+        # ficients are zero. Thus, initializes the parameters as a zero
+        # variable with just the L trial different than zero
+
+        self.trainable_flat_parameters.assign(tf.concat([tf.gather_nd(
+        L_trial, self.indices_flat_to_square), tf.zeros((
+        self.input_dimensionality+1,), dtype=self.dtype)], axis=0))
+
     # Defines a function to build the quadratic approximation. The input
     # tensor is [n_samples, input_dimensionality]; the L_coefficient,
     # [input_dimensionality, input_dimensionality] (upper triangular ma-
     # trix); the centroid vector, [input_dimensionality]
 
-    def evaluate_approximation(self, input_tensor, L_coefficient, 
+    def shifted_approximation(self, input_tensor, L_coefficient, 
     centroid_vector, scalar_coefficient):
 
         # Shifts the input tensor by the centroid vector
@@ -205,6 +313,33 @@ class QuadraticApproximationOfScalarFunction:
         return (tf.einsum('si,si->s', upper_triangular_multiplication, 
         upper_triangular_multiplication)+scalar_coefficient)
 
+    # Defines a function to build the quadratic approximation. The input
+    # tensor is [n_samples, input_dimensionality]; the L_coefficient,
+    # [input_dimensionality, input_dimensionality] (upper triangular ma-
+    # trix); the centroid vector, [input_dimensionality]. This function
+    # uses no shifted vector; but all terms of the quadratic approxima-
+    # tion
+
+    def complete_approximation(self, input_tensor, L_coefficient, 
+    linear_coefficient, scalar_coefficient):
+
+        # Computes the quadratic term
+
+        semi_quadratic_term = tf.einsum('ij,sj->si', L_coefficient, 
+        input_tensor)
+
+        quadratic_term = tf.einsum('si,si->s', semi_quadratic_term, 
+        semi_quadratic_term)
+
+        # Computes the linear term
+
+        linear_term = tf.einsum('i,si->s', linear_coefficient, 
+        input_tensor)
+
+        # Gets the result as a [n_samples] tensor
+
+        return (quadratic_term+linear_term+scalar_coefficient)
+
     # Defines a function to the mean quadratic error
 
     def mean_quadratic_error(self, y_true, y_approximation):
@@ -216,13 +351,13 @@ class QuadraticApproximationOfScalarFunction:
     # Defines a function to compute the loss function between the qua-
     # dratic approximation and the true data
 
-    def evaluate_loss(self, L_coefficient, centroid_vector, 
+    def evaluate_loss(self, L_coefficient, linear_coefficient, 
     scalar_coefficient):
 
         # Evaluates the approximation
 
         y_approximation = self.evaluate_approximation(
-        self.training_input_data, L_coefficient, centroid_vector, 
+        self.training_input_data, L_coefficient, linear_coefficient, 
         scalar_coefficient)
 
         # Evaluates the error
@@ -244,8 +379,9 @@ class QuadraticApproximationOfScalarFunction:
 
         # Recreates the centroid vector
 
-        centroid_vector = parameters_flat_tensor[self.n_dofs_L_matrix:(
-        self.n_dofs_L_matrix+self.input_dimensionality)]
+        linear_coefficient = parameters_flat_tensor[
+        self.n_dofs_L_matrix:(self.n_dofs_L_matrix+
+        self.input_dimensionality)]
 
         # Retrieves the scalar coefficient
 
@@ -257,23 +393,23 @@ class QuadraticApproximationOfScalarFunction:
 
             # Watches only the reconstructed tensors
 
-            tape.watch([L_coefficient, centroid_vector, 
+            tape.watch([L_coefficient, linear_coefficient, 
             scalar_coefficient])
 
             # Computes the loss function
 
-            loss = self.evaluate_loss(L_coefficient, centroid_vector, 
+            loss = self.evaluate_loss(L_coefficient, linear_coefficient, 
             scalar_coefficient)
 
         # Computes the gradients
 
-        dloss_dL, dloss_dcentroid, dloss_dscalar = tape.gradient(loss, [
-        L_coefficient, centroid_vector, scalar_coefficient])
+        dloss_dL, dloss_dlinear, dloss_dscalar = tape.gradient(loss, [
+        L_coefficient, linear_coefficient, scalar_coefficient])
 
         # Concatenates the gradient into a flat tensor
 
         flat_gradient = tf.concat([tf.gather_nd(dloss_dL,
-        self.indices_flat_to_square), dloss_dcentroid, tf.reshape(
+        self.indices_flat_to_square), dloss_dlinear, tf.reshape(
         dloss_dscalar, (1,))], axis=0)
 
         # Applies the gradient vector to the optimizer
@@ -287,6 +423,16 @@ class QuadraticApproximationOfScalarFunction:
     # problem
 
     def fit_parameters(self):
+
+        # Measures the running time
+
+        initial_time = time()
+
+        # If the trainable parameters are to be initialized anew
+
+        if self.reinitialize_trainable_parameters:
+
+            self.initialize_trainable_parameters()
 
         # Initializes a vector of the loss
 
@@ -371,13 +517,33 @@ class QuadraticApproximationOfScalarFunction:
 
         # Recreates the centroid vector
 
-        self.centroid_vector = self.trainable_flat_parameters[
+        self.linear_coefficient = self.trainable_flat_parameters[
         self.n_dofs_L_matrix:(self.n_dofs_L_matrix+
         self.input_dimensionality)]
 
         # Retrieves the scalar coefficient
 
-        self.scalar_coefficient = self.trainable_flat_parameters[-1]
+        self.original_scalar_coefficient = (
+        self.trainable_flat_parameters[-1])
+
+        print("\nThe scheme to fit the quadratic approximation took "+
+        str(time()-initial_time)+" seconds")
+
+        # Checks if the values of the trainable parameters are finite
+
+        if tf.reduce_all(tf.math.is_finite(self.trainable_flat_parameters
+        )).numpy():
+
+            # Updates the flag to reinitialize the trainable parameters
+            # to False
+
+            self.reinitialize_trainable_parameters = False 
+
+        # Otherwise, reinitialize
+
+        else:
+
+            self.reinitialize_trainable_parameters = True
 
     # Defines a function to get the eigenvectors of the coefficient ma-
     # trix
@@ -387,8 +553,11 @@ class QuadraticApproximationOfScalarFunction:
         # Gets the eigenvalues and eigenvectors of the coefficient ma-
         # trix given by the Cholesky factorization
 
-        self.eigenvalues, self.eigenvectors = tf.linalg.eigh(tf.einsum(
-        'ik,jk->ij', self.L_coefficient, self.L_coefficient))
+        symmetric_coefficient_matrix = tf.einsum('ki,kj->ij', 
+        self.L_coefficient, self.L_coefficient)
+
+        self.eigenvalues, self.eigenvectors = tf.linalg.eigh(
+        symmetric_coefficient_matrix)
 
         # Normalizes the eigenvectors
 
@@ -401,6 +570,44 @@ class QuadraticApproximationOfScalarFunction:
 
             print(format(self.eigenvalues[i].numpy(), '.5e')+" and "+
             str(self.eigenvectors[:,i].numpy().tolist()))
+
+        # Recovers the centroid of the paraboloid and the scalar coeffi-
+        # cient
+
+        if self.shifted_approximation_flag:
+
+            # If the shifted approximation was used, the linear coeffi-
+            # cient is the centroid vector as is the case with the sca-
+            # lar coefficient
+
+            self.centroid_vector = self.linear_coefficient
+
+            self.scalar_coefficient = self.original_scalar_coefficient
+
+        # Otherwise, it must be taken from a linear system involving the
+        # L coefficient
+
+        else:
+
+            # Solves the first vector using the upper traingular coeffi-
+            # cient matrix
+
+            y = tf.linalg.triangular_solve(tf.transpose(
+            self.L_coefficient), -0.5*self.linear_coefficient[:,None], 
+            lower=True)
+
+            # Now, solves for the centroid using the transposed triangu-
+            # lar coefficient matrix
+
+            self.centroid_vector = tf.squeeze(tf.linalg.triangular_solve(
+            self.L_coefficient, y, lower=False), axis=1)
+
+            # Updates the scalar coefficient to bring the parameteriza-
+            # tion back to the shifted formulation
+
+            self.scalar_coefficient = (self.original_scalar_coefficient-
+            tf.einsum('i,ij,j', self.centroid_vector, 
+            symmetric_coefficient_matrix, self.centroid_vector))
 
         print("\nThe centroid vector is: "+str(
         self.centroid_vector.numpy())+"\nand the scalar coefficient: "+

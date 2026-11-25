@@ -22,7 +22,11 @@ from .....Davout.MultiMech.tool_box.read_write_tools import write_field_to_xdmf
 
 from .....Davout.GraphUtilities.paraview_tools import frozen_snapshots
 
+from .....Davout.StochasticUtilities.superellipsoidal_sampling.automatic_superellipsoidal_parameterizer import FindSuperellipsoidalParameterization
+
 from .....Davout.StochasticUtilities.tool_box.sampling_tools import get_random_point_on_elipsoid_surface
+
+from .....Davout.DeepMech.tool_box.loss_assembler_classes import LpNormError
 
 from .disc_HGO import simulation_disc
 
@@ -33,7 +37,8 @@ class IVDSimulationClass:
 
     def __init__(self, p_exponent, parent_path, n_points_on_surface,
     simulation_function, output_result_file, verbose=True, 
-    get_points_onto_3D_meshed_ellipsoid=False):
+    get_points_onto_3D_meshed_ellipsoid=False, include_interior_samples=
+    False):
 
         # If multiple exponents p are to be evaluated
 
@@ -54,6 +59,8 @@ class IVDSimulationClass:
         self.n_points_on_surface = n_points_on_surface
 
         self.verbose = verbose
+
+        self.include_interior_samples = include_interior_samples
 
         # Defines the bases for the names of the files with the input 
         # values to the operator (values of external parameters, rota-
@@ -124,21 +131,24 @@ class IVDSimulationClass:
             current_boundary_values_xdmf_file_name = (
             boundary_values_xdmf_file_name+"_p_"+str(p_exponent))
 
-            # Updates the lists of file names
-
-            input_file_names.append(
-            current_boundary_input_parameters_file_name)
-
-            output_file_names.append(current_boundary_values_file_name)
-
             # Calls the function to get the strain energy evaluated on 
             # the ellipsoidal domain
 
-            self.sampling_and_running_method(p_exponent, mapping_matrix, 
-            centroid_position, 
+            flag_success = self.sampling_and_running_method(p_exponent, 
+            mapping_matrix, centroid_position, 
             current_boundary_input_parameters_file_name, 
             current_boundary_values_file_name, 
             current_boundary_values_xdmf_file_name, verbose=self.verbose)
+
+            # Updates the lists of file names if the simulation was suc-
+            # cessful
+
+            if flag_success:
+                
+                input_file_names.append(
+                current_boundary_input_parameters_file_name)
+
+                output_file_names.append(current_boundary_values_file_name)
 
         # Returns the lists of files names
 
@@ -158,7 +168,7 @@ class IVDSimulationClass:
         # Gets the eigenvectors and eigenvalues of the mapping matrix
 
         (mapping_matrix_eigenvalues, mapping_matrix_eigenvectors
-        ) = np.linalg.eig(mapping_matrix)
+        ) = np.linalg.eigh(mapping_matrix)
 
         # Gets the points on the surface as an array [n_surface_points,
         # input_dimension]
@@ -168,7 +178,7 @@ class IVDSimulationClass:
         self.n_points_on_surface, mapping_matrix_rotation_matrix=
         mapping_matrix_eigenvectors, mapping_matrix_eigenvalues=
         mapping_matrix_eigenvalues, centroid_vector=centroid_position,
-        return_as_list=False)
+        return_as_list=False, keep_samples_dimension=True)
 
         # Initializes an array of unsuccessful translation vectors
 
@@ -187,9 +197,19 @@ class IVDSimulationClass:
 
         boundary_only_energy_values = []
 
+        # Initializes the flag that tells if there were successful simu-
+        # lations
+
+        flag_success = False
+
         # Iterates over the boundary DOFs
 
-        for simulation_index, sample_point in enumerate(sample_points):
+        for simulation_index in range(sample_points.shape[0]):
+
+            # Gets the sample point as the row of the array of sample 
+            # points
+
+            sample_point = sample_points[simulation_index,:].tolist()
 
             try:
 
@@ -198,21 +218,53 @@ class IVDSimulationClass:
 
                 initial_time = time()
 
-                self.simulation_function(sample_point.tolist())
+                self.simulation_function(sample_point)
 
                 # Updates the time average
 
                 average_simulation_time += time()-initial_time
 
-                # Updates the list of successful boundary points
+                # If the pseudotime steps are also to be included as 
+                # samples
 
-                boundary_points.append(sample_point.tolist())
+                if self.include_interior_samples:
+
+                    # Reads the file with the normal to plane pseudo-
+                    # vector. Since the individual components of the ro-
+                    # tation pseudovector were provided to 
+                    # simulation_disc, they are stored in the 
+                    # normal_to_plane_spin_vector inside 
+                    # SurfaceTranslationAndRotation
+
+                    pseudovector_samples = np.load(self.parent_path+
+                    "//normal_to_plane_pseudovector_history.npy")
+
+                    # Converts them from radians to degrees and appends
+                    # as list
+
+                    pseudovector_samples = ((180.0/np.pi)*
+                    pseudovector_samples)
+
+                    boundary_points.extend(pseudovector_samples.tolist())
+
+                # Otherwise, includes only the last point
+
+                else:
+
+                    # Updates the list of successful boundary points
+
+                    boundary_points.append(sample_point)
+
+                # Updates the flag that tells if there was at least a 
+                # successful simulation
+
+                flag_success = True
 
             except Exception as error:
 
                 # Updates the list of unsuccessful samples
 
-                unsuccessful_samples.append(sample_point.tolist())
+                unsuccessful_samples.append(sample_point)
 
                 np.save(self.parent_path+"//unsuccessful_samples_p_"+
                 str(p_exponent)+".npy", np.array(unsuccessful_samples))
@@ -227,10 +279,26 @@ class IVDSimulationClass:
 
             strain_energy_list = txt_toList(self.output_result_file)
 
-            # Appends the strain energy to the list that captures values 
-            # on the boundary only
+            # If the pseudotime steps are also to be included as samples
 
-            boundary_only_energy_values.append(strain_energy_list[-1][1])
+            if self.include_interior_samples:
+
+                # Appends all values of the strain energy
+                
+                for strain_energy_pseudotime in strain_energy_list:
+
+                    boundary_only_energy_values.append(
+                    strain_energy_pseudotime[1]) 
+
+            # Otherwise, just saves the last value of the strain energy
+
+            else:
+
+                # Appends the strain energy to the list that captures 
+                # values on the boundary only
+
+                boundary_only_energy_values.append(strain_energy_list[-1
+                ][1])
 
             np.save(boundary_values_file_name+".npy", np.array(
             boundary_only_energy_values))
@@ -267,6 +335,8 @@ class IVDSimulationClass:
 
         print("The unsuccessful samples are:"+
         unsuccessful_samples_string)
+
+        return flag_success
 
     # Defines a function to generate the superellipsoidal domain in 3D 
     # space. Each point of the surface of the ellipsoid is a load vector. 
@@ -596,7 +666,8 @@ if __name__=="__main__":
         axial_direction_file_name, circumferential_direction_file_name, 
         translation, axle_vector, displacement_file_name, 
         pressure_file_name, volume_ratio_file_name, 
-        strain_energy_file_name, forces_and_moments_file_name)
+        strain_energy_file_name, forces_and_moments_file_name, 
+        results_path=parent_path)
 
     # Otherwise, if it is a rotation-controlled simulation
 
@@ -658,7 +729,8 @@ if __name__=="__main__":
         axial_direction_file_name, circumferential_direction_file_name, 
         translation, axle_vector, displacement_file_name, 
         pressure_file_name, volume_ratio_file_name, 
-        strain_energy_file_name, forces_and_moments_file_name)
+        strain_energy_file_name, forces_and_moments_file_name, 
+        results_path=parent_path)
 
     elif flag_activity=="snapshot":
 
@@ -688,19 +760,68 @@ if __name__=="__main__":
 
     if flag_activity!="snapshot":
 
+        # Sets a flag to plot the ellipsoidal domain and another to get
+        # the mapping matrix and the centroid automatically
+
+        flag_plot_ellipsoidal_domain = False 
+
+        flag_get_parameters_automatically = True
+
+        # Sets the energy level to approximate the boundary of the su-
+        # perellipsoidal sampling domain
+
+        energy_level = 2.0
+
+        # Sets the number of times to update the sampling domain
+
+        n_sampling_domain_updates = 21
+
+        # Sets the loss function as the Lp norm
+
+        loss_function = LpNormError(p=2, use_stable_implementation=True)
+
+        loss_function = None
+
         # Instantiates the class to simulate the IVD
 
         IVD_class = IVDSimulationClass(p_exponent_list, 
         get_parent_path_of_file(), n_points_on_surface, 
-        IVD_lambda_function, strain_energy_file_name, verbose=False)
+        IVD_lambda_function, strain_energy_file_name, verbose=False,
+        get_points_onto_3D_meshed_ellipsoid=False, 
+        include_interior_samples=True)
 
-        for centroid_index, individual_centroid in enumerate(
-        centroid_position):
+        # Instantiates the class to find the parameterization of the su-
+        # perellipsoidal domain
 
-            IVD_class(mapping_matrix, individual_centroid, 
-            IVD_class.input_parameters_base_file_name+
-            file_name_additive+str(centroid_index+1), 
-            IVD_class.output_parameters_base_file_name+
-            file_name_additive+str(centroid_index+1), 
-            IVD_class.output_visualization_base_file_name+
-            file_name_additive+str(centroid_index+1))
+        find_parameterization_class = FindSuperellipsoidalParameterization(
+        energy_level, IVD_class, n_sampling_domain_updates, parent_path, 
+        mapping_matrix, centroid_position[0], loss_function, 
+        n_warm_up_samples=2, check_inverse_condition_number=True)
+
+        # Calls the procedure to generate the dataset and update the pa-
+        # rameterization of the sampling domain
+
+        if flag_get_parameters_automatically:
+
+            find_parameterization_class()
+
+        # If the ellipoidal domain is to be checked and plotted
+
+        if flag_plot_ellipsoidal_domain:
+
+            # Instantiates the class to simulate the IVD again
+
+            IVD_class = IVDSimulationClass(p_exponent_list, 
+            get_parent_path_of_file(), n_points_on_surface, 
+            IVD_lambda_function, strain_energy_file_name, verbose=False)
+
+            for centroid_index, individual_centroid in enumerate(
+            centroid_position):
+
+                IVD_class(mapping_matrix, individual_centroid, 
+                IVD_class.input_parameters_base_file_name+
+                file_name_additive+str(centroid_index+1), 
+                IVD_class.output_parameters_base_file_name+
+                file_name_additive+str(centroid_index+1), 
+                IVD_class.output_visualization_base_file_name+
+                file_name_additive+str(centroid_index+1))

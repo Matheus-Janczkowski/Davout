@@ -19,7 +19,7 @@ k1_file_name:str, k2_file_name:str, gamma_file_name:str, axial_direction_file_na
 circumferential_direction_file_name:str, translation:list, axle_vector:list,
 displacement_file_name:str, pressure_file_name:str, volume_ratio_file_name:str,
 strain_energy_file_name:str, forces_and_moments_file_name:str, maximum_load=0.0,
-maximum_loadingSteps=None, intermediate_saving=False):
+maximum_loadingSteps=None, intermediate_saving=False, results_path=None):
     
     start_time = time()
 
@@ -193,7 +193,8 @@ maximum_loadingSteps=None, intermediate_saving=False):
     bcs_dictionary["top"] = {"BC case": "PrescribedDirichletBC", "bc_infor"+
     "mationsDict": {"load_function": "SurfaceTranslationAndRotation", "tra"+
     "nslation": translation, "rotation_x": axle_vector[0], 
-    "rotation_y": axle_vector[1], "rotation_z": axle_vector[2]}}
+    "rotation_y": axle_vector[1], "rotation_z": axle_vector[2], "results_p"+
+    "ath": results_path, "save_intermediate_information": True}}
 
     ########################################################################
     ########################################################################

@@ -13,6 +13,8 @@ from ..tool_box import numerical_tools
 
 from ..tool_box import mesh_handling_tools as mesh_tools
 
+from ...PythonicUtilities.path_tools import get_parent_path_of_file
+
 # Defines a function to construct a Dirichlet boundary condition that a
 # surface is rotated and translated
 
@@ -20,7 +22,7 @@ def SurfaceTranslationAndRotation(mesh_dataClass, boundary_physicalGroups,
 in_planeSpin=0.0, normal_toPlaneSpin=0.0, translation=[0.0, 0.0, 0.0], 
 in_planeSpinDirection=[0.0, 0.0, 0.0], center_point=None, t=0.0, t_final=
 1.0, parametric_load_curve="linear", rotation_x=None, rotation_y=None, 
-rotation_z=None):
+rotation_z=None, save_intermediate_information=False, results_path=None):
     
     original_translation = copy(translation)
 
@@ -141,6 +143,27 @@ rotation_z=None):
         center_point, mesh_dataClass, boundary_physicalGroups, 
         original_physicalGroup, original_translation)
 
+    # Initializes two lists of history for the in plane and normal pseu-
+    # do vectors or rotation
+
+    in_plane_pseudovector_history = []
+
+    normal_to_plane_pseudovector_history = []
+
+    # If no results path was given, takes automatically the path where 
+    # the simulation was called
+
+    if results_path is None:
+
+        results_path = get_parent_path_of_file(
+        function_calls_to_retrocede=5)
+
+    in_plane_file_name = (results_path+"//in_plane_pseudovector_histor"+
+    "y.npy")
+
+    normal_to_plane_file_name = (results_path+"//normal_to_plane_pseud"+
+    "ovector_history.npy")
+
     # Defines a class to update the time constant and the traction am-
     # plitude
 
@@ -224,6 +247,30 @@ rotation_z=None):
 
             new_normalVector = [(normal_toPlaneSpin*load_value*component
             ) for component in average_normal]
+
+            # If the vectors must be saved in their respective histories
+
+            if save_intermediate_information:
+
+                # Updates the lists of history
+
+                in_plane_pseudovector_history.append(new_inPlaneVector)
+
+                normal_to_plane_pseudovector_history.append(
+                new_normalVector)
+
+                # Save them as binary files
+
+                np.save(in_plane_file_name, 
+                in_plane_pseudovector_history)
+
+                np.save(normal_to_plane_file_name, 
+                normal_to_plane_pseudovector_history)
+
+                print("\nSaves the history of the in plane pseudovecto"+
+                "r at:\n"+str(in_plane_file_name)+"\nand the history o"+
+                "f the normal to plane pseudovector at:\n"+str(
+                normal_to_plane_file_name))
 
             # Evaluates the rotation matrices
 

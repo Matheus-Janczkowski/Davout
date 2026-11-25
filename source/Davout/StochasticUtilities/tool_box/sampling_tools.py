@@ -11,7 +11,8 @@ import numpy as np
 
 def get_random_point_on_elipsoid_surface(limits, return_as_list=True,
 p_norm_value=2, number_of_samples=1, mapping_matrix_rotation_matrix=None, 
-mapping_matrix_eigenvalues=None, centroid_vector=None):
+mapping_matrix_eigenvalues=None, centroid_vector=None, 
+keep_samples_dimension=False):
 
     """
     Get a random point on the surface of a n-dimensional elipsoid to 
@@ -30,7 +31,7 @@ mapping_matrix_eigenvalues=None, centroid_vector=None):
     
     # Verifies if a single sample must be generated
 
-    if number_of_samples==1:
+    if number_of_samples==1 and (not keep_samples_dimension):
 
         return get_single_point_on_ellipsoid(limits, return_as_list=
         return_as_list, p_norm_value=p_norm_value, 
