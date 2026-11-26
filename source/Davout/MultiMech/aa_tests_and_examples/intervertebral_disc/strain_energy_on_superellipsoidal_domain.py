@@ -683,15 +683,15 @@ if __name__=="__main__":
 
         eigenvector_1 = np.array([1.0, 0.0, 0.0])
 
-        eigenvalue_1 = 9.5
+        eigenvalue_1 = 12.0
 
-        eigenvector_2 = np.array([0.0, 1.0, 1.0])
+        eigenvector_2 = np.array([0.0, 1.0, 0.0])
 
-        eigenvalue_2 = 11.0
+        eigenvalue_2 = 7.0
 
-        eigenvector_3 = np.array([0.0, -1.0, 1.0])
+        eigenvector_3 = np.array([0.0, 0.0, 1.0])
 
-        eigenvalue_3 = 10.0
+        eigenvalue_3 = 7.0
 
         # Normalizes the eigenvectors
 
@@ -796,7 +796,8 @@ if __name__=="__main__":
         find_parameterization_class = FindSuperellipsoidalParameterization(
         energy_level, IVD_class, n_sampling_domain_updates, parent_path, 
         mapping_matrix, centroid_position[0], loss_function, 
-        n_warm_up_samples=2, check_inverse_condition_number=True)
+        n_warm_up_samples=50, check_inverse_condition_number=True,
+        use_least_squares_to_fit=True)
 
         # Calls the procedure to generate the dataset and update the pa-
         # rameterization of the sampling domain

@@ -24,7 +24,7 @@ class FindSuperellipsoidalParameterization:
     plot_results=False, verbose=True, n_warm_up_samples=None, 
     n_samples_per_update_cycle=1, null_eigenvalue_tolerance=1E-5,
     shrink_coefficient=0.95, check_inverse_condition_number=False,
-    shifted_approximation_flag=False):
+    shifted_approximation_flag=False, use_least_squares_to_fit=False):
 
         self.simulation_class = simulation_class
 
@@ -50,6 +50,8 @@ class FindSuperellipsoidalParameterization:
         check_inverse_condition_number)
 
         self.shifted_approximation_flag = shifted_approximation_flag
+
+        self.use_least_squares_to_fit = use_least_squares_to_fit
 
         # Saves the desired energy level as a tensorflow constant
 
@@ -175,7 +177,9 @@ class FindSuperellipsoidalParameterization:
                     check_inverse_condition_number=
                     self.check_inverse_condition_number,
                     shifted_approximation_flag=
-                    self.shifted_approximation_flag)
+                    self.shifted_approximation_flag, 
+                    use_least_squares_to_fit=
+                    self.use_least_squares_to_fit)
 
                 # Otherwise, updates the training data
 

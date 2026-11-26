@@ -25,7 +25,8 @@ class QuadraticApproximationOfScalarFunction:
     loss_function=None, plot_loss_history=True, 
     accumulate_data_samples_to_preexisting_samples=False, 
     shifted_approximation_flag=False, check_inverse_condition_number=
-    False, reinitialize_trainable_parameters=False):
+    False, reinitialize_trainable_parameters=False, 
+    use_least_squares_to_fit=False):
 
         self.results_path = results_path
 
@@ -90,6 +91,27 @@ class QuadraticApproximationOfScalarFunction:
         # Sets the flag to plot the loss history or not
 
         self.plot_loss_history = plot_loss_history
+
+        # If least squares is the selected method to fit the parameters
+        # of the quadratic approximation 
+
+        if use_least_squares_to_fit:
+
+            self.fit_parameters = (
+            self.fit_parameters_using_matrix_least_squares)
+
+            # Since the least squares method uses the complete format of
+            # the quadratic approximation, the flag to the shifted ap-
+            # proximation is automatically set to False
+
+            shifted_approximation_flag = False 
+
+        # Otherwise, uses the optimization-based approach to fitting pa-
+        # rameters
+
+        else:
+
+            self.fit_parameters = self.fit_parameters_using_optimization
 
         # Sets the quadratic approximation. There are two options: (i)
         # the shifted approximation, where the input vector is shifted
@@ -422,7 +444,7 @@ class QuadraticApproximationOfScalarFunction:
     # Defines a function to fit the parameters using an optimization 
     # problem
 
-    def fit_parameters(self):
+    def fit_parameters_using_optimization(self):
 
         # Measures the running time
 
@@ -526,8 +548,9 @@ class QuadraticApproximationOfScalarFunction:
         self.original_scalar_coefficient = (
         self.trainable_flat_parameters[-1])
 
-        print("\nThe scheme to fit the quadratic approximation took "+
-        str(time()-initial_time)+" seconds")
+        print("\nThe scheme to fit the quadratic approximation using a"+
+        "n optimization problem took "+str(time()-initial_time)+" seco"+
+        "nds")
 
         # Checks if the values of the trainable parameters are finite
 
@@ -544,6 +567,82 @@ class QuadraticApproximationOfScalarFunction:
         else:
 
             self.reinitialize_trainable_parameters = True
+
+    # Defines a function to fit the trainable parameters to the data u-
+    # sing least squares in matrix form
+
+    def fit_parameters_using_matrix_least_squares(self):
+
+        # Measures the running time
+
+        initial_time = time()
+
+        # Computes the outer product of each input vector
+
+        quadratic_terms = tf.einsum('si,sj->sij',
+        self.training_input_data, self.training_input_data)
+
+        # Flattens the last two dimensions
+
+        quadratic_terms = tf.reshape(quadratic_terms, [
+        self.n_training_samples, -1])
+
+        # Converts the matrix indices into flattened indices
+
+        flat_indices = ((self.indices_flat_to_square[:,0]*
+        self.input_dimensionality)+self.indices_flat_to_square[:,1])
+
+        # Extracts the upper triangular quadratic terms
+
+        quadratic_terms = tf.gather(quadratic_terms, flat_indices, axis=
+        1)
+
+        # Assembles the state matrix with the quadratic terms, the li-
+        # near terms, and the constant ones
+
+        state_matrix = tf.concat([quadratic_terms,
+        self.training_input_data, tf.ones([self.n_training_samples, 1], 
+        dtype=self.dtype)], axis=1)
+
+        # Gets the approximation coefficients using least squares in its
+        # matrix format. Uses the flag fast as False because the state
+        # matrix can be ill-conditioned
+
+        approximation_coefficients = tf.linalg.lstsq(state_matrix,
+        self.training_output_data[:, None], l2_regularizer=0.0, fast=
+        False)
+
+        approximation_coefficients = tf.squeeze(
+        approximation_coefficients, axis=1)
+
+        # Gets the symmetric matrix of the quadratic approximation (whose
+        # factorization will be H=L.T*L)
+
+        H_matrix = tf.scatter_nd(self.indices_flat_to_square,
+        approximation_coefficients[:self.n_dofs_L_matrix], shape=(
+        self.input_dimensionality, self.input_dimensionality))
+
+        # Symmetrizes the matrix while preserving the diagonal
+
+        H_matrix = (H_matrix+tf.transpose(H_matrix))*0.5
+
+        # Gets the L factorization using Cholesky's method
+
+        self.L_coefficient = tf.transpose(tf.linalg.cholesky(H_matrix))
+
+        # Retrieves the linear and the scallar coefficient as well
+
+        self.linear_coefficient = approximation_coefficients[
+        self.n_dofs_L_matrix:(self.n_dofs_L_matrix+
+        self.input_dimensionality)]
+
+        self.original_scalar_coefficient = approximation_coefficients[-1]
+
+        # The linear and scalar coefficients as well
+
+        print("\nThe scheme to fit the quadratic approximation using p"+
+        "seudoinverse-based least squares took "+str(time()-initial_time
+        )+" seconds")
 
     # Defines a function to get the eigenvectors of the coefficient ma-
     # trix
