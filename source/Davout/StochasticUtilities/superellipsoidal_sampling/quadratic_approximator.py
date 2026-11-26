@@ -26,7 +26,8 @@ class QuadraticApproximationOfScalarFunction:
     accumulate_data_samples_to_preexisting_samples=False, 
     shifted_approximation_flag=False, check_inverse_condition_number=
     False, reinitialize_trainable_parameters=False, 
-    use_least_squares_to_fit=False):
+    use_least_squares_to_fit=False, 
+    positive_definiteness_regularization_parameter=1E-6):
 
         self.results_path = results_path
 
@@ -38,6 +39,9 @@ class QuadraticApproximationOfScalarFunction:
 
         self.reinitialize_trainable_parameters = (
         reinitialize_trainable_parameters)
+
+        self.positive_definiteness_regularization_parameter = (
+        positive_definiteness_regularization_parameter)
 
         # Sets the given data into the class
 
@@ -626,6 +630,19 @@ class QuadraticApproximationOfScalarFunction:
 
         H_matrix = (H_matrix+tf.transpose(H_matrix))*0.5
 
+        # Checks the minimum eigenvalue of the fitted matrix
+
+        H_eigenvalues = tf.linalg.eigvalsh(H_matrix)
+
+        minimum_H_eingevalue = tf.reduce_min(H_eigenvalues)
+
+        regularization_parameter = tf.maximum(0.0,
+        self.positive_definiteness_regularization_parameter-
+        minimum_H_eingevalue)
+        
+        H_matrix += (regularization_parameter*tf.eye(
+        self.input_dimensionality, dtype=self.dtype))
+
         # Gets the L factorization using Cholesky's method
 
         self.L_coefficient = tf.transpose(tf.linalg.cholesky(H_matrix))
@@ -654,6 +671,9 @@ class QuadraticApproximationOfScalarFunction:
 
         symmetric_coefficient_matrix = tf.einsum('ki,kj->ij', 
         self.L_coefficient, self.L_coefficient)
+
+        symmetric_coefficient_matrix = 0.5*(symmetric_coefficient_matrix+
+        tf.transpose(symmetric_coefficient_matrix))
 
         self.eigenvalues, self.eigenvectors = tf.linalg.eigh(
         symmetric_coefficient_matrix)

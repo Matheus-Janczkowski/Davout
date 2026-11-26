@@ -616,15 +616,11 @@ if __name__=="__main__":
     
     centroid_position = None
 
-    # Sets the number of points on the surface of the ellipsoidal domain
-
-    n_points_on_surface = 40
-
     # Sets a flag that tells if the simulations will be controlled by
     # translation or by rotation, or if it is time to generate the snap-
     # shots
 
-    flag_activity = "rotation" 
+    flag_activity = "translation" 
 
     file_name_additive = None
 
@@ -632,7 +628,7 @@ if __name__=="__main__":
     # sets the mapping matrix, and the centroid of the ellipsoidal do-
     # main, too
 
-    p_exponent_list = [2]
+    p_exponent_list = [2, 16]
 
     # If this set of simulation is to be controlled by translation only
 
@@ -649,6 +645,50 @@ if __name__=="__main__":
         centroid_position = [np.array([0.0, 0.0, -0.0004]), 
         np.array([0.0, 0.0, -0.0003])]
 
+        # Sets the eigenvectors of the mapping matrix and their eigen-
+        # values in milimeters
+
+        eigenvector_1 = np.array([1.0, 0.0, 0.0])
+
+        eigenvalue_1 = 3.1
+
+        eigenvector_2 = np.array([0.0, 1.0, 0.0])
+
+        eigenvalue_2 = 3.7
+
+        eigenvector_3 = np.array([0.0, 0.0, 1.0])
+
+        eigenvalue_3 = 1.8
+
+        # Normalizes the eigenvectors
+
+        eigenvector_1 = (1.0/np.linalg.norm(eigenvector_1))*eigenvector_1
+
+        eigenvector_2 = (1.0/np.linalg.norm(eigenvector_2))*eigenvector_2
+
+        eigenvector_3 = (1.0/np.linalg.norm(eigenvector_3))*eigenvector_3
+
+        # Assembles the mapping matrix using the outer product
+
+        mapping_matrix = (eigenvalue_1*np.einsum('i,j->ij', 
+        eigenvector_1, eigenvector_1))+(eigenvalue_2*np.einsum('i,j->ij', 
+        eigenvector_2, eigenvector_2))+(eigenvalue_3*np.einsum('i,j->ij', 
+        eigenvector_3, eigenvector_3))
+
+        # Sets the centroid of the ellipsoidal domain in milimeters
+
+        centroid_position = [np.array([0.0, 0.0, -0.3])]
+
+        # Numerically obtained:
+
+        mapping_matrix = np.array([[3.525418996810913, -0.014125607907772064, -0.019073985517024994],
+        [-0.014125607907772064, 4.0433759689331055, -0.02078104205429554],
+        [-0.019073985517024994, -0.020781049504876137, 2.0168890953063965]])
+
+        # Sets the centroid of the ellipsoidal domain in milimeters
+
+        centroid_position = [np.array([0.014827355742454529, 0.00026662449818104506, -0.3448928892612457])]
+
         # Sets the axle vector to no rotation at all
 
         axle_vector = [0.0, 0.0, 0.0]
@@ -660,14 +700,21 @@ if __name__=="__main__":
         # Sets a lambda function for the disc to be a function of the 
         # translation vector only
 
-        IVD_lambda_function = lambda translation: simulation_disc(
-        linear_solver, c_HGO, kappa, bulk_modulus, c2_mooney, c1_mooney, 
-        IVD_mesh_file_name, k1_file_name, k2_file_name, gamma_file_name, 
-        axial_direction_file_name, circumferential_direction_file_name, 
-        translation, axle_vector, displacement_file_name, 
-        pressure_file_name, volume_ratio_file_name, 
-        strain_energy_file_name, forces_and_moments_file_name, 
-        results_path=parent_path)
+        def IVD_lambda_function(translation):
+
+            # Converts the translation vector from milimeters to meters
+
+            translation_in_meters = [component/1000.0 for component in (
+            translation)]
+            
+            return simulation_disc(linear_solver, c_HGO, kappa, 
+            bulk_modulus, c2_mooney, c1_mooney, IVD_mesh_file_name, 
+            k1_file_name, k2_file_name, gamma_file_name, 
+            axial_direction_file_name, 
+            circumferential_direction_file_name, translation_in_meters, 
+            axle_vector, displacement_file_name, pressure_file_name, 
+            volume_ratio_file_name, strain_energy_file_name, 
+            forces_and_moments_file_name, results_path=parent_path)
 
     # Otherwise, if it is a rotation-controlled simulation
 
@@ -710,7 +757,19 @@ if __name__=="__main__":
 
         # Sets the centroid of the ellipsoidal domain
 
-        centroid_position = [np.array([4.7, 0.0, 0.0])]
+        centroid_position = [np.array([0.0, 0.0, 0.0])]
+
+        # Numerical case
+
+        mapping_matrix = np.array([[ 8.7203303 , -0.35770107,  0.16149368],
+       [-0.35770107, 10.36425212,  0.26814332],
+       [ 0.16149368,  0.26814332,  9.61541757]])
+
+        mapping_matrix = np.array([[ 8.99747349, -0.3254568 ,  0.0927084 ],
+       [-0.3254568 , 10.56050084,  0.30298502],
+       [ 0.0927084 ,  0.30298502,  9.64202568]])
+
+        centroid_vector = [np.array([2.5261847972869873, 0.3115063011646271, 0.7460243701934814])]
 
         # Sets the translation vector to zero
 
@@ -763,14 +822,14 @@ if __name__=="__main__":
         # Sets a flag to plot the ellipsoidal domain and another to get
         # the mapping matrix and the centroid automatically
 
-        flag_plot_ellipsoidal_domain = False 
+        flag_plot_ellipsoidal_domain = True 
 
-        flag_get_parameters_automatically = True
+        flag_get_parameters_automatically = False
 
         # Sets the energy level to approximate the boundary of the su-
         # perellipsoidal sampling domain
 
-        energy_level = 2.0
+        energy_level = 1.0
 
         # Sets the number of times to update the sampling domain
 
@@ -785,10 +844,10 @@ if __name__=="__main__":
         # Instantiates the class to simulate the IVD
 
         IVD_class = IVDSimulationClass(p_exponent_list, 
-        get_parent_path_of_file(), n_points_on_surface, 
-        IVD_lambda_function, strain_energy_file_name, verbose=False,
+        get_parent_path_of_file(), 30, IVD_lambda_function, 
+        strain_energy_file_name, verbose=False,
         get_points_onto_3D_meshed_ellipsoid=False, 
-        include_interior_samples=True)
+        include_interior_samples=False)
 
         # Instantiates the class to find the parameterization of the su-
         # perellipsoidal domain
@@ -796,8 +855,8 @@ if __name__=="__main__":
         find_parameterization_class = FindSuperellipsoidalParameterization(
         energy_level, IVD_class, n_sampling_domain_updates, parent_path, 
         mapping_matrix, centroid_position[0], loss_function, 
-        n_warm_up_samples=50, check_inverse_condition_number=True,
-        use_least_squares_to_fit=True)
+        n_warm_up_samples=60, check_inverse_condition_number=True,
+        use_least_squares_to_fit=False, dtype="float32")
 
         # Calls the procedure to generate the dataset and update the pa-
         # rameterization of the sampling domain
@@ -810,11 +869,17 @@ if __name__=="__main__":
 
         if flag_plot_ellipsoidal_domain:
 
+            # Sets the number of points on the surface of the ellipsoidal 
+            # domain
+
+            n_points_on_surface = 400
+
             # Instantiates the class to simulate the IVD again
 
             IVD_class = IVDSimulationClass(p_exponent_list, 
             get_parent_path_of_file(), n_points_on_surface, 
-            IVD_lambda_function, strain_energy_file_name, verbose=False)
+            IVD_lambda_function, strain_energy_file_name, verbose=False,
+            get_points_onto_3D_meshed_ellipsoid=True)
 
             for centroid_index, individual_centroid in enumerate(
             centroid_position):
